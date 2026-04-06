@@ -106,7 +106,7 @@ id: root
     }
 
     property string randoPub: (Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || '')
-    property string randoGenre: (Utils.returnRandom(Utils.uniqueValuesArray('genreList'))[0] || '').toLowerCase()
+    property string randoGenre: (Utils.returnRandom(Utils.uniqueValuesArray('genreList'))[0] || '')
 
     property bool ftue: featuredCollection.games.count == 0
 
