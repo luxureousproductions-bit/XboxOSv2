@@ -412,9 +412,9 @@ id: root
         }
 
         OpacityMask {
-            anchors.fill: logobg
-            source: logobg
-            maskSource: platformlogo
+            anchors.fill: platformlogo
+            source: platformlogo
+            maskSource: logobg
             
             // Mouse/touch functionality
             MouseArea {
@@ -614,7 +614,7 @@ id: root
             itemWidth: (root.width - globalMargin * 2) / 8.0
             itemHeight: itemWidth / settings.TallRatio
 
-            title: game ? "More " + game.genreList[0].toLowerCase() + " games" : ""
+            title: game ? "More " + game.genreList[0] + " Games" : "              "
             search: genreCollection
             onListHighlighted: { sfxNav.play(); content.currentIndex = list2.ObjectModel.index; }
         }
