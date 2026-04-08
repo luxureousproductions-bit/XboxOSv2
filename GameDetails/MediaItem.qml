@@ -54,7 +54,13 @@ id: root
             Text {
             id: bubbletitle
 
-                text: isVideo ? "Video" : "Screenshot"
+                text: {
+                    if (isVideo) return "Video";
+                    if (mediaItem.includes("boxFront") || mediaItem.includes("box_front")) return "Box Cover";
+                    if (mediaItem.includes("boxBack")  || mediaItem.includes("box_back"))  return "Back Cover";
+                    if (mediaItem.includes("cartridge")) return "Cartridge";
+                    return "Screenshot";
+                }
                 color: theme.text
                 font {
                     family: subtitleFont.name

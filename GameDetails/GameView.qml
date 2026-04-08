@@ -58,6 +58,9 @@ id: root
         if (game) {
             game.assets.screenshotList.forEach(v => mediaList.push(v));
             game.assets.backgroundList.forEach(v => mediaList.push(v));
+            if (game.assets.boxFront)   mediaList.push(game.assets.boxFront);
+            if (game.assets.boxBack)    mediaList.push(game.assets.boxBack);
+            if (game.assets.cartridge)  mediaList.push(game.assets.cartridge);
         }
 
         return mediaList;
