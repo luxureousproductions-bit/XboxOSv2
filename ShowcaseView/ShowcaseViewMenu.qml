@@ -36,7 +36,9 @@ id: root
     ListMostPlayed  { id: listMostPlayed;  max: settings.ShowcaseColumns }
     ListRecommended { id: listRecommended; max: settings.ShowcaseColumns }
     ListPublisher   { id: listPublisher;   max: settings.ShowcaseColumns; publisher: randoPub }
+    ListDeveloper   { id: listDeveloper;   max: settings.ShowcaseColumns; developer: randoDev }
     ListGenre       { id: listGenre;       max: settings.ShowcaseColumns; genre: randoGenre }
+    ListGenre       { id: listGenre2;      max: settings.ShowcaseColumns; genre: randoGenre2 }
 
     property var featuredCollection: listFavorites
     property var collection1: getCollection(settings.ShowcaseCollection1, settings.ShowcaseCollection1_Thumbnail)
@@ -87,8 +89,14 @@ id: root
             case "Top by Publisher":
                 collection.search = listPublisher;
                 break;
+            case "Top by Developer":
+                collection.search = listDeveloper;
+                break;
             case "Top by Genre":
                 collection.search = listGenre;
+                break;
+            case "Top by Genre 2":
+                collection.search = listGenre2;
                 break;
             case "None":
                 collection.enabled = false;
@@ -106,11 +114,14 @@ id: root
     }
 
     property string randoPub: (Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || '')
-<<<<<<< copilot/update-genre-list-case-sensitivity
+    property string randoDev: (Utils.returnRandom(Utils.uniqueValuesArray('developer')) || '')
     property string randoGenre: (Utils.returnRandom(Utils.uniqueValuesArray('genreList'))[0] || '')
-=======
-    property string randoGenre: (Utils.returnRandom(Utils.uniqueValuesArray('genreList'))[0] || '')             ;
->>>>>>> master
+    property string randoGenre2: {
+        var genres = Utils.uniqueValuesArray('genreList');
+        var filtered = genres.filter(function(g) { return g && g !== randoGenre; });
+        var pick = filtered.length > 0 ? filtered : genres;
+        return (Utils.returnRandom(pick) || [''])[0] || '';
+    }
 
     property bool ftue: featuredCollection.games.count == 0
 
