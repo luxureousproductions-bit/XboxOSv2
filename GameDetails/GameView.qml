@@ -36,6 +36,19 @@ id: root
     property bool canPlayVideo: settings.VideoPreview === "Yes"
     property real detailsOpacity: (settings.DetailsDefault === "Yes") ? 1 : 0
     property bool blurBG: settings.GameBlurBackground === "Yes"
+    property string manualPath: {
+        if (!game || !game.files.count)
+            return "";
+        var filePath = game.files.get(0).path;
+        var slashIdx = filePath.lastIndexOf("/");
+        if (slashIdx < 0)
+            return "";
+        var dir = filePath.substring(0, slashIdx);
+        var fileName = filePath.substring(slashIdx + 1);
+        var dotIdx = fileName.lastIndexOf(".");
+        var fileNameNoExt = (dotIdx > 0) ? fileName.substring(0, dotIdx) : fileName;
+        return "file://" + dir + "/media/manual/" + fileNameNoExt + ".pdf";
+    }
     property string publisherName: {
         if (game !== null && game.publisher !== null) {
             var str = game.publisher;
@@ -517,6 +530,23 @@ id: root
                 }
         }
         
+        Button { 
+        id: buttonManual
+
+            icon: "../assets/images/icon_manual.svg"
+            height: parent.height
+            selected: ListView.isCurrentItem && menu.focus
+            onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
+            onActivated:
+                if (selected) {
+                    sfxAccept.play();
+                    Qt.openUrlExternally(manualPath);
+                } else {
+                    sfxNav.play();
+                    menu.currentIndex = ObjectModel.index;
+                }
+        }
+
         Button { 
         id: button4
 
