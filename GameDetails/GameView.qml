@@ -118,6 +118,20 @@ id: root
         currentHelpbarModel = gameviewHelpModel;
     }
 
+    // Show/hide the PDF manual viewer
+    function showPdf() {
+        sfxAccept.play();
+        pdfScreen.focus = true;
+        pdfScreen.opacity = 1;
+    }
+
+    function closePdf() {
+        sfxBack.play();
+        pdfScreen.opacity = 0;
+        content.focus = true;
+        currentHelpbarModel = gameviewHelpModel;
+    }
+
     onGameChanged: reset();
 
     anchors.fill: parent
@@ -540,7 +554,7 @@ id: root
             onActivated:
                 if (selected) {
                     sfxAccept.play();
-                    Qt.openUrlExternally(manualPath);
+                    showPdf();
                 } else {
                     sfxNav.play();
                     menu.currentIndex = ObjectModel.index;
@@ -696,12 +710,26 @@ id: root
         onClose: closeMedia();
     }
 
+    PdfViewer {
+    id: pdfScreen
+
+        anchors.fill: parent
+        opacity: 0
+        Behavior on opacity { NumberAnimation { duration: 100 } }
+        visible: opacity != 0
+
+        pdfPath: manualPath
+        onClose: closePdf();
+    }
+
     // Input handling
     Keys.onPressed: {
         // Back
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (mediaScreen.visible)
+            if (pdfScreen.visible)
+                closePdf();
+            else if (mediaScreen.visible)
                 closeMedia();
             else
                 previousScreen();
