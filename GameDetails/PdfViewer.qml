@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import QtQuick 2.15
-import QtQuick.Pdf 5.15
+import QtQuick 2.8
+import QtWebView 1.1
 import "../Global"
 
 FocusScope {
@@ -24,33 +24,16 @@ id: root
     signal close
     property string pdfPath: ""
 
-    // Only load the document while the viewer is visible
-    PdfDocument {
-    id: pdfDoc
-
-        source: root.visible && pdfPath !== "" ? pdfPath : ""
-    }
-
     Rectangle {
         anchors.fill: parent
         color: "black"
         opacity: 0.97
     }
 
-    // Loading state
+    // "Manual not found" state – shown when no path is set
     Text {
         anchors.centerIn: parent
-        visible: pdfDoc.status === PdfDocument.Loading
-        text: "Loading manual…"
-        color: "white"
-        font.family: subtitleFont.name
-        font.pixelSize: vpx(20)
-    }
-
-    // Error / not found state
-    Text {
-        anchors.centerIn: parent
-        visible: pdfDoc.status === PdfDocument.Error || (root.visible && pdfPath === "")
+        visible: pdfPath === ""
         text: "Manual not found"
         color: "white"
         font.family: subtitleFont.name
@@ -58,89 +41,74 @@ id: root
         opacity: 0.7
     }
 
-    // Horizontal page list – one page per screen, swipe to navigate
-    ListView {
-    id: pageList
+    // WebView renders the PDF via Android's built-in Chromium WebView.
+    // The view is only created/loaded when the overlay is open and a path exists.
+    Loader {
+    id: webLoader
 
-        focus: true
-        currentIndex: 0
         anchors {
             fill: parent
-            bottomMargin: vpx(40)
+            bottomMargin: vpx(50)
         }
-        visible: pdfDoc.status === PdfDocument.Ready
-        model: pdfDoc.pageCount
-        orientation: ListView.Horizontal
-        clip: true
-        preferredHighlightBegin: 0
-        preferredHighlightEnd: width
-        highlightRangeMode: ListView.StrictlyEnforceRange
-        highlightMoveDuration: 200
-        snapMode: ListView.SnapOneItem
-        keyNavigationWraps: true
+        // Instantiate only while visible and a path is available
+        active: root.visible && pdfPath !== ""
+        sourceComponent: Component {
+            WebView {
+            id: webview
 
-        delegate: PdfPageImage {
-            width: root.width
-            height: root.height - vpx(40)
-            document: pdfDoc
-            pageNumber: index
-            fillMode: Image.PreserveAspectFit
-            asynchronous: true
-        }
-
-        Keys.onLeftPressed:  { sfxNav.play(); decrementCurrentIndex() }
-        Keys.onRightPressed: { sfxNav.play(); incrementCurrentIndex() }
-    }
-
-    // Page dots (shown when ≤ 20 pages)
-    Row {
-    id: blips
-
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors { bottom: parent.bottom; bottomMargin: vpx(10) }
-        spacing: vpx(10)
-        visible: pdfDoc.status === PdfDocument.Ready && pdfDoc.pageCount > 1 && pdfDoc.pageCount <= 20
-        Repeater {
-            model: pdfDoc.pageCount
-            Rectangle {
-                width: vpx(10)
-                height: width
-                color: (pageList.currentIndex === index) ? theme.accent : theme.text
-                radius: width / 2
-                opacity: (pageList.currentIndex === index) ? 1 : 0.5
+                anchors.fill: parent
+                // Reload whenever the path changes (new game selected)
+                url: pdfPath
+                onLoadingChanged: function(loadRequest) {
+                    if (loadRequest.status === WebView.LoadFailedStatus) {
+                        errorText.visible = true;
+                    } else {
+                        errorText.visible = false;
+                    }
+                }
             }
         }
     }
 
-    // Page counter (shown when > 20 pages)
+    // Load error message (shown over the WebView area on failure)
     Text {
-        anchors { bottom: parent.bottom; bottomMargin: vpx(12); horizontalCenter: parent.horizontalCenter }
-        visible: pdfDoc.status === PdfDocument.Ready && pdfDoc.pageCount > 20
-        text: (pageList.currentIndex + 1) + " / " + pdfDoc.pageCount
-        color: theme.text
+    id: errorText
+
+        anchors.centerIn: parent
+        visible: false
+        text: "Could not load manual"
+        color: "white"
         font.family: subtitleFont.name
-        font.pixelSize: vpx(14)
+        font.pixelSize: vpx(20)
         opacity: 0.7
     }
 
-    // Reset to first page whenever a new document is loaded
-    Connections {
-        target: pdfDoc
-        onStatusChanged: {
-            if (pdfDoc.status === PdfDocument.Ready)
-                pageList.currentIndex = 0;
+    // Bottom hint bar
+    Rectangle {
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+        height: vpx(50)
+        color: theme.main
+        opacity: 0.85
+
+        Text {
+            anchors.centerIn: parent
+            text: "Scroll to navigate  •  Back to close"
+            color: theme.text
+            font.family: subtitleFont.name
+            font.pixelSize: vpx(14)
+            opacity: 0.7
         }
+    }
+
+    // Reset the WebView whenever this viewer is opened for a new game
+    onPdfPathChanged: {
+        errorText.visible = false;
     }
 
     // Input handling
     Keys.onPressed: {
         // Back
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
-            event.accepted = true;
-            close();
-        }
-        // Accept also closes (mirrors MediaView behaviour)
-        if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
             close();
         }
@@ -151,8 +119,7 @@ id: root
     id: pdfviewHelpModel
 
         ListElement { name: "Back"; button: "cancel" }
-        ListElement { name: "Prev page"; button: "left" }
-        ListElement { name: "Next page"; button: "right" }
+        ListElement { name: "Scroll"; button: "up" }
     }
 
     onFocusChanged: {
