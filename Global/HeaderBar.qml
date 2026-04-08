@@ -63,9 +63,9 @@ id: root
         }
 
         OpacityMask {
-            anchors.fill: logobg
-            source: logobg
-            maskSource: platformlogo
+            anchors.fill: platformlogo
+            source: platformlogo
+            maskSource: logobg
             // Mouse/touch functionality
             MouseArea {
                 anchors.fill: parent

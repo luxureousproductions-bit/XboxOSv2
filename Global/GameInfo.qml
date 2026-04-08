@@ -73,7 +73,7 @@ id: infocontainer
         Text {
         id: ratingtext
             
-            property real processedRating: gameData ? Math.round(gameData.rating * 100) / 100 : ""
+            property real processedRating: gameData ? Math.round(gameData.rating * 100) / 10  : ""
             width: contentWidth
             height: parent.height
             anchors { left: ratingtitle.right; leftMargin: vpx(5) }

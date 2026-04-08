@@ -106,7 +106,11 @@ id: root
     }
 
     property string randoPub: (Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || '')
+<<<<<<< copilot/update-genre-list-case-sensitivity
     property string randoGenre: (Utils.returnRandom(Utils.uniqueValuesArray('genreList'))[0] || '')
+=======
+    property string randoGenre: (Utils.returnRandom(Utils.uniqueValuesArray('genreList'))[0] || '')             ;
+>>>>>>> master
 
     property bool ftue: featuredCollection.games.count == 0
 
