@@ -33,7 +33,9 @@ id: root
             if (data.assets.boxFront.includes("/header.jpg")) 
             return steamBoxArt(data);
             else {
-            if (data.assets.boxFront != "")
+            if (data.assets.box3d != "")
+                return data.assets.box3d;
+            else if (data.assets.boxFront != "")
                 return data.assets.boxFront;
             else if (data.assets.poster != "")
                 return data.assets.poster;

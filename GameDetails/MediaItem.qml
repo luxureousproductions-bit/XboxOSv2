@@ -56,9 +56,13 @@ id: root
 
                 text: {
                     if (isVideo) return "Video";
+                    if (mediaItem.includes("box3d") || mediaItem.includes("box_3d") || mediaItem.includes("3dbox")) return "3D Box Art";
+                    if (mediaItem.includes("screenshottitle") || mediaItem.includes("screenshot_title") || mediaItem.includes("titlescreen")) return "Title Screen";
+                    if (mediaItem.includes("/images/") || mediaItem.includes("miximage") || mediaItem.includes("mix_image")) return "Mix Image";
                     if (mediaItem.includes("boxFront") || mediaItem.includes("box_front")) return "Box Cover";
                     if (mediaItem.includes("boxBack")  || mediaItem.includes("box_back"))  return "Back Cover";
                     if (mediaItem.includes("cartridge")) return "Cartridge";
+                    if (mediaItem.includes("background") || mediaItem.includes("fanart")) return "Fanart";
                     return "Screenshot";
                 }
                 color: theme.text
