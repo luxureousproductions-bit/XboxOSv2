@@ -57,13 +57,13 @@ id: root
                 text: {
                     if (isVideo) return "Video";
                     if (mediaItem.includes("background") || mediaItem.includes("fanart")) return "Fanart";
-                    if (mediaItem.includes("screenshottitle") || mediaItem.includes("screenshot_title") || mediaItem.includes("titlescreen")) return "Title Screenshot";
+                    if (mediaItem.includes("titlescreen")) return "Title Screenshot";
                     if (mediaItem.includes("box3d") || mediaItem.includes("box_3d") || mediaItem.includes("3dbox")) return "3D Box";
                     if (mediaItem.includes("box2dFront") || mediaItem.includes("box2d_front")) return "Box Art";
                     if (mediaItem.includes("boxFront") || mediaItem.includes("box_front")) return "Box Art";
                     if (mediaItem.includes("box2dBack") || mediaItem.includes("box2d_back")) return "Back Box";
                     if (mediaItem.includes("boxBack")  || mediaItem.includes("box_back"))  return "Back Box";
-                    if (mediaItem.includes("cartridge") || mediaItem.includes("support")) return "Cartridge";
+                    if (mediaItem.includes("cartridge")) return "Cartridge";
                     if (mediaItem.includes("miximage") || mediaItem.includes("mix_image")) return "Miximage";
                     if (mediaItem.includes("wheel")) return "Wheel";
                     return "Screenshot";

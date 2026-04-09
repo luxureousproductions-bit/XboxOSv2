@@ -49,8 +49,8 @@ id: root
                 return data.assets.banner;
             else if (data.assets.tile != "")
                 return data.assets.tile;
-            else if (data.assets.support != "")
-                return data.assets.support;
+            else if (data.assets.cartridge != "")
+                return data.assets.cartridge;
             else if (data.assets.logo != "")
                 return data.assets.logo;
             }
