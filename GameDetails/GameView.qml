@@ -716,7 +716,7 @@ id: root
         anchors.fill: parent
         opacity: 0
         Behavior on opacity { NumberAnimation { duration: 100 } }
-        visible: opacity != 0
+        visible: opacity !== 0
 
         pdfPath: manualPath
         onClose: closePdf();
