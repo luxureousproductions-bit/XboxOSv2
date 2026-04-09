@@ -139,6 +139,10 @@ id: root
         ListElement { name: "Scroll"; button: "up" }
     }
 
+    onPdfPathChanged: {
+        pdfFlickable.contentY = 0;
+    }
+
     onFocusChanged: {
         if (focus) {
             currentHelpbarModel = pdfviewHelpModel;
