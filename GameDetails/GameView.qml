@@ -64,7 +64,7 @@ id: root
             if (game.assets.boxFront)   mediaList.push(game.assets.boxFront);
             if (game.assets.box2dBack)  mediaList.push(game.assets.box2dBack);
             if (game.assets.boxBack)    mediaList.push(game.assets.boxBack);
-            if (game.assets.cartridge)  mediaList.push(game.assets.cartridge);
+            if (game.assets.support)    mediaList.push(game.assets.support);
             if (game.assets.miximage)   mediaList.push(game.assets.miximage);
             if (game.assets.wheel)      mediaList.push(game.assets.wheel);
         }
