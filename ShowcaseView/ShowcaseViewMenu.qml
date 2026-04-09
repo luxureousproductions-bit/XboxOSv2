@@ -46,6 +46,7 @@ id: root
     property var collection3: getCollection(settings.ShowcaseCollection3, settings.ShowcaseCollection3_Thumbnail)
     property var collection4: getCollection(settings.ShowcaseCollection4, settings.ShowcaseCollection4_Thumbnail)
     property var collection5: getCollection(settings.ShowcaseCollection5, settings.ShowcaseCollection5_Thumbnail)
+    property var collection6: getCollection(settings.ShowcaseCollection6, settings.ShowcaseCollection6_Thumbnail)
 
     function getCollection(collectionName, collectionThumbnail) {
         var collection = {
@@ -687,6 +688,34 @@ id: root
             property bool selected: ListView.isCurrentItem
             property var currentList: list5
             property var collection: collection5
+
+            enabled: collection.enabled
+            visible: collection.enabled
+
+            height: collection.height
+
+            itemWidth: collection.itemWidth
+            itemHeight: collection.itemHeight
+
+            title: collection.title
+            search: collection.search
+
+            focus: selected
+            width: root.width - globalMargin * 2
+            x: globalMargin - vpx(8)
+
+            savedIndex: (storedHomePrimaryIndex === currentList.ObjectModel.index) ? storedHomeSecondaryIndex : 0
+
+            onActivateSelected: storedHomeSecondaryIndex = currentIndex;
+            onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
+            onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+        }
+
+        HorizontalCollection {
+        id: list6
+            property bool selected: ListView.isCurrentItem
+            property var currentList: list6
+            property var collection: collection6
 
             enabled: collection.enabled
             visible: collection.enabled
