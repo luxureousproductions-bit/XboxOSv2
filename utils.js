@@ -2,8 +2,8 @@
 // Copyright (C) 2018-2020 Seth Powell 
 //
 // This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
+// it under the terms of the GNU General Public License as published by the
+// Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // This program is distributed in the hope that it will be useful,
@@ -148,9 +148,6 @@ function processPlatformName(platform) {
     case "sega mega drive":
       return "megadrive";
       break;
-    case "sega genesis":
-      return "genesis";
-      break;
     case "microsoft msx":
       return "msx";
       break;
@@ -168,9 +165,6 @@ function processPlatformName(platform) {
       break;
     case "snk neo geo cd":
       return "neogeocd";
-      break;
-    case "nintendo 64":
-      return "segacd";
       break;
     case "nintendo entertainment system":
       return "nes";
@@ -210,9 +204,6 @@ function processPlatformName(platform) {
       break;
     case "super nintendo entertainment system":
       return "snes";
-      break;
-    case "sega cd":
-      return "segacd";
       break;
     case "nintendo wii":
       return "wii";
