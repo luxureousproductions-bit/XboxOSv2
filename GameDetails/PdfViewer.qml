@@ -15,7 +15,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import QtQuick 2.8
-import QtWebView 1.1
+import QtQuick.Pdf 5.15
 import "../Global"
 
 FocusScope {
@@ -26,8 +26,15 @@ id: root
 
     Rectangle {
         anchors.fill: parent
-        color: "black"
+        color: theme.main
         opacity: 0.97
+    }
+
+    // Load PDF only while the overlay is open and a path is set
+    PdfDocument {
+    id: pdfDoc
+
+        source: root.visible && pdfPath !== "" ? pdfPath : ""
     }
 
     // "Manual not found" state – shown when no path is set
@@ -35,52 +42,55 @@ id: root
         anchors.centerIn: parent
         visible: pdfPath === ""
         text: "Manual not found"
-        color: "white"
+        color: theme.text
         font.family: subtitleFont.name
         font.pixelSize: vpx(20)
         opacity: 0.7
     }
 
-    // WebView renders the PDF via Android's built-in Chromium WebView.
-    // The view is only created/loaded when the overlay is open and a path exists.
-    Loader {
-    id: webLoader
+    // Load error message
+    Text {
+    id: errorText
+
+        anchors.centerIn: parent
+        visible: pdfPath !== "" && pdfDoc.status === PdfDocument.Error
+        text: "Could not load manual"
+        color: theme.text
+        font.family: subtitleFont.name
+        font.pixelSize: vpx(20)
+        opacity: 0.7
+    }
+
+    // Scrollable multi-page PDF viewer
+    Flickable {
+    id: pdfFlickable
 
         anchors {
             fill: parent
             bottomMargin: vpx(50)
         }
-        // Instantiate only while visible and a path is available
-        active: root.visible && pdfPath !== ""
-        sourceComponent: Component {
-            WebView {
-            id: webview
+        visible: pdfDoc.status === PdfDocument.Ready
+        contentWidth: width
+        contentHeight: pageColumn.height
+        clip: true
 
-                anchors.fill: parent
-                // Reload whenever the path changes (new game selected)
-                url: pdfPath
-                onLoadingChanged: function(loadRequest) {
-                    if (loadRequest.status === WebView.LoadFailedStatus) {
-                        errorText.visible = true;
-                    } else {
-                        errorText.visible = false;
-                    }
+        Column {
+        id: pageColumn
+
+            width: pdfFlickable.width
+
+            Repeater {
+                model: pdfDoc.status === PdfDocument.Ready ? pdfDoc.pageCount : 0
+
+                PdfPageImage {
+                    document: pdfDoc
+                    currentPage: index
+                    width: pageColumn.width
+                    height: implicitWidth > 0 && implicitHeight > 0 ? Math.round(width * implicitHeight / implicitWidth) : 0
+                    fillMode: Image.PreserveAspectFit
                 }
             }
         }
-    }
-
-    // Load error message (shown over the WebView area on failure)
-    Text {
-    id: errorText
-
-        anchors.centerIn: parent
-        visible: false
-        text: "Could not load manual"
-        color: "white"
-        font.family: subtitleFont.name
-        font.pixelSize: vpx(20)
-        opacity: 0.7
     }
 
     // Bottom hint bar
@@ -100,11 +110,6 @@ id: root
         }
     }
 
-    // Reset the WebView whenever this viewer is opened for a new game
-    onPdfPathChanged: {
-        errorText.visible = false;
-    }
-
     // Input handling
     Keys.onPressed: {
         // Back
@@ -112,6 +117,18 @@ id: root
             event.accepted = true;
             close();
         }
+    }
+
+    // Controller d-pad scrolling
+    Keys.onUpPressed: {
+        pdfFlickable.contentY = Math.max(0, pdfFlickable.contentY - vpx(100));
+    }
+
+    Keys.onDownPressed: {
+        pdfFlickable.contentY = Math.min(
+            Math.max(0, pdfFlickable.contentHeight - pdfFlickable.height),
+            pdfFlickable.contentY + vpx(100)
+        );
     }
 
     // Helpbar buttons
