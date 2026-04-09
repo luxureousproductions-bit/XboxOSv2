@@ -36,19 +36,6 @@ id: root
     property bool canPlayVideo: settings.VideoPreview === "Yes"
     property real detailsOpacity: (settings.DetailsDefault === "Yes") ? 1 : 0
     property bool blurBG: settings.GameBlurBackground === "Yes"
-    property string manualPath: {
-        if (!game || !game.files.count)
-            return "";
-        var filePath = game.files.get(0).path;
-        var slashIdx = filePath.lastIndexOf("/");
-        if (slashIdx < 0)
-            return "";
-        var dir = filePath.substring(0, slashIdx);
-        var fileName = filePath.substring(slashIdx + 1);
-        var dotIdx = fileName.lastIndexOf(".");
-        var fileNameNoExt = (dotIdx > 0) ? fileName.substring(0, dotIdx) : fileName;
-        return "file://" + dir + "/media/manual/" + fileNameNoExt + ".pdf";
-    }
     property string publisherName: {
         if (game !== null && game.publisher !== null) {
             var str = game.publisher;
@@ -114,20 +101,6 @@ id: root
     function closeMedia() {
         sfxBack.play();
         mediaScreen.opacity = 0;
-        content.focus = true;
-        currentHelpbarModel = gameviewHelpModel;
-    }
-
-    // Show/hide the PDF manual viewer
-    function showPdf() {
-        sfxAccept.play();
-        pdfScreen.focus = true;
-        pdfScreen.opacity = 1;
-    }
-
-    function closePdf() {
-        sfxBack.play();
-        pdfScreen.opacity = 0;
         content.focus = true;
         currentHelpbarModel = gameviewHelpModel;
     }
@@ -545,23 +518,6 @@ id: root
         }
         
         Button { 
-        id: buttonManual
-
-            icon: "../assets/images/icon_manual.svg"
-            height: parent.height
-            selected: ListView.isCurrentItem && menu.focus
-            onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
-            onActivated:
-                if (selected) {
-                    sfxAccept.play();
-                    showPdf();
-                } else {
-                    sfxNav.play();
-                    menu.currentIndex = ObjectModel.index;
-                }
-        }
-
-        Button { 
         id: button4
 
             //text: "Back"
@@ -710,26 +666,12 @@ id: root
         onClose: closeMedia();
     }
 
-    PdfViewer {
-    id: pdfScreen
-
-        anchors.fill: parent
-        opacity: 0
-        Behavior on opacity { NumberAnimation { duration: 100 } }
-        visible: opacity !== 0
-
-        pdfPath: manualPath
-        onClose: closePdf();
-    }
-
     // Input handling
     Keys.onPressed: {
         // Back
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (pdfScreen.visible)
-                closePdf();
-            else if (mediaScreen.visible)
+            if (mediaScreen.visible)
                 closeMedia();
             else
                 previousScreen();
