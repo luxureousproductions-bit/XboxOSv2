@@ -137,6 +137,14 @@ id: root
             settingName: "Collection 5 - Thumbnail"
             setting: "Wide,Tall,Square"
         }
+        ListElement {
+            settingName: "Collection 6"
+            setting: "None,Favorites,Recently Played,Most Played,Recommended,Top by Publisher,Top by Developer,Top by Genre,Top by Genre 2"
+        }
+        ListElement {
+            settingName: "Collection 6 - Thumbnail"
+            setting: "Wide,Tall,Square"
+        }
 
     }
 
