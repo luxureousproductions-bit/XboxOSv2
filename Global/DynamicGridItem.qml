@@ -22,7 +22,7 @@ id: root
     
     // NOTE: This is technically duplicated from utils.js but importing that file into every delegate causes crashes
     function steamAppID (gameData) {
-        var str = gameData.assets.boxFront.split("header");
+        var str = (gameData.assets.boxFront || "").split("header");
         return str[0];
     }
 
@@ -33,7 +33,7 @@ id: root
 
     function logo(data) {
     if (data != null) {
-        if (data.assets.boxFront.includes("header.jpg")) 
+        if (data.assets.boxFront && data.assets.boxFront.includes("header.jpg")) 
             return steamLogo(data);
         else {
             if (data.assets.logo != "")

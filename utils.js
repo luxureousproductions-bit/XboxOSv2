@@ -301,7 +301,7 @@ function steamHeader(gameData) {
 
 function boxArt(data) {
   if (data != null) {
-    if (data.assets.boxFront.includes("/header.jpg")) 
+    if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg")) 
       return steamBoxArt(data);
     else {
       if (data.assets.box3d != "")
@@ -331,7 +331,7 @@ function boxArt(data) {
 
 function logo(data) {
   if (data != null) {
-    if (data.assets.boxFront.includes("/header.jpg")) 
+    if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg")) 
       return steamLogo(data);
     else {
       if (data.assets.logo != "")
@@ -343,7 +343,7 @@ function logo(data) {
 
 function fanArt(data) {
   if (data != null) {
-    if (data.assets.boxFront.includes("/header.jpg")) 
+    if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg")) 
       return steamHero(data);
     else {
       if (data.assets.background != "")

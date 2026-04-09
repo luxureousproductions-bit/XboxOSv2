@@ -57,7 +57,7 @@ id: root
 
         if (game) {
             game.assets.screenshotList.forEach(v => mediaList.push(v));
-            if (game.assets.screenshottitle) mediaList.push(game.assets.screenshottitle);
+            if (game.assets.titlescreen) mediaList.push(game.assets.titlescreen);
             game.assets.backgroundList.forEach(v => mediaList.push(v));
             if (game.assets.box3d)      mediaList.push(game.assets.box3d);
             if (game.assets.box2dFront) mediaList.push(game.assets.box2dFront);
@@ -67,6 +67,10 @@ id: root
             if (game.assets.support)    mediaList.push(game.assets.support);
             if (game.assets.miximage)   mediaList.push(game.assets.miximage);
             if (game.assets.wheel)      mediaList.push(game.assets.wheel);
+            if (game.assets.poster)     mediaList.push(game.assets.poster);
+            if (game.assets.banner)     mediaList.push(game.assets.banner);
+            if (game.assets.tile)       mediaList.push(game.assets.tile);
+            if (game.assets.logo)       mediaList.push(game.assets.logo);
         }
 
         return mediaList;
@@ -366,7 +370,7 @@ id: root
             id: boxart
 
                 source: Utils.boxArt(game);
-                //width: vpx(350)
+                width: vpx(350)
                 height: parent.height
                 fillMode: Image.PreserveAspectFit
                 asynchronous: true
