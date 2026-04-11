@@ -29,10 +29,10 @@ It is recommended to use [Skraper.net](http://www.skraper.net/) to acquire media
 - box2d (front cover)
 - box2dback (back cover)
 - box3d (3D cover)
-- wheel
+- wheel (logo)
 - miximage
-- cartridge
-- titlescreen (title screen image)
+- support (cartridge)
+- screenshottitle (title screen image)
 
 Skraper will place these in your roms folder under a subfolder called media.
 
