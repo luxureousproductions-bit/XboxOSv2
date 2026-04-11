@@ -63,7 +63,7 @@ id: root
                     if (mediaItem.includes("boxFront") || mediaItem.includes("box_front")) return "Box Art";
                     if (mediaItem.includes("box2dBack") || mediaItem.includes("box2dback") || mediaItem.includes("box2d_back")) return "Back Box";
                     if (mediaItem.includes("boxBack")  || mediaItem.includes("box_back"))  return "Back Box";
-                    if (mediaItem.includes("cartridge")) return "Cartridge";
+                    if (mediaItem.includes("cartridge") || mediaItem.includes("support")) return "Cartridge";
                     if (mediaItem.includes("miximage") || mediaItem.includes("mix_image")) return "Miximage";
                     if (mediaItem.includes("wheel")) return "Logo";
                     return "Screenshot";
