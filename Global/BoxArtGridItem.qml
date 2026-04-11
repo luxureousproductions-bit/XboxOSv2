@@ -30,12 +30,12 @@ id: root
     }
     function boxArt(data) {
         if (data != null) {
-            if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg")) 
-            return steamBoxArt(data);
-            else {
             if (data.assets.box3d)
                 return data.assets.box3d;
-            else if (data.assets.box2dFront)
+            if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg")) 
+                return steamBoxArt(data);
+            else {
+            if (data.assets.box2dFront)
                 return data.assets.box2dFront;
             else if (data.assets.boxFront)
                 return data.assets.boxFront;
