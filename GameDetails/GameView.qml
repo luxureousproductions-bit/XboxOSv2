@@ -45,7 +45,31 @@ id: root
             return ""
         }
     }
-    
+
+    property string manualPath: {
+        if (!game) return "";
+        var gamePath = game.path.toString();
+        if (gamePath.startsWith("file://")) gamePath = gamePath.slice(7);
+        var lastSlash = gamePath.lastIndexOf('/');
+        if (lastSlash < 0) return "";
+        var safeTitle = game.title.replace(/[\/\\:*?"<>|]/g, "_");
+        return gamePath.substring(0, lastSlash) + "/media/manual/" + safeTitle + ".pdf";
+    }
+
+    property bool manualAvailable: false
+
+    onManualPathChanged: {
+        manualAvailable = false;
+        if (!manualPath) return;
+        var req = new XMLHttpRequest();
+        req.onreadystatechange = function() {
+            if (req.readyState === XMLHttpRequest.DONE)
+                manualAvailable = (req.status === 200);
+        };
+        req.open("HEAD", "file://" + manualPath, true);
+        req.send();
+    }
+
     ListPublisher { id: publisherCollection; publisher: game && game.publisher ? game.publisher : ""; max: 10 }
     ListGenre { id: genreCollection; genre: game ? game.genreList[0] : ""; max: 10 }
 
@@ -529,6 +553,24 @@ id: root
                 }
         }
         
+        Button {
+        id: manualButton
+
+            icon: "../assets/images/icon_manual.svg"
+            height: parent.height
+            visible: manualAvailable
+            selected: ListView.isCurrentItem && menu.focus
+            onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
+            onActivated:
+                if (selected) {
+                    sfxAccept.play();
+                    Qt.openUrlExternally("file://" + manualPath);
+                } else {
+                    sfxNav.play();
+                    menu.currentIndex = ObjectModel.index;
+                }
+        }
+
         Button { 
         id: button4
 
