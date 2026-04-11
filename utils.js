@@ -295,6 +295,7 @@ function get3dBoxArt(data) {
     if (data.assets.box3d)   return data.assets.box3d;
     if (data.assets.box_3d)  return data.assets.box_3d;
     if (data.assets["3dbox"]) return data.assets["3dbox"];
+    if (data.assets.boxfull) return data.assets.boxfull;
   }
   return "";
 }

@@ -58,7 +58,7 @@ id: root
                     if (isVideo) return "Video";
                     if (mediaItem.includes("background") || mediaItem.includes("fanart")) return "Fanart";
                     if (mediaItem.includes("titlescreen") || mediaItem.includes("screenshottitle")) return "Title Screenshot";
-                    if (mediaItem.includes("box3d") || mediaItem.includes("box_3d") || mediaItem.includes("3dbox")) return "3D Box";
+                    if (mediaItem.includes("box3d") || mediaItem.includes("box_3d") || mediaItem.includes("3dbox") || mediaItem.includes("boxfull")) return "3D Box";
                     if (mediaItem.includes("box2dFront") || mediaItem.includes("box2dfront") || mediaItem.includes("box2d_front")) return "Box Art";
                     if (mediaItem.includes("boxFront") || mediaItem.includes("box_front")) return "Box Art";
                     if (mediaItem.includes("box2dBack") || mediaItem.includes("box2dback") || mediaItem.includes("box2d_back")) return "Back Box";
