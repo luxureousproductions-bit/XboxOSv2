@@ -30,8 +30,9 @@ id: root
     }
     function boxArt(data) {
         if (data != null) {
-            if (data.assets.box3d)
-                return data.assets.box3d;
+            if (data.assets.box3d)        return data.assets.box3d;
+            if (data.assets.box_3d)       return data.assets.box_3d;
+            if (data.assets["3dbox"])     return data.assets["3dbox"];
             if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg")) 
                 return steamBoxArt(data);
             else {
@@ -53,6 +54,8 @@ id: root
                 return data.assets.cartridge;
             else if (data.assets.miximage)
                 return data.assets.miximage;
+            else if (data.assets.mix_image)
+                return data.assets.mix_image;
             else if (data.assets.logo)
                 return data.assets.logo;
             }
