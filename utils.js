@@ -290,10 +290,28 @@ function steamHeader(gameData) {
   return steamAppID(gameData) + "/header.jpg"
 }
 
+function get3dBoxArt(data) {
+  if (data != null) {
+    if (data.assets.box3d)   return data.assets.box3d;
+    if (data.assets.box_3d)  return data.assets.box_3d;
+    if (data.assets["3dbox"]) return data.assets["3dbox"];
+  }
+  return "";
+}
+
+function getMiximage(data) {
+  if (data != null) {
+    if (data.assets.miximage)   return data.assets.miximage;
+    if (data.assets.mix_image)  return data.assets.mix_image;
+  }
+  return "";
+}
+
 function boxArt(data) {
   if (data != null) {
-    if (data.assets.box3d)
-      return data.assets.box3d;
+    var art3d = get3dBoxArt(data);
+    if (art3d)
+      return art3d;
     if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg")) 
       return steamBoxArt(data);
     else {
@@ -313,8 +331,8 @@ function boxArt(data) {
         return data.assets.tile;
       else if (data.assets.cartridge)
         return data.assets.cartridge;
-      else if (data.assets.miximage)
-        return data.assets.miximage;
+      else if (getMiximage(data))
+        return getMiximage(data);
       else if (data.assets.logo)
         return data.assets.logo;
     }
