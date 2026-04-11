@@ -51,6 +51,8 @@ id: root
                 return data.assets.tile;
             else if (data.assets.cartridge)
                 return data.assets.cartridge;
+            else if (data.assets.miximage)
+                return data.assets.miximage;
             else if (data.assets.logo)
                 return data.assets.logo;
             }
