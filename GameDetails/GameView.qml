@@ -36,6 +36,7 @@ id: root
     property bool canPlayVideo: settings.VideoPreview === "Yes"
     property real detailsOpacity: (settings.DetailsDefault === "Yes") ? 1 : 0
     property bool blurBG: settings.GameBlurBackground === "Yes"
+    property bool manualAvailable: false
     property string publisherName: {
         if (game !== null && game.publisher !== null) {
             var str = game.publisher;
@@ -117,7 +118,32 @@ id: root
         currentHelpbarModel = gameviewHelpModel;
     }
 
-    onGameChanged: reset();
+    // Check whether a PDF manual exists for the current game in media/manual/{slug}.pdf
+    function checkManualExists() {
+        if (!game) {
+            manualAvailable = false;
+            return;
+        }
+        var manualUrl = Qt.resolvedUrl("../media/manual/" + game.slug + ".pdf");
+        var xhr = new XMLHttpRequest();
+        // onload fires when the local file is successfully read;
+        // onerror fires when the file is not found or cannot be read.
+        xhr.onload  = function() { manualAvailable = true; };
+        xhr.onerror = function() { manualAvailable = false; };
+        xhr.open("GET", manualUrl, true);
+        xhr.send();
+    }
+
+    // Open the game manual PDF with an external viewer app
+    function openManual() {
+        if (!game) return;
+        var manualUrl = Qt.resolvedUrl("../media/manual/" + game.slug + ".pdf");
+        Qt.openUrlExternally(manualUrl);
+    }
+
+    onGameChanged: { reset(); checkManualExists(); }
+
+    Component.onCompleted: checkManualExists();
 
     anchors.fill: parent
 
@@ -523,6 +549,26 @@ id: root
                 if (selected) {
                     sfxToggle.play();
                     game.favorite = !game.favorite;
+                } else {
+                    sfxNav.play();
+                    menu.currentIndex = ObjectModel.index;
+                }
+        }
+
+        Button {
+        id: buttonManual
+
+            icon: "../assets/images/icon_manual.svg"
+            height: parent.height
+            // Hide (zero width + invisible) when no manual is available so it takes no space
+            visible: manualAvailable
+            width: manualAvailable ? vpx(50) : 0
+            selected: ListView.isCurrentItem && menu.focus
+            onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
+            onActivated:
+                if (selected) {
+                    sfxAccept.play();
+                    openManual();
                 } else {
                     sfxNav.play();
                     menu.currentIndex = ObjectModel.index;
