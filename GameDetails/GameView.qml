@@ -532,6 +532,24 @@ id: root
         Button { 
         id: button4
 
+            visible: game && game.assets.manual ? true : false
+            icon: "../assets/images/icon_manual.svg"
+            height: parent.height
+            selected: ListView.isCurrentItem && menu.focus
+            onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
+            onActivated: 
+                if (selected) {
+                    sfxAccept.play();
+                    Qt.openUrlExternally(game.assets.manual);
+                } else {
+                    sfxNav.play();
+                    menu.currentIndex = ObjectModel.index;
+                }
+        }
+
+        Button { 
+        id: button5
+
             //text: "Back"
             icon: "../assets/images/icon_back.svg"
             height: parent.height
