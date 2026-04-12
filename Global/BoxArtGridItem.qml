@@ -33,6 +33,9 @@ id: root
             if (data.assets.box3d)        return data.assets.box3d;
             if (data.assets.box_3d)       return data.assets.box_3d;
             if (data.assets["3dbox"])     return data.assets["3dbox"];
+            if (data.assets["3d_box"])    return data.assets["3d_box"];
+            if (data.assets["box-3d"])    return data.assets["box-3d"];
+            if (data.assets["3d-box"])    return data.assets["3d-box"];
             if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg")) 
                 return steamBoxArt(data);
             else {
