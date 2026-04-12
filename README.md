@@ -1,11 +1,9 @@
 # XboxOSv2 (a fork of a fork of gameOS)
+<img width="1920" height="1080" alt="Screenshot_20260412-124412" src="https://github.com/user-attachments/assets/591b52ab-6b1a-4ca4-ba8f-6a9f1ef5f051" />
+<img width="1920" height="1080" alt="Screenshot_20260412-124438" src="https://github.com/user-attachments/assets/a38aa6a4-2410-4732-af4a-84df2a19502d" />
+<img width="1920" height="1080" alt="Screenshot_20260412-124726" src="https://github.com/user-attachments/assets/b9b028ae-902a-4f1a-b345-f066cafd2014" />
+<img width="1920" height="1080" alt="Screenshot_20260412-124755" src="https://github.com/user-attachments/assets/31a6e08c-ea96-4dce-bedd-70c5e63d9418" />
 
-![gameOS Pegasus theme 1](https://i.imgur.com/Cb31gtf.png)
-![gameOS Pegasus theme 2](https://i.imgur.com/19DZEJ1.jpg)
-![gameOS Pegasus theme 3](https://i.imgur.com/x5ATDSx.png)
-![gameOS Pegasus theme 4](https://i.imgur.com/KLz2mUE.png)
-![gameOS Pegasus theme 5](https://i.imgur.com/pRa3o3I.png)
-![gameOS Pegasus theme 6](https://news.xbox.com/en-us/wp-content/uploads/sites/2/2020/08/Xbox-Visual-Refesh-Style-Guide.jpg?w=1200)
 
 ## XboxOsv2 theme for Pegasus Frontend
 
@@ -13,7 +11,8 @@ IMPORTANT: This is a fork of [gameOS](https://github.com/PlayingKarrde/gameOS/re
 
 ## Installation
 
-[Download the latest version](https://github.com/alfredolvera/XboxOS/releases/latest) and extract it in your [Pegasus theme directory](http://pegasus-frontend.org/docs/user-guide/installing-themes/).
+<img width="1920" height="1080" alt="Screenshot_20260412-124412" src="https://github.com/user-attachments/assets/57c1e45e-acaa-4902-ab72-10745b43fc66" />
+download latest release and extract it in your [Pegasus theme directory](http://pegasus-frontend.org/docs/user-guide/installing-themes/).
 
 Windows users may need to install the [K-lite Codec Pack](https://www.codecguide.com/download_kl.htm) to get video playback working.
 
@@ -23,7 +22,7 @@ IMPORTANT: You need to have the latest version of Pegasus installed (not the cur
 
 It is recommended to use [Skraper.net](http://www.skraper.net/) to acquire media assets for this theme. These are the minimum requirements for media scraping, although adding more could be useful for greater visual variety:
 
-- video
+- videos
 - screenshot
 - fanart
 - box2dfront (front cover)
