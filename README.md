@@ -45,7 +45,7 @@ XboxOsv2 begins with major improvements over prior forks, including:
 - Verified and improved art asset priority logic in the showcase view
 - Preserves original genre casing and displays a genre
 - added a top by developer list and genre2 list
-- Adds support for box art (front/back/3D/mixed), cartridge, and new titlescreen media to game details and showcase views
+- Adds support for box art (front/back), cartridge, and new titlescreen media to game details and showcase views
 - Improves asset fallback chains (for box art, wheel, 2D assets) for robust display
 - Adds a sixth configurable showcase collection to the home screen
 - Fixes media asset key mismatch issues (e.g., screenshottitle → titlescreen, support → cartridge)
