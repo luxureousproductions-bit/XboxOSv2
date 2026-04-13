@@ -24,6 +24,7 @@ FocusScope {
 id: root
 
     property bool searchActive
+    property int filteredCount: currentCollection.games.count
 
     onFocusChanged: buttonbar.currentIndex = 0;
 
@@ -50,10 +51,10 @@ id: root
         id: platformlogo
 
             anchors {
-                top: parent.top; topMargin: vpx(20)
-                bottom: parent.bottom; bottomMargin: vpx(20)
+                top: parent.top; topMargin: vpx(15)
                 left: parent.left; leftMargin: globalMargin
             }
+            height: vpx(45)
             fillMode: Image.PreserveAspectFit
             source: "../assets/images/logospng/" + Utils.processPlatformName(currentCollection.shortName) + ".png"
             sourceSize: Qt.size(parent.width, parent.height)
@@ -81,11 +82,11 @@ id: root
             text: currentCollection.name
             
             anchors {
-                top:    parent.top;
-                left:   parent.left;    leftMargin: globalMargin
+                top:    parent.top;    topMargin: vpx(15)
+                left:   parent.left;   leftMargin: globalMargin
                 right:  parent.right
-                bottom: parent.bottom
             }
+            height: vpx(45)
             
             color: theme.text
             font.family: titleFont.name
@@ -321,6 +322,22 @@ id: root
                 left: parent.left; top: parent.top; topMargin: vpx(15)
             }
             
+        }
+
+        // Game count label — displayed on the left side below the collection logo
+        Text {
+        id: gameCountLabel
+
+            anchors {
+                top:  platformlogo.bottom; topMargin: vpx(4)
+                left: parent.left;         leftMargin: globalMargin
+            }
+            text: filteredCount + " game" + (filteredCount !== 1 ? "s" : "")
+            color: theme.text
+            opacity: 0.7
+            font.family: subtitleFont.name
+            font.pixelSize: vpx(18)
+            font.bold: true
         }
         
     }

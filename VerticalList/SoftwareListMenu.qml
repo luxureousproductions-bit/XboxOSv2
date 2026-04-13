@@ -58,7 +58,7 @@ id: root
             left:   parent.left
             right:  parent.right
         }
-        height: vpx(75)
+        height: vpx(95)
     }
     
     // Software list
