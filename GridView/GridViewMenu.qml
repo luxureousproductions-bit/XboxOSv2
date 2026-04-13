@@ -194,6 +194,7 @@ id: root
         id: headercontainer
 
             anchors.fill: parent
+            filteredCount: list.games.count
         }
         Keys.onDownPressed: {
             sfxNav.play();
