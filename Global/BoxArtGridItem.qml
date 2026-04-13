@@ -36,10 +36,10 @@ id: root
             if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg")) 
                 return steamBoxArt(data);
             else {
-            if (data.assets.box2dFront)
-                return data.assets.box2dFront;
-            else if (data.assets.boxFront)
+            if (data.assets.boxFront)
                 return data.assets.boxFront;
+            else if (data.assets.box2dFront)
+                return data.assets.box2dFront;
             else if (data.assets.box2dBack)
                 return data.assets.box2dBack;
             else if (data.assets.boxBack)
