@@ -16,6 +16,7 @@
 
 import QtQuick 2.0
 import QtGraphicalEffects 1.0
+import QtMultimedia 5.9
 
 Item {
 id: root
@@ -30,6 +31,19 @@ id: root
     scale: selected ? 1.05 : 1
     Behavior on scale { NumberAnimation { duration: 100 } }
     z: selected ? 10 : 1
+
+    Component {
+    id: videoPreviewWrapper
+
+        Video {
+            anchors.fill: parent
+            source: mediaItem
+            fillMode: VideoOutput.PreserveAspectCrop
+            muted: true
+            loops: MediaPlayer.Infinite
+            autoPlay: true
+        }
+    }
 
     Image {
     id: border
@@ -95,7 +109,7 @@ id: root
 
             anchors.fill: parent
             color: theme.secondary
-            visible: isVideo
+            visible: isVideo && !selected
         }
 
         Image {
@@ -126,7 +140,15 @@ id: root
             anchors.margins: vpx(30)
             source: iconFill
             maskSource: mask
-            visible: isVideo
+            visible: isVideo && !selected
+        }
+
+        Loader {
+        id: videoPreviewLoader
+
+            anchors.fill: parent
+            sourceComponent: selected && isVideo ? videoPreviewWrapper : undefined
+            asynchronous: true
         }
 
         Rectangle {
