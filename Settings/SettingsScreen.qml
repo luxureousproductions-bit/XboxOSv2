@@ -210,6 +210,10 @@ id: root
             settingName: "Show scanlines"
             setting: "Yes,No"
         }
+        ListElement {
+            settingName: "Box Art"
+            setting: "2D,3D,Miximage"
+        }
     }
 
     property var gamePage: {

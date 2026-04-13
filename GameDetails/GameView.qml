@@ -59,8 +59,6 @@ id: root
             game.assets.screenshotList.forEach(v => mediaList.push(v));
             if (game.assets.titlescreen) mediaList.push(game.assets.titlescreen);
             game.assets.backgroundList.forEach(v => mediaList.push(v));
-            var art3d = Utils.get3dBoxArt(game);
-            if (art3d)                  mediaList.push(art3d);
             if (game.assets.box2dFront) mediaList.push(game.assets.box2dFront);
             if (game.assets.boxFront)   mediaList.push(game.assets.boxFront);
             if (game.assets.box2dBack)  mediaList.push(game.assets.box2dBack);
@@ -371,7 +369,7 @@ id: root
             Image {
             id: boxart
 
-                source: Utils.boxArt(game);
+                source: Utils.gameDetailsBoxArt(game, settings.BoxArt);
                 width: vpx(350)
                 height: parent.height
                 fillMode: Image.PreserveAspectFit

@@ -299,6 +299,23 @@ function get3dBoxArt(data) {
   return "";
 }
 
+// Returns the box art for game details based on the BoxArt setting ("2D", "3D", or "Miximage").
+// Falls back through the priority order if the preferred asset is missing.
+function gameDetailsBoxArt(data, setting) {
+  if (data == null) return "";
+  var art2d   = data.assets.box2dFront || data.assets.boxFront || "";
+  var art3d   = get3dBoxArt(data);
+  var artMix  = getMiximage(data);
+  if (setting === "3D") {
+    return art3d || art2d || artMix || "";
+  }
+  if (setting === "Miximage") {
+    return artMix || art2d || art3d || "";
+  }
+  // Default: "2D"
+  return art2d || art3d || artMix || "";
+}
+
 function getMiximage(data) {
   if (data != null) {
     if (data.assets.miximage)   return data.assets.miximage;
