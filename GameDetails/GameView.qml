@@ -52,31 +52,34 @@ id: root
     // Combine the video and the screenshot arrays into one
     function mediaArray() {
         let mediaList = [];
+        let seen = new Set();
+        function pushUnique(item) {
+            if (item && !seen.has(item)) {
+                seen.add(item);
+                mediaList.push(item);
+            }
+        }
+
         if (game && game.assets.video)
-            game.assets.videoList.forEach(v => mediaList.push(v));
+            game.assets.videoList.forEach(v => pushUnique(v));
 
         if (game) {
-            game.assets.screenshotList.forEach(v => mediaList.push(v));
-            if (game.assets.titlescreen) mediaList.push(game.assets.titlescreen);
-            game.assets.backgroundList.forEach(v => mediaList.push(v));
-            // 2D box art first in carousel, then 3D; avoid duplicates
-            if (game.assets.box2dFront) mediaList.push(game.assets.box2dFront);
-            if (game.assets.boxFront && game.assets.boxFront !== game.assets.box2dFront)
-                mediaList.push(game.assets.boxFront);
-            var art3d = Utils.get3dBoxArt(game);
-            if (art3d && art3d !== game.assets.box2dFront && art3d !== game.assets.boxFront)
-                mediaList.push(art3d);
-            if (game.assets.box2dBack)  mediaList.push(game.assets.box2dBack);
-            if (game.assets.boxBack && game.assets.boxBack !== game.assets.box2dBack)
-                mediaList.push(game.assets.boxBack);
-            if (game.assets.cartridge)  mediaList.push(game.assets.cartridge);
-            var mix = Utils.getMiximage(game);
-            if (mix)                    mediaList.push(mix);
-            if (game.assets.wheel)      mediaList.push(game.assets.wheel);
-            if (game.assets.poster)     mediaList.push(game.assets.poster);
-            if (game.assets.banner)     mediaList.push(game.assets.banner);
-            if (game.assets.tile)       mediaList.push(game.assets.tile);
-            if (game.assets.logo)       mediaList.push(game.assets.logo);
+            game.assets.screenshotList.forEach(v => pushUnique(v));
+            pushUnique(game.assets.titlescreen);
+            game.assets.backgroundList.forEach(v => pushUnique(v));
+            // 2D box art first in carousel, then 3D
+            pushUnique(game.assets.box2dFront);
+            pushUnique(game.assets.boxFront);
+            pushUnique(Utils.get3dBoxArt(game));
+            pushUnique(game.assets.box2dBack);
+            pushUnique(game.assets.boxBack);
+            pushUnique(game.assets.cartridge);
+            pushUnique(Utils.getMiximage(game));
+            pushUnique(game.assets.wheel);
+            pushUnique(game.assets.poster);
+            pushUnique(game.assets.banner);
+            pushUnique(game.assets.tile);
+            pushUnique(game.assets.logo);
         }
 
         return mediaList;
