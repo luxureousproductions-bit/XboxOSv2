@@ -186,7 +186,7 @@ id: root
             left:   parent.left
             right:  parent.right
         }
-        height: vpx(75)
+        height: vpx(90)
         color: theme.main
         z: 5
 
@@ -194,6 +194,7 @@ id: root
         id: headercontainer
 
             anchors.fill: parent
+            filteredCount: list.games.count
         }
         Keys.onDownPressed: {
             sfxNav.play();

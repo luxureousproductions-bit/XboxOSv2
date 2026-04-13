@@ -24,6 +24,7 @@ FocusScope {
 id: root
 
     property bool searchActive
+    property int filteredCount: currentCollection.games.count
 
     onFocusChanged: buttonbar.currentIndex = 0;
 
@@ -321,6 +322,22 @@ id: root
                 left: parent.left; top: parent.top; topMargin: vpx(15)
             }
             
+        }
+
+        // Game count label — shown below the search/filter bar
+        Text {
+        id: gameCountLabel
+
+            anchors {
+                top:   buttonbar.bottom; topMargin: vpx(5)
+                right: parent.right;     rightMargin: globalMargin
+            }
+            text: filteredCount + " game" + (filteredCount !== 1 ? "s" : "")
+            color: theme.text
+            opacity: 0.6
+            font.family: subtitleFont.name
+            font.pixelSize: vpx(16)
+            horizontalAlignment: Text.AlignRight
         }
         
     }
