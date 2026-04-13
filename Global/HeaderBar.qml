@@ -322,6 +322,22 @@ id: root
             }
             
         }
+
+        // Game count label — displayed below the search/filter bar, top-right
+        Text {
+        id: gameCountLabel
+
+            anchors {
+                top:   buttonbar.bottom; topMargin: vpx(2)
+                right: parent.right;     rightMargin: globalMargin
+            }
+            text: currentCollection.games.count + " game" + (currentCollection.games.count !== 1 ? "s" : "")
+            color: theme.text
+            opacity: 0.6
+            font.family: subtitleFont.name
+            font.pixelSize: vpx(13)
+            horizontalAlignment: Text.AlignRight
+        }
         
     }
 
