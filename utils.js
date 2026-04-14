@@ -316,8 +316,29 @@ function get3dBoxArt(data) {
 
 function getMiximage(data) {
   if (data != null) {
-    if (data.assets.miximage)   return data.assets.miximage;
-    if (data.assets.mix_image)  return data.assets.mix_image;
+    // In Pegasus Frontend, steamgrid/miximage images are stored as UI_STEAMGRID,
+    // exposed in QML as data.assets.steam / data.assets.steamList.
+    // Folder names 'steam', 'steamgrid', and 'grid' all map to this slot.
+    // Skyscraper outputs these in a 'steamgrid' folder; some setups use 'miximage'.
+    if (data.assets.steamList) {
+      // Prefer any entry whose file path specifically identifies it as a miximage.
+      for (var i = 0; i < data.assets.steamList.length; i++) {
+        var p = data.assets.steamList[i].toLowerCase();
+        if (p.includes("miximage") || p.includes("mix_image"))
+          return data.assets.steamList[i];
+      }
+      // Fall back to the first steamgrid/steam entry.
+      if (data.assets.steam) return data.assets.steam;
+    }
+    // Also scan boxFrontList for paths that look like miximage
+    // (some scrapers file miximage under the box front slot).
+    if (data.assets.boxFrontList) {
+      for (var j = 0; j < data.assets.boxFrontList.length; j++) {
+        var bp = data.assets.boxFrontList[j].toLowerCase();
+        if (bp.includes("miximage") || bp.includes("mix_image"))
+          return data.assets.boxFrontList[j];
+      }
+    }
   }
   return "";
 }

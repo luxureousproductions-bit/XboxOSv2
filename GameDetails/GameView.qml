@@ -70,9 +70,13 @@ id: root
             }
             if (game.assets.boxBack)    mediaList.push(game.assets.boxBack);
             if (game.assets.cartridge)  mediaList.push(game.assets.cartridge);
-            var mix = Utils.getMiximage(game);
-            if (mix)                    mediaList.push(mix);
-            if (game.assets.wheel)      mediaList.push(game.assets.wheel);
+            // steamList contains steamgrid/miximage images (UI_STEAMGRID slot).
+            // Push all entries; getMiximage() will pick the best one for box art display.
+            if (game.assets.steamList) {
+                game.assets.steamList.forEach(function(url) {
+                    if (url) mediaList.push(url);
+                });
+            }
             if (game.assets.poster)     mediaList.push(game.assets.poster);
             if (game.assets.banner)     mediaList.push(game.assets.banner);
             if (game.assets.tile)       mediaList.push(game.assets.tile);
