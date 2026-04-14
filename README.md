@@ -27,6 +27,7 @@ It is recommended to use [Skraper.net](http://www.skraper.net/) to acquire media
 - fanart
 - box2dfront (front cover)
 - box2dback (back cover)
+- box3d (3d cover)
 - wheel (logo)
 - support (cartridge)
 - screenshottitle (title screen image)
