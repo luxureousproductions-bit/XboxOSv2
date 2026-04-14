@@ -290,11 +290,21 @@ function steamHeader(gameData) {
   return steamAppID(gameData) + "/header.jpg"
 }
 
+function is3dPath(path) {
+  if (!path) return false;
+  var p = path.toLowerCase();
+  return p.includes("box3d") || p.includes("box_3d") || p.includes("3dbox");
+}
+
 function get3dBoxArt(data) {
   if (data != null) {
-    if (data.assets.box3d)   return data.assets.box3d;
-    if (data.assets.box_3d)  return data.assets.box_3d;
+    // Check dedicated 3D asset keys first
+    if (data.assets.box3d)    return data.assets.box3d;
+    if (data.assets.box_3d)   return data.assets.box_3d;
     if (data.assets["3dbox"]) return data.assets["3dbox"];
+    // Fall back to detecting 3D art by file path (same logic MediaItem.qml uses for labels)
+    if (is3dPath(data.assets.boxFront))    return data.assets.boxFront;
+    if (is3dPath(data.assets.box2dFront))  return data.assets.box2dFront;
   }
   return "";
 }
@@ -314,7 +324,6 @@ function boxArt(data) {
       return art3d;
     if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg"))
       return steamBoxArt(data);
-    // boxFront holds the 3D perspective art in most scrapers; box2dFront is the flat 2D scan
     if (data.assets.boxFront)
       return data.assets.boxFront;
     if (data.assets.box2dFront)

@@ -28,14 +28,23 @@ id: root
     function steamBoxArt(gameData) {
         return steamAppID(gameData) + '/library_600x900_2x.jpg';
     }
+    function is3dPath(path) {
+        if (!path) return false;
+        var p = path.toLowerCase();
+        return p.includes("box3d") || p.includes("box_3d") || p.includes("3dbox");
+    }
     function boxArt(data) {
         if (data != null) {
+            // Check dedicated 3D asset keys
             if (data.assets.box3d)        return data.assets.box3d;
             if (data.assets.box_3d)       return data.assets.box_3d;
             if (data.assets["3dbox"])     return data.assets["3dbox"];
-            if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg")) 
+            // Detect 3D art by file path (same logic MediaItem.qml uses for "3D Box" labels)
+            if (is3dPath(data.assets.boxFront))    return data.assets.boxFront;
+            if (is3dPath(data.assets.box2dFront))  return data.assets.box2dFront;
+            // Fall back to standard non-3D art
+            if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg"))
                 return steamBoxArt(data);
-            // boxFront holds the 3D perspective art in most scrapers; box2dFront is the flat 2D scan
             if (data.assets.boxFront)
                 return data.assets.boxFront;
             if (data.assets.box2dFront)
