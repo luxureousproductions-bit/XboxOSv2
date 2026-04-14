@@ -70,8 +70,9 @@ id: root
             }
             if (game.assets.boxBack)    mediaList.push(game.assets.boxBack);
             if (game.assets.cartridge)  mediaList.push(game.assets.cartridge);
-            // steamList contains steamgrid/miximage images (UI_STEAMGRID slot).
-            // Push all entries; getMiximage() will pick the best one for box art display.
+            // steamList contains all steamgrid/miximage images (UI_STEAMGRID slot in Pegasus).
+            // Push all entries so they appear in the media viewer for browsing.
+            // getMiximage() separately picks the best one for the box art thumbnail.
             if (game.assets.steamList) {
                 game.assets.steamList.forEach(function(url) {
                     if (url) mediaList.push(url);

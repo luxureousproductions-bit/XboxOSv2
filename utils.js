@@ -344,6 +344,7 @@ function getMiximage(data) {
 }
 
 function boxArt(data, style) {
+  if (style === undefined) style = "2D";
   if (data != null) {
     if (style === "3D") {
       var art3d = get3dBoxArt(data);
