@@ -290,11 +290,26 @@ function steamHeader(gameData) {
   return steamAppID(gameData) + "/header.jpg"
 }
 
+function is3dPath(path) {
+  if (!path) return false;
+  var p = path.toLowerCase();
+  return p.includes("box3d") || p.includes("box_3d") || p.includes("3dbox");
+}
+
 function get3dBoxArt(data) {
   if (data != null) {
-    if (data.assets.box3d)   return data.assets.box3d;
-    if (data.assets.box_3d)  return data.assets.box_3d;
-    if (data.assets["3dbox"]) return data.assets["3dbox"];
+    // In Pegasus, box3d and box2dFront are NOT separate QML properties — both are stored in
+    // the single BOX_FRONT slot. boxFrontList holds ALL box images for this game.
+    // Scan the list for the first entry whose file path identifies it as 3D box art
+    // (same logic MediaItem.qml already uses for the "3D Box" label).
+    var list = data.assets.boxFrontList;
+    if (list) {
+      for (var i = 0; i < list.length; i++) {
+        if (is3dPath(list[i])) return list[i];
+      }
+    }
+    // No 3D art found in the list.
+    if (is3dPath(data.assets.boxFront)) return data.assets.boxFront;
   }
   return "";
 }
@@ -309,33 +324,34 @@ function getMiximage(data) {
 
 function boxArt(data) {
   if (data != null) {
-    var art3d = get3dBoxArt(data);
-    if (art3d)
-      return art3d;
-    if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg")) 
-      return steamBoxArt(data);
-    else {
-      if (data.assets.box2dFront)
-        return data.assets.box2dFront;
-      else if (data.assets.boxFront)
-        return data.assets.boxFront;
-      else if (data.assets.box2dBack)
-        return data.assets.box2dBack;
-      else if (data.assets.boxBack)
-        return data.assets.boxBack;
-      else if (data.assets.poster)
-        return data.assets.poster;
-      else if (data.assets.banner)
-        return data.assets.banner;
-      else if (data.assets.tile)
-        return data.assets.tile;
-      else if (data.assets.cartridge)
-        return data.assets.cartridge;
-      else if (getMiximage(data))
-        return getMiximage(data);
-      else if (data.assets.logo)
-        return data.assets.logo;
+    // In Pegasus, box3d and box2dFront are NOT separate QML properties — both are stored in
+    // the single BOX_FRONT slot. boxFrontList holds ALL box images for this game.
+    // Prefer any entry whose file path identifies it as 3D box art.
+    var list = data.assets.boxFrontList;
+    if (list) {
+      for (var i = 0; i < list.length; i++) {
+        if (is3dPath(list[i])) return list[i];
+      }
     }
+    // No 3D art in the list — fall back in priority order.
+    if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg"))
+      return steamBoxArt(data);
+    if (data.assets.boxFront)
+      return data.assets.boxFront;
+    if (data.assets.boxBack)
+      return data.assets.boxBack;
+    if (data.assets.poster)
+      return data.assets.poster;
+    if (data.assets.banner)
+      return data.assets.banner;
+    if (data.assets.tile)
+      return data.assets.tile;
+    if (data.assets.cartridge)
+      return data.assets.cartridge;
+    if (getMiximage(data))
+      return getMiximage(data);
+    if (data.assets.logo)
+      return data.assets.logo;
   }
   return "";
 }
