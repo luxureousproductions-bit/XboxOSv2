@@ -61,12 +61,13 @@ id: root
             game.assets.backgroundList.forEach(v => mediaList.push(v));
             var art3d = Utils.get3dBoxArt(game);
             if (art3d)                  mediaList.push(art3d);
-            // Only push boxFront/box2dFront if they weren't already added as the 3D art
-            if (game.assets.boxFront && game.assets.boxFront !== art3d)
-                mediaList.push(game.assets.boxFront);
-            if (game.assets.box2dFront && game.assets.box2dFront !== art3d)
-                mediaList.push(game.assets.box2dFront);
-            if (game.assets.box2dBack)  mediaList.push(game.assets.box2dBack);
+            // In Pegasus, ALL box images (box3d, box2dFront, etc.) are stored in boxFrontList.
+            // Push every entry that wasn't already added as the 3D art above.
+            if (game.assets.boxFrontList) {
+                game.assets.boxFrontList.forEach(function(url) {
+                    if (url && url !== art3d) mediaList.push(url);
+                });
+            }
             if (game.assets.boxBack)    mediaList.push(game.assets.boxBack);
             if (game.assets.cartridge)  mediaList.push(game.assets.cartridge);
             var mix = Utils.getMiximage(game);

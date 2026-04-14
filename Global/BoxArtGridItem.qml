@@ -30,25 +30,23 @@ id: root
     }
     function boxArt(data) {
         if (data != null) {
-            // Check box3d first, but guard against the Pegasus aliasing bug where data.assets.box3d
-            // returns the same path as data.assets.box2dFront when box2dFront is present.
-            // When the paths differ, box3d genuinely has the 3D art — use it.
-            // When the paths are the same (aliased), skip box3d and fall through to boxFront,
-            // which is where most scrapers store the 3D perspective art.
-            var box3dPath = data.assets.box3d ? String(data.assets.box3d) : "";
-            var box2dPath = data.assets.box2dFront ? String(data.assets.box2dFront) : "";
-            if (box3dPath && box3dPath !== box2dPath)
-                return data.assets.box3d;
-            // boxFront is the conventional location for 3D/perspective box art in most scrapers;
-            // box2dFront is the flat 2D scan.
+            // In Pegasus, box3d and box2dFront are NOT separate QML properties — both are stored
+            // in the single BOX_FRONT slot. boxFrontList holds ALL box images for this game.
+            // Prefer any entry whose file path identifies it as 3D box art
+            // (same logic MediaItem.qml uses for the "3D Box" label).
+            var list = data.assets.boxFrontList;
+            if (list) {
+                for (var i = 0; i < list.length; i++) {
+                    var p = list[i].toLowerCase();
+                    if (p.includes("box3d") || p.includes("box_3d") || p.includes("3dbox"))
+                        return list[i];
+                }
+            }
+            // No 3D art found — fall back in priority order.
             if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg"))
                 return steamBoxArt(data);
             if (data.assets.boxFront)
                 return data.assets.boxFront;
-            if (data.assets.box2dFront)
-                return data.assets.box2dFront;
-            if (data.assets.box2dBack)
-                return data.assets.box2dBack;
             if (data.assets.boxBack)
                 return data.assets.boxBack;
             if (data.assets.poster)
