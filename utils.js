@@ -298,11 +298,9 @@ function is3dPath(path) {
 
 function get3dBoxArt(data) {
   if (data != null) {
-    // Check dedicated 3D asset keys first
-    if (data.assets.box3d)    return data.assets.box3d;
-    if (data.assets.box_3d)   return data.assets.box_3d;
-    if (data.assets["3dbox"]) return data.assets["3dbox"];
-    // Fall back to detecting 3D art by file path (same logic MediaItem.qml uses for labels)
+    // Detect 3D art by file path (same logic MediaItem.qml uses for labels).
+    // We avoid checking data.assets.box3d/box_3d/3dbox because on some Pegasus builds
+    // those keys alias to box2dFront when box2dFront is present, returning the wrong asset.
     if (is3dPath(data.assets.boxFront))    return data.assets.boxFront;
     if (is3dPath(data.assets.box2dFront))  return data.assets.box2dFront;
   }
@@ -319,9 +317,10 @@ function getMiximage(data) {
 
 function boxArt(data) {
   if (data != null) {
-    var art3d = get3dBoxArt(data);
-    if (art3d)
-      return art3d;
+    // NOTE: We intentionally do NOT call get3dBoxArt() here because on some Pegasus builds
+    // data.assets.box3d aliases to box2dFront when box2dFront is present, which would
+    // short-circuit and return the 2D art instead of the 3D art in boxFront.
+    // boxFront is the conventional location for 3D/perspective box art; box2dFront is the flat scan.
     if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg"))
       return steamBoxArt(data);
     if (data.assets.boxFront)

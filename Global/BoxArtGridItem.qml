@@ -28,21 +28,12 @@ id: root
     function steamBoxArt(gameData) {
         return steamAppID(gameData) + '/library_600x900_2x.jpg';
     }
-    function is3dPath(path) {
-        if (!path) return false;
-        var p = path.toLowerCase();
-        return p.includes("box3d") || p.includes("box_3d") || p.includes("3dbox");
-    }
     function boxArt(data) {
         if (data != null) {
-            // Check dedicated 3D asset keys
-            if (data.assets.box3d)        return data.assets.box3d;
-            if (data.assets.box_3d)       return data.assets.box_3d;
-            if (data.assets["3dbox"])     return data.assets["3dbox"];
-            // Detect 3D art by file path (same logic MediaItem.qml uses for "3D Box" labels)
-            if (is3dPath(data.assets.boxFront))    return data.assets.boxFront;
-            if (is3dPath(data.assets.box2dFront))  return data.assets.box2dFront;
-            // Fall back to standard non-3D art
+            // NOTE: We intentionally skip the box3d/box_3d/3dbox key checks here because on some
+            // Pegasus builds data.assets.box3d aliases to box2dFront when box2dFront is present,
+            // which short-circuits and returns 2D art instead of the 3D art in boxFront.
+            // boxFront is the conventional location for 3D/perspective box art; box2dFront is the flat scan.
             if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg"))
                 return steamBoxArt(data);
             if (data.assets.boxFront)
