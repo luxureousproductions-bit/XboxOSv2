@@ -61,8 +61,8 @@ id: root
             game.assets.backgroundList.forEach(v => mediaList.push(v));
             var art3d = Utils.get3dBoxArt(game);
             if (art3d)                  mediaList.push(art3d);
-            var regularArt = Utils.regularBoxArt(game);
-            if (regularArt)             mediaList.push(regularArt);
+            if (game.assets.boxFront)   mediaList.push(game.assets.boxFront);
+            if (game.assets.box2dFront) mediaList.push(game.assets.box2dFront);
             if (game.assets.box2dBack)  mediaList.push(game.assets.box2dBack);
             if (game.assets.boxBack)    mediaList.push(game.assets.boxBack);
             if (game.assets.cartridge)  mediaList.push(game.assets.cartridge);

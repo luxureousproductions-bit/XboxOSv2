@@ -307,26 +307,18 @@ function getMiximage(data) {
   return "";
 }
 
-function regularBoxArt(data) {
-  if (data != null) {
-    if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg"))
-      return steamBoxArt(data);
-    if (data.assets.box2dFront)
-      return data.assets.box2dFront;
-    if (data.assets.boxFront)
-      return data.assets.boxFront;
-  }
-  return "";
-}
-
 function boxArt(data) {
   if (data != null) {
     var art3d = get3dBoxArt(data);
     if (art3d)
       return art3d;
-    var regular = regularBoxArt(data);
-    if (regular)
-      return regular;
+    if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg"))
+      return steamBoxArt(data);
+    // boxFront holds the 3D perspective art in most scrapers; box2dFront is the flat 2D scan
+    if (data.assets.boxFront)
+      return data.assets.boxFront;
+    if (data.assets.box2dFront)
+      return data.assets.box2dFront;
     if (data.assets.box2dBack)
       return data.assets.box2dBack;
     if (data.assets.boxBack)

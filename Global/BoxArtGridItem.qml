@@ -35,30 +35,29 @@ id: root
             if (data.assets["3dbox"])     return data.assets["3dbox"];
             if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg")) 
                 return steamBoxArt(data);
-            else {
+            // boxFront holds the 3D perspective art in most scrapers; box2dFront is the flat 2D scan
+            if (data.assets.boxFront)
+                return data.assets.boxFront;
             if (data.assets.box2dFront)
                 return data.assets.box2dFront;
-            else if (data.assets.boxFront)
-                return data.assets.boxFront;
-            else if (data.assets.box2dBack)
+            if (data.assets.box2dBack)
                 return data.assets.box2dBack;
-            else if (data.assets.boxBack)
+            if (data.assets.boxBack)
                 return data.assets.boxBack;
-            else if (data.assets.poster)
+            if (data.assets.poster)
                 return data.assets.poster;
-            else if (data.assets.banner)
+            if (data.assets.banner)
                 return data.assets.banner;
-            else if (data.assets.tile)
+            if (data.assets.tile)
                 return data.assets.tile;
-            else if (data.assets.cartridge)
+            if (data.assets.cartridge)
                 return data.assets.cartridge;
-            else if (data.assets.miximage)
+            if (data.assets.miximage)
                 return data.assets.miximage;
-            else if (data.assets.mix_image)
+            if (data.assets.mix_image)
                 return data.assets.mix_image;
-            else if (data.assets.logo)
+            if (data.assets.logo)
                 return data.assets.logo;
-            }
         }
         return "";
     }
