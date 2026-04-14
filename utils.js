@@ -298,9 +298,11 @@ function is3dPath(path) {
 
 function get3dBoxArt(data) {
   if (data != null) {
-    // Detect 3D art by file path (same logic MediaItem.qml uses for labels).
-    // We avoid checking data.assets.box3d/box_3d/3dbox because on some Pegasus builds
-    // those keys alias to box2dFront when box2dFront is present, returning the wrong asset.
+    // Check box3d directly, but skip it if it aliases to box2dFront (Pegasus aliasing bug).
+    var box3dPath = data.assets.box3d ? String(data.assets.box3d) : "";
+    var box2dPath = data.assets.box2dFront ? String(data.assets.box2dFront) : "";
+    if (box3dPath && box3dPath !== box2dPath) return data.assets.box3d;
+    // Fall back to path-based detection (same logic MediaItem.qml uses for "3D Box" labels).
     if (is3dPath(data.assets.boxFront))    return data.assets.boxFront;
     if (is3dPath(data.assets.box2dFront))  return data.assets.box2dFront;
   }
@@ -317,10 +319,17 @@ function getMiximage(data) {
 
 function boxArt(data) {
   if (data != null) {
-    // NOTE: We intentionally do NOT call get3dBoxArt() here because on some Pegasus builds
-    // data.assets.box3d aliases to box2dFront when box2dFront is present, which would
-    // short-circuit and return the 2D art instead of the 3D art in boxFront.
-    // boxFront is the conventional location for 3D/perspective box art; box2dFront is the flat scan.
+    // Check box3d first, but guard against the Pegasus aliasing bug where data.assets.box3d
+    // returns the same path as data.assets.box2dFront when box2dFront is present.
+    // When the paths are different, box3d genuinely has the 3D art — use it.
+    // When the paths are the same (aliased), skip box3d and fall through to boxFront,
+    // which is where most scrapers store the 3D perspective art.
+    var box3dPath = data.assets.box3d ? String(data.assets.box3d) : "";
+    var box2dPath = data.assets.box2dFront ? String(data.assets.box2dFront) : "";
+    if (box3dPath && box3dPath !== box2dPath)
+      return data.assets.box3d;
+    // boxFront is the conventional location for 3D/perspective box art in most scrapers;
+    // box2dFront is the flat 2D scan.
     if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg"))
       return steamBoxArt(data);
     if (data.assets.boxFront)

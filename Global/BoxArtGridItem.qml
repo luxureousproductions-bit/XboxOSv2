@@ -30,10 +30,17 @@ id: root
     }
     function boxArt(data) {
         if (data != null) {
-            // NOTE: We intentionally skip the box3d/box_3d/3dbox key checks here because on some
-            // Pegasus builds data.assets.box3d aliases to box2dFront when box2dFront is present,
-            // which short-circuits and returns 2D art instead of the 3D art in boxFront.
-            // boxFront is the conventional location for 3D/perspective box art; box2dFront is the flat scan.
+            // Check box3d first, but guard against the Pegasus aliasing bug where data.assets.box3d
+            // returns the same path as data.assets.box2dFront when box2dFront is present.
+            // When the paths differ, box3d genuinely has the 3D art — use it.
+            // When the paths are the same (aliased), skip box3d and fall through to boxFront,
+            // which is where most scrapers store the 3D perspective art.
+            var box3dPath = data.assets.box3d ? String(data.assets.box3d) : "";
+            var box2dPath = data.assets.box2dFront ? String(data.assets.box2dFront) : "";
+            if (box3dPath && box3dPath !== box2dPath)
+                return data.assets.box3d;
+            // boxFront is the conventional location for 3D/perspective box art in most scrapers;
+            // box2dFront is the flat 2D scan.
             if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg"))
                 return steamBoxArt(data);
             if (data.assets.boxFront)
