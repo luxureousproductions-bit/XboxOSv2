@@ -27,9 +27,9 @@ id: root
         for (var i = 0; i < 5; i++)
         {
             var gamesource = currentCollection.games.get(i);
-            if (Utils.boxArt(gamesource) !== "")
+            if (Utils.boxArt(gamesource, settings.BoxArtStyle) !== "")
             {
-                return Utils.boxArt(gamesource);
+                return Utils.boxArt(gamesource, settings.BoxArtStyle);
             }
         }
     }

@@ -375,7 +375,7 @@ id: root
             Image {
             id: boxart
 
-                source: Utils.boxArt(game)
+                source: Utils.boxArt(game, settings.BoxArtStyle)
                 width: vpx(350)
                 height: parent.height
                 fillMode: Image.PreserveAspectFit

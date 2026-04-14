@@ -322,18 +322,18 @@ function getMiximage(data) {
   return "";
 }
 
-function boxArt(data) {
+function boxArt(data, style) {
   if (data != null) {
-    // In Pegasus, box3d and box2dFront are NOT separate QML properties — both are stored in
-    // the single BOX_FRONT slot. boxFrontList holds ALL box images for this game.
-    // Prefer any entry whose file path identifies it as 3D box art.
-    var list = data.assets.boxFrontList;
-    if (list) {
-      for (var i = 0; i < list.length; i++) {
-        if (is3dPath(list[i])) return list[i];
-      }
+    if (style === "3D") {
+      var art3d = get3dBoxArt(data);
+      if (art3d) return art3d;
+      // No 3D art found — fall through to 2D
+    } else if (style === "Miximage") {
+      var mix = getMiximage(data);
+      if (mix) return mix;
+      // No miximage found — fall through to 2D
     }
-    // No 3D art in the list — fall back in priority order.
+    // "2D" (default) or fallback from 3D/Miximage
     if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg"))
       return steamBoxArt(data);
     if (data.assets.boxFront)

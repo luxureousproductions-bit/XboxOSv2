@@ -166,6 +166,10 @@ id: root
             settingName: "Number of columns"
             setting: "3,4,5,6,7,8"
         }
+        ListElement {
+            settingName: "Game Counter"
+            setting: "On,Off"
+        }
     }
 
     property var gridPage: {
@@ -178,6 +182,10 @@ id: root
     ListModel {
     id: gameSettingsModel
 
+        ListElement {
+            settingName: "Box Art"
+            setting: "2D,3D,Miximage"
+        }
         ListElement {
             settingName: "Game Background"
             setting: "Screenshot,Fanart"
