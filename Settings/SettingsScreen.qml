@@ -227,7 +227,7 @@ id: root
             setting: "On,Off"
         }
         ListElement {
-            settingName: "Media Carousel - Title Screenshot"
+            settingName: "Media Carousel - Title Screen"
             setting: "On,Off"
         }
         ListElement {

@@ -75,7 +75,7 @@ id: root
             GameCounter:                   api.memory.has("Game Counter") ? api.memory.get("Game Counter") : "On",
             CarouselVideo:                 api.memory.has("Media Carousel - Video") ? api.memory.get("Media Carousel - Video") : "On",
             CarouselScreenshots:           api.memory.has("Media Carousel - Screenshots") ? api.memory.get("Media Carousel - Screenshots") : "On",
-            CarouselTitleScreen:           api.memory.has("Media Carousel - Title Screenshot") ? api.memory.get("Media Carousel - Title Screenshot") : "On",
+            CarouselTitleScreen:           api.memory.has("Media Carousel - Title Screen") ? api.memory.get("Media Carousel - Title Screen") : "On",
             CarouselFanart:                api.memory.has("Media Carousel - Fanart") ? api.memory.get("Media Carousel - Fanart") : "On",
             Carousel3DBox:                 api.memory.has("Media Carousel - 3D Box") ? api.memory.get("Media Carousel - 3D Box") : "On",
             Carousel2DBox:                 api.memory.has("Media Carousel - Box Art") ? api.memory.get("Media Carousel - Box Art") : "On",
