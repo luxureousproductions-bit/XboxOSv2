@@ -72,7 +72,16 @@ id: root
             WideRatio:                     api.memory.has("Wide - Ratio") ? api.memory.get("Wide - Ratio") : "0.64",
             TallRatio:                     api.memory.has("Tall - Ratio") ? api.memory.get("Tall - Ratio") : "0.66",
             BoxArtStyle:                   api.memory.has("Box Art") ? api.memory.get("Box Art") : "2D",
-            GameCounter:                   api.memory.has("Game Counter") ? api.memory.get("Game Counter") : "On"
+            GameCounter:                   api.memory.has("Game Counter") ? api.memory.get("Game Counter") : "On",
+            CarouselVideo:                 api.memory.has("Media Carousel - Video") ? api.memory.get("Media Carousel - Video") : "On",
+            CarouselScreenshots:           api.memory.has("Media Carousel - Screenshots") ? api.memory.get("Media Carousel - Screenshots") : "On",
+            CarouselTitleScreen:           api.memory.has("Media Carousel - Title Screen") ? api.memory.get("Media Carousel - Title Screen") : "On",
+            CarouselFanart:                api.memory.has("Media Carousel - Fanart") ? api.memory.get("Media Carousel - Fanart") : "On",
+            Carousel3DBox:                 api.memory.has("Media Carousel - 3D Box") ? api.memory.get("Media Carousel - 3D Box") : "On",
+            Carousel2DBox:                 api.memory.has("Media Carousel - 2D Box") ? api.memory.get("Media Carousel - 2D Box") : "On",
+            CarouselBackBox:               api.memory.has("Media Carousel - Back Box") ? api.memory.get("Media Carousel - Back Box") : "On",
+            CarouselCartridge:             api.memory.has("Media Carousel - Cartridge") ? api.memory.get("Media Carousel - Cartridge") : "On",
+            CarouselMiximage:              api.memory.has("Media Carousel - Miximage") ? api.memory.get("Media Carousel - Miximage") : "On"
             
         }
     }

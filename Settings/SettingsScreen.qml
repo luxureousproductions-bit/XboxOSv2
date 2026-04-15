@@ -218,6 +218,42 @@ id: root
             settingName: "Show scanlines"
             setting: "Yes,No"
         }
+        ListElement {
+            settingName: "Media Carousel - Video"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Media Carousel - Screenshots"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Media Carousel - Title Screen"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Media Carousel - Fanart"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Media Carousel - 3D Box"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Media Carousel - 2D Box"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Media Carousel - Back Box"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Media Carousel - Cartridge"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Media Carousel - Miximage"
+            setting: "On,Off"
+        }
     }
 
     property var gamePage: {

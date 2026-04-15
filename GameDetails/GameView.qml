@@ -52,28 +52,34 @@ id: root
     // Combine the video and the screenshot arrays into one
     function mediaArray() {
         let mediaList = [];
-        if (game && game.assets.video)
+        if (game && game.assets.video && settings.CarouselVideo === "On")
             game.assets.videoList.forEach(v => mediaList.push(v));
 
         if (game) {
-            game.assets.screenshotList.forEach(v => mediaList.push(v));
-            if (game.assets.titlescreen) mediaList.push(game.assets.titlescreen);
-            game.assets.backgroundList.forEach(v => mediaList.push(v));
+            if (settings.CarouselScreenshots === "On")
+                game.assets.screenshotList.forEach(v => mediaList.push(v));
+            if (settings.CarouselTitleScreen === "On" && game.assets.titlescreen)
+                mediaList.push(game.assets.titlescreen);
+            if (settings.CarouselFanart === "On")
+                game.assets.backgroundList.forEach(v => mediaList.push(v));
             var art3d = Utils.get3dBoxArt(game);
-            if (art3d)                  mediaList.push(art3d);
+            if (settings.Carousel3DBox === "On" && art3d)
+                mediaList.push(art3d);
             // In Pegasus, ALL box images (box3d, box2dFront, etc.) are stored in boxFrontList.
-            // Push every entry that wasn't already added as the 3D art above.
-            if (game.assets.boxFrontList) {
+            // Push every 2D entry that wasn't already added as the 3D art above.
+            if (settings.Carousel2DBox === "On" && game.assets.boxFrontList) {
                 game.assets.boxFrontList.forEach(function(url) {
                     if (url && url !== art3d) mediaList.push(url);
                 });
             }
-            if (game.assets.boxBack)    mediaList.push(game.assets.boxBack);
-            if (game.assets.cartridge)  mediaList.push(game.assets.cartridge);
+            if (settings.CarouselBackBox === "On" && game.assets.boxBack)
+                mediaList.push(game.assets.boxBack);
+            if (settings.CarouselCartridge === "On" && game.assets.cartridge)
+                mediaList.push(game.assets.cartridge);
             // steamList contains all steamgrid/miximage images (UI_STEAMGRID slot in Pegasus).
             // Push all entries so they appear in the media viewer for browsing.
             // getMiximage() separately picks the best one for the box art thumbnail.
-            if (game.assets.steamList) {
+            if (settings.CarouselMiximage === "On" && game.assets.steamList) {
                 game.assets.steamList.forEach(function(url) {
                     if (url) mediaList.push(url);
                 });
