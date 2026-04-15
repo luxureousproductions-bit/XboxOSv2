@@ -87,7 +87,8 @@ id: root
             if (game.assets.poster)     mediaList.push(game.assets.poster);
             if (game.assets.banner)     mediaList.push(game.assets.banner);
             if (game.assets.tile)       mediaList.push(game.assets.tile);
-            if (game.assets.logo)       mediaList.push(game.assets.logo);
+            if (settings.CarouselWheel === "On" && game.assets.logo)
+                mediaList.push(game.assets.logo);
         }
 
         return mediaList;

@@ -254,6 +254,10 @@ id: root
             settingName: "Media Carousel - Miximage"
             setting: "On,Off"
         }
+        ListElement {
+            settingName: "Media Carousel - Wheel"
+            setting: "On,Off"
+        }
     }
 
     property var gamePage: {

@@ -81,7 +81,8 @@ id: root
             Carousel2DBox:                 api.memory.has("Media Carousel - 2D Box") ? api.memory.get("Media Carousel - 2D Box") : "On",
             CarouselBackBox:               api.memory.has("Media Carousel - Back Box") ? api.memory.get("Media Carousel - Back Box") : "On",
             CarouselCartridge:             api.memory.has("Media Carousel - Cartridge") ? api.memory.get("Media Carousel - Cartridge") : "On",
-            CarouselMiximage:              api.memory.has("Media Carousel - Miximage") ? api.memory.get("Media Carousel - Miximage") : "On"
+            CarouselMiximage:              api.memory.has("Media Carousel - Miximage") ? api.memory.get("Media Carousel - Miximage") : "On",
+            CarouselWheel:                 api.memory.has("Media Carousel - Wheel") ? api.memory.get("Media Carousel - Wheel") : "On"
             
         }
     }
