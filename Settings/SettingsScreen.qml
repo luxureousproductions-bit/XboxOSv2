@@ -227,7 +227,7 @@ id: root
             setting: "On,Off"
         }
         ListElement {
-            settingName: "Media Carousel - Title Screen"
+            settingName: "Media Carousel - Title Screenshot"
             setting: "On,Off"
         }
         ListElement {
@@ -239,7 +239,7 @@ id: root
             setting: "On,Off"
         }
         ListElement {
-            settingName: "Media Carousel - 2D Box"
+            settingName: "Media Carousel - Box Art"
             setting: "On,Off"
         }
         ListElement {
@@ -255,7 +255,7 @@ id: root
             setting: "On,Off"
         }
         ListElement {
-            settingName: "Media Carousel - Wheel"
+            settingName: "Media Carousel - Logo"
             setting: "On,Off"
         }
     }
