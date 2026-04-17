@@ -388,7 +388,9 @@ id: root
                     property bool selected: ListView.isCurrentItem && featuredlist.focus
                     width: featuredlist.width
                     height: featuredlist.height
-                    source: Utils.fanArt(modelData);
+                    source: settings.ShowcaseArt === "Screenshot"
+                            ? (modelData ? modelData.assets.screenshots[0] || "" : "")
+                            : Utils.fanArt(modelData);
                     //sourceSize { width: featuredlist.width; height: featuredlist.height }
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true

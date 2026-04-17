@@ -34,7 +34,7 @@ id: root
             bottom: parent.bottom
         }
         asynchronous: true
-        source: currentGame && currentGame.assets.screenshots[0] ? currentGame.assets.screenshots[0] : ""
+        source: currentGame ? (settings.ShowcaseArt === "Screenshot" ? (currentGame.assets.screenshots[0] || "") : (currentGame.assets.background || currentGame.assets.screenshots[0] || "")) : ""
         fillMode: Image.PreserveAspectCrop
         smooth: true
 

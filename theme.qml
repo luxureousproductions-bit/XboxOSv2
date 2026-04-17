@@ -55,6 +55,7 @@ id: root
             AllowVideoPreviewAudio:        api.memory.has("Video preview audio") ? api.memory.get("Video preview audio") : "No",
             ShowScanlines:                 api.memory.has("Show scanlines") ? api.memory.get("Show scanlines") : "Yes",
             DetailsDefault:                api.memory.has("Default to full details") ? api.memory.get("Default to full details") : "No",
+            ShowcaseArt:                   api.memory.has("Showcase Art") ? api.memory.get("Showcase Art") : "Fanart",
             ShowcaseColumns:               api.memory.has("Number of games showcased") ? api.memory.get("Number of games showcased") : "15",
             ShowcaseFeaturedCollection:    api.memory.has("Featured collection") ? api.memory.get("Featured collection") : "Favorites",
             ShowcaseCollection1:           api.memory.has("Collection 1") ? api.memory.get("Collection 1") : "Recently Played",
