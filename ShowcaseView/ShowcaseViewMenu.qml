@@ -114,14 +114,27 @@ id: root
         return collection;
     }
 
-    property string randoPub: (Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || '')
-    property string randoDev: (Utils.returnRandom(Utils.uniqueValuesArray('developer')) || '')
-    property string randoGenre: (Utils.returnRandom(Utils.uniqueValuesArray('genreList'))[0] || '')
-    property string randoGenre2: {
+    property string randoPub: ""
+    property string randoDev: ""
+    property string randoGenre: ""
+    property string randoGenre2: ""
+
+    function refreshLists() {
+        var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || '';
+        var dev = Utils.returnRandom(Utils.uniqueValuesArray('developer')) || '';
         var genres = Utils.uniqueValuesArray('genreList');
-        var filtered = genres.filter(function(g) { return g && g !== randoGenre; });
+        var genre = (Utils.returnRandom(genres) || [''])[0] || '';
+        var filtered = genres.filter(function(g) { return g && g !== genre; });
         var pick = filtered.length > 0 ? filtered : genres;
-        return (Utils.returnRandom(pick) || [''])[0] || '';
+        var genre2 = (Utils.returnRandom(pick) || [''])[0] || '';
+        randoPub = pub;
+        randoDev = dev;
+        randoGenre = genre;
+        randoGenre2 = genre2;
+        api.memory.set("Showcase randoPub", pub);
+        api.memory.set("Showcase randoDev", dev);
+        api.memory.set("Showcase randoGenre", genre);
+        api.memory.set("Showcase randoGenre2", genre2);
     }
 
     property bool ftue: featuredCollection.games.count == 0
@@ -133,6 +146,17 @@ id: root
     }
 
     Component.onDestruction: storeIndices();
+
+    Component.onCompleted: {
+        if (api.memory.has("Showcase randoPub")) {
+            randoPub = api.memory.get("Showcase randoPub");
+            randoDev = api.memory.get("Showcase randoDev");
+            randoGenre = api.memory.get("Showcase randoGenre");
+            randoGenre2 = api.memory.get("Showcase randoGenre2");
+        } else {
+            refreshLists();
+        }
+    }
     
     anchors.fill: parent
 
@@ -779,6 +803,11 @@ id: root
             event.accepted = true;
             settingsScreen();
         }
+        // Refresh lists
+        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
+            event.accepted = true;
+            refreshLists();
+        }
     }
 
     // Helpbar buttons
@@ -788,6 +817,10 @@ id: root
         ListElement {
             name: "Settings"
             button: "filters"
+        }
+        ListElement {
+            name: "Refresh"
+            button: "details"
         }
         ListElement {
             name: "Select"
