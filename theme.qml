@@ -425,7 +425,6 @@ id: root
     id: showcaseLoader
 
         focus: (root.state === "showcasescreen")
-        active: opacity !== 0
         opacity: focus ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
