@@ -29,11 +29,7 @@ id: root
     id: genreGames
 
         sourceModel: api.allGames
-        filters: RegExpFilter {
-            roleName: "genre"
-            pattern: genre !== "" ? genre : "(?!)"
-            caseSensitivity: Qt.CaseInsensitive
-        }
+        filters: RegExpFilter { roleName: "genre"; pattern: genre; caseSensitivity: Qt.CaseInsensitive }
         sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder }
     }
 

@@ -30,11 +30,7 @@ id: root
     id: developerGames
 
         sourceModel: api.allGames
-        filters: RegExpFilter {
-            roleName: "developer"
-            pattern: developer !== "" ? developer : "(?!)"
-            caseSensitivity: Qt.CaseInsensitive
-        }
+        filters: RegExpFilter { roleName: "developer"; pattern: developer; caseSensitivity: Qt.CaseInsensitive }
         sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder }
     }
 

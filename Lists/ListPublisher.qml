@@ -30,13 +30,7 @@ id: root
     id: publisherGames
 
         sourceModel: api.allGames
-        // Use (?!) as the fallback pattern — it is a zero-width negative lookahead
-        // that never matches, so the list stays empty until a real publisher is set.
-        filters: RegExpFilter {
-            roleName: "publisher"
-            pattern: publisher !== "" ? publisher : "(?!)"
-            caseSensitivity: Qt.CaseInsensitive
-        }
+        filters: RegExpFilter { roleName: "publisher"; pattern: publisher; caseSensitivity: Qt.CaseInsensitive }
         sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder }
     }
 
