@@ -24,15 +24,18 @@ id: root
     function currentGame(index) { return api.allGames.get(gamesFiltered.mapToSource(index)) }
     property int max: gamesFiltered.count
 
-    property var randomIndices: [];
+    property var randomIndices: {};
 
-    onGamesChanged: {
-        randomIndices = [];
+    function refresh() {
+        var indices = {};
         for (var i = 0; i < max; ++i) {
             var randomIndex = Math.floor(Math.random() * api.allGames.count);
-            randomIndices[randomIndex.toString()] = true;
+            indices[randomIndex.toString()] = true;
         }
+        randomIndices = indices;
     }
+
+    Component.onCompleted: refresh()
 
     SortFilterProxyModel {
     id: gamesFiltered

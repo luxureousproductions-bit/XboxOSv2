@@ -430,7 +430,6 @@ id: root
 
         anchors.fill: parent
         sourceComponent: showcaseview
-        asynchronous: true
     }
 
     Loader  {

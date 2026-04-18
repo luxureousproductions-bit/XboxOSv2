@@ -135,6 +135,8 @@ id: root
         api.memory.set("Showcase randoDev", dev);
         api.memory.set("Showcase randoGenre", genre);
         api.memory.set("Showcase randoGenre2", genre2);
+        listRecommended.refresh();
+        currentHelpbarModel = gridviewHelpModel;
     }
 
     property bool ftue: featuredCollection.games.count == 0
