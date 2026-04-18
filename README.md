@@ -14,9 +14,6 @@ IMPORTANT: This is a fork of [gameOS](https://github.com/PlayingKarrde/gameOS/re
 <img width="1920" height="1080" alt="Screenshot_20260412-124412" src="https://github.com/user-attachments/assets/57c1e45e-acaa-4902-ab72-10745b43fc66" />
 download latest release and extract it in your [Pegasus theme directory](http://pegasus-frontend.org/docs/user-guide/installing-themes/).
 
-Windows users may need to install the [K-lite Codec Pack](https://www.codecguide.com/download_kl.htm) to get video playback working.
-
-IMPORTANT: You need to have the latest version of Pegasus installed (not the current Stable release) otherwise you will get an error regarding Qt.Modules.
 
 ## Metadata
 
