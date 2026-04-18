@@ -155,6 +155,7 @@ id: root
             randoDev = api.memory.get("Showcase randoDev");
             randoGenre = api.memory.get("Showcase randoGenre");
             randoGenre2 = api.memory.get("Showcase randoGenre2");
+            listRecommended.refresh();
         } else {
             refreshLists();
         }
@@ -832,8 +833,8 @@ id: root
         }
     }
 
-    onFocusChanged: { 
-        if (focus)
+    onActiveFocusChanged: {
+        if (activeFocus)
             currentHelpbarModel = gridviewHelpModel;
     }
 
