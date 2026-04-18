@@ -35,8 +35,12 @@ id: root
         sourceModel: api.allGames
         filters: ExpressionFilter {
             expression: {
+                // Read refreshToken so QML re-evaluates this filter when refresh() is called.
+                // Use root.publisher (not bare "publisher") to avoid collision with the
+                // model role of the same name that SortFilterProxyModel injects into scope.
                 refreshToken
-                return !publisher || (model.publisher || "").toLowerCase().indexOf(publisher.toLowerCase()) >= 0
+                if (!root.publisher) return false
+                return (model.publisher || "").toLowerCase().indexOf(root.publisher.toLowerCase()) >= 0
             }
         }
         sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder }
