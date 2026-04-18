@@ -150,13 +150,16 @@ id: root
     Component.onDestruction: storeIndices();
 
     Component.onCompleted: {
-        if (api.memory.has("Showcase randoPub")) {
-            randoPub = api.memory.get("Showcase randoPub");
-            randoDev = api.memory.get("Showcase randoDev");
-            randoGenre = api.memory.get("Showcase randoGenre");
-            randoGenre2 = api.memory.get("Showcase randoGenre2");
+        if (api.memory.has("To Game")) {
+            // Returning from a game launch — restore saved random values so the
+            // lists look exactly as the user left them
+            randoPub   = api.memory.get("Showcase randoPub")   || "";
+            randoDev   = api.memory.get("Showcase randoDev")   || "";
+            randoGenre = api.memory.get("Showcase randoGenre") || "";
+            randoGenre2= api.memory.get("Showcase randoGenre2")|| "";
             listRecommended.refresh();
         } else {
+            // Fresh Pegasus startup — always generate new random lists
             refreshLists();
         }
     }
