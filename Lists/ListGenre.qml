@@ -24,19 +24,15 @@ id: root
     function currentGame(index) { return api.allGames.get(genreGames.mapToSource(index)) }
     property int max: genreGames.count
     property string genre: ""
-    property int refreshToken: 0
-
-    function refresh() { refreshToken++ }
 
     SortFilterProxyModel {
     id: genreGames
 
         sourceModel: api.allGames
-        filters: ExpressionFilter {
-            expression: {
-                refreshToken
-                return !genre || (model.genre || "").toLowerCase().indexOf(genre.toLowerCase()) >= 0
-            }
+        filters: RegExpFilter {
+            roleName: "genre"
+            pattern: genre !== "" ? genre : "(?!)"
+            caseSensitivity: Qt.CaseInsensitive
         }
         sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder }
     }

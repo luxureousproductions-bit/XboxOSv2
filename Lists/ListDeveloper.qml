@@ -25,19 +25,15 @@ id: root
     property int max: developerGames.count
 
     property string developer: ""
-    property int refreshToken: 0
-
-    function refresh() { refreshToken++ }
 
     SortFilterProxyModel {
     id: developerGames
 
         sourceModel: api.allGames
-        filters: ExpressionFilter {
-            expression: {
-                refreshToken
-                return !developer || (model.developer || "").toLowerCase().indexOf(developer.toLowerCase()) >= 0
-            }
+        filters: RegExpFilter {
+            roleName: "developer"
+            pattern: developer !== "" ? developer : "(?!)"
+            caseSensitivity: Qt.CaseInsensitive
         }
         sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder }
     }

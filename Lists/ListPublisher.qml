@@ -25,23 +25,17 @@ id: root
     property int max: publisherGames.count
 
     property string publisher: ""
-    property int refreshToken: 0
-
-    function refresh() { refreshToken++ }
 
     SortFilterProxyModel {
     id: publisherGames
 
         sourceModel: api.allGames
-        filters: ExpressionFilter {
-            expression: {
-                // Read refreshToken so QML re-evaluates this filter when refresh() is called.
-                // Use root.publisher (not bare "publisher") to avoid collision with the
-                // model role of the same name that SortFilterProxyModel injects into scope.
-                refreshToken
-                if (!root.publisher) return false
-                return (model.publisher || "").toLowerCase().indexOf(root.publisher.toLowerCase()) >= 0
-            }
+        // Use (?!) as the fallback pattern — it is a zero-width negative lookahead
+        // that never matches, so the list stays empty until a real publisher is set.
+        filters: RegExpFilter {
+            roleName: "publisher"
+            pattern: publisher !== "" ? publisher : "(?!)"
+            caseSensitivity: Qt.CaseInsensitive
         }
         sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder }
     }
