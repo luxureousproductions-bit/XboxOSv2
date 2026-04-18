@@ -135,6 +135,10 @@ id: root
         api.memory.set("Showcase randoDev", dev);
         api.memory.set("Showcase randoGenre", genre);
         api.memory.set("Showcase randoGenre2", genre2);
+        listPublisher.refresh();
+        listDeveloper.refresh();
+        listGenre.refresh();
+        listGenre2.refresh();
         listRecommended.refresh();
         currentHelpbarModel = gridviewHelpModel;
     }
@@ -157,6 +161,10 @@ id: root
             randoDev   = api.memory.get("Showcase randoDev")   || "";
             randoGenre = api.memory.get("Showcase randoGenre") || "";
             randoGenre2= api.memory.get("Showcase randoGenre2")|| "";
+            listPublisher.refresh();
+            listDeveloper.refresh();
+            listGenre.refresh();
+            listGenre2.refresh();
             listRecommended.refresh();
         } else {
             // Fresh Pegasus startup — always generate new random lists
