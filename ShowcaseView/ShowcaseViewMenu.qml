@@ -118,6 +118,16 @@ id: root
     property string randoDev: ""
     property string randoGenre: ""
     property string randoGenre2: ""
+    property bool needsStartupRefresh: false
+
+    // Re-arm the debounce timer whenever more games finish loading
+    Connections {
+        target: api.allGames
+        onCountChanged: {
+            if (needsStartupRefresh && api.allGames.count > 0)
+                startupRefreshTimer.restart()
+        }
+    }
 
     function refreshLists() {
         var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || '';
@@ -152,9 +162,14 @@ id: root
     Timer {
     id: startupRefreshTimer
 
-        interval: 1500
+        // Fires 500 ms after the *last* game-count change, so it self-adjusts
+        // to however fast the system loads its game library.
+        interval: 500
         repeat: false
-        onTriggered: refreshLists()
+        onTriggered: {
+            needsStartupRefresh = false;
+            refreshLists();
+        }
     }
 
     Component.onCompleted: {
@@ -167,9 +182,13 @@ id: root
             randoGenre2= api.memory.get("Showcase randoGenre2")|| "";
             listRecommended.refresh();
         } else {
-            // Fresh Pegasus startup — delay slightly so the UI and game data
-            // are fully ready before populating the random lists
-            startupRefreshTimer.start();
+            // Fresh Pegasus startup — arm the debounce trigger.
+            // If games are already available, kick it off immediately;
+            // otherwise Connections.onCountChanged will start it once
+            // the first batch of games finishes loading.
+            needsStartupRefresh = true;
+            if (api.allGames.count > 0)
+                startupRefreshTimer.start();
         }
     }
     
