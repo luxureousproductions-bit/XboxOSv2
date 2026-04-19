@@ -164,7 +164,7 @@ id: root
 
         ListElement {
             settingName: "Grid Thumbnail"
-            setting: "Wide,Tall,Square,Box Art"
+            setting: "Wide,Tall,Square,Box Art,3D Box"
         }
         ListElement {
             settingName: "Number of columns"

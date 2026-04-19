@@ -135,7 +135,7 @@ id: root
     ListCollectionGames { id: list; }
 
     // Load settings
-    property bool showBoxes: settings.GridThumbnail === "Box Art"
+    property bool showBoxes: settings.GridThumbnail === "Box Art" || settings.GridThumbnail === "3D Box"
     property int numColumns: settings.GridColumns ? settings.GridColumns : 6
     property int titleMargin: settings.AlwaysShowTitles === "Yes" ? vpx(30) : 0
 
@@ -262,6 +262,7 @@ id: root
                 BoxArtGridItem {
                     selected: GridView.isCurrentItem && root.focus
                     gameData: modelData
+                    artStyle: settings.GridThumbnail
 
                     width:      GridView.view.cellWidth
                     height:     GridView.view.cellHeight - titleMargin
