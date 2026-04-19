@@ -25,20 +25,12 @@ id: root
     property int max: publisherGames.count
 
     property string publisher: ""
-    property int refreshToken: 0
-
-    function refresh() { refreshToken++ }
 
     SortFilterProxyModel {
     id: publisherGames
 
         sourceModel: api.allGames
-        filters: ExpressionFilter {
-            expression: {
-                refreshToken
-                return !!publisher && (model.publisher || "").toLowerCase().indexOf(publisher.toLowerCase()) >= 0
-            }
-        }
+        filters: RegExpFilter { roleName: "publisher"; pattern: publisher; caseSensitivity: Qt.CaseInsensitive }
         sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder }
     }
 
@@ -46,7 +38,10 @@ id: root
     id: gamesFiltered
 
         sourceModel: publisherGames
-        filters: IndexFilter { maximumIndex: max - 1 }
+        filters: [
+            IndexFilter { maximumIndex: max - 1 },
+            ExpressionFilter { expression: publisher !== "" }
+        ]
     }
 
     property var collection: {
