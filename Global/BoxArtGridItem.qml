@@ -42,8 +42,11 @@ id: root
                     for (var i = 0; i < list.length; i++) {
                         if (is3dPath(list[i])) return list[i];
                     }
+                    // No 3D entry found — fall back to first non-3D entry from the list
+                    for (var k = 0; k < list.length; k++) {
+                        if (!is3dPath(list[k])) return list[k];
+                    }
                 }
-                if (is3dPath(data.assets.boxFront)) return data.assets.boxFront;
             } else {
                 // "Box Art" (2D): prefer the first boxFront entry that is NOT a 3D path
                 if (list) {

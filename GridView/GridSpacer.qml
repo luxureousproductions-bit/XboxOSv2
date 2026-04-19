@@ -24,6 +24,7 @@ id: root
     // This is a workaround that's necessary in order to accurately get the aspect ratio for the boxart
     // It grabs the first game and bases all the aspect ratios off that
     property var fakesource: {
+        // Map Grid Thumbnail setting to the art style expected by Utils.boxArt ("2D" or "3D")
         var gridStyle = settings.GridThumbnail === "3D Box" ? "3D" : "2D";
         for (var i = 0; i < 5; i++)
         {
