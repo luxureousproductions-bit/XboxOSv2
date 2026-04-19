@@ -222,46 +222,6 @@ id: root
             settingName: "Show scanlines"
             setting: "Yes,No"
         }
-        ListElement {
-            settingName: "Media Carousel - Video"
-            setting: "On,Off"
-        }
-        ListElement {
-            settingName: "Media Carousel - Screenshots"
-            setting: "On,Off"
-        }
-        ListElement {
-            settingName: "Media Carousel - Title Screen"
-            setting: "On,Off"
-        }
-        ListElement {
-            settingName: "Media Carousel - Fanart"
-            setting: "On,Off"
-        }
-        ListElement {
-            settingName: "Media Carousel - 3D Box"
-            setting: "On,Off"
-        }
-        ListElement {
-            settingName: "Media Carousel - Box Art"
-            setting: "On,Off"
-        }
-        ListElement {
-            settingName: "Media Carousel - Back Box"
-            setting: "On,Off"
-        }
-        ListElement {
-            settingName: "Media Carousel - Cartridge"
-            setting: "On,Off"
-        }
-        ListElement {
-            settingName: "Media Carousel - Miximage"
-            setting: "On,Off"
-        }
-        ListElement {
-            settingName: "Media Carousel - Logo"
-            setting: "On,Off"
-        }
     }
 
     property var gamePage: {
@@ -271,7 +231,59 @@ id: root
         }
     }
 
-    property var settingsArr: [generalPage, showcasePage, gridPage, gamePage, advancedPage]
+    ListModel {
+    id: mediaCarouselSettingsModel
+
+        ListElement {
+            settingName: "Video"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Screenshots"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Title Screen"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Fanart"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "3D Box"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "2D Box"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Back Box"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Cartridge"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Miximage"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Logo"
+            setting: "On,Off"
+        }
+    }
+
+    property var mediaCarouselPage: {
+        return {
+            pageName: "Media Carousel",
+            listmodel: mediaCarouselSettingsModel
+        }
+    }
+
+    property var settingsArr: [generalPage, showcasePage, gridPage, gamePage, mediaCarouselPage, advancedPage]
 
     property real itemheight: vpx(50)
 

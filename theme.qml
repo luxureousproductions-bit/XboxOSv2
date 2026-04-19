@@ -74,16 +74,16 @@ id: root
             TallRatio:                     api.memory.has("Tall - Ratio") ? api.memory.get("Tall - Ratio") : "0.66",
             BoxArtStyle:                   api.memory.has("Box Art") ? api.memory.get("Box Art") : "2D",
             GameCounter:                   api.memory.has("Game Counter") ? api.memory.get("Game Counter") : "On",
-            CarouselVideo:                 api.memory.has("Media Carousel - Video") ? api.memory.get("Media Carousel - Video") : "On",
-            CarouselScreenshots:           api.memory.has("Media Carousel - Screenshots") ? api.memory.get("Media Carousel - Screenshots") : "On",
-            CarouselTitleScreen:           api.memory.has("Media Carousel - Title Screen") ? api.memory.get("Media Carousel - Title Screen") : "On",
-            CarouselFanart:                api.memory.has("Media Carousel - Fanart") ? api.memory.get("Media Carousel - Fanart") : "On",
-            Carousel3DBox:                 api.memory.has("Media Carousel - 3D Box") ? api.memory.get("Media Carousel - 3D Box") : "On",
-            Carousel2DBox:                 api.memory.has("Media Carousel - Box Art") ? api.memory.get("Media Carousel - Box Art") : "On",
-            CarouselBackBox:               api.memory.has("Media Carousel - Back Box") ? api.memory.get("Media Carousel - Back Box") : "On",
-            CarouselCartridge:             api.memory.has("Media Carousel - Cartridge") ? api.memory.get("Media Carousel - Cartridge") : "On",
-            CarouselMiximage:              api.memory.has("Media Carousel - Miximage") ? api.memory.get("Media Carousel - Miximage") : "On",
-            CarouselWheel:                 api.memory.has("Media Carousel - Logo") ? api.memory.get("Media Carousel - Logo") : "On"
+            CarouselVideo:                 api.memory.has("Video") ? api.memory.get("Video") : "On",
+            CarouselScreenshots:           api.memory.has("Screenshots") ? api.memory.get("Screenshots") : "On",
+            CarouselTitleScreen:           api.memory.has("Title Screen") ? api.memory.get("Title Screen") : "On",
+            CarouselFanart:                api.memory.has("Fanart") ? api.memory.get("Fanart") : "On",
+            Carousel3DBox:                 api.memory.has("3D Box") ? api.memory.get("3D Box") : "On",
+            Carousel2DBox:                 api.memory.has("2D Box") ? api.memory.get("2D Box") : "On",
+            CarouselBackBox:               api.memory.has("Back Box") ? api.memory.get("Back Box") : "On",
+            CarouselCartridge:             api.memory.has("Cartridge") ? api.memory.get("Cartridge") : "On",
+            CarouselMiximage:              api.memory.has("Miximage") ? api.memory.get("Miximage") : "On",
+            CarouselWheel:                 api.memory.has("Logo") ? api.memory.get("Logo") : "On"
             
         }
     }
