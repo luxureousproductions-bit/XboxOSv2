@@ -45,125 +45,190 @@ id: infocontainer
     }
 
     // Meta data
-    Item {
+    RowLayout {
     id: metarow
 
         height: vpx(50)
         anchors {
-            top: gametitle.bottom; 
+            top: gametitle.bottom;
             left: parent.left
             right: parent.right
         }
+        spacing: 0
 
-        // Rating box
-        Text {
-        id: ratingtitle
+        // Publisher
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
 
-            width: contentWidth
-            height: parent.height
-            anchors { left: parent.left; }
-            verticalAlignment: Text.AlignVCenter
-            text: "Rating: "
-            font.pixelSize: vpx(16)
-            font.family: subtitleFont.name
-            font.bold: true
-            color: theme.accent
-        }
-
-        Text {
-        id: ratingtext
-            
-            property real processedRating: gameData ? Math.round(gameData.rating * 100) / 10  : ""
-            width: contentWidth
-            height: parent.height
-            anchors { left: ratingtitle.right; leftMargin: vpx(5) }
-            verticalAlignment: Text.AlignVCenter
-            text: steam ? processedRating*5 : processedRating
-            font.pixelSize: vpx(16)
-            font.family: subtitleFont.name
-            color: theme.text
+            Text {
+            id: publisherlabel
+                anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                text: "Publisher: "
+                font.pixelSize: vpx(16)
+                font.family: subtitleFont.name
+                font.bold: true
+                color: theme.accent
+            }
+            Text {
+                anchors { left: publisherlabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                text: gameData ? (gameData.publisher || "") : ""
+                font.pixelSize: vpx(16)
+                font.family: subtitleFont.name
+                color: theme.text
+                elide: Text.ElideRight
+            }
         }
 
         Rectangle {
-        id: divider1
-            width: vpx(2)
-            anchors {
-                left: ratingtext.right; leftMargin: (25)
-                top: parent.top; topMargin: vpx(10)
-                bottom: parent.bottom; bottomMargin: vpx(10)
-            }
+            width: vpx(2); height: vpx(30)
+            Layout.alignment: Qt.AlignVCenter
             opacity: 0.2
         }
 
-        // Players box
-        Text {
-        id: playerstitle
+        // Developer
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
 
-            width: contentWidth
-            height: parent.height
-            anchors { left: divider1.right; leftMargin: vpx(25) }
-            verticalAlignment: Text.AlignVCenter
-            text: "Players: "
-            font.pixelSize: vpx(16)
-            font.family: subtitleFont.name
-            font.bold: true
-            color: theme.accent
-        }
-
-        Text {
-        id: playerstext
-
-            width: contentWidth
-            height: parent.height
-            anchors { left: playerstitle.right; leftMargin: vpx(5) }
-            verticalAlignment: Text.AlignVCenter
-            text: gameData ? gameData.players : ""
-            font.pixelSize: vpx(16)
-            font.family: subtitleFont.name
-            color: theme.text
+            Text {
+            id: developerlabel
+                anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                text: "Developer: "
+                font.pixelSize: vpx(16)
+                font.family: subtitleFont.name
+                font.bold: true
+                color: theme.accent
+            }
+            Text {
+                anchors { left: developerlabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                text: gameData ? (gameData.developer || "") : ""
+                font.pixelSize: vpx(16)
+                font.family: subtitleFont.name
+                color: theme.text
+                elide: Text.ElideRight
+            }
         }
 
         Rectangle {
-        id: divider2
-            width: vpx(2)
-            anchors {
-                left: playerstext.right; leftMargin: (25)
-                top: parent.top; topMargin: vpx(10)
-                bottom: parent.bottom; bottomMargin: vpx(10)
-            }
+            width: vpx(2); height: vpx(30)
+            Layout.alignment: Qt.AlignVCenter
             opacity: 0.2
         }
 
-        // Genre box
-        Text {
-        id: genretitle
+        // Release Date
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
 
-            width: contentWidth
-            height: parent.height
-            anchors { left: divider2.right; leftMargin: vpx(25) }
-            verticalAlignment: Text.AlignVCenter
-            text: "Genre: "
-            font.pixelSize: vpx(16)
-            font.family: subtitleFont.name
-            font.bold: true
-            color: theme.accent
+            Text {
+            id: releaselabel
+                anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                text: "Released: "
+                font.pixelSize: vpx(16)
+                font.family: subtitleFont.name
+                font.bold: true
+                color: theme.accent
+            }
+            Text {
+                anchors { left: releaselabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                text: gameData && gameData.releaseDate ? Qt.formatDate(gameData.releaseDate, "MM-dd-yyyy") : ""
+                font.pixelSize: vpx(16)
+                font.family: subtitleFont.name
+                color: theme.text
+                elide: Text.ElideRight
+            }
         }
 
-        Text {
-        id: genretext
+        Rectangle {
+            width: vpx(2); height: vpx(30)
+            Layout.alignment: Qt.AlignVCenter
+            opacity: 0.2
+        }
 
-            anchors { 
-                left: genretitle.right; leftMargin: vpx(5)
-                right: parent.right
-                top: parent.top
-                bottom: parent.bottom
+        // Genre
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            Text {
+            id: genrelabel
+                anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                text: "Genre: "
+                font.pixelSize: vpx(16)
+                font.family: subtitleFont.name
+                font.bold: true
+                color: theme.accent
             }
-            verticalAlignment: Text.AlignVCenter
-            text: gameData ? gameData.genre : ""
-            font.pixelSize: vpx(16)
-            font.family: subtitleFont.name
-            elide: Text.ElideRight
-            color: theme.text
+            Text {
+                anchors { left: genrelabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                text: gameData ? gameData.genre : ""
+                font.pixelSize: vpx(16)
+                font.family: subtitleFont.name
+                color: theme.text
+                elide: Text.ElideRight
+            }
+        }
+
+        Rectangle {
+            width: vpx(2); height: vpx(30)
+            Layout.alignment: Qt.AlignVCenter
+            opacity: 0.2
+        }
+
+        // Players
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            Text {
+            id: playerslabel
+                anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                text: "Players: "
+                font.pixelSize: vpx(16)
+                font.family: subtitleFont.name
+                font.bold: true
+                color: theme.accent
+            }
+            Text {
+                anchors { left: playerslabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                text: gameData ? gameData.players : ""
+                font.pixelSize: vpx(16)
+                font.family: subtitleFont.name
+                color: theme.text
+                elide: Text.ElideRight
+            }
+        }
+
+        Rectangle {
+            width: vpx(2); height: vpx(30)
+            Layout.alignment: Qt.AlignVCenter
+            opacity: 0.2
+        }
+
+        // Rating
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            Text {
+            id: ratinglabel
+                anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                text: "Rating: "
+                font.pixelSize: vpx(16)
+                font.family: subtitleFont.name
+                font.bold: true
+                color: theme.accent
+            }
+            Text {
+                property real processedRating: gameData ? Math.round(gameData.rating * 100) / 10 : 0
+                anchors { left: ratinglabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                text: steam ? processedRating * 5 : processedRating
+                font.pixelSize: vpx(16)
+                font.family: subtitleFont.name
+                color: theme.text
+                elide: Text.ElideRight
+            }
         }
     }
 
