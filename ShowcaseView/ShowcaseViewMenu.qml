@@ -152,7 +152,7 @@ id: root
     Timer {
     id: startupRefreshTimer
 
-        interval: 500
+        interval: 1500
         repeat: false
         onTriggered: refreshLists()
     }
