@@ -149,6 +149,14 @@ id: root
 
     Component.onDestruction: storeIndices();
 
+    Timer {
+    id: startupRefreshTimer
+
+        interval: 500
+        repeat: false
+        onTriggered: refreshLists()
+    }
+
     Component.onCompleted: {
         if (api.memory.has("To Game")) {
             // Returning from a game launch — restore saved random values so the
@@ -159,8 +167,9 @@ id: root
             randoGenre2= api.memory.get("Showcase randoGenre2")|| "";
             listRecommended.refresh();
         } else {
-            // Fresh Pegasus startup — always generate new random lists
-            refreshLists();
+            // Fresh Pegasus startup — delay slightly so the UI and game data
+            // are fully ready before populating the random lists
+            startupRefreshTimer.start();
         }
     }
     
