@@ -114,20 +114,13 @@ id: root
         return collection;
     }
 
-    property string randoPub: ""
-    property string randoDev: ""
-    property string randoGenre: ""
-    property string randoGenre2: ""
-    property bool needsStartupRefresh: false
-
-    // Re-arm the debounce timer whenever more games finish loading
-    Connections {
-        target: api.allGames
-        onCountChanged: {
-            if (needsStartupRefresh && api.allGames.count > 0)
-                startupRefreshTimer.restart()
-        }
-    }
+    // Pegasus populates api.allGames fully before any QML runs, so these
+    // property initializers evaluate once at component creation with the
+    // complete game library available — no timer or debounce needed.
+    property string randoPub:    Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || ''
+    property string randoDev:    Utils.returnRandom(Utils.uniqueValuesArray('developer')) || ''
+    property string randoGenre:  (Utils.returnRandom(Utils.uniqueValuesArray('genreList')) || [''])[0] || ''
+    property string randoGenre2: (Utils.returnRandom(Utils.uniqueValuesArray('genreList')) || [''])[0] || ''
 
     function refreshLists() {
         var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || '';
@@ -159,36 +152,21 @@ id: root
 
     Component.onDestruction: storeIndices();
 
-    Timer {
-    id: startupRefreshTimer
-
-        // Fires 500 ms after the *last* game-count change, so it self-adjusts
-        // to however fast the system loads its game library.
-        interval: 500
-        repeat: false
-        onTriggered: {
-            needsStartupRefresh = false;
-            refreshLists();
-        }
-    }
-
     Component.onCompleted: {
         if (api.memory.has("To Game")) {
             // Returning from a game launch — restore saved random values so the
             // lists look exactly as the user left them
-            randoPub   = api.memory.get("Showcase randoPub")   || "";
-            randoDev   = api.memory.get("Showcase randoDev")   || "";
-            randoGenre = api.memory.get("Showcase randoGenre") || "";
-            randoGenre2= api.memory.get("Showcase randoGenre2")|| "";
-            listRecommended.refresh();
+            randoPub    = api.memory.get("Showcase randoPub")    || "";
+            randoDev    = api.memory.get("Showcase randoDev")    || "";
+            randoGenre  = api.memory.get("Showcase randoGenre")  || "";
+            randoGenre2 = api.memory.get("Showcase randoGenre2") || "";
         } else {
-            // Fresh Pegasus startup — arm the debounce trigger.
-            // If games are already available, kick it off immediately;
-            // otherwise Connections.onCountChanged will start it once
-            // the first batch of games finishes loading.
-            needsStartupRefresh = true;
-            if (api.allGames.count > 0)
-                startupRefreshTimer.start();
+            // Fresh startup — persist the property-initializer values so they
+            // survive a game launch and can be restored on the way back
+            api.memory.set("Showcase randoPub",    randoPub);
+            api.memory.set("Showcase randoDev",    randoDev);
+            api.memory.set("Showcase randoGenre",  randoGenre);
+            api.memory.set("Showcase randoGenre2", randoGenre2);
         }
     }
     
