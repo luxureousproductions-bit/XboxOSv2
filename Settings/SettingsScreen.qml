@@ -235,43 +235,43 @@ id: root
     id: mediaCarouselSettingsModel
 
         ListElement {
-            settingName: "Media Carousel - Video"
+            settingName: "Video"
             setting: "On,Off"
         }
         ListElement {
-            settingName: "Media Carousel - Screenshots"
+            settingName: "Screenshots"
             setting: "On,Off"
         }
         ListElement {
-            settingName: "Media Carousel - Title Screen"
+            settingName: "Title Screen"
             setting: "On,Off"
         }
         ListElement {
-            settingName: "Media Carousel - Fanart"
+            settingName: "Fanart"
             setting: "On,Off"
         }
         ListElement {
-            settingName: "Media Carousel - 3D Box"
+            settingName: "3D Box"
             setting: "On,Off"
         }
         ListElement {
-            settingName: "Media Carousel - Box Art"
+            settingName: "2D Box"
             setting: "On,Off"
         }
         ListElement {
-            settingName: "Media Carousel - Back Box"
+            settingName: "Back Box"
             setting: "On,Off"
         }
         ListElement {
-            settingName: "Media Carousel - Cartridge"
+            settingName: "Cartridge"
             setting: "On,Off"
         }
         ListElement {
-            settingName: "Media Carousel - Miximage"
+            settingName: "Miximage"
             setting: "On,Off"
         }
         ListElement {
-            settingName: "Media Carousel - Logo"
+            settingName: "Logo"
             setting: "On,Off"
         }
     }
