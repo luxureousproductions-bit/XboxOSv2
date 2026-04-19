@@ -1,8 +1,9 @@
 # XboxOSv2 (a fork of a fork of gameOS)
 <img width="1920" height="1080" alt="Screenshot_20260412-124412" src="https://github.com/user-attachments/assets/591b52ab-6b1a-4ca4-ba8f-6a9f1ef5f051" />
-<img width="1920" height="1080" alt="Screenshot_20260412-124438" src="https://github.com/user-attachments/assets/a38aa6a4-2410-4732-af4a-84df2a19502d" />
-<img width="1920" height="1080" alt="Screenshot_20260412-124726" src="https://github.com/user-attachments/assets/b9b028ae-902a-4f1a-b345-f066cafd2014" />
-<img width="1920" height="1080" alt="Screenshot_20260412-124755" src="https://github.com/user-attachments/assets/31a6e08c-ea96-4dce-bedd-70c5e63d9418" />
+<img width="1920" height="1080" alt="Screenshot_20260419-152713" src="https://github.com/user-attachments/assets/6da5cebc-db5d-41c9-ba2b-9cf12f8a6f8c" />
+<img width="1920" height="1080" alt="Screenshot_20260419-152800" src="https://github.com/user-attachments/assets/8edaecd9-ad31-4dc6-821b-dec1f3c55f56" />
+<img width="1920" height="1080" alt="Screenshot_20260419-152824" src="https://github.com/user-attachments/assets/5df1f4ad-cd60-4b52-92ff-16b53a33ca10" />
+
 
 
 ## XboxOsv2 theme for Pegasus Frontend
