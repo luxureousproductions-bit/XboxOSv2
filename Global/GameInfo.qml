@@ -223,7 +223,7 @@ id: infocontainer
             Text {
                 property real processedRating: gameData ? Math.round(gameData.rating * 100) / 10 : 0
                 anchors { left: ratinglabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
-                text: steam ? processedRating * 5 : processedRating
+                text: gameData && gameData.rating > 0 ? (steam ? processedRating * 5 : processedRating) : ""
                 font.pixelSize: vpx(16)
                 font.family: subtitleFont.name
                 color: theme.text
