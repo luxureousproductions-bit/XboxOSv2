@@ -153,7 +153,7 @@ id: infocontainer
         }
         spacing: 0
 
-        // Genre (wider – gets ~50% of space)
+        // Genre (wider – 2:1:1 ratio with Players/Rating)
         Item {
             Layout.fillWidth: true
             Layout.preferredWidth: vpx(200)
@@ -184,7 +184,7 @@ id: infocontainer
             opacity: 0.2
         }
 
-        // Players (narrower – ~25% of space)
+        // Players (narrower – 1:2:1 ratio with Genre/Rating)
         Item {
             Layout.fillWidth: true
             Layout.preferredWidth: vpx(100)
@@ -215,7 +215,7 @@ id: infocontainer
             opacity: 0.2
         }
 
-        // Rating (narrower – ~25% of space)
+        // Rating (narrower – 1:2:1 ratio with Genre/Players)
         Item {
             Layout.fillWidth: true
             Layout.preferredWidth: vpx(100)
