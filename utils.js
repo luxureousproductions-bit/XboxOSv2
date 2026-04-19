@@ -474,3 +474,28 @@ function shuffleArray(array) {
 function returnRandom(array) {
   return array[Math.floor(Math.random() * array.length)];
 }
+
+// Returns a flat, deduplicated, sorted array of all genre strings found across
+// all games.  For compound "Genre / Subgenre" entries the full string is kept
+// AND the subgenre part ("Subgenre") is also added as a standalone entry so
+// that it can be used to match games by sub-genre alone.
+function uniqueGenreValues() {
+  const seen = new Set();
+  const allGames = api.allGames.toVarArray();
+  for (let i = 0; i < allGames.length; i++) {
+    const genres = allGames[i]['genreList'];
+    if (!genres) continue;
+    for (let j = 0; j < genres.length; j++) {
+      const g = genres[j];
+      if (!g) continue;
+      if (g.toLowerCase() === "application") continue;
+      seen.add(g);
+      const slashIdx = g.indexOf(' / ');
+      if (slashIdx !== -1) {
+        const subgenre = g.substring(slashIdx + 3);
+        if (subgenre) seen.add(subgenre);
+      }
+    }
+  }
+  return [...seen].sort();
+}

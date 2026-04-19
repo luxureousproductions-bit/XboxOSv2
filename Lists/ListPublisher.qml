@@ -30,7 +30,18 @@ id: root
     id: publisherGames
 
         sourceModel: api.allGames
-        filters: RegExpFilter { roleName: "publisher"; pattern: publisher; caseSensitivity: Qt.CaseInsensitive }
+        filters: [
+            RegExpFilter { roleName: "publisher"; pattern: publisher; caseSensitivity: Qt.CaseInsensitive },
+            ExpressionFilter {
+                expression: {
+                    var genres = model.genreList;
+                    for (var i = 0; i < genres.length; i++) {
+                        if (genres[i].toLowerCase() === "application") return false;
+                    }
+                    return true;
+                }
+            }
+        ]
         sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder }
     }
 
