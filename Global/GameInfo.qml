@@ -56,10 +56,10 @@ id: infocontainer
         }
         spacing: 0
 
-        // Publisher (wider – 2:1:1 ratio with Developer/Released)
+        // Publisher (equal – 1:1:1 ratio with Developer/Released)
         Item {
             Layout.fillWidth: true
-            Layout.preferredWidth: vpx(200)
+            Layout.preferredWidth: vpx(100)
             Layout.fillHeight: true
 
             Text {
@@ -87,7 +87,7 @@ id: infocontainer
             opacity: 0.2
         }
 
-        // Developer (narrower – 1:2:1 ratio with Publisher/Released)
+        // Developer (equal – 1:1:1 ratio with Publisher/Released)
         Item {
             Layout.fillWidth: true
             Layout.preferredWidth: vpx(100)
@@ -118,7 +118,7 @@ id: infocontainer
             opacity: 0.2
         }
 
-        // Release Date (narrower – 1:2:1 ratio with Publisher/Developer)
+        // Release Date (equal – 1:1:1 ratio with Publisher/Developer)
         Item {
             Layout.fillWidth: true
             Layout.preferredWidth: vpx(100)
@@ -161,10 +161,10 @@ id: infocontainer
         }
         spacing: 0
 
-        // Genre (wider – 2:1:1 ratio with Players/Rating)
+        // Genre (equal – 1:1:1 ratio with Players/Rating)
         Item {
             Layout.fillWidth: true
-            Layout.preferredWidth: vpx(200)
+            Layout.preferredWidth: vpx(100)
             Layout.fillHeight: true
 
             Text {
@@ -192,7 +192,7 @@ id: infocontainer
             opacity: 0.2
         }
 
-        // Players (narrower – 1:2:1 ratio with Genre/Rating)
+        // Players (equal – 1:1:1 ratio with Genre/Rating)
         Item {
             Layout.fillWidth: true
             Layout.preferredWidth: vpx(100)
@@ -223,7 +223,7 @@ id: infocontainer
             opacity: 0.2
         }
 
-        // Rating (narrower – 1:2:1 ratio with Genre/Players)
+        // Rating (equal – 1:1:1 ratio with Genre/Players)
         Item {
             Layout.fillWidth: true
             Layout.preferredWidth: vpx(100)
