@@ -44,11 +44,11 @@ id: infocontainer
         elide: Text.ElideRight
     }
 
-    // Meta data
+    // Meta data – Row 1: Publisher | Developer | Released
     RowLayout {
-    id: metarow
+    id: metarow1
 
-        height: vpx(50)
+        height: vpx(42)
         anchors {
             top: gametitle.bottom;
             left: parent.left
@@ -81,7 +81,7 @@ id: infocontainer
         }
 
         Rectangle {
-            width: vpx(2); height: vpx(30)
+            width: vpx(2); height: vpx(28)
             Layout.alignment: Qt.AlignVCenter
             opacity: 0.2
         }
@@ -111,7 +111,7 @@ id: infocontainer
         }
 
         Rectangle {
-            width: vpx(2); height: vpx(30)
+            width: vpx(2); height: vpx(28)
             Layout.alignment: Qt.AlignVCenter
             opacity: 0.2
         }
@@ -132,23 +132,31 @@ id: infocontainer
             }
             Text {
                 anchors { left: releaselabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
-                text: gameData && gameData.releaseDate ? Qt.formatDate(gameData.releaseDate, "MM-dd-yyyy") : ""
+                text: gameData && gameData.releaseDate ? Qt.formatDate(gameData.releaseDate, "yyyy-MM-dd") : ""
                 font.pixelSize: vpx(16)
                 font.family: subtitleFont.name
                 color: theme.text
                 elide: Text.ElideRight
             }
         }
+    }
 
-        Rectangle {
-            width: vpx(2); height: vpx(30)
-            Layout.alignment: Qt.AlignVCenter
-            opacity: 0.2
+    // Meta data – Row 2: Genre | Players | Rating
+    RowLayout {
+    id: metarow2
+
+        height: vpx(42)
+        anchors {
+            top: metarow1.bottom; topMargin: vpx(2)
+            left: parent.left
+            right: parent.right
         }
+        spacing: 0
 
-        // Genre
+        // Genre (wider – gets ~50% of space)
         Item {
             Layout.fillWidth: true
+            Layout.preferredWidth: vpx(200)
             Layout.fillHeight: true
 
             Text {
@@ -171,14 +179,15 @@ id: infocontainer
         }
 
         Rectangle {
-            width: vpx(2); height: vpx(30)
+            width: vpx(2); height: vpx(28)
             Layout.alignment: Qt.AlignVCenter
             opacity: 0.2
         }
 
-        // Players
+        // Players (narrower – ~25% of space)
         Item {
             Layout.fillWidth: true
+            Layout.preferredWidth: vpx(100)
             Layout.fillHeight: true
 
             Text {
@@ -201,14 +210,15 @@ id: infocontainer
         }
 
         Rectangle {
-            width: vpx(2); height: vpx(30)
+            width: vpx(2); height: vpx(28)
             Layout.alignment: Qt.AlignVCenter
             opacity: 0.2
         }
 
-        // Rating
+        // Rating (narrower – ~25% of space)
         Item {
             Layout.fillWidth: true
+            Layout.preferredWidth: vpx(100)
             Layout.fillHeight: true
 
             Text {
@@ -240,7 +250,7 @@ id: infocontainer
         anchors {
             left: parent.left; 
             right: parent.right;
-            top: metarow.bottom
+            top: metarow2.bottom
             bottom: parent.bottom;
         }
 
