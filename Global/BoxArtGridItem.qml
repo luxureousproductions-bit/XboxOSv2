@@ -28,21 +28,31 @@ id: root
     function steamBoxArt(gameData) {
         return steamAppID(gameData) + '/library_600x900_2x.jpg';
     }
+    function is3dPath(path) {
+        if (!path) return false;
+        var p = path.toLowerCase();
+        return p.includes("box3d") || p.includes("box_3d") || p.includes("3dbox");
+    }
     function boxArt(data) {
         if (data != null) {
-            // In Pegasus, box3d and box2dFront are NOT separate QML properties — both are stored
-            // in the single BOX_FRONT slot. boxFrontList holds ALL box images for this game.
-            // Prefer any entry whose file path identifies it as 3D box art
-            // (same logic MediaItem.qml uses for the "3D Box" label).
             var list = data.assets.boxFrontList;
-            if (list) {
-                for (var i = 0; i < list.length; i++) {
-                    var p = list[i].toLowerCase();
-                    if (p.includes("box3d") || p.includes("box_3d") || p.includes("3dbox"))
-                        return list[i];
+            if (artStyle === "3D Box") {
+                // Prefer 3D box art: scan boxFrontList for a 3D path
+                if (list) {
+                    for (var i = 0; i < list.length; i++) {
+                        if (is3dPath(list[i])) return list[i];
+                    }
+                }
+                if (is3dPath(data.assets.boxFront)) return data.assets.boxFront;
+            } else {
+                // "Box Art" (2D): prefer the first boxFront entry that is NOT a 3D path
+                if (list) {
+                    for (var j = 0; j < list.length; j++) {
+                        if (!is3dPath(list[j])) return list[j];
+                    }
                 }
             }
-            // No 3D art found — fall back in priority order.
+            // Shared fallback
             if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg"))
                 return steamBoxArt(data);
             if (data.assets.boxFront)
@@ -71,6 +81,7 @@ id: root
     Behavior on scale { NumberAnimation { duration: 100 } }
     property var gameData
     property int columns: 6
+    property string artStyle: "Box Art"
 
     scale: selected ? 1.1 : 1
     z: selected ? 10 : 1
