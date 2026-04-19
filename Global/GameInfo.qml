@@ -56,9 +56,10 @@ id: infocontainer
         }
         spacing: 0
 
-        // Publisher
+        // Publisher (wider – 2:1:1 ratio with Developer/Released)
         Item {
             Layout.fillWidth: true
+            Layout.preferredWidth: vpx(200)
             Layout.fillHeight: true
 
             Text {
@@ -86,9 +87,10 @@ id: infocontainer
             opacity: 0.2
         }
 
-        // Developer
+        // Developer (narrower – 1:2:1 ratio with Publisher/Released)
         Item {
             Layout.fillWidth: true
+            Layout.preferredWidth: vpx(100)
             Layout.fillHeight: true
 
             Text {
@@ -116,9 +118,10 @@ id: infocontainer
             opacity: 0.2
         }
 
-        // Release Date
+        // Release Date (narrower – 1:2:1 ratio with Publisher/Developer)
         Item {
             Layout.fillWidth: true
+            Layout.preferredWidth: vpx(100)
             Layout.fillHeight: true
 
             Text {
@@ -132,7 +135,12 @@ id: infocontainer
             }
             Text {
                 anchors { left: releaselabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
-                text: gameData && gameData.releaseDate ? Qt.formatDate(gameData.releaseDate, "yyyy-MM-dd") : ""
+                text: {
+                    if (!gameData) return "";
+                    var d = gameData.releaseDate;
+                    if (d && !isNaN(d.valueOf())) return Qt.formatDate(d, "MM-dd-yyyy");
+                    return gameData.releaseYear > 0 ? String(gameData.releaseYear) : "";
+                }
                 font.pixelSize: vpx(16)
                 font.family: subtitleFont.name
                 color: theme.text
@@ -147,7 +155,7 @@ id: infocontainer
 
         height: vpx(42)
         anchors {
-            top: metarow1.bottom; topMargin: vpx(2)
+            top: metarow1.bottom; topMargin: 0
             left: parent.left
             right: parent.right
         }
