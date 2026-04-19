@@ -43,7 +43,12 @@ id: root
         sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder; }
         filters: ExpressionFilter {
             expression: {
-                return !!randomIndices[model.index.toString()];
+                if (!randomIndices[model.index.toString()]) return false;
+                var genres = model.genreList;
+                for (var i = 0; i < genres.length; i++) {
+                    if (genres[i].toLowerCase() === "application") return false;
+                }
+                return true;
             }
         }
     }

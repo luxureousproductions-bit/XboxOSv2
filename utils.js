@@ -482,12 +482,13 @@ function returnRandom(array) {
 function uniqueGenreValues() {
   const seen = new Set();
   const allGames = api.allGames.toVarArray();
-  for (var i = 0; i < allGames.length; i++) {
+  for (let i = 0; i < allGames.length; i++) {
     const genres = allGames[i]['genreList'];
     if (!genres) continue;
-    for (var j = 0; j < genres.length; j++) {
+    for (let j = 0; j < genres.length; j++) {
       const g = genres[j];
       if (!g) continue;
+      if (g.toLowerCase() === "application") continue;
       seen.add(g);
       const slashIdx = g.indexOf(' / ');
       if (slashIdx !== -1) {
