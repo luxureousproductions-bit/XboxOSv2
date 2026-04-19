@@ -151,7 +151,7 @@ id: root
                     anchors { 
                         left: searchicon.right; leftMargin: vpx(10)
                         top: parent.top; bottom: parent.bottom
-                        right: parent.right; rightMargin: vpx(15)
+                        right: modeLabel.left; rightMargin: vpx(5)
                     }
                     verticalAlignment: Text.AlignVCenter
                     color: theme.text
@@ -162,6 +162,113 @@ id: root
                     text: searchTerm
                     onTextEdited: {
                         searchTerm = searchInput.text
+                    }
+
+                    Keys.onDownPressed: {
+                        if (searchActive) {
+                            event.accepted = true;
+                            searchModeDropdown.forceActiveFocus();
+                        }
+                    }
+                }
+
+                // Current mode label inside the search bar
+                Text {
+                id: modeLabel
+
+                    visible: searchActive || searchTerm != ""
+                    text: searchMode
+                    color: theme.text
+                    opacity: 0.6
+                    font.family: subtitleFont.name
+                    font.pixelSize: vpx(13)
+                    anchors {
+                        right: parent.right; rightMargin: vpx(12)
+                        verticalCenter: parent.verticalCenter
+                    }
+                }
+
+                // Search mode dropdown - appears below the search bar when active
+                FocusScope {
+                id: searchModeDropdown
+
+                    visible: searchActive
+                    width: vpx(160)
+                    height: vpx(96)
+                    y: parent.height + vpx(6)
+                    x: vpx(0)
+                    z: 50
+
+                    Rectangle {
+                        anchors.fill: parent
+                        color: theme.secondary
+                        radius: vpx(10)
+                        border.color: Qt.rgba(1, 1, 1, 0.15)
+                        border.width: 1
+                    }
+
+                    ListView {
+                    id: modeListView
+
+                        anchors { fill: parent; margins: vpx(8) }
+                        spacing: vpx(6)
+                        model: ["Title", "Genre"]
+                        currentIndex: searchMode === "Genre" ? 1 : 0
+                        focus: searchModeDropdown.activeFocus
+                        interactive: false
+
+                        delegate: Rectangle {
+                            width: modeListView.width
+                            height: vpx(34)
+                            radius: height / 2
+                            color: modelData === searchMode
+                                    ? theme.accent
+                                    : (ListView.isCurrentItem && modeListView.focus ? Qt.rgba(1, 1, 1, 0.15) : "transparent")
+
+                            Text {
+                                text: modelData
+                                color: theme.text
+                                font.family: subtitleFont.name
+                                font.pixelSize: vpx(16)
+                                font.bold: modelData === searchMode
+                                anchors.centerIn: parent
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: {
+                                    searchMode = modelData;
+                                    searchInput.forceActiveFocus();
+                                }
+                            }
+                        }
+
+                        Keys.onUpPressed: {
+                            if (currentIndex > 0) {
+                                sfxNav.play();
+                                currentIndex--;
+                            } else {
+                                searchInput.forceActiveFocus();
+                            }
+                        }
+                        Keys.onDownPressed: {
+                            if (currentIndex < count - 1) {
+                                sfxNav.play();
+                                currentIndex++;
+                            }
+                        }
+                        Keys.onPressed: {
+                            if (api.keys.isAccept(event) && !event.isAutoRepeat) {
+                                event.accepted = true;
+                                searchMode = model[currentIndex];
+                                sfxToggle.play();
+                                searchInput.forceActiveFocus();
+                            }
+                            if (api.keys.isCancel(event) && !event.isAutoRepeat) {
+                                event.accepted = true;
+                                searchInput.forceActiveFocus();
+                            }
+                        }
                     }
                 }
 

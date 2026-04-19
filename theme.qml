@@ -109,6 +109,7 @@ id: root
     property int sortByIndex: 0
     property var orderBy: Qt.AscendingOrder
     property string searchTerm: ""
+    property string searchMode: "Title"
     property bool steam: currentCollection.name === "Steam"
     function steamExists() {
         for (i = 0; i < api.collections.count; i++) {
@@ -346,6 +347,7 @@ id: root
         sfxAccept.play();
         lastState.push(state);
         searchTerm = "";
+        searchMode = "Title";
         switch(settings.PlatformView) {
             case "Grid":
                 root.state = "softwaregridscreen";
