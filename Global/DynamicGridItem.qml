@@ -92,7 +92,7 @@ id: root
 
             anchors.fill: parent
             anchors.margins: vpx(2)
-            source: modelData ? modelData.assets.background || modelData.assets.screenshots[0] || "" : ""
+            source: modelData ? (settings.ShowcaseArt === "Screenshot" ? (modelData.assets.screenshots[0] || "") : (modelData.assets.background || modelData.assets.screenshots[0] || "")) : ""
             fillMode: Image.PreserveAspectCrop
             sourceSize { width: 512; height: 512 }
             smooth: false

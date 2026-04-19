@@ -30,7 +30,7 @@ id: root
     id: developerGames
 
         sourceModel: api.allGames
-        filters: RegExpFilter { roleName: "developer"; pattern: developer; caseSensitivity: Qt.CaseInsensitive; }
+        filters: RegExpFilter { roleName: "developer"; pattern: developer; caseSensitivity: Qt.CaseInsensitive }
         sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder }
     }
 
@@ -38,7 +38,10 @@ id: root
     id: gamesFiltered
 
         sourceModel: developerGames
-        filters: IndexFilter { maximumIndex: max - 1 }
+        filters: [
+            IndexFilter { maximumIndex: max - 1 },
+            ExpressionFilter { expression: developer !== "" }
+        ]
     }
 
     property var collection: {

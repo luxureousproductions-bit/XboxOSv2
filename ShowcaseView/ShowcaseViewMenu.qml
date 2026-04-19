@@ -114,14 +114,32 @@ id: root
         return collection;
     }
 
-    property string randoPub: (Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || '')
-    property string randoDev: (Utils.returnRandom(Utils.uniqueValuesArray('developer')) || '')
-    property string randoGenre: (Utils.returnRandom(Utils.uniqueValuesArray('genreList'))[0] || '')
-    property string randoGenre2: {
+    // Pegasus populates api.allGames fully before any QML runs, so these
+    // property initializers evaluate once at component creation with the
+    // complete game library available — no timer or debounce needed.
+    property string randoPub:    Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || ''
+    property string randoDev:    Utils.returnRandom(Utils.uniqueValuesArray('developer')) || ''
+    property string randoGenre:  (Utils.returnRandom(Utils.uniqueValuesArray('genreList')) || [''])[0] || ''
+    property string randoGenre2: (Utils.returnRandom(Utils.uniqueValuesArray('genreList')) || [''])[0] || ''
+
+    function refreshLists() {
+        var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || '';
+        var dev = Utils.returnRandom(Utils.uniqueValuesArray('developer')) || '';
         var genres = Utils.uniqueValuesArray('genreList');
-        var filtered = genres.filter(function(g) { return g && g !== randoGenre; });
+        var genre = (Utils.returnRandom(genres) || [''])[0] || '';
+        var filtered = genres.filter(function(g) { return g && g !== genre; });
         var pick = filtered.length > 0 ? filtered : genres;
-        return (Utils.returnRandom(pick) || [''])[0] || '';
+        var genre2 = (Utils.returnRandom(pick) || [''])[0] || '';
+        randoPub = pub;
+        randoDev = dev;
+        randoGenre = genre;
+        randoGenre2 = genre2;
+        api.memory.set("Showcase randoPub", pub);
+        api.memory.set("Showcase randoDev", dev);
+        api.memory.set("Showcase randoGenre", genre);
+        api.memory.set("Showcase randoGenre2", genre2);
+        listRecommended.refresh();
+        currentHelpbarModel = gridviewHelpModel;
     }
 
     property bool ftue: featuredCollection.games.count == 0
@@ -133,6 +151,24 @@ id: root
     }
 
     Component.onDestruction: storeIndices();
+
+    Component.onCompleted: {
+        if (api.memory.has("To Game")) {
+            // Returning from a game launch — restore saved random values so the
+            // lists look exactly as the user left them
+            randoPub    = api.memory.get("Showcase randoPub")    || "";
+            randoDev    = api.memory.get("Showcase randoDev")    || "";
+            randoGenre  = api.memory.get("Showcase randoGenre")  || "";
+            randoGenre2 = api.memory.get("Showcase randoGenre2") || "";
+        } else {
+            // Fresh startup — persist the property-initializer values so they
+            // survive a game launch and can be restored on the way back
+            api.memory.set("Showcase randoPub",    randoPub);
+            api.memory.set("Showcase randoDev",    randoDev);
+            api.memory.set("Showcase randoGenre",  randoGenre);
+            api.memory.set("Showcase randoGenre2", randoGenre2);
+        }
+    }
     
     anchors.fill: parent
 
@@ -364,7 +400,9 @@ id: root
                     property bool selected: ListView.isCurrentItem && featuredlist.focus
                     width: featuredlist.width
                     height: featuredlist.height
-                    source: Utils.fanArt(modelData);
+                    source: settings.ShowcaseArt === "Screenshot"
+                            ? (modelData ? modelData.assets.screenshots[0] || "" : "")
+                            : Utils.fanArt(modelData);
                     //sourceSize { width: featuredlist.width; height: featuredlist.height }
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
@@ -779,6 +817,11 @@ id: root
             event.accepted = true;
             settingsScreen();
         }
+        // Refresh lists
+        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
+            event.accepted = true;
+            refreshLists();
+        }
     }
 
     // Helpbar buttons
@@ -790,13 +833,17 @@ id: root
             button: "filters"
         }
         ListElement {
+            name: "Refresh"
+            button: "details"
+        }
+        ListElement {
             name: "Select"
             button: "accept"
         }
     }
 
-    onFocusChanged: { 
-        if (focus)
+    onActiveFocusChanged: {
+        if (activeFocus)
             currentHelpbarModel = gridviewHelpModel;
     }
 

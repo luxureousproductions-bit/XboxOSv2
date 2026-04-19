@@ -29,7 +29,7 @@ id: root
     id: genreGames
 
         sourceModel: api.allGames
-        filters: RegExpFilter { roleName: "genre"; pattern: genre; caseSensitivity: Qt.CaseInsensitive; }
+        filters: RegExpFilter { roleName: "genre"; pattern: genre; caseSensitivity: Qt.CaseInsensitive }
         sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder }
     }
 
@@ -37,7 +37,10 @@ id: root
     id: gamesFiltered
 
         sourceModel: genreGames
-        filters: IndexFilter { maximumIndex: max - 1 }
+        filters: [
+            IndexFilter { maximumIndex: max - 1 },
+            ExpressionFilter { expression: genre !== "" }
+        ]
     }
 
     property var collection: {

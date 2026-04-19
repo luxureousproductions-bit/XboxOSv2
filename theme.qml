@@ -55,6 +55,7 @@ id: root
             AllowVideoPreviewAudio:        api.memory.has("Video preview audio") ? api.memory.get("Video preview audio") : "No",
             ShowScanlines:                 api.memory.has("Show scanlines") ? api.memory.get("Show scanlines") : "Yes",
             DetailsDefault:                api.memory.has("Default to full details") ? api.memory.get("Default to full details") : "No",
+            ShowcaseArt:                   api.memory.has("Showcase Art") ? api.memory.get("Showcase Art") : "Fanart",
             ShowcaseColumns:               api.memory.has("Number of games showcased") ? api.memory.get("Number of games showcased") : "15",
             ShowcaseFeaturedCollection:    api.memory.has("Featured collection") ? api.memory.get("Featured collection") : "Favorites",
             ShowcaseCollection1:           api.memory.has("Collection 1") ? api.memory.get("Collection 1") : "Recently Played",
@@ -70,7 +71,19 @@ id: root
             ShowcaseCollection6:           api.memory.has("Collection 6") ? api.memory.get("Collection 6") : "None",
             ShowcaseCollection6_Thumbnail: api.memory.has("Collection 6 - Thumbnail") ? api.memory.get("Collection 6 - Thumbnail") : "Wide",
             WideRatio:                     api.memory.has("Wide - Ratio") ? api.memory.get("Wide - Ratio") : "0.64",
-            TallRatio:                     api.memory.has("Tall - Ratio") ? api.memory.get("Tall - Ratio") : "0.66"
+            TallRatio:                     api.memory.has("Tall - Ratio") ? api.memory.get("Tall - Ratio") : "0.66",
+            BoxArtStyle:                   api.memory.has("Box Art") ? api.memory.get("Box Art") : "2D",
+            GameCounter:                   api.memory.has("Game Counter") ? api.memory.get("Game Counter") : "On",
+            CarouselVideo:                 api.memory.has("Media Carousel - Video") ? api.memory.get("Media Carousel - Video") : "On",
+            CarouselScreenshots:           api.memory.has("Media Carousel - Screenshots") ? api.memory.get("Media Carousel - Screenshots") : "On",
+            CarouselTitleScreen:           api.memory.has("Media Carousel - Title Screen") ? api.memory.get("Media Carousel - Title Screen") : "On",
+            CarouselFanart:                api.memory.has("Media Carousel - Fanart") ? api.memory.get("Media Carousel - Fanart") : "On",
+            Carousel3DBox:                 api.memory.has("Media Carousel - 3D Box") ? api.memory.get("Media Carousel - 3D Box") : "On",
+            Carousel2DBox:                 api.memory.has("Media Carousel - Box Art") ? api.memory.get("Media Carousel - Box Art") : "On",
+            CarouselBackBox:               api.memory.has("Media Carousel - Back Box") ? api.memory.get("Media Carousel - Back Box") : "On",
+            CarouselCartridge:             api.memory.has("Media Carousel - Cartridge") ? api.memory.get("Media Carousel - Cartridge") : "On",
+            CarouselMiximage:              api.memory.has("Media Carousel - Miximage") ? api.memory.get("Media Carousel - Miximage") : "On",
+            CarouselWheel:                 api.memory.has("Media Carousel - Logo") ? api.memory.get("Media Carousel - Logo") : "On"
             
         }
     }
@@ -412,13 +425,11 @@ id: root
     id: showcaseLoader
 
         focus: (root.state === "showcasescreen")
-        active: opacity !== 0
         opacity: focus ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
         sourceComponent: showcaseview
-        asynchronous: true
     }
 
     Loader  {

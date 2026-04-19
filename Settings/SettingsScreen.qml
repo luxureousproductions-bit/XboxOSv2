@@ -94,6 +94,10 @@ id: root
     ListModel {
     id: showcaseSettingsModel
         ListElement {
+            settingName: "Showcase Art"
+            setting: "Fanart,Screenshot"
+        }
+        ListElement {
             settingName: "Number of games showcased"
             setting: "15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,1,2,3,4,5,6,7,8,9,10,11,12,13,14"
         }
@@ -166,6 +170,10 @@ id: root
             settingName: "Number of columns"
             setting: "3,4,5,6,7,8"
         }
+        ListElement {
+            settingName: "Game Counter"
+            setting: "On,Off"
+        }
     }
 
     property var gridPage: {
@@ -178,6 +186,10 @@ id: root
     ListModel {
     id: gameSettingsModel
 
+        ListElement {
+            settingName: "Box Art"
+            setting: "2D,3D,Miximage"
+        }
         ListElement {
             settingName: "Game Background"
             setting: "Screenshot,Fanart"
@@ -209,6 +221,46 @@ id: root
         ListElement {
             settingName: "Show scanlines"
             setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Media Carousel - Video"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Media Carousel - Screenshots"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Media Carousel - Title Screen"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Media Carousel - Fanart"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Media Carousel - 3D Box"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Media Carousel - Box Art"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Media Carousel - Back Box"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Media Carousel - Cartridge"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Media Carousel - Miximage"
+            setting: "On,Off"
+        }
+        ListElement {
+            settingName: "Media Carousel - Logo"
+            setting: "On,Off"
         }
     }
 

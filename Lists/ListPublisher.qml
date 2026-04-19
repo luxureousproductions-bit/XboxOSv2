@@ -24,13 +24,13 @@ id: root
     function currentGame(index) { return api.allGames.get(publisherGames.mapToSource(index)) }
     property int max: publisherGames.count
 
-    property string publisher: "Nintendo"
+    property string publisher: ""
 
     SortFilterProxyModel {
     id: publisherGames
 
         sourceModel: api.allGames
-        filters: RegExpFilter { roleName: "publisher"; pattern: publisher; caseSensitivity: Qt.CaseInsensitive; }
+        filters: RegExpFilter { roleName: "publisher"; pattern: publisher; caseSensitivity: Qt.CaseInsensitive }
         sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder }
     }
 
@@ -38,7 +38,10 @@ id: root
     id: gamesFiltered
 
         sourceModel: publisherGames
-        filters: IndexFilter { maximumIndex: max - 1 }
+        filters: [
+            IndexFilter { maximumIndex: max - 1 },
+            ExpressionFilter { expression: publisher !== "" }
+        ]
     }
 
     property var collection: {
