@@ -119,17 +119,17 @@ id: root
     // complete game library available — no timer or debounce needed.
     property string randoPub:    Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || ''
     property string randoDev:    Utils.returnRandom(Utils.uniqueValuesArray('developer')) || ''
-    property string randoGenre:  (Utils.returnRandom(Utils.uniqueValuesArray('genreList')) || [''])[0] || ''
-    property string randoGenre2: (Utils.returnRandom(Utils.uniqueValuesArray('genreList')) || [''])[0] || ''
+    property string randoGenre:  Utils.returnRandom(Utils.uniqueGenreValues()) || ''
+    property string randoGenre2: Utils.returnRandom(Utils.uniqueGenreValues()) || ''
 
     function refreshLists() {
         var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || '';
         var dev = Utils.returnRandom(Utils.uniqueValuesArray('developer')) || '';
-        var genres = Utils.uniqueValuesArray('genreList');
-        var genre = (Utils.returnRandom(genres) || [''])[0] || '';
-        var filtered = genres.filter(function(g) { return g && g !== genre; });
+        var genres = Utils.uniqueGenreValues();
+        var genre = Utils.returnRandom(genres) || '';
+        var filtered = genres.filter(function(g) { return g !== genre; });
         var pick = filtered.length > 0 ? filtered : genres;
-        var genre2 = (Utils.returnRandom(pick) || [''])[0] || '';
+        var genre2 = Utils.returnRandom(pick) || '';
         randoPub = pub;
         randoDev = dev;
         randoGenre = genre;
