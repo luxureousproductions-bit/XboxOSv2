@@ -78,7 +78,7 @@ id: root
                     if (mediaItem.includes("box2dBack") || mediaItem.includes("box2dback") || mediaItem.includes("box2d_back")) return "Back Box";
                     if (mediaItem.includes("boxBack")  || mediaItem.includes("box_back"))  return "Back Box";
                     if (mediaItem.includes("cartridge") || mediaItem.includes("support")) return "Cartridge";
-                    if (mediaItem.includes("miximage") || mediaItem.includes("mix_image")) return "Miximage";
+                    if (mediaItem.includes("miximage") || mediaItem.includes("mix_image") || mediaItem.includes("steamgrid") || mediaItem.includes("/steam/") || mediaItem.includes("/grid/")) return "Miximage";
                     if (mediaItem.includes("wheel")) return "Logo";
                     return "Screenshot";
                 }

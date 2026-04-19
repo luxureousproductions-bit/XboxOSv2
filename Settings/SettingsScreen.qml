@@ -222,6 +222,18 @@ id: root
             settingName: "Show scanlines"
             setting: "Yes,No"
         }
+    }
+
+    property var gamePage: {
+        return {
+            pageName: "Game details",
+            listmodel: gameSettingsModel
+        }
+    }
+
+    ListModel {
+    id: mediaCarouselSettingsModel
+
         ListElement {
             settingName: "Media Carousel - Video"
             setting: "On,Off"
@@ -264,14 +276,14 @@ id: root
         }
     }
 
-    property var gamePage: {
+    property var mediaCarouselPage: {
         return {
-            pageName: "Game details",
-            listmodel: gameSettingsModel
+            pageName: "Media Carousel",
+            listmodel: mediaCarouselSettingsModel
         }
     }
 
-    property var settingsArr: [generalPage, showcasePage, gridPage, gamePage, advancedPage]
+    property var settingsArr: [generalPage, showcasePage, gridPage, gamePage, mediaCarouselPage, advancedPage]
 
     property real itemheight: vpx(50)
 
