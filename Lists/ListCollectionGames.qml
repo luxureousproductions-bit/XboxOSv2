@@ -31,7 +31,8 @@ id: root
         sourceModel: collection.games
         filters: [
             ValueFilter { roleName: "favorite"; value: true; enabled: showFavs },
-            RegExpFilter { roleName: "title"; pattern: searchTerm; caseSensitivity: Qt.CaseInsensitive; enabled: searchTerm != "" },
+            RegExpFilter { roleName: "title"; pattern: searchTerm; caseSensitivity: Qt.CaseInsensitive; enabled: searchTerm != "" && searchMode === "Title" },
+            RegExpFilter { roleName: "genre"; pattern: searchTerm; caseSensitivity: Qt.CaseInsensitive; enabled: searchTerm != "" && searchMode === "Genre" },
             IndexFilter { maximumIndex: max - 1; enabled: max }
         ]
         sorters: [
