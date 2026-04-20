@@ -29,6 +29,16 @@ id: root
 
         sourceModel: api.allGames
         sorters: RoleSorter { roleName: "lastPlayed"; sortOrder: Qt.DescendingOrder }
+        filters: ExpressionFilter {
+            expression: {
+                var genres = model.genreList;
+                for (var i = 0; i < genres.length; i++) {
+                    var g = genres[i].toLowerCase();
+                    if (g === "application" || g === "emulator") return false;
+                }
+                return true;
+            }
+        }
     }
 
     SortFilterProxyModel {

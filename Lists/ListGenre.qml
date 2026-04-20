@@ -24,6 +24,7 @@ id: root
     function currentGame(index) { return api.allGames.get(genreGames.mapToSource(index)) }
     property int max: genreGames.count
     property string genre: ""
+    property bool filterExcluded: true
 
     SortFilterProxyModel {
     id: genreGames
@@ -32,10 +33,12 @@ id: root
         filters: [
             RegExpFilter { roleName: "genre"; pattern: genre; caseSensitivity: Qt.CaseInsensitive },
             ExpressionFilter {
+                enabled: filterExcluded
                 expression: {
                     var genres = model.genreList;
                     for (var i = 0; i < genres.length; i++) {
-                        if (genres[i].toLowerCase() === "application") return false;
+                        var g = genres[i].toLowerCase();
+                        if (g === "application" || g === "emulator") return false;
                     }
                     return true;
                 }

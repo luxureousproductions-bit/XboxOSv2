@@ -46,7 +46,8 @@ id: root
                 if (!randomIndices[model.index.toString()]) return false;
                 var genres = model.genreList;
                 for (var i = 0; i < genres.length; i++) {
-                    if (genres[i].toLowerCase() === "application") return false;
+                    var g = genres[i].toLowerCase();
+                    if (g === "application" || g === "emulator") return false;
                 }
                 return true;
             }
