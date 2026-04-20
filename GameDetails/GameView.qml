@@ -47,7 +47,7 @@ id: root
     }
     
     ListPublisher { id: publisherCollection; publisher: game && game.publisher ? game.publisher : ""; max: 10 }
-    ListGenre { id: genreCollection; genre: game ? game.genreList[0] : ""; max: 10 }
+    ListGenre { id: genreCollection; genre: game ? game.genreList[0] : ""; max: 10; filterExcluded: false }
 
     // Combine the video and the screenshot arrays into one
     function mediaArray() {
