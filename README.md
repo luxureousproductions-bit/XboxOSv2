@@ -67,5 +67,6 @@ It is recommended to use [Skraper.net](http://www.skraper.net/) to acquire media
 -Added showcase options for fanart/screenshot✅
 
 -Implement refresh feature for showcase✅
+ (showcase doesnt auto refresh when nahigating away and coming back, only when hitting refresh button)
 
-- Added the ability to search by genre in playform search bar
+- Added the ability to search by genre in platform search bar
