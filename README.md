@@ -12,7 +12,7 @@ IMPORTANT: This is a fork of [gameOS](https://github.com/PlayingKarrde/gameOS/re
 
 ## Installation
 
-<img width="1920" height="1080" alt="Screenshot_20260412-124412" src="https://github.com/user-attachments/assets/57c1e45e-acaa-4902-ab72-10745b43fc66" />
+<img width="1920" height="1080" alt="screenshot" src="https://github.com/user-attachments/assets/7fdb1e66-4161-4564-9a6c-8fc726fbca93" />
 download latest release and extract it in your [Pegasus theme directory](http://pegasus-frontend.org/docs/user-guide/installing-themes/).
 
 
