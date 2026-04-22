@@ -110,8 +110,8 @@ id: root
 
     property var collection: {
         return {
-            name:       "More " + genre + " Games",
-            shortName:  genre + "games",
+            name:       genre ? "More " + genre + " Games" : "More Games",
+            shortName:  genre ? genre + "games" : "games",
             games:      gamesFiltered
         }
     }
