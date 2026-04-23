@@ -47,16 +47,18 @@ id: root
             // publisher or developer. Using a single ExpressionFilter with OR logic
             // ensures deduplication is automatic (no game can appear twice from one
             // source model pass).
+            // NOTE: outer properties must use root.* inside ExpressionFilter —
+            // bare names resolve to the current row's model roles, not the QML item's properties.
             ExpressionFilter {
                 expression: {
-                    if (!publisher && !developer) return false;
+                    if (!root.publisher && !root.developer) return false;
                     var gamePub = (model.publisher || "").toLowerCase();
                     var gameDev = (model.developer || "").toLowerCase();
-                    var pub = publisher.toLowerCase();
-                    var dev = developer.toLowerCase();
+                    var pub = root.publisher.toLowerCase();
+                    var dev = root.developer.toLowerCase();
                     // Partial match (same behaviour as the original RegExpFilter)
-                    if (publisher && gamePub.indexOf(pub) !== -1) return true;
-                    if (developer && gameDev.indexOf(dev) !== -1) return true;
+                    if (root.publisher && gamePub.indexOf(pub) !== -1) return true;
+                    if (root.developer && gameDev.indexOf(dev) !== -1) return true;
                     return false;
                 }
             },
@@ -72,7 +74,7 @@ id: root
             },
             // Exclude the current game itself
             ExpressionFilter {
-                expression: currentTitle === "" || model.title !== currentTitle
+                expression: root.currentTitle === "" || model.title !== root.currentTitle
             }
         ]
         sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder }
@@ -84,7 +86,7 @@ id: root
         sourceModel: pubDevGames
         filters: [
             IndexFilter { maximumIndex: max - 1 },
-            ExpressionFilter { expression: publisher !== "" || developer !== "" }
+            ExpressionFilter { expression: root.publisher !== "" || root.developer !== "" }
         ]
     }
 

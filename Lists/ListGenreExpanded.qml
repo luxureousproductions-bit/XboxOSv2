@@ -46,12 +46,14 @@ id: root
         filters: [
             // Broad genre match: full genre/subgenre, just main genre, or just subgenre.
             // Using a single ExpressionFilter keeps deduplication automatic.
+            // NOTE: outer properties must use root.* inside ExpressionFilter —
+            // bare names resolve to the current row's model roles, not the QML item's properties.
             ExpressionFilter {
                 expression: {
-                    if (!genre) return false;
+                    if (!root.genre) return false;
 
                     // Parse the current game's genre string
-                    var fullGenre = genre.toLowerCase().trim();
+                    var fullGenre = root.genre.toLowerCase().trim();
                     var parts = fullGenre.split("/");
                     var mainGenre = parts[0].trim();
                     var subGenre  = parts.length > 1 ? parts[1].trim() : "";
@@ -92,7 +94,7 @@ id: root
             },
             // Exclude the current game itself
             ExpressionFilter {
-                expression: currentTitle === "" || model.title !== currentTitle
+                expression: root.currentTitle === "" || model.title !== root.currentTitle
             }
         ]
         sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder }
@@ -104,7 +106,7 @@ id: root
         sourceModel: genreExpandedGames
         filters: [
             IndexFilter { maximumIndex: max - 1 },
-            ExpressionFilter { expression: genre !== "" }
+            ExpressionFilter { expression: root.genre !== "" }
         ]
     }
 
