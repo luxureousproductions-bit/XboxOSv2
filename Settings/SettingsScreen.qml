@@ -77,10 +77,12 @@ id: root
         ListElement {
             settingName: "Omit genre: Application from Showcase"
             setting: "Enable,Disable"
+            note: "(Reload all games required)"
         }
         ListElement {
             settingName: "Omit genre: Emulator from Showcase"
             setting: "Enable,Disable"
+            note: "(Reload all games required)"
         }
         ListElement {
             settingName: "Wide - Ratio"
@@ -453,6 +455,7 @@ id: root
                 property bool selected: ListView.isCurrentItem && settingsList.focus
                 property variant settingList: setting.split(',')
                 property int savedIndex: api.memory.get(settingName + 'Index') || 0
+                property string itemNote: (typeof note !== 'undefined') ? note : ""
 
                 function saveSetting() {
                     api.memory.set(settingName + 'Index', savedIndex);
@@ -474,7 +477,7 @@ id: root
                 }
 
                 width: ListView.view.width
-                height: itemheight
+                height: itemNote !== "" ? itemheight + vpx(22) : itemheight
 
                 // Setting name
                 Text {
@@ -488,7 +491,7 @@ id: root
                     opacity: selected ? 1 : 0.2
 
                     width: contentWidth
-                    height: parent.height
+                    height: itemheight
                     anchors {
                         left: parent.left; leftMargin: vpx(25)
                     }
@@ -504,9 +507,27 @@ id: root
                     verticalAlignment: Text.AlignVCenter
                     opacity: selected ? 1 : 0.2
 
-                    height: parent.height
+                    height: itemheight
                     anchors {
                         right: parent.right; rightMargin: vpx(25)
+                    }
+                }
+
+                // Optional note below the setting row
+                Text {
+                id: settingNoteText
+
+                    visible: itemNote !== ""
+                    text: itemNote
+                    color: theme.text
+                    font.family: bodyFont.name
+                    font.pixelSize: vpx(13)
+                    font.italic: true
+                    opacity: selected ? 0.6 : 0.15
+
+                    anchors {
+                        left: parent.left; leftMargin: vpx(25)
+                        top: parent.top; topMargin: itemheight
                     }
                 }
 
