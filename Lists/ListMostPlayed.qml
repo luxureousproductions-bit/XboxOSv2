@@ -24,11 +24,25 @@ id: root
     function currentGame(index) { return api.allGames.get(mostPlayedGames.mapToSource(index)) }
     property int max: mostPlayedGames.count
 
+    property bool omitApplication: true
+    property bool omitEmulator: true
+
     SortFilterProxyModel {
     id: mostPlayedGames
 
         sourceModel: api.allGames
         sorters: RoleSorter { roleName: "playCount"; sortOrder: Qt.DescendingOrder }
+        filters: ExpressionFilter {
+            expression: {
+                var genres = model.genreList;
+                for (var i = 0; i < genres.length; i++) {
+                    var g = genres[i].toLowerCase();
+                    if (root.omitApplication && g === "application") return false;
+                    if (root.omitEmulator && g === "emulator") return false;
+                }
+                return true;
+            }
+        }
     }
 
     SortFilterProxyModel {

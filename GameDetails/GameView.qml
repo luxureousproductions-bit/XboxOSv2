@@ -46,8 +46,37 @@ id: root
         }
     }
     
-    ListPublisher { id: publisherCollection; publisher: game && game.publisher ? game.publisher : ""; max: 10 }
-    ListGenre { id: genreCollection; genre: game ? game.genreList[0] : ""; max: 10; filterExcluded: false }
+    // --- BEGIN: More section – merged Publisher/Developer list ---
+    // Replaces the original ListPublisher; merges games from publisher AND developer,
+    // deduplicated automatically. Only affects the "More" section below.
+    ListPublisherDeveloper {
+        id: publisherCollection
+        publisher:    game && game.publisher ? game.publisher : ""
+        developer:    game && game.developer ? game.developer : ""
+        currentTitle: game ? game.title : ""
+        max: 20
+    }
+    // --- END: More section – merged Publisher/Developer list ---
+
+    // --- BEGIN: More section – Recommended Games fallback ---
+    // Shown in place of the Publisher/Developer list when that list is empty.
+    // Only affects the "More" section of the Game Details page.
+    ListRecommended {
+        id: recommendedCollection
+        max: 20
+    }
+    // --- END: More section – Recommended Games fallback ---
+
+    // --- BEGIN: More section – expanded Genre/Subgenre list ---
+    // Replaces the original ListGenre; matches the full "genre / subgenre", just
+    // the main genre, or just the subgenre. Only affects the "More" section below.
+    ListGenreExpanded {
+        id: genreCollection
+        genre:        game && game.genreList.length > 0 ? game.genreList[0] : ""
+        currentTitle: game ? game.title : ""
+        max: 20
+    }
+    // --- END: More section – expanded Genre/Subgenre list ---
 
     // Combine the video and the screenshot arrays into one
     function mediaArray() {
@@ -104,6 +133,8 @@ id: root
         screenshot.opacity = 1;
         mediaScreen.opacity = 0;
         toggleVideo(true);
+        // Refresh the recommended fallback list so each game visited shows a fresh set
+        recommendedCollection.refresh();
     }
 
     // Show/hide the details overlay
@@ -618,7 +649,8 @@ id: root
             
         }
 
-        // More by publisher
+        // --- BEGIN: More by Publisher/Developer (More section only) ---
+        // Falls back to "More Recommended Games" when no publisher/developer results exist.
         HorizontalCollection {
         id: list1
 
@@ -629,12 +661,25 @@ id: root
             itemWidth: (root.width - globalMargin * 2) / 4.0
             itemHeight: itemWidth * settings.WideRatio
 
-            title: game ? "More games by " + game.publisher : ""
-            search: publisherCollection
+            // Show recommended games when there are no publisher/developer results
+            title: {
+                if (!game) return "";
+                if (publisherCollection.games.count === 0)
+                    return "More Recommended Games";
+                var pub = game.publisher || "";
+                var dev = game.developer || "";
+                if (pub && dev && pub.toLowerCase() !== dev.toLowerCase())
+                    return "More by " + pub + " / " + dev;
+                return "More games by " + (pub || dev);
+            }
+            // Switch to the recommended fallback when publisher/developer list is empty
+            search: publisherCollection.games.count > 0 ? publisherCollection : recommendedCollection
             onListHighlighted: { sfxNav.play(); content.currentIndex = list1.ObjectModel.index; }
         }
+        // --- END: More by Publisher/Developer (More section only) ---
 
-        // More in genre
+        // --- BEGIN: More by Genre/Subgenre expanded (More section only) ---
+        // Title reflects the expanded genre match (full, main genre, or subgenre).
         HorizontalCollection {
         id: list2
 
@@ -645,10 +690,11 @@ id: root
             itemWidth: (root.width - globalMargin * 2) / 8.0
             itemHeight: itemWidth / settings.TallRatio
 
-            title: game ? "More " + game.genreList[0] + " Games" : "              "
+            title: game && game.genreList.length > 0 ? "More " + game.genreList[0] + " Games" : "              "
             search: genreCollection
             onListHighlighted: { sfxNav.play(); content.currentIndex = list2.ObjectModel.index; }
         }
+        // --- END: More by Genre/Subgenre expanded (More section only) ---
         
     }
 

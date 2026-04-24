@@ -25,6 +25,8 @@ id: root
     property int max: developerGames.count
 
     property string developer: ""
+    property bool omitApplication: true
+    property bool omitEmulator: true
 
     SortFilterProxyModel {
     id: developerGames
@@ -36,7 +38,9 @@ id: root
                 expression: {
                     var genres = model.genreList;
                     for (var i = 0; i < genres.length; i++) {
-                        if (genres[i].toLowerCase() === "application") return false;
+                        var g = genres[i].toLowerCase();
+                        if (root.omitApplication && g === "application") return false;
+                        if (root.omitEmulator && g === "emulator") return false;
                     }
                     return true;
                 }

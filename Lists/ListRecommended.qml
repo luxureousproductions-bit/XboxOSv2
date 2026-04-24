@@ -24,6 +24,9 @@ id: root
     function currentGame(index) { return api.allGames.get(gamesFiltered.mapToSource(index)) }
     property int max: gamesFiltered.count
 
+    property bool omitApplication: true
+    property bool omitEmulator: true
+
     property var randomIndices: {};
 
     function refresh() {
@@ -47,7 +50,8 @@ id: root
                 var genres = model.genreList;
                 for (var i = 0; i < genres.length; i++) {
                     var g = genres[i].toLowerCase();
-                    if (g === "application" || g === "emulator") return false;
+                    if (root.omitApplication && g === "application") return false;
+                    if (root.omitEmulator && g === "emulator") return false;
                 }
                 return true;
             }

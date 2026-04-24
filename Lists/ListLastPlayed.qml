@@ -24,6 +24,9 @@ id: root
     function currentGame(index) { return api.allGames.get(lastPlayedGames.mapToSource(index)) }
     property int max: lastPlayedGames.count
 
+    property bool omitApplication: true
+    property bool omitEmulator: true
+
     SortFilterProxyModel {
     id: lastPlayedGames
 
@@ -34,7 +37,8 @@ id: root
                 var genres = model.genreList;
                 for (var i = 0; i < genres.length; i++) {
                     var g = genres[i].toLowerCase();
-                    if (g === "application" || g === "emulator") return false;
+                    if (root.omitApplication && g === "application") return false;
+                    if (root.omitEmulator && g === "emulator") return false;
                 }
                 return true;
             }

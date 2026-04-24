@@ -83,7 +83,9 @@ id: root
             CarouselBackBox:               api.memory.has("Back Box") ? api.memory.get("Back Box") : "On",
             CarouselCartridge:             api.memory.has("Cartridge") ? api.memory.get("Cartridge") : "On",
             CarouselMiximage:              api.memory.has("Miximage") ? api.memory.get("Miximage") : "On",
-            CarouselWheel:                 api.memory.has("Logo") ? api.memory.get("Logo") : "On"
+            CarouselWheel:                 api.memory.has("Logo") ? api.memory.get("Logo") : "On",
+            OmitApplicationFromShowcase:   api.memory.has("Omit genre: Application from Showcase") ? api.memory.get("Omit genre: Application from Showcase") : "Enable",
+            OmitEmulatorFromShowcase:      api.memory.has("Omit genre: Emulator from Showcase") ? api.memory.get("Omit genre: Emulator from Showcase") : "Enable"
             
         }
     }
