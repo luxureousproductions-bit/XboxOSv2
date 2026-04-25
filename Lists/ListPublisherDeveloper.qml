@@ -62,16 +62,6 @@ id: root
                     return false;
                 }
             },
-            // Exclude application-genre entries
-            ExpressionFilter {
-                expression: {
-                    var genres = model.genreList;
-                    for (var i = 0; i < genres.length; i++) {
-                        if (genres[i].toLowerCase() === "application") return false;
-                    }
-                    return true;
-                }
-            },
             // Exclude the current game itself
             ExpressionFilter {
                 expression: root.currentTitle === "" || model.title !== root.currentTitle
