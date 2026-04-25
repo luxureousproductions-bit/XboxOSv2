@@ -328,7 +328,7 @@ id: root
         horizontalOffset: 0
         verticalOffset: 0
         radius: 8.0
-        samples: 12
+        samples: 9
         color: "#000000"
         source: logo
         opacity: (content.currentIndex !== 0 || detailsScreen.opacity !== 0) ? 0 : 0.4

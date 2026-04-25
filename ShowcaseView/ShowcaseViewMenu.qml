@@ -394,7 +394,7 @@ id: root
             Component {
             id: featuredDelegate
 
-                AnimatedImage {
+                Image {
                 id: background
 
                     property bool selected: ListView.isCurrentItem && featuredlist.focus
@@ -403,7 +403,7 @@ id: root
                     source: settings.ShowcaseArt === "Screenshot"
                             ? (modelData ? modelData.assets.screenshots[0] || "" : "")
                             : Utils.fanArt(modelData);
-                    //sourceSize { width: featuredlist.width; height: featuredlist.height }
+                    sourceSize { width: featuredlist.width; height: featuredlist.height }
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                         
@@ -420,7 +420,7 @@ id: root
                         Behavior on opacity { PropertyAnimation { duration: 150; easing.type: Easing.OutQuart; easing.amplitude: 2.0; easing.period: 1.5 } }
                     }
 
-                    AnimatedImage {
+                    Image {
                     id: specialLogo
 
                         width: parent.height - vpx(20)
@@ -428,7 +428,7 @@ id: root
                         source: Utils.logo(modelData)
                         fillMode: Image.PreserveAspectFit
                         asynchronous: true
-                        //sourceSize { width: 256; height: 256 }
+                        sourceSize { width: 256; height: 256 }
                         anchors.horizontalCenter: parent.horizontalCenter
                         anchors.verticalCenter: parent.verticalCenter
                         opacity: featuredlist.focus ? 1 : 0.5

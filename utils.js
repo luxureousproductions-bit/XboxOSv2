@@ -370,8 +370,9 @@ function boxArt(data, style) {
       return data.assets.tile;
     if (data.assets.cartridge)
       return data.assets.cartridge;
-    if (getMiximage(data))
-      return getMiximage(data);
+    var mix = getMiximage(data);
+    if (mix)
+      return mix;
     if (data.assets.logo)
       return data.assets.logo;
   }

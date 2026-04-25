@@ -88,7 +88,7 @@ id: root
         horizontalOffset: 0
         verticalOffset: 0
         radius: 20.0
-        samples: 15
+        samples: 11
         color: "#000000"
         source: videocontainer
         opacity: selected ? 0.5 : 0

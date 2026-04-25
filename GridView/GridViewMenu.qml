@@ -235,7 +235,7 @@ id: root
             }
 
             populate: Transition {
-                NumberAnimation { property: "opacity"; from: 0; to: 1.0; duration: 400 }
+                NumberAnimation { property: "opacity"; from: 0; to: 1.0; duration: 200 }
             }
 
             anchors {
