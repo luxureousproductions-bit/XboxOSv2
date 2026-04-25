@@ -166,6 +166,10 @@ id: root
 
     onGameChanged: reset();
 
+    // Pre-computed media list for this game; used by both the strip and the full-screen viewer.
+    // Binding to `game` means it is computed once per game change instead of twice.
+    readonly property var mediaList: game ? mediaArray() : []
+
     anchors.fill: parent
 
     GridSpacer {
@@ -620,7 +624,7 @@ id: root
             width: root.width - vpx(70) - globalMargin
             height: ((root.width - globalMargin * 2) / 6.0) + vpx(60)
             title: "Media"
-            model: game ? mediaArray() : []
+            model: mediaList
             delegate: MediaItem {
             id: mediadelegate
 
@@ -735,7 +739,7 @@ id: root
         Behavior on opacity { NumberAnimation { duration: 100 } }
         visible: opacity != 0
 
-        mediaModel: mediaArray();
+        mediaModel: mediaList
         mediaIndex: media.currentIndex != -1 ? media.currentIndex : 0
         onClose: closeMedia();
     }

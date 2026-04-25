@@ -29,9 +29,10 @@ id: root
         for (var i = 0; i < 5; i++)
         {
             var gamesource = currentCollection.games.get(i);
-            if (Utils.boxArt(gamesource, gridStyle) !== "")
+            var art = Utils.boxArt(gamesource, gridStyle);
+            if (art !== "")
             {
-                return Utils.boxArt(gamesource, gridStyle);
+                return art;
             }
         }
     }
