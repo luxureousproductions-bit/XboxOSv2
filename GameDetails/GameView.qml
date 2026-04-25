@@ -739,7 +739,7 @@ id: root
         Behavior on opacity { NumberAnimation { duration: 100 } }
         visible: opacity != 0
 
-        mediaModel: mediaList
+        mediaModel: mediaList;
         mediaIndex: media.currentIndex != -1 ? media.currentIndex : 0
         onClose: closeMedia();
     }
