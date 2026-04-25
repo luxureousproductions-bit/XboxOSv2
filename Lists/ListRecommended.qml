@@ -24,8 +24,8 @@ id: root
     function currentGame(index) { return api.allGames.get(gamesFiltered.mapToSource(index)) }
     property int max: gamesFiltered.count
 
-    property bool omitApplication: true
-    property bool omitEmulator: true
+    property bool omitApplication: false
+    property bool omitEmulator: false
 
     property var randomIndices: {};
 
