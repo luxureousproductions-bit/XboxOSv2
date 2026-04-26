@@ -46,14 +46,22 @@ id: root
         }
     }
     
+    // Debounced filter inputs for the "More" list models (Option 1).
+    // Updated 200 ms after game changes so the expensive ExpressionFilter
+    // scans don't run on the UI thread during the navigation transition.
+    property string deferredPublisher: ""
+    property string deferredDeveloper: ""
+    property string deferredTitle:     ""
+    property string deferredGenre:     ""
+
     // --- BEGIN: More section – merged Publisher/Developer list ---
     // Replaces the original ListPublisher; merges games from publisher AND developer,
     // deduplicated automatically. Only affects the "More" section below.
     ListPublisherDeveloper {
         id: publisherCollection
-        publisher:    game && game.publisher ? game.publisher : ""
-        developer:    game && game.developer ? game.developer : ""
-        currentTitle: game ? game.title : ""
+        publisher:    deferredPublisher
+        developer:    deferredDeveloper
+        currentTitle: deferredTitle
         max: 20
     }
     // --- END: More section – merged Publisher/Developer list ---
@@ -72,8 +80,8 @@ id: root
     // the main genre, or just the subgenre. Only affects the "More" section below.
     ListGenreExpanded {
         id: genreCollection
-        genre:        game && game.genreList.length > 0 ? game.genreList[0] : ""
-        currentTitle: game ? game.title : ""
+        genre:        deferredGenre
+        currentTitle: deferredTitle
         max: 20
     }
     // --- END: More section – expanded Genre/Subgenre list ---
@@ -133,8 +141,9 @@ id: root
         screenshot.opacity = 1;
         mediaScreen.opacity = 0;
         toggleVideo(true);
-        // Refresh the recommended fallback list so each game visited shows a fresh set
-        recommendedCollection.refresh();
+        // Defer the "More" list filter updates (Options 1 & 2) so the expensive
+        // ExpressionFilter scans don't block the navigation transition.
+        filterDebounce.restart();
     }
 
     // Show/hide the details overlay
@@ -227,6 +236,28 @@ id: root
             videoPreviewLoader.sourceComponent = undefined;
             videoDelay.stop();
             fadescreenshot.stop();
+        }
+    }
+
+    // Option 1 & 2: Debounce timer for the "More" list filter inputs.
+    // Fires 200 ms after a game change so the heavy ExpressionFilter scans
+    // run after the navigation transition has rendered.
+    // Option 2: recommendedCollection.refresh() is only called when the
+    // publisher/developer list comes up empty (avoiding the scan entirely
+    // when it's not needed).
+    Timer {
+    id: filterDebounce
+
+        interval: 200
+        onTriggered: {
+            deferredPublisher = game && game.publisher ? game.publisher : "";
+            deferredDeveloper = game && game.developer ? game.developer : "";
+            deferredTitle     = game ? game.title : "";
+            deferredGenre     = game && game.genreList.length > 0 ? game.genreList[0] : "";
+            // Refresh the recommended fallback only when the publisher/developer
+            // list has no results (Option 2: skip the scan when not needed).
+            if (publisherCollection.games.count === 0)
+                recommendedCollection.refresh();
         }
     }
 
@@ -722,7 +753,7 @@ id: root
         snapMode: ListView.SnapToItem
         highlightMoveDuration: 100
         displayMarginEnd: 150
-        cacheBuffer: 250
+        cacheBuffer: 0
         onCurrentIndexChanged: { 
             if (content.currentIndex === 0) {
                 toggleVideo(true); 
