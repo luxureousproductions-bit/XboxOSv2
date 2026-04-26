@@ -48,8 +48,9 @@ id: root
         property var randoFanart: game ? game.assets.backgroundList[randoFanartNumber] : ""
         property var actualBackground: (settings.GameBackground === "Screenshot") ? randoScreenshot : Utils.fanArt(game) || randoFanart;
         source: actualBackground || ""
+        sourceSize: Qt.size(root.width, root.height)
         fillMode: Image.PreserveAspectCrop
-        smooth: true
+        smooth: false
         Behavior on opacity { NumberAnimation { duration: 500 } }
     }
 

@@ -35,8 +35,9 @@ id: root
         }
         asynchronous: true
         source: currentGame ? (settings.ShowcaseArt === "Screenshot" ? (currentGame.assets.screenshots[0] || "") : (currentGame.assets.background || currentGame.assets.screenshots[0] || "")) : ""
+        sourceSize: Qt.size(parent.width, parent.height)
         fillMode: Image.PreserveAspectCrop
-        smooth: true
+        smooth: false
 
         GameInfo {
         id: info

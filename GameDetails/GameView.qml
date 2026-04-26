@@ -280,8 +280,9 @@ id: root
         property var randoFanart: game ? game.assets.backgroundList[randoFanartNumber] : ""
         property var actualBackground: (settings.GameBackground === "Screenshot") ? randoScreenshot : Utils.fanArt(game) || randoFanart;
         source: actualBackground || ""
+        sourceSize: Qt.size(root.width, root.height)
         fillMode: Image.PreserveAspectCrop
-        smooth: true
+        smooth: false
         Behavior on opacity { NumberAnimation { duration: 500 } }
         visible: !blurBG
     }
@@ -317,6 +318,7 @@ id: root
         width: vpx(500)
         height: vpx(450) + header.height
         source: game ? Utils.logo(game) : ""
+        sourceSize { width: 512; height: 512 }
         fillMode: Image.PreserveAspectFit
         asynchronous: true
         opacity: (content.currentIndex !== 0 || detailsScreen.opacity !== 0) ? 0 : 1
@@ -425,6 +427,7 @@ id: root
                 source: Utils.boxArt(game, settings.BoxArtStyle)
                 width: vpx(350)
                 height: parent.height
+                sourceSize { width: 512; height: 512 }
                 fillMode: Image.PreserveAspectFit
                 asynchronous: true
                 smooth: true
