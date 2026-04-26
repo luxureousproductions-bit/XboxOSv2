@@ -15,77 +15,64 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import QtQuick 2.0
-import SortFilterProxyModel 0.2
 
-// --- BEGIN: More by Publisher/Developer merged list ---
-// This component replaces the original ListPublisher for the "More" section
-// on the Game Details page only. It merges games from both the publisher and
-// developer of the current game, automatically deduplicating results (since
-// we filter a single source model with an OR condition). The current game is
-// excluded via the currentTitle property.
+// --- BEGIN: More by Publisher/Developer – Option 5: JS array ---
+// Replaces the SortFilterProxyModel + ExpressionFilter approach with a single
+// JavaScript pass that fires on demand (via rebuild()). This eliminates the
+// per-row QML reactive overhead of ExpressionFilter and runs the entire scan
+// as one synchronous JS loop, which is cheaper at navigation time because it
+// is explicitly triggered rather than reacting to property changes.
 Item {
 id: root
 
-    readonly property alias games: gamesFiltered
-    // Map from the outer (index-limited) proxy back through to api.allGames.
-    // gamesFiltered uses only an IndexFilter (preserving source indices), so
-    // pubDevGames.mapToSource(index) correctly resolves to api.allGames.
-    function currentGame(index) { return api.allGames.get(pubDevGames.mapToSource(index)) }
+    // Plain JS array of game objects – used directly as the ListView model.
+    // Reassigned (not mutated) so QML detects the change and updates bindings.
+    property var games: []
+
+    // Returns the game object at the given list index.
+    function currentGame(index) { return games[index] }
+
     property int max: 100
 
     property string publisher: ""
     property string developer: ""
-    // Title of the current game – used to exclude it from this list
+    // Title of the current game – excluded from results
     property string currentTitle: ""
 
-    SortFilterProxyModel {
-    id: pubDevGames
-
-        sourceModel: api.allGames
-        filters: [
-            // Match games whose publisher OR developer matches the current game's
-            // publisher or developer. Using a single ExpressionFilter with OR logic
-            // ensures deduplication is automatic (no game can appear twice from one
-            // source model pass).
-            // NOTE: outer properties must use root.* inside ExpressionFilter —
-            // bare names resolve to the current row's model roles, not the QML item's properties.
-            ExpressionFilter {
-                expression: {
-                    if (!root.publisher && !root.developer) return false;
-                    var gamePub = (model.publisher || "").toLowerCase();
-                    var gameDev = (model.developer || "").toLowerCase();
-                    var pub = root.publisher.toLowerCase();
-                    var dev = root.developer.toLowerCase();
-                    // Partial match (same behaviour as the original RegExpFilter)
-                    if (root.publisher && gamePub.indexOf(pub) !== -1) return true;
-                    if (root.developer && gameDev.indexOf(dev) !== -1) return true;
-                    return false;
-                }
-            },
-            // Exclude the current game itself
-            ExpressionFilter {
-                expression: root.currentTitle === "" || model.title !== root.currentTitle
-            }
-        ]
-        sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder }
-    }
-
-    SortFilterProxyModel {
-    id: gamesFiltered
-
-        sourceModel: pubDevGames
-        filters: [
-            IndexFilter { maximumIndex: max - 1 },
-            ExpressionFilter { expression: root.publisher !== "" || root.developer !== "" }
-        ]
-    }
-
-    property var collection: {
-        return {
-            name:       "More by Publisher/Developer",
-            shortName:  "publisherdeveloper",
-            games:      gamesFiltered
+    // Rebuild the games array from api.allGames in a single JS pass.
+    // Called explicitly by GameView's debounce timer after navigation settles.
+    function rebuild() {
+        if (!publisher && !developer) {
+            games = [];
+            return;
         }
+
+        var pub   = publisher.toLowerCase();
+        var dev   = developer.toLowerCase();
+        var title = currentTitle;
+        var limit = max;
+        var result = [];
+        var total  = api.allGames.count;
+
+        for (var i = 0; i < total; i++) {
+            var g = api.allGames.get(i);
+            if (g.title === title) continue;
+            var gamePub = (g.publisher || "").toLowerCase();
+            var gameDev = (g.developer || "").toLowerCase();
+            if ((pub && gamePub.indexOf(pub) !== -1) ||
+                (dev && gameDev.indexOf(dev) !== -1)) {
+                result.push(g);
+            }
+        }
+
+        // Sort by rating descending (mirrors the previous RoleSorter behaviour)
+        result.sort(function(a, b) { return (b.rating || 0) - (a.rating || 0); });
+
+        // Apply the max cap after sorting so we keep the highest-rated games
+        if (result.length > limit)
+            result = result.slice(0, limit);
+
+        games = result;
     }
 }
-// --- END: More by Publisher/Developer merged list ---
+// --- END: More by Publisher/Developer – Option 5: JS array ---
