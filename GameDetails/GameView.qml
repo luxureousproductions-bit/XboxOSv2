@@ -61,6 +61,8 @@ id: root
     ListRecommended {
         id: recommendedCollection
         max: 20
+        omitApplication: settings.OmitApplicationFromShowcase === "Enable"
+        omitEmulator: settings.OmitEmulatorFromShowcase === "Enable"
     }
     // --- END: More section – Recommended Games fallback ---
 
@@ -733,6 +735,9 @@ id: root
                 var g = game.genreList[0];
                 var si = g.indexOf("/");
                 var mainGenre = si !== -1 ? g.substring(0, si).trim() : g;
+                var lower = mainGenre.toLowerCase();
+                if (lower === "application") return "More Applications";
+                if (lower === "emulator") return "More Emulators";
                 return "More " + mainGenre + " Games";
             }
             search: genreCollection
