@@ -46,19 +46,9 @@ id: root
         }
     }
     
-    // Debounced filter inputs for ListGenreExpanded (Option 1).
-    // Updated 200 ms after game changes so the ExpressionFilter scan runs
-    // after the navigation transition has rendered.
-    // Note: publisher/developer are set imperatively on publisherCollection
-    // (Option 5) and do not need separate deferred properties here.
-    property string deferredTitle: ""
-    property string deferredGenre: ""
-
     // --- BEGIN: More section – merged Publisher/Developer list (Option 5) ---
-    // Option 5: publisher/developer/currentTitle are set imperatively in the
-    // debounce timer (filterDebounce), followed by an explicit rebuild() call.
-    // No declarative bindings are used here; they would be destroyed on first
-    // imperative assignment anyway.
+    // publisher/developer/currentTitle are set imperatively in the debounce timer
+    // (filterDebounce), followed by an explicit rebuild() call.
     ListPublisherDeveloper {
         id: publisherCollection
         max: 20
@@ -74,16 +64,14 @@ id: root
     }
     // --- END: More section – Recommended Games fallback ---
 
-    // --- BEGIN: More section – expanded Genre/Subgenre list ---
-    // Replaces the original ListGenre; matches the full "genre / subgenre", just
-    // the main genre, or just the subgenre. Only affects the "More" section below.
+    // --- BEGIN: More section – main-genre list (Option B: JS array) ---
+    // genre/currentTitle are set imperatively in the debounce timer, then
+    // rebuild() fires a single JS pass matching only the main genre (left of "/").
     ListGenreExpanded {
         id: genreCollection
-        genre:        deferredGenre
-        currentTitle: deferredTitle
         max: 20
     }
-    // --- END: More section – expanded Genre/Subgenre list ---
+    // --- END: More section – main-genre list (Option B: JS array) ---
 
     // Combine the video and the screenshot arrays into one
     function mediaArray() {
@@ -238,11 +226,11 @@ id: root
         }
     }
 
-    // Options 1, 2 & 5: Debounce timer for the "More" list filter inputs.
+    // Options B & 5: Debounce timer for the "More" list filter inputs.
     // Fires 200 ms after a game change so all scans run after the navigation
-    // transition has rendered (Option 1).
-    // Option 5: publisher/developer list is rebuilt via a single JS pass
-    // (publisherCollection.rebuild()) instead of a reactive ExpressionFilter.
+    // transition has rendered.
+    // Both genre and publisher/developer lists are rebuilt via a single JS pass
+    // each (rebuild()) instead of reactive ExpressionFilters.
     // Option 2: recommendedCollection.refresh() is only called when the
     // publisher/developer list comes up empty (avoiding the scan entirely
     // when it's not needed).
@@ -251,18 +239,26 @@ id: root
 
         interval: 200
         onTriggered: {
-            deferredGenre = game && game.genreList.length > 0 ? game.genreList[0] : "";
-            deferredTitle = game ? game.title : "";
-            // Option 5: set the publisher/developer props then trigger a single
-            // JS rebuild pass instead of relying on a reactive ExpressionFilter.
+            var title = game ? game.title : "";
+
+            // Option 5: publisher/developer
             publisherCollection.publisher    = game && game.publisher ? game.publisher : "";
             publisherCollection.developer    = game && game.developer ? game.developer : "";
-            publisherCollection.currentTitle = deferredTitle;
+            publisherCollection.currentTitle = title;
             publisherCollection.rebuild();
             // Refresh the recommended fallback only when the publisher/developer
             // list has no results (Option 2: skip the scan when not needed).
             if (publisherCollection.games.length === 0)
                 recommendedCollection.refresh();
+
+            // Option B: genre – extract the main genre (left of "/") once here
+            // so the rebuild loop only deals with a clean, pre-normalised string.
+            var genreStr = game && game.genreList.length > 0 ? game.genreList[0] : "";
+            var slashIdx = genreStr.indexOf("/");
+            var mainGenre = slashIdx !== -1 ? genreStr.substring(0, slashIdx).trim() : genreStr;
+            genreCollection.genre        = mainGenre;
+            genreCollection.currentTitle = title;
+            genreCollection.rebuild();
         }
     }
 
@@ -721,8 +717,7 @@ id: root
         }
         // --- END: More by Publisher/Developer (More section only) ---
 
-        // --- BEGIN: More by Genre/Subgenre expanded (More section only) ---
-        // Title reflects the expanded genre match (full, main genre, or subgenre).
+        // --- BEGIN: More by Genre (Option B: main genre only) ---
         HorizontalCollection {
         id: list2
 
@@ -733,11 +728,17 @@ id: root
             itemWidth: (root.width - globalMargin * 2) / 8.0
             itemHeight: itemWidth / settings.TallRatio
 
-            title: game && game.genreList.length > 0 ? "More " + game.genreList[0] + " Games" : "              "
+            title: {
+                if (!game || game.genreList.length === 0) return "              ";
+                var g = game.genreList[0];
+                var si = g.indexOf("/");
+                var mainGenre = si !== -1 ? g.substring(0, si).trim() : g;
+                return "More " + mainGenre + " Games";
+            }
             search: genreCollection
             onListHighlighted: { sfxNav.play(); content.currentIndex = list2.ObjectModel.index; }
         }
-        // --- END: More by Genre/Subgenre expanded (More section only) ---
+        // --- END: More by Genre (Option B: main genre only) ---
         
     }
 
