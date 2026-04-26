@@ -46,25 +46,24 @@ id: root
         }
     }
     
-    // Debounced filter inputs for the "More" list models (Option 1).
-    // Updated 200 ms after game changes so the expensive ExpressionFilter
-    // scans don't run on the UI thread during the navigation transition.
-    property string deferredPublisher: ""
-    property string deferredDeveloper: ""
-    property string deferredTitle:     ""
-    property string deferredGenre:     ""
+    // Debounced filter inputs for ListGenreExpanded (Option 1).
+    // Updated 200 ms after game changes so the ExpressionFilter scan runs
+    // after the navigation transition has rendered.
+    // Note: publisher/developer are set imperatively on publisherCollection
+    // (Option 5) and do not need separate deferred properties here.
+    property string deferredTitle: ""
+    property string deferredGenre: ""
 
-    // --- BEGIN: More section – merged Publisher/Developer list ---
-    // Replaces the original ListPublisher; merges games from publisher AND developer,
-    // deduplicated automatically. Only affects the "More" section below.
+    // --- BEGIN: More section – merged Publisher/Developer list (Option 5) ---
+    // Option 5: publisher/developer/currentTitle are set imperatively in the
+    // debounce timer (filterDebounce), followed by an explicit rebuild() call.
+    // No declarative bindings are used here; they would be destroyed on first
+    // imperative assignment anyway.
     ListPublisherDeveloper {
         id: publisherCollection
-        publisher:    deferredPublisher
-        developer:    deferredDeveloper
-        currentTitle: deferredTitle
         max: 20
     }
-    // --- END: More section – merged Publisher/Developer list ---
+    // --- END: More section – merged Publisher/Developer list (Option 5) ---
 
     // --- BEGIN: More section – Recommended Games fallback ---
     // Shown in place of the Publisher/Developer list when that list is empty.
@@ -239,9 +238,11 @@ id: root
         }
     }
 
-    // Option 1 & 2: Debounce timer for the "More" list filter inputs.
-    // Fires 200 ms after a game change so the heavy ExpressionFilter scans
-    // run after the navigation transition has rendered.
+    // Options 1, 2 & 5: Debounce timer for the "More" list filter inputs.
+    // Fires 200 ms after a game change so all scans run after the navigation
+    // transition has rendered (Option 1).
+    // Option 5: publisher/developer list is rebuilt via a single JS pass
+    // (publisherCollection.rebuild()) instead of a reactive ExpressionFilter.
     // Option 2: recommendedCollection.refresh() is only called when the
     // publisher/developer list comes up empty (avoiding the scan entirely
     // when it's not needed).
@@ -250,13 +251,17 @@ id: root
 
         interval: 200
         onTriggered: {
-            deferredPublisher = game && game.publisher ? game.publisher : "";
-            deferredDeveloper = game && game.developer ? game.developer : "";
-            deferredTitle     = game ? game.title : "";
-            deferredGenre     = game && game.genreList.length > 0 ? game.genreList[0] : "";
+            deferredGenre = game && game.genreList.length > 0 ? game.genreList[0] : "";
+            deferredTitle = game ? game.title : "";
+            // Option 5: set the publisher/developer props then trigger a single
+            // JS rebuild pass instead of relying on a reactive ExpressionFilter.
+            publisherCollection.publisher    = game && game.publisher ? game.publisher : "";
+            publisherCollection.developer    = game && game.developer ? game.developer : "";
+            publisherCollection.currentTitle = deferredTitle;
+            publisherCollection.rebuild();
             // Refresh the recommended fallback only when the publisher/developer
             // list has no results (Option 2: skip the scan when not needed).
-            if (publisherCollection.games.count === 0)
+            if (publisherCollection.games.length === 0)
                 recommendedCollection.refresh();
         }
     }
@@ -702,7 +707,7 @@ id: root
             // Show recommended games when there are no publisher/developer results
             title: {
                 if (!game) return "";
-                if (publisherCollection.games.count === 0)
+                if (publisherCollection.games.length === 0)
                     return "More Recommended Games";
                 var pub = game.publisher || "";
                 var dev = game.developer || "";
@@ -711,7 +716,7 @@ id: root
                 return "More games by " + (pub || dev);
             }
             // Switch to the recommended fallback when publisher/developer list is empty
-            search: publisherCollection.games.count > 0 ? publisherCollection : recommendedCollection
+            search: publisherCollection.games.length > 0 ? publisherCollection : recommendedCollection
             onListHighlighted: { sfxNav.play(); content.currentIndex = list1.ObjectModel.index; }
         }
         // --- END: More by Publisher/Developer (More section only) ---
