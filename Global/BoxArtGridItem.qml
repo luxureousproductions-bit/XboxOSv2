@@ -108,6 +108,7 @@ id: root
             asynchronous: true
             source: boxArt(gameData)
             sourceSize { width: root.width; height: root.height }
+            smooth: false
             fillMode: Image.PreserveAspectFit
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.verticalCenter: parent.verticalCenter

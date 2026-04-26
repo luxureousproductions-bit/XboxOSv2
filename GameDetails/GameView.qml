@@ -166,6 +166,10 @@ id: root
 
     onGameChanged: reset();
 
+    // Pre-computed media list for this game; used by both the strip and the full-screen viewer.
+    // Binding to `game` means it is computed once per game change instead of twice.
+    readonly property var mediaList: game ? mediaArray() : []
+
     anchors.fill: parent
 
     GridSpacer {
@@ -276,8 +280,9 @@ id: root
         property var randoFanart: game ? game.assets.backgroundList[randoFanartNumber] : ""
         property var actualBackground: (settings.GameBackground === "Screenshot") ? randoScreenshot : Utils.fanArt(game) || randoFanart;
         source: actualBackground || ""
+        sourceSize: Qt.size(root.width, root.height)
         fillMode: Image.PreserveAspectCrop
-        smooth: true
+        smooth: false
         Behavior on opacity { NumberAnimation { duration: 500 } }
         visible: !blurBG
     }
@@ -313,6 +318,7 @@ id: root
         width: vpx(500)
         height: vpx(450) + header.height
         source: game ? Utils.logo(game) : ""
+        sourceSize { width: 512; height: 512 }
         fillMode: Image.PreserveAspectFit
         asynchronous: true
         opacity: (content.currentIndex !== 0 || detailsScreen.opacity !== 0) ? 0 : 1
@@ -328,7 +334,7 @@ id: root
         horizontalOffset: 0
         verticalOffset: 0
         radius: 8.0
-        samples: 12
+        samples: 9
         color: "#000000"
         source: logo
         opacity: (content.currentIndex !== 0 || detailsScreen.opacity !== 0) ? 0 : 0.4
@@ -421,6 +427,7 @@ id: root
                 source: Utils.boxArt(game, settings.BoxArtStyle)
                 width: vpx(350)
                 height: parent.height
+                sourceSize { width: 512; height: 512 }
                 fillMode: Image.PreserveAspectFit
                 asynchronous: true
                 smooth: true
@@ -620,7 +627,7 @@ id: root
             width: root.width - vpx(70) - globalMargin
             height: ((root.width - globalMargin * 2) / 6.0) + vpx(60)
             title: "Media"
-            model: game ? mediaArray() : []
+            model: mediaList
             delegate: MediaItem {
             id: mediadelegate
 
@@ -735,7 +742,7 @@ id: root
         Behavior on opacity { NumberAnimation { duration: 100 } }
         visible: opacity != 0
 
-        mediaModel: mediaArray();
+        mediaModel: mediaList;
         mediaIndex: media.currentIndex != -1 ? media.currentIndex : 0
         onClose: closeMedia();
     }

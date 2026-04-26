@@ -93,6 +93,7 @@ id: root
             width: root.width
             height: root.height
             source: modelData.includes(".mp4") || modelData.includes(".webm") ? "" : modelData
+            sourceSize { width: root.width; height: root.height }
             smooth: true
             fillMode: Image.PreserveAspectFit
             visible: !isVideo

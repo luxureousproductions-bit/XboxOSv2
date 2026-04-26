@@ -66,7 +66,7 @@ id: root
         snapMode: ListView.SnapOneItem 
         highlightMoveDuration: 100
         highlight: highlightcomponent
-        displayMarginEnd: itemWidth*2
+        displayMarginEnd: itemWidth
         keyNavigationWraps: true
         
         property int savedIndex: 0
