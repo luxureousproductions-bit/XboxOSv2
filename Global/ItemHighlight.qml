@@ -28,13 +28,16 @@ id: root
 
     onGameChanged: {
         videoPreviewLoader.sourceComponent = undefined;
-        if (playVideo) {
+        if (playVideo && selected) {
             videoDelay.restart();
         }
     }
 
     onSelectedChanged: {
-        if (!selected) {
+        if (selected) {
+            videoPreviewLoader.sourceComponent = undefined;
+            if (playVideo) videoDelay.restart();
+        } else {
             videoPreviewLoader.sourceComponent = undefined;
             videoDelay.stop();
         }
