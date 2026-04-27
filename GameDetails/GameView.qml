@@ -715,13 +715,13 @@ id: root
                     return "More Recommended Games";
                 var pub = game.publisher || "";
                 var dev = game.developer || "";
-                if (pub && dev && pub.toLowerCase() !== dev.toLowerCase())
-                    return "More by " + pub + " / " + dev;
                 var g = game.genreList.length > 0 ? game.genreList[0] : "";
                 var si = g.indexOf("/");
                 var lower = (si !== -1 ? g.substring(0, si).trim() : g).toLowerCase();
-                if (lower === "application" || lower === "emulator") return "More by " + (pub || dev);
-                return "More games by " + (pub || dev);
+                var prefix = (lower === "application" || lower === "emulator") ? "More by " : "More games by ";
+                if (pub && dev && pub.toLowerCase() !== dev.toLowerCase())
+                    return prefix + pub + " / " + dev;
+                return prefix + (pub || dev);
             }
             // Switch to the recommended fallback when publisher/developer list is empty
             search: publisherCollection.games.length > 0 ? publisherCollection : recommendedCollection
