@@ -720,8 +720,7 @@ id: root
                 var g = game.genreList.length > 0 ? game.genreList[0] : "";
                 var si = g.indexOf("/");
                 var lower = (si !== -1 ? g.substring(0, si).trim() : g).toLowerCase();
-                if (lower === "application") return "More Applications by " + (pub || dev);
-                if (lower === "emulator") return "More Emulators by " + (pub || dev);
+                if (lower === "application" || lower === "emulator") return "More by " + (pub || dev);
                 return "More games by " + (pub || dev);
             }
             // Switch to the recommended fallback when publisher/developer list is empty
