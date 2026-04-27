@@ -567,7 +567,13 @@ id: root
         Button { 
         id: button1 
 
-            text: "Play game"
+            text: {
+                if (!game || game.genreList.length === 0) return "Play game";
+                var g = game.genreList[0];
+                var si = g.indexOf("/");
+                var lower = (si !== -1 ? g.substring(0, si).trim() : g).toLowerCase();
+                return (lower === "application" || lower === "emulator") ? "Open" : "Play game";
+            }
             height: parent.height
             selected: ListView.isCurrentItem && menu.focus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
@@ -711,6 +717,11 @@ id: root
                 var dev = game.developer || "";
                 if (pub && dev && pub.toLowerCase() !== dev.toLowerCase())
                     return "More by " + pub + " / " + dev;
+                var g = game.genreList.length > 0 ? game.genreList[0] : "";
+                var si = g.indexOf("/");
+                var lower = (si !== -1 ? g.substring(0, si).trim() : g).toLowerCase();
+                if (lower === "application") return "More Applications by " + (pub || dev);
+                if (lower === "emulator") return "More Emulators by " + (pub || dev);
                 return "More games by " + (pub || dev);
             }
             // Switch to the recommended fallback when publisher/developer list is empty
