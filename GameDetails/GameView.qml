@@ -253,12 +253,26 @@ id: root
             if (publisherCollection.games.length === 0)
                 recommendedCollection.refresh();
 
-            // Option B: genre – extract the main genre (left of "/") once here
-            // so the rebuild loop only deals with a clean, pre-normalised string.
-            var genreStr = game && game.genreList.length > 0 ? game.genreList[0] : "";
-            var slashIdx = genreStr.indexOf("/");
+            // Option B: genre – extract the correct genre token based on the
+            // "More by Genre Display" setting, then trigger a rebuild.
+            var genreStr  = game && game.genreList.length > 0 ? game.genreList[0] : "";
+            var slashIdx  = genreStr.indexOf("/");
             var mainGenre = slashIdx !== -1 ? genreStr.substring(0, slashIdx).trim() : genreStr;
-            genreCollection.genre        = mainGenre;
+            var subGenre  = slashIdx !== -1 ? genreStr.substring(slashIdx + 1).trim() : mainGenre;
+            var modeStr   = settings.MoreByGenreDisplay || "Main Genre";
+            var genreTarget, genreMatchMode;
+            if (modeStr === "Sub Genre") {
+                genreTarget    = subGenre;
+                genreMatchMode = "sub";
+            } else if (modeStr === "Full") {
+                genreTarget    = genreStr;
+                genreMatchMode = "full";
+            } else {
+                genreTarget    = mainGenre;
+                genreMatchMode = "main";
+            }
+            genreCollection.genre        = genreTarget;
+            genreCollection.matchMode    = genreMatchMode;
             genreCollection.currentTitle = title;
             genreCollection.rebuild();
         }
@@ -729,7 +743,7 @@ id: root
         }
         // --- END: More by Publisher/Developer (More section only) ---
 
-        // --- BEGIN: More by Genre (Option B: main genre only) ---
+        // --- BEGIN: More by Genre (Option B: genre token controlled by setting) ---
         HorizontalCollection {
         id: list2
 
@@ -742,18 +756,25 @@ id: root
 
             title: {
                 if (!game || game.genreList.length === 0) return "              ";
-                var g = game.genreList[0];
+                var g  = game.genreList[0];
                 var si = g.indexOf("/");
                 var mainGenre = si !== -1 ? g.substring(0, si).trim() : g;
                 var lower = mainGenre.toLowerCase();
+                // Special labels are always based on the main genre.
                 if (lower === "application") return "More Applications";
                 if (lower === "emulator") return "More Emulators";
+                var modeStr = settings.MoreByGenreDisplay || "Main Genre";
+                if (modeStr === "Sub Genre") {
+                    var displayGenre = si !== -1 ? g.substring(si + 1).trim() : mainGenre;
+                    return "More " + displayGenre + " Games";
+                }
+                if (modeStr === "Full") return "More " + g + " Games";
                 return "More " + mainGenre + " Games";
             }
             search: genreCollection
             onListHighlighted: { sfxNav.play(); content.currentIndex = list2.ObjectModel.index; }
         }
-        // --- END: More by Genre (Option B: main genre only) ---
+        // --- END: More by Genre (Option B: genre token controlled by setting) ---
         
     }
 

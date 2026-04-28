@@ -18,11 +18,13 @@ import QtQuick 2.0
 
 // --- BEGIN: More by Genre – Option B: JS array ---
 // Replaces the SortFilterProxyModel + ExpressionFilter approach with a single
-// JavaScript pass that fires on demand (via rebuild()). Matches only on the
-// main genre (the left-hand side of "genre / subgenre"), so "Platform / Action"
-// produces a list of all Platform games. This eliminates per-row QML reactive
-// overhead and runs the entire scan as one synchronous JS loop, explicitly
-// triggered by GameView's debounce timer after navigation settles.
+// JavaScript pass that fires on demand (via rebuild()). The genre matched is
+// controlled by matchMode: "main" (default) matches only the main genre (left
+// of "/"), "sub" matches the sub-genre (right of "/", falling back to the full
+// entry when no "/" is present), and "full" matches the entire genre string.
+// This eliminates per-row QML reactive overhead and runs the entire scan as
+// one synchronous JS loop, explicitly triggered by GameView's debounce timer
+// after navigation settles.
 Item {
 id: root
 
@@ -35,11 +37,15 @@ id: root
 
     property int max: 100
 
-    // Main genre string for the current game (already pre-extracted by the
-    // debounce timer, e.g. "Platform" from "Platform / Action").
+    // Genre string to match against (pre-extracted by the debounce timer).
+    // Its meaning depends on matchMode: for "main" it is the main genre, for
+    // "sub" it is the sub-genre (or main if none), for "full" the full string.
     property string genre: ""
     // Title of the current game – excluded from results.
     property string currentTitle: ""
+    // Controls which part of each game's genre entry is compared to genre.
+    // Values: "main" | "sub" | "full"  (default: "main")
+    property string matchMode: "main"
 
     // Rebuild the games array from api.allGames in a single JS pass.
     // Called explicitly by GameView's debounce timer after navigation settles.
@@ -49,25 +55,36 @@ id: root
             return;
         }
 
-        var mainGenre = genre.toLowerCase();
-        var title     = currentTitle;
-        var limit     = max;
-        var result    = [];
-        var total     = api.allGames.count;
+        var target = genre.toLowerCase();
+        var mode   = matchMode;
+        var title  = currentTitle;
+        var limit  = max;
+        var result = [];
+        var total  = api.allGames.count;
 
         for (var i = 0; i < total; i++) {
             var g = api.allGames.get(i);
             if (g.title === title) continue;
 
-            // Check whether any of this game's genres share the same main genre.
             var genreList = g.genreList;
             for (var j = 0; j < genreList.length; j++) {
                 var entry = genreList[j];
                 if (!entry) continue;
-                var slashIdx    = entry.indexOf("/");
-                var beforeSlash = slashIdx !== -1 ? entry.substring(0, slashIdx) : entry;
-                var entryMain   = beforeSlash.toLowerCase().trim();
-                if (entryMain === mainGenre) {
+                var entryLower = entry.toLowerCase().trim();
+                var matched;
+                if (mode === "full") {
+                    matched = entryLower === target;
+                } else if (mode === "sub") {
+                    var si = entryLower.indexOf("/");
+                    var entrySub = si !== -1 ? entryLower.substring(si + 1).trim() : entryLower;
+                    matched = entrySub === target;
+                } else {
+                    // "main" (default)
+                    var slashIdx  = entryLower.indexOf("/");
+                    var entryMain = slashIdx !== -1 ? entryLower.substring(0, slashIdx).trim() : entryLower;
+                    matched = entryMain === target;
+                }
+                if (matched) {
                     result.push(g);
                     break;
                 }
