@@ -235,6 +235,7 @@ id: root
         ListElement {
             settingName: "More by Genre Display"
             setting: "Main Genre,Sub Genre,Full"
+            note: "(genre: genre / subgenre)"
         }
     }
 
