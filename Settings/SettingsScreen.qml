@@ -232,6 +232,10 @@ id: root
             settingName: "Show scanlines"
             setting: "Yes,No"
         }
+        ListElement {
+            settingName: "More by Genre Display"
+            setting: "Main Genre,Sub Genre,Full"
+        }
     }
 
     property var gamePage: {
