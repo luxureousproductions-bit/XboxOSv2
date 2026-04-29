@@ -276,15 +276,6 @@ id: root
                     onHighlighted: {
                         gamegrid.currentIndex = index;
                     }
-                    Keys.onPressed: {
-                        // Toggle favorite
-                        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
-                            event.accepted = true;
-                            sfxToggle.play();
-                            modelData.favorite = !modelData.favorite;
-                        }
-                    }
-
                 }
             }
 
@@ -307,14 +298,6 @@ id: root
                     }
                     onHighlighted: {
                         gamegrid.currentIndex = index;
-                    }
-                    Keys.onPressed: {
-                        // Toggle favorite
-                        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
-                            event.accepted = true;
-                            sfxToggle.play();
-                            modelData.favorite = !modelData.favorite;
-                        }
                     }
                 }
             }
@@ -388,11 +371,18 @@ id: root
             return;
         }
 
-        // Details
-        if (api.keys.isFilters(event) && !event.isAutoRepeat) {
+        // Filters
+        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
             sfxToggle.play();
             cycleSort();
+            return;
+        }
+
+        // Settings
+        if (api.keys.isFilters(event) && !event.isAutoRepeat) {
+            event.accepted = true;
+            settingsScreen();
             return;
         }
 
@@ -452,12 +442,12 @@ id: root
             button: "cancel"
         }
         ListElement {
-            name: "Toggle favorite"
-            button: "details"
+            name: "Settings"
+            button: "filters"
         }
         ListElement {
             name: "Filters"
-            button: "filters"
+            button: "details"
         }
         ListElement {
             name: "View details"

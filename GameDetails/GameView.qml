@@ -830,11 +830,16 @@ id: root
             else
                 previousScreen();
         }
-        // Filters
-        if (api.keys.isFilters(event) && !event.isAutoRepeat) {
+        // Toggle Favorite
+        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
             sfxAccept.play();
             game.favorite = !game.favorite;
+        }
+        // Settings
+        if (api.keys.isFilters(event) && !event.isAutoRepeat) {
+            event.accepted = true;
+            settingsScreen();
         }
     }
 
@@ -847,8 +852,12 @@ id: root
             button: "cancel"
         }
         ListElement {
-            name: "Toggle favorite"
+            name: "Settings"
             button: "filters"
+        }
+        ListElement {
+            name: "Toggle Favorite"
+            button: "details"
         }
         ListElement {
             name: "Launch"
