@@ -75,13 +75,13 @@ id: root
                 if (mode === "full") {
                     matched = entryLower === target;
                 } else if (mode === "sub") {
-                    var si = entryLower.indexOf("/");
-                    var entrySub = si !== -1 ? entryLower.substring(si + 1).trim() : entryLower;
+                    var sepM = entryLower.match(/^(.*?)\s*[\/,]\s*(.+)$/);
+                    var entrySub = sepM ? sepM[2] : entryLower;
                     matched = entrySub === target;
                 } else {
                     // "main" (default)
-                    var slashIdx  = entryLower.indexOf("/");
-                    var entryMain = slashIdx !== -1 ? entryLower.substring(0, slashIdx).trim() : entryLower;
+                    var sepM = entryLower.match(/^(.*?)\s*[\/,]\s*(.+)$/);
+                    var entryMain = sepM ? sepM[1] : entryLower;
                     matched = entryMain === target;
                 }
                 if (matched) {
