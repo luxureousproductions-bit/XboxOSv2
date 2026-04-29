@@ -492,11 +492,11 @@ function uniqueGenreValues() {
       if (!g) continue;
       if (g.toLowerCase() === "application") continue;
       seen.add(g);
-      const slashIdx = g.indexOf(' / ');
+      const slashIdx = g.indexOf('/');
       if (slashIdx !== -1) {
-        const parentGenre = g.substring(0, slashIdx);
+        const parentGenre = g.substring(0, slashIdx).trim();
         if (parentGenre) seen.add(parentGenre);
-        const subgenre = g.substring(slashIdx + 3);
+        const subgenre = g.substring(slashIdx + 1).trim();
         if (subgenre) seen.add(subgenre);
       }
     }
