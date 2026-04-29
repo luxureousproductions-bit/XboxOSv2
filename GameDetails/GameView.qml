@@ -256,9 +256,9 @@ id: root
             // Option B: genre – extract the correct genre token based on the
             // "More by Genre Display" setting, then trigger a rebuild.
             var genreStr  = game && game.genreList.length > 0 ? game.genreList[0] : "";
-            var slashIdx  = genreStr.indexOf("/");
-            var mainGenre = slashIdx !== -1 ? genreStr.substring(0, slashIdx).trim() : genreStr;
-            var subGenre  = slashIdx !== -1 ? genreStr.substring(slashIdx + 1).trim() : mainGenre;
+            var sepMatch  = genreStr.match(/^(.*?)\s*[\/,]\s*(.+)$/);
+            var mainGenre = sepMatch ? sepMatch[1].trim() : genreStr;
+            var subGenre  = sepMatch ? sepMatch[2].trim() : mainGenre;
             var modeStr   = settings.MoreByGenreDisplay || "Main Genre";
             var genreTarget, genreMatchMode;
             if (modeStr === "Sub Genre") {
@@ -584,8 +584,8 @@ id: root
             text: {
                 if (!game || game.genreList.length === 0) return "Play game";
                 var g = game.genreList[0];
-                var si = g.indexOf("/");
-                var lower = (si !== -1 ? g.substring(0, si).trim() : g).toLowerCase();
+                var sepM = g.match(/^(.*?)\s*[\/,]\s*(.+)$/);
+                var lower = (sepM ? sepM[1] : g).trim().toLowerCase();
                 return (lower === "application" || lower === "emulator") ? "Open" : "Play game";
             }
             height: parent.height
@@ -730,8 +730,8 @@ id: root
                 var pub = game.publisher || "";
                 var dev = game.developer || "";
                 var g = game.genreList.length > 0 ? game.genreList[0] : "";
-                var si = g.indexOf("/");
-                var lower = (si !== -1 ? g.substring(0, si).trim() : g).toLowerCase();
+                var sepM = g.match(/^(.*?)\s*[\/,]\s*(.+)$/);
+                var lower = (sepM ? sepM[1] : g).trim().toLowerCase();
                 var prefix = (lower === "application" || lower === "emulator") ? "More by " : "More games by ";
                 if (pub && dev && pub.toLowerCase() !== dev.toLowerCase())
                     return prefix + pub + " / " + dev;
@@ -757,15 +757,15 @@ id: root
             title: {
                 if (!game || game.genreList.length === 0) return "              ";
                 var g  = game.genreList[0];
-                var si = g.indexOf("/");
-                var mainGenre = si !== -1 ? g.substring(0, si).trim() : g;
+                var sepM = g.match(/^(.*?)\s*[\/,]\s*(.+)$/);
+                var mainGenre = sepM ? sepM[1].trim() : g;
                 var lower = mainGenre.toLowerCase();
                 // Special labels are always based on the main genre.
                 if (lower === "application") return "More Applications";
                 if (lower === "emulator") return "More Emulators";
                 var modeStr = settings.MoreByGenreDisplay || "Main Genre";
                 if (modeStr === "Sub Genre") {
-                    var displayGenre = si !== -1 ? g.substring(si + 1).trim() : mainGenre;
+                    var displayGenre = sepM ? sepM[2].trim() : mainGenre;
                     return "More " + displayGenre + " Games";
                 }
                 if (modeStr === "Full") return "More " + g + " Games";
