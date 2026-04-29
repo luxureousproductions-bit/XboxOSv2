@@ -442,12 +442,12 @@ id: root
             button: "cancel"
         }
         ListElement {
-            name: "Filters"
-            button: "details"
-        }
-        ListElement {
             name: "Settings"
             button: "filters"
+        }
+        ListElement {
+            name: "Filters"
+            button: "details"
         }
         ListElement {
             name: "View details"

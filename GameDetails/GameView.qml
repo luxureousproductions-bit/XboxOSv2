@@ -852,12 +852,12 @@ id: root
             button: "cancel"
         }
         ListElement {
-            name: "Toggle Favorite"
-            button: "details"
-        }
-        ListElement {
             name: "Settings"
             button: "filters"
+        }
+        ListElement {
+            name: "Toggle Favorite"
+            button: "details"
         }
         ListElement {
             name: "Launch"
