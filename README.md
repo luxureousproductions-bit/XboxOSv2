@@ -87,8 +87,8 @@ It is recommended to use [Skraper.net](http://www.skraper.net/) to acquire media
 
 - Added the ability to search by genre in platform search bar✅
 
-- Updated the "More" Lists in game details to include Publisher & Developer or fallback to "More Recommended" when only one title is available for each. More by Genre was updated to include genre / sub genre full and individually✅
+- Updated the "More" Lists in game details to include Publisher & Developer or fallback to "More Recommended" when only one title is available for each✅
 
 - Added Advance options to enable/disable omission of Applications and Emulators from populating on showcase list✅ (Needs to have genre: Application or genre: Emulator)
 
- - Added an option in gamesdetail section "more by genre display" (genre: genre / subgenre in metadata) option main= displays more by main genre, option subgenre= displays more by subgenre, option full= shows more by full genre / subgenre ✅
+ - Added an option in gamesdetail section "more by genre display" (genre: genre / subgenre in metadata) option main= displays more by main genre, option subgenre= displays more by subgenre, option full= shows more by full genre / subgenre (Works with variations: "genre/subgenre" "genre / subgenre" "genre/ subgenre" "genre /subgenre" "genre,subgenre" "genre , subgenre" "genre, subgenre" "genre ,subgenre")✅
