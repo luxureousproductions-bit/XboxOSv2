@@ -102,6 +102,9 @@ id: root
     property int storedHomeSecondaryIndex: 0
     property int storedCollectionIndex: 0
     property int storedCollectionGameIndex: 0
+    // Keeps GameView alive after first visit so returning from Settings never shows a blank page.
+    // Set to true by gameviewloader.onLoaded; never reset, so the component is only created once.
+    property bool gameviewLoaded: false
 
     // Reset the stored game index when changing collections
     onCurrentCollectionIndexChanged: storedCollectionGameIndex = 0
@@ -467,9 +470,16 @@ id: root
     id: gameviewloader
 
         focus: (root.state === "gameviewscreen")
-        active: opacity !== 0
-        onActiveChanged: if (!active) popLastGame();
+        // Stay alive once loaded: the first visit sets gameviewLoaded = true via onLoaded,
+        // after which active is always true so the component is never destroyed.
+        // This prevents the blank-screen bug that occurred when returning from Settings
+        // (previously, active went false on the opacity fade, which prematurely called
+        // popLastGame() and left currentGame pointing at the wrong game).
+        active: (root.state === "gameviewscreen") || gameviewLoaded
+        onLoaded: gameviewLoaded = true
         opacity: focus ? 1 : 0
+        // Skip GPU compositing entirely while fully hidden to keep memory overhead low.
+        visible: opacity > 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
