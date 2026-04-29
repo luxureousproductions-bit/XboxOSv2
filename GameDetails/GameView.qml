@@ -865,11 +865,11 @@ id: root
         }
     }
     
-    onFocusChanged: { 
-        if (focus) { 
+    onActiveFocusChanged: {
+        if (activeFocus) {
             currentHelpbarModel = gameviewHelpModel;
             menu.focus = true;
-            menu.currentIndex = 0; 
+            menu.currentIndex = 0;
         } else {
             screenshot.opacity = 1;
             toggleVideo(false);
