@@ -321,6 +321,8 @@ id: root
 
         // Trophy icon for the achievements button
         Text {
+        id: achievementsTrophyIcon
+
             text: "🏆"
             anchors.centerIn: achievementsbutton
             font.pixelSize: vpx(14)

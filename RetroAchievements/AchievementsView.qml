@@ -68,8 +68,6 @@ id: root
                 smooth: true
                 asynchronous: true
                 visible: cheevosData.avatarUrl !== ""
-                layer.enabled: true
-                layer.effect: Item {}
             }
 
             Column {
@@ -115,7 +113,7 @@ id: root
             text: "RetroAchievements not configured.\n\n"
                 + "Go to  Settings → Retro Achievements\n"
                 + "and enter your RA username and API key.\n\n"
-                + "Get your API key at: retroachievements.org/settings"
+                + "Get your API key at: https://retroachievements.org/settings"
             color: theme.text
             font.family: bodyFont.name
             font.pixelSize: vpx(18)

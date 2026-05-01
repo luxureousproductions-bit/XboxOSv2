@@ -313,6 +313,7 @@ id: root
             settingName: "RA API Key"
             setting:     ""
             inputType:   "text"
+            masked:      true
             note:        "Web API key from retroachievements.org/settings"
         }
     }
@@ -579,9 +580,9 @@ id: root
                     visible: isTextInput
                     anchors {
                         right: parent.right; rightMargin: vpx(25)
-                        verticalCenter: settingNameText.verticalCenter
-                        verticalCenterOffset: settingNameText.height / 2 - itemheight / 2
+                        top: parent.top
                     }
+                    y: (itemheight - height) / 2   // vertically center within the label row
                     width:  vpx(280)
                     height: vpx(34)
                     color:  isEditing ? theme.secondary : "transparent"
@@ -599,8 +600,8 @@ id: root
                         font.pixelSize: vpx(16)
                         clip: true
                         readOnly: !settingRow.isEditing
-                        // Mask the API key when not actively editing
-                        echoMode: (!settingRow.isEditing && settingName === "RA API Key" && text !== "")
+                        // Mask fields marked as sensitive when not actively editing
+                        echoMode: (!settingRow.isEditing && masked && text !== "")
                                   ? TextInput.Password
                                   : TextInput.Normal
                         opacity: selected ? 1 : 0.2

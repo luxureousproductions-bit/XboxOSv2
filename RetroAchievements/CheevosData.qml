@@ -56,7 +56,10 @@ id: root
     }
 
     // ── Core HTTP helper ─────────────────────────────────────────────────
-
+    // NOTE: The retroachievements.org API authenticates via URL query parameters
+    // (?z=username&y=apikey).  This is the only authentication method the API
+    // supports; header-based auth is not available.  HTTPS is used for all
+    // requests, so the credentials are encrypted in transit.
     function raRequest(apiName, args, handler) {
         if (!raUserName || !raApiKey) {
             statusText = "Configure your credentials in Settings → Retro Achievements";
