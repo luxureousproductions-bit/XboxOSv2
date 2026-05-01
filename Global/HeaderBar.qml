@@ -31,7 +31,7 @@ id: root
     function toggleSearch() {
         searchActive = !searchActive;
         if (!searchActive) {
-            searchInput.deselect();
+            Qt.inputMethod.hide();
             buttonbar.forceActiveFocus();
         }
     }
@@ -149,32 +149,42 @@ id: root
                     asynchronous: true
                 }
 
-                TextInput {
-                id: searchInput
-                    
-                    anchors { 
+                // Loader: only instantiates a native TextInput (Android EditText)
+                // while the search bar is actively open. When searchActive goes
+                // false the object is destroyed and the Android IME loses its
+                // target, eliminating the persistent blue-square highlight.
+                Loader {
+                id: searchLoader
+
+                    anchors {
                         left: searchicon.right; leftMargin: vpx(10)
                         top: parent.top; bottom: parent.bottom
                         right: modeLabel.left; rightMargin: vpx(5)
                     }
-                    verticalAlignment: Text.AlignVCenter
-                    color: theme.text
-                    focus: searchbar.selected && searchActive
-                    font.family: subtitleFont.name
-                    font.pixelSize: vpx(18)
-                    clip: true
-                    text: searchTerm
-                    selectionColor: searchActive ? theme.accent : "transparent"
-                    selectedTextColor: theme.text
-                    cursorVisible: searchActive && searchInput.activeFocus
-                    onTextEdited: {
-                        searchTerm = searchInput.text
+                    active: searchActive
+                    asynchronous: false
+                    onLoaded: {
+                        item.forceActiveFocus();
+                        item.selectAll();
                     }
 
-                    Keys.onDownPressed: {
-                        if (searchActive) {
-                            event.accepted = true;
-                            searchModeDropdown.forceActiveFocus();
+                    sourceComponent: Component {
+                        TextInput {
+                            verticalAlignment: Text.AlignVCenter
+                            color: theme.text
+                            font.family: subtitleFont.name
+                            font.pixelSize: vpx(18)
+                            clip: true
+                            text: searchTerm
+                            selectionColor: theme.accent
+                            selectedTextColor: theme.text
+                            onTextEdited: {
+                                searchTerm = text
+                            }
+                            Keys.onDownPressed: {
+                                event.accepted = true;
+                                searchModeDropdown.forceActiveFocus();
+                            }
                         }
                     }
                 }
@@ -245,7 +255,7 @@ id: root
                                 anchors.fill: parent
                                 onClicked: {
                                     searchMode = modelData;
-                                    searchInput.forceActiveFocus();
+                                    searchLoader.item.forceActiveFocus();
                                 }
                             }
                         }
@@ -255,7 +265,7 @@ id: root
                                 sfxNav.play();
                                 currentIndex--;
                             } else {
-                                searchInput.forceActiveFocus();
+                                searchLoader.item.forceActiveFocus();
                             }
                         }
                         Keys.onDownPressed: {
@@ -269,11 +279,11 @@ id: root
                                 event.accepted = true;
                                 searchMode = model[currentIndex];
                                 sfxToggle.play();
-                                searchInput.forceActiveFocus();
+                                searchLoader.item.forceActiveFocus();
                             }
                             if (api.keys.isCancel(event) && !event.isAutoRepeat) {
                                 event.accepted = true;
-                                searchInput.forceActiveFocus();
+                                searchLoader.item.forceActiveFocus();
                             }
                         }
                     }
@@ -290,7 +300,7 @@ id: root
                         if (!searchActive)
                         {
                             toggleSearch();
-                            searchInput.selectAll();
+                            searchLoader.item.selectAll();
                         }
                     }
                 }
@@ -301,9 +311,9 @@ id: root
                         event.accepted = true;
                         if (!searchActive) {
                             toggleSearch();
-                            searchInput.selectAll();
+                            searchLoader.item.selectAll();
                         } else {
-                            searchInput.selectAll();
+                            searchLoader.item.selectAll();
                         }
                     }
                 }

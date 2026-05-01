@@ -590,40 +590,68 @@ id: root
                     border.color: theme.accent
                     radius: vpx(4)
 
-                    TextInput {
-                    id: raTextInput
+                    // Display-only text — shown when not editing (no native view exists)
+                    Text {
+                    id: raDisplayText
 
+                        visible: !settingRow.isEditing
                         anchors { fill: parent; margins: vpx(8) }
-                        text: api.memory.has(settingName) ? api.memory.get(settingName) : ""
+                        text: {
+                            if (!api.memory.has(settingName)) return "";
+                            var val = api.memory.get(settingName);
+                            return (typeof masked !== 'undefined' && masked && val !== "")
+                                   ? "•".repeat(val.length)
+                                   : val;
+                        }
                         color: theme.text
                         font.family: subtitleFont.name
                         font.pixelSize: vpx(16)
-                        clip: true
-                        readOnly: !settingRow.isEditing
-                        selectionColor: settingRow.isEditing ? theme.accent : "transparent"
-                        selectedTextColor: theme.text
-                        cursorVisible: settingRow.isEditing
-                        // Mask fields marked as sensitive when not actively editing
-                        echoMode: (!settingRow.isEditing && masked && text !== "")
-                                  ? TextInput.Password
-                                  : TextInput.Normal
-                        opacity: selected ? 1 : 0.2
+                        verticalAlignment: Text.AlignVCenter
+                        opacity: settingRow.selected ? 1 : 0.2
+                    }
 
-                        Keys.onPressed: {
-                            // Back / Cancel while editing → discard changes
-                            if (api.keys.isCancel(event) && !event.isAutoRepeat) {
-                                event.accepted = true;
-                                raTextInput.text = settingRow.originalText;
-                                raTextInput.deselect();
-                                settingRow.isEditing = false;
-                                settingsList.forceActiveFocus();
-                            }
+                    // Loader: only instantiates a native TextInput (Android EditText)
+                    // while editing. When isEditing goes false the object is destroyed
+                    // and the Android IME loses its target, eliminating the blue square.
+                    Loader {
+                    id: raLoader
+
+                        anchors.fill: parent
+                        active: settingRow.isEditing
+                        asynchronous: false
+                        onLoaded: {
+                            item.forceActiveFocus();
+                            item.cursorPosition = item.text.length;
                         }
-                        Keys.onReturnPressed: {
-                            api.memory.set(settingName, raTextInput.text);
-                            raTextInput.deselect();
-                            settingRow.isEditing = false;
-                            settingsList.forceActiveFocus();
+
+                        sourceComponent: Component {
+                            TextInput {
+                                anchors { fill: parent; margins: vpx(8) }
+                                text: api.memory.has(settingName) ? api.memory.get(settingName) : ""
+                                color: theme.text
+                                font.family: subtitleFont.name
+                                font.pixelSize: vpx(16)
+                                clip: true
+                                selectionColor: theme.accent
+                                selectedTextColor: theme.text
+                                echoMode: TextInput.Normal
+                                opacity: settingRow.selected ? 1 : 0.2
+
+                                Keys.onPressed: {
+                                    if (api.keys.isCancel(event) && !event.isAutoRepeat) {
+                                        event.accepted = true;
+                                        Qt.inputMethod.hide();
+                                        settingRow.isEditing = false;
+                                        settingsList.forceActiveFocus();
+                                    }
+                                }
+                                Keys.onReturnPressed: {
+                                    api.memory.set(settingName, text);
+                                    Qt.inputMethod.hide();
+                                    settingRow.isEditing = false;
+                                    settingsList.forceActiveFocus();
+                                }
+                            }
                         }
                     }
                 }
@@ -670,11 +698,10 @@ id: root
                     if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                         event.accepted = true;
                         if (isTextInput) {
-                            // Activate text editing
-                            originalText = raTextInput.text;
+                            // Capture current saved value before opening editor
+                            originalText = api.memory.has(settingName) ? api.memory.get(settingName) : "";
                             isEditing = true;
-                            raTextInput.forceActiveFocus();
-                            raTextInput.cursorPosition = raTextInput.text.length;
+                            // Focus and cursor position handled by raLoader.onLoaded
                         } else {
                             sfxToggle.play();
                             nextSetting();
@@ -697,10 +724,9 @@ id: root
                     onClicked: {
                         if (selected) {
                             if (isTextInput) {
-                                originalText = raTextInput.text;
+                                originalText = api.memory.has(settingName) ? api.memory.get(settingName) : "";
                                 isEditing = true;
-                                raTextInput.forceActiveFocus();
-                                raTextInput.cursorPosition = raTextInput.text.length;
+                                // Focus and cursor position handled by raLoader.onLoaded
                             } else {
                                 sfxToggle.play();
                                 nextSetting();
