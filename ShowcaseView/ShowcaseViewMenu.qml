@@ -278,6 +278,56 @@ id: root
         }
 
         Rectangle {
+        id: achievementsbutton
+
+            width:  vpx(30)
+            height: vpx(30)
+            anchors {
+                verticalCenter: parent.verticalCenter
+                right: settingsbutton.left; rightMargin: vpx(15)
+            }
+            color:   focus ? theme.accent : "transparent"
+            radius:  height / 2
+            opacity: focus ? 1 : 0.2
+
+            onFocusChanged: {
+                sfxNav.play();
+                if (focus)
+                    mainList.currentIndex = -1;
+                else
+                    mainList.currentIndex = 0;
+            }
+
+            Keys.onDownPressed: mainList.focus = true;
+            Keys.onRightPressed: settingsbutton.focus = true;
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) {
+                    event.accepted = true;
+                    achievementsScreen();
+                }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) {
+                    event.accepted = true;
+                    mainList.focus = true;
+                }
+            }
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: settings.MouseHover == "Yes"
+                onEntered: achievementsbutton.focus = true;
+                onExited:  achievementsbutton.focus = false;
+                onClicked: achievementsScreen();
+            }
+        }
+
+        // Trophy icon for the achievements button
+        Text {
+            text: "🏆"
+            anchors.centerIn: achievementsbutton
+            font.pixelSize: vpx(14)
+            opacity: achievementsbutton.focus ? 1 : 0.7
+        }
+
+        Rectangle {
         id: settingsbutton
 
             width: vpx(30)
@@ -302,6 +352,7 @@ id: root
             }
 
             Keys.onDownPressed: mainList.focus = true;
+            Keys.onLeftPressed: achievementsbutton.focus = true;
             Keys.onPressed: {
                 // Accept
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) {
