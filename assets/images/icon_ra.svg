@@ -1,16 +1,51 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="60" height="60">
-  <defs>
-    <linearGradient id="rGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#6ab0e8;stop-opacity:1"/>
-      <stop offset="100%" style="stop-color:#3a6ea8;stop-opacity:1"/>
-    </linearGradient>
-    <linearGradient id="aGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#f0c040;stop-opacity:1"/>
-      <stop offset="100%" style="stop-color:#c87010;stop-opacity:1"/>
-    </linearGradient>
-  </defs>
-  <!-- R letter -->
-  <text x="4" y="48" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="52" fill="url(#rGrad)">R</text>
-  <!-- A letter -->
-  <text x="28" y="48" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="52" fill="url(#aGrad)">A</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 100">
+  <!--
+    RetroAchievements RA monogram – white on transparent.
+    Geometric bold letterforms with inner inset cutout lines
+    matching the official RA logo style.
+  -->
+  <g fill="#fff" fill-rule="evenodd">
+
+    <!-- ===== R ===== -->
+    <!--
+      Outer compound shape (left vertical bar + rounded bump + diagonal leg),
+      plus counter (the D-space inside the bump).
+      Even-odd rule punches the counter out to make it transparent.
+    -->
+    <path d="
+      M 0,0
+      H 50
+      C 68,0 72,10 72,24
+      C 72,40 64,52 50,52
+      L 60,100 H 44
+      L 34,52 H 22
+      V 100 H 0
+      Z
+      M 22,18
+      H 46
+      C 56,18 58,24 58,30
+      C 58,38 54,44 46,44
+      H 22
+      Z
+      M 4,0 H 7 V 100 H 4 Z
+    "/>
+
+    <!-- ===== A ===== -->
+    <!--
+      Two thick diagonal legs + horizontal crossbar.
+      Counter triangle (above crossbar) cut out by even-odd.
+      Diagonal inset lines inside each outer leg edge.
+    -->
+    <path d="
+      M 76,0 H 90
+      L 120,100 H 98
+      L 94,72 H 74
+      L 70,100 H 46
+      Z
+      M 83,4 L 92,62 H 75 Z
+      M 50,100 L 54,100 L 80,0 L 76,0 Z
+      M 116,100 L 120,100 L 94,0 L 90,0 Z
+    "/>
+
+  </g>
 </svg>
