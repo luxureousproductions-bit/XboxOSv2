@@ -164,8 +164,10 @@ id: root
                     active: searchActive
                     asynchronous: false
                     onLoaded: {
-                        item.forceActiveFocus();
-                        item.selectAll();
+                        if (item) {
+                            item.forceActiveFocus();
+                            item.selectAll();
+                        }
                     }
 
                     sourceComponent: Component {
@@ -255,7 +257,7 @@ id: root
                                 anchors.fill: parent
                                 onClicked: {
                                     searchMode = modelData;
-                                    searchLoader.item.forceActiveFocus();
+                                    if (searchLoader.item) searchLoader.item.forceActiveFocus();
                                 }
                             }
                         }
@@ -265,7 +267,7 @@ id: root
                                 sfxNav.play();
                                 currentIndex--;
                             } else {
-                                searchLoader.item.forceActiveFocus();
+                                if (searchLoader.item) searchLoader.item.forceActiveFocus();
                             }
                         }
                         Keys.onDownPressed: {
@@ -279,11 +281,11 @@ id: root
                                 event.accepted = true;
                                 searchMode = model[currentIndex];
                                 sfxToggle.play();
-                                searchLoader.item.forceActiveFocus();
+                                if (searchLoader.item) searchLoader.item.forceActiveFocus();
                             }
                             if (api.keys.isCancel(event) && !event.isAutoRepeat) {
                                 event.accepted = true;
-                                searchLoader.item.forceActiveFocus();
+                                if (searchLoader.item) searchLoader.item.forceActiveFocus();
                             }
                         }
                     }
@@ -300,7 +302,7 @@ id: root
                         if (!searchActive)
                         {
                             toggleSearch();
-                            searchLoader.item.selectAll();
+                            if (searchLoader.item) searchLoader.item.selectAll();
                         }
                     }
                 }
@@ -311,9 +313,9 @@ id: root
                         event.accepted = true;
                         if (!searchActive) {
                             toggleSearch();
-                            searchLoader.item.selectAll();
+                            if (searchLoader.item) searchLoader.item.selectAll();
                         } else {
-                            searchLoader.item.selectAll();
+                            if (searchLoader.item) searchLoader.item.selectAll();
                         }
                     }
                 }
