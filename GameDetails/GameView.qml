@@ -581,7 +581,6 @@ id: root
         Button { 
         id: button1 
 
-            icon: ""
             text: {
                 if (!game || game.genreList.length === 0) return "Play game";
                 var g = game.genreList[0];
@@ -606,6 +605,7 @@ id: root
         id: button5
 
             icon: "../assets/images/icon_ra.svg"
+            iconPadding: vpx(16)
             height: parent.height
             selected: ListView.isCurrentItem && menu.focus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }

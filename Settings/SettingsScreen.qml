@@ -611,14 +611,16 @@ id: root
                             if (api.keys.isCancel(event) && !event.isAutoRepeat) {
                                 event.accepted = true;
                                 raTextInput.text = settingRow.originalText;
+                                raTextInput.deselect();
                                 settingRow.isEditing = false;
-                                settingsList.focus = true;
+                                settingsList.forceActiveFocus();
                             }
                         }
                         Keys.onReturnPressed: {
                             api.memory.set(settingName, raTextInput.text);
+                            raTextInput.deselect();
                             settingRow.isEditing = false;
-                            settingsList.focus = true;
+                            settingsList.forceActiveFocus();
                         }
                     }
                 }
@@ -702,7 +704,7 @@ id: root
                                 saveSetting();
                             }
                         } else {
-                            settingsList.focus = true;
+                            settingsList.forceActiveFocus();
                             settingsList.currentIndex = index;
                         }
                     }

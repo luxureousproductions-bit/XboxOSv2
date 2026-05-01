@@ -30,6 +30,10 @@ id: root
 
     function toggleSearch() {
         searchActive = !searchActive;
+        if (!searchActive) {
+            searchInput.deselect();
+            buttonbar.forceActiveFocus();
+        }
     }
 
     Item {
