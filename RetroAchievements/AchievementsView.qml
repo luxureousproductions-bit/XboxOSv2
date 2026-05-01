@@ -14,32 +14,6 @@ id: root
     property bool initialized: false
     property int  currentIndex: 0
 
-    // ── Option 2: auto-scroll to the current game ─────────────────────────
-    // Scans the loaded recent-games list for a title that matches
-    // cheevosData.pendingScrollTitle and moves the selection to it.
-    function scrollToCurrentGame() {
-        var target = cheevosData.pendingScrollTitle.toLowerCase();
-        if (target === "") return;
-        for (var i = 0; i < cheevosData.raRecentGames.count; i++) {
-            if (cheevosData.raRecentGames.get(i).Title.toLowerCase() === target) {
-                currentIndex = i;
-                return;
-            }
-        }
-    }
-
-    // Fires after a fresh loadRecentGames() completes (statusText goes to "").
-    Connections {
-        target: cheevosData
-        onStatusTextChanged: {
-            if (root.activeFocus
-                    && cheevosData.statusText === ""
-                    && cheevosData.pendingScrollTitle !== ""
-                    && cheevosData.raRecentGames.count > 0)
-                scrollToCurrentGame();
-        }
-    }
-
     // ── Lifecycle ────────────────────────────────────────────────────────
     onActiveFocusChanged: {
         if (activeFocus) {
@@ -49,11 +23,6 @@ id: root
                 initialized = true;
                 cheevosData.loadUserProfile();
                 cheevosData.loadRecentGames();
-                // scrollToCurrentGame() will be triggered by the
-                // Connections.onStatusTextChanged above once data arrives.
-            } else if (initialized && cheevosData.pendingScrollTitle !== "") {
-                // List already loaded — scroll immediately.
-                scrollToCurrentGame();
             }
         }
     }

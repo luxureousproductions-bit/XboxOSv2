@@ -31,7 +31,6 @@ id: root
     function toggleSearch() {
         searchActive = !searchActive;
         if (!searchActive) {
-            Qt.inputMethod.hide();
             searchInput.deselect();
             buttonbar.forceActiveFocus();
         }
@@ -165,12 +164,9 @@ id: root
                     font.pixelSize: vpx(18)
                     clip: true
                     text: searchTerm
-                    selectionColor: theme.accent
+                    selectionColor: searchActive ? theme.accent : "transparent"
                     selectedTextColor: theme.text
-                    // Android fix: keep the TextInput hidden when not actively
-                    // typing so the Android IME never attaches its blue
-                    // selection/cursor highlight to this element.
-                    visible: searchActive
+                    cursorVisible: searchActive && searchInput.activeFocus
                     onTextEdited: {
                         searchTerm = searchInput.text
                     }
@@ -181,25 +177,6 @@ id: root
                             searchModeDropdown.forceActiveFocus();
                         }
                     }
-                }
-
-                // Read-only display of the active search term shown while
-                // the search bar is collapsed (searchActive = false).
-                // A plain Text element is used so no Android IME artefacts
-                // can appear when nothing is being typed.
-                Text {
-                    anchors {
-                        left: searchicon.right; leftMargin: vpx(10)
-                        top: parent.top; bottom: parent.bottom
-                        right: modeLabel.left; rightMargin: vpx(5)
-                    }
-                    verticalAlignment: Text.AlignVCenter
-                    color: theme.text
-                    font.family: subtitleFont.name
-                    font.pixelSize: vpx(18)
-                    text: searchTerm
-                    elide: Text.ElideRight
-                    visible: !searchActive && searchTerm !== ""
                 }
 
                 // Current mode label inside the search bar
