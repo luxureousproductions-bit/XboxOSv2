@@ -164,6 +164,9 @@ id: root
                     font.pixelSize: vpx(18)
                     clip: true
                     text: searchTerm
+                    selectionColor: searchActive ? theme.accent : "transparent"
+                    selectedTextColor: theme.text
+                    cursorVisible: searchActive && searchInput.activeFocus
                     onTextEdited: {
                         searchTerm = searchInput.text
                     }

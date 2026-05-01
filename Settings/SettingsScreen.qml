@@ -600,6 +600,9 @@ id: root
                         font.pixelSize: vpx(16)
                         clip: true
                         readOnly: !settingRow.isEditing
+                        selectionColor: settingRow.isEditing ? theme.accent : "transparent"
+                        selectedTextColor: theme.text
+                        cursorVisible: settingRow.isEditing
                         // Mask fields marked as sensitive when not actively editing
                         echoMode: (!settingRow.isEditing && masked && text !== "")
                                   ? TextInput.Password
