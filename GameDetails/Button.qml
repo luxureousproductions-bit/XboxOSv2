@@ -45,7 +45,8 @@ id: root
         id: buttonicon
 
             source: "../assets/images/icon_play.svg"
-            width: parent.height - vpx(30)
+            visible: source !== ""
+            width: source !== "" ? parent.height - vpx(30) : 0
             height: parent.height - vpx(30)
             fillMode: Image.PreserveAspectFit
             asynchronous: true
@@ -55,7 +56,7 @@ id: root
             Behavior on scale { NumberAnimation { duration: 100 } }
             
             property real iconMargin: (buttonlabel.text === "") ? vpx(15) : buttonMargin
-            anchors { left: parent.left; leftMargin: iconMargin }
+            anchors { left: parent.left; leftMargin: visible ? iconMargin : 0 }
             //anchors.horizontalCenter: (buttonlabel.text === "") ? parent.horizontalCenter : parent.left
             anchors.verticalCenter: parent.verticalCenter
         }
@@ -70,7 +71,10 @@ id: root
             //opacity: selected ? 1 : 0.2
             visible: text !== ""
             
-            anchors { left: buttonicon.right; leftMargin: vpx(15) }
+            anchors {
+                left: buttonicon.visible ? buttonicon.right : parent.left
+                leftMargin: buttonicon.visible ? vpx(15) : buttonMargin
+            }
             anchors.verticalCenter: parent.verticalCenter
         }
     }
