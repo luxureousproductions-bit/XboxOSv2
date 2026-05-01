@@ -600,13 +600,13 @@ id: root
                         font.pixelSize: vpx(16)
                         clip: true
                         readOnly: !settingRow.isEditing
-                        selectionColor: settingRow.isEditing ? theme.accent : "transparent"
+                        selectionColor: theme.accent
                         selectedTextColor: theme.text
-                        cursorVisible: settingRow.isEditing
-                        // Mask fields marked as sensitive when not actively editing
-                        echoMode: (!settingRow.isEditing && masked && text !== "")
-                                  ? TextInput.Password
-                                  : TextInput.Normal
+                        cursorVisible: true
+                        // Android fix: hide the TextInput entirely when not
+                        // editing so the Android IME has no element to attach
+                        // its blue selection/cursor highlight to.
+                        visible: settingRow.isEditing
                         opacity: selected ? 1 : 0.2
 
                         Keys.onPressed: {
@@ -615,6 +615,7 @@ id: root
                                 event.accepted = true;
                                 raTextInput.text = settingRow.originalText;
                                 raTextInput.deselect();
+                                Qt.inputMethod.hide();
                                 settingRow.isEditing = false;
                                 settingsList.forceActiveFocus();
                             }
@@ -622,9 +623,30 @@ id: root
                         Keys.onReturnPressed: {
                             api.memory.set(settingName, raTextInput.text);
                             raTextInput.deselect();
+                            Qt.inputMethod.hide();
                             settingRow.isEditing = false;
                             settingsList.forceActiveFocus();
                         }
+                    }
+
+                    // Read-only display of the saved value shown while not
+                    // actively editing.  A plain Text element is used so no
+                    // Android IME artefacts can appear.
+                    Text {
+                        anchors { fill: parent; margins: vpx(8) }
+                        text: {
+                            var val = api.memory.has(settingName) ? api.memory.get(settingName) : "";
+                            if (masked && val !== "") return val.replace(/./g, "•");
+                            return val;
+                        }
+                        color: theme.text
+                        font.family: subtitleFont.name
+                        font.pixelSize: vpx(16)
+                        clip: true
+                        elide: Text.ElideRight
+                        verticalAlignment: Text.AlignVCenter
+                        visible: !settingRow.isEditing
+                        opacity: selected ? 1 : 0.2
                     }
                 }
 

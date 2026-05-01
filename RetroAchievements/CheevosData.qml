@@ -32,6 +32,11 @@ id: root
     // ID of the game currently loaded in GameAchievementsView
     property int currentGameID: 0
 
+    // Option 2: title of the Pegasus game the user was viewing when they
+    // opened the RA tab.  AchievementsView uses this to auto-scroll to the
+    // matching entry once the recent-games list finishes loading.
+    property string pendingScrollTitle: ""
+
     // Formatted points summary shown in view headers
     property string pointsText: {
         var total = hardcorePoints + softcorePoints;

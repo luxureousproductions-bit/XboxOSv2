@@ -404,6 +404,8 @@ id: root
 
     function achievementsScreen() {
         sfxAccept.play();
+        // Option 2: tell AchievementsView which game to auto-scroll to.
+        cheevosData.pendingScrollTitle = currentGame ? currentGame.title : "";
         lastState.push(state);
         root.state = "achievementsscreen";
     }
