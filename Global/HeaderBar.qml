@@ -29,10 +29,16 @@ id: root
     onFocusChanged: buttonbar.currentIndex = 0;
 
     function toggleSearch() {
-        searchActive = !searchActive;
-        if (!searchActive) {
+        if (searchActive) {
+            // On Android, Qt.inputMethod.hide() must be called while the TextInput
+            // still exists and has focus. Calling it after changing searchActive
+            // destroys (or defocuses) the native EditText first, leaving Android's
+            // IME attached to a dead view — which causes the persistent blue box.
             Qt.inputMethod.hide();
+            searchActive = false;
             buttonbar.forceActiveFocus();
+        } else {
+            searchActive = true;
         }
     }
 
