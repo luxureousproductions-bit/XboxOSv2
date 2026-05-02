@@ -93,6 +93,11 @@ id: root
     // (?z=username&y=apikey).  This is the only authentication method the API
     // supports; header-based auth is not available.  HTTPS is used for all
     // requests, so the credentials are encrypted in transit.
+    //
+    // handler      – called with the parsed JSON object on HTTP 200.
+    // errorHandler – optional; called (with no arguments) on any failure
+    //                (missing credentials, network error, HTTP error, or parse
+    //                error).  Used by lookupGame() to reset lookup state.
     function raRequest(apiName, args, handler, errorHandler) {
         if (!raUserName || !raApiKey) {
             statusText = "Configure your credentials in Settings → Retro Achievements";
