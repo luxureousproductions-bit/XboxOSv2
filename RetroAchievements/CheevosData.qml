@@ -32,6 +32,39 @@ id: root
     // ID of the game currently loaded in GameAchievementsView
     property int currentGameID: 0
 
+    // ── Game lookup state (used by RAGameEntryView) ───────────────────────
+    // -1 = not started / reset, 0 = not found, >0 = found RA game ID
+    property int    pendingGameID:    -1
+    property bool   lookupInProgress: false
+    property string lookupStatusMsg:  ""
+
+    // Pegasus collection shortName → RetroAchievements console ID
+    readonly property var consoleMappings: ({
+        "nes":        7,  "fds":        7,
+        "snes":       3,
+        "gb":         4,  "gbc":        6,  "gba":        5,
+        "n64":        2,
+        "nds":       18,
+        "genesis":    1,  "megadrive":  1,  "md":         1,
+        "sms":       11,  "mastersystem": 11,  "sg1000":  11,
+        "gamegear":  15,  "gg":        15,
+        "32x":       10,
+        "pce":        8,  "tg16":       8,  "pcengine":   8,
+        "neogeo":    14,
+        "atari2600": 25,  "2600":      25,
+        "atari7800": 51,
+        "lynx":      13,
+        "psx":       12,  "ps1":       12,
+        "saturn":    39,
+        "dreamcast": 40,  "dc":        40,
+        "msx":       29,
+        "coleco":    44,
+        "jaguar":    17,
+        "3do":       43,
+        "vectrex":   46,
+        "arcade":    27,  "mame":      27
+    })
+
     // Formatted points summary shown in view headers
     property string pointsText: {
         var total = hardcorePoints + softcorePoints;
@@ -60,9 +93,10 @@ id: root
     // (?z=username&y=apikey).  This is the only authentication method the API
     // supports; header-based auth is not available.  HTTPS is used for all
     // requests, so the credentials are encrypted in transit.
-    function raRequest(apiName, args, handler) {
+    function raRequest(apiName, args, handler, errorHandler) {
         if (!raUserName || !raApiKey) {
             statusText = "Configure your credentials in Settings → Retro Achievements";
+            if (errorHandler) errorHandler();
             return;
         }
         var url = "https://retroachievements.org/API/API_" + apiName
@@ -78,13 +112,17 @@ id: root
                     handler(JSON.parse(xhr.responseText));
                 } catch(e) {
                     statusText = "Error parsing server response";
+                    if (errorHandler) errorHandler();
                 }
             } else if (xhr.status === 0) {
                 statusText = "No network connection";
+                if (errorHandler) errorHandler();
             } else if (xhr.status === 401) {
                 statusText = "Invalid credentials — check Settings";
+                if (errorHandler) errorHandler();
             } else {
                 statusText = "Server error " + xhr.status;
+                if (errorHandler) errorHandler();
             }
         };
         xhr.send();
@@ -198,5 +236,96 @@ id: root
     function refreshAll() {
         loadUserProfile();
         loadRecentGames();
+    }
+
+    // ── Game-title lookup helpers ────────────────────────────────────────
+
+    // Normalise a title for fuzzy matching: lowercase, strip subtitle, collapse
+    // punctuation/whitespace.
+    function normalizeTitle(t) {
+        return (t || "").toLowerCase()
+            .replace(/:\s*.*/g,     "")   // strip subtitle after colon
+            .replace(/[^a-z0-9 ]/g, " ") // replace punctuation with space
+            .replace(/\s+/g,        " ") // collapse whitespace
+            .trim();
+    }
+
+    // Search a RA game-list response (array or ID-keyed object) for a matching
+    // title; returns the RA game ID (>0) or 0 if not found.
+    function findGameInList(title, data) {
+        var norm = normalizeTitle(title);
+        var list = Array.isArray(data) ? data : Object.keys(data).map(function(k){ return data[k]; });
+        for (var i = 0; i < list.length; i++) {
+            var item = list[i];
+            if (normalizeTitle(item.Title || "") === norm)
+                return parseInt(item.ID) || parseInt(item.GameID) || 0;
+        }
+        return 0;
+    }
+
+    // Look up whether a Pegasus game has RA entries.
+    // Result is written to pendingGameID (-1 while pending, 0 = not found, >0 = RA game ID).
+    // The per-console game list is cached in api.memory for 24 hours to minimise
+    // network traffic on Android devices.
+    function lookupGame(title, shortName) {
+        pendingGameID    = -1;
+        lookupInProgress = false;
+        lookupStatusMsg  = "";
+
+        reload();
+
+        if (!raUserName || !raApiKey) {
+            lookupStatusMsg = "Configure credentials in Settings → Retro Achievements";
+            pendingGameID   = 0;
+            return;
+        }
+
+        var consoleID = consoleMappings[shortName.toLowerCase()] || 0;
+        if (!consoleID) {
+            lookupStatusMsg = "Console not supported by Retro Achievements";
+            pendingGameID   = 0;
+            return;
+        }
+
+        var cacheKey  = "raList_" + consoleID;
+        var cacheTime = "raListTime_" + consoleID;
+        var ttl       = 24 * 60 * 60 * 1000;
+        var now       = Date.now();
+
+        if (api.memory.has(cacheKey) && api.memory.has(cacheTime)
+                && (now - parseFloat(api.memory.get(cacheTime))) < ttl) {
+            try {
+                var cached = JSON.parse(api.memory.get(cacheKey));
+                var hit    = findGameInList(title, cached);
+                pendingGameID   = hit;
+                lookupStatusMsg = hit > 0 ? "" : "No Retro Achievements found for this game";
+            } catch(e) {
+                // Corrupt cache — remove and fall through to fresh fetch
+                api.memory.unset(cacheKey);
+                api.memory.unset(cacheTime);
+            }
+            if (pendingGameID !== -1) return;
+        }
+
+        lookupInProgress = true;
+        var capturedTitle = title;
+        var capturedNow   = now;
+        raRequest(
+            "GetGameList",
+            "i=" + consoleID,
+            function(resp) {
+                lookupInProgress = false;
+                api.memory.set(cacheKey, JSON.stringify(resp));
+                api.memory.set(cacheTime, capturedNow.toString());
+                var found       = findGameInList(capturedTitle, resp);
+                pendingGameID   = found;
+                lookupStatusMsg = found > 0 ? "" : "No Retro Achievements found for this game";
+            },
+            function() {
+                lookupInProgress = false;
+                pendingGameID    = 0;
+                lookupStatusMsg  = "Network error — check connection";
+            }
+        );
     }
 }

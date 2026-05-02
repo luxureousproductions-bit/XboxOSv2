@@ -354,6 +354,9 @@ id: root
         },
         State {
             name: "gameachievementsscreen";
+        },
+        State {
+            name: "raentryscreen";
         }
     ]
 
@@ -412,6 +415,20 @@ id: root
         sfxAccept.play();
         lastState.push(state);
         root.state = "gameachievementsscreen";
+    }
+
+    // Navigate to GameAchievementsView without pushing "raentryscreen" onto
+    // lastState.  Called by RAGameEntryView when a game is found so that pressing
+    // Back in GameAchievementsView returns directly to GameView.
+    function gameAchievementsScreenFromEntry() {
+        sfxAccept.play();
+        root.state = "gameachievementsscreen";
+    }
+
+    function raEntryScreen() {
+        sfxAccept.play();
+        lastState.push(state);
+        root.state = "raentryscreen";
     }
 
     function launchGameScreen() {
@@ -564,6 +581,19 @@ id: root
         asynchronous: true
     }
 
+    Loader {
+    id: raentryloader
+
+        focus: (root.state === "raentryscreen")
+        active: opacity !== 0
+        opacity: focus ? 1 : 0
+        Behavior on opacity { PropertyAnimation { duration: transitionTime } }
+
+        anchors.fill: parent
+        sourceComponent: raentryview
+        asynchronous: true
+    }
+
     Component {
     id: showcaseview
 
@@ -613,6 +643,12 @@ id: root
     id: gameachievementsview
 
         GameAchievementsView { focus: true }
+    }
+
+    Component {
+    id: raentryview
+
+        RAGameEntryView { focus: true }
     }
 
     

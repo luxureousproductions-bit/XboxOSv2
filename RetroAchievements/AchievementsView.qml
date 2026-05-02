@@ -44,7 +44,7 @@ id: root
                 left: parent.left; leftMargin: globalMargin
                 verticalCenter: parent.verticalCenter
             }
-            text: "RetroAchievements"
+            text: "Retro Achievements"
             color: theme.text
             font.family: titleFont.name
             font.pixelSize: vpx(28)
@@ -109,7 +109,7 @@ id: root
 
         Text {
             anchors.centerIn: parent
-            text: "RetroAchievements not configured.\n\n"
+            text: "Retro Achievements not configured.\n\n"
                 + "Go to  Settings → Retro Achievements\n"
                 + "and enter your RA username and API key.\n\n"
                 + "Get your API key at: https://retroachievements.org/settings"

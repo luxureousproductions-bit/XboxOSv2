@@ -362,6 +362,11 @@ id: root
             event.accepted = true;
             previousScreen();
         }
+        // Details → open the full Retro Achievements overview
+        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
+            event.accepted = true;
+            achievementsScreen();
+        }
         // Filters → refresh current game
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
@@ -375,7 +380,8 @@ id: root
     // ── Help bar ─────────────────────────────────────────────────────────
     ListModel {
     id: gameAchievementsHelpModel
-        ListElement { name: "Back";    button: "cancel"  }
-        ListElement { name: "Refresh"; button: "filters" }
+        ListElement { name: "Back";     button: "cancel"  }
+        ListElement { name: "Overview"; button: "details" }
+        ListElement { name: "Refresh";  button: "filters" }
     }
 }
