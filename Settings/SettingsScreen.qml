@@ -590,77 +590,58 @@ id: root
                     border.color: theme.accent
                     radius: vpx(4)
 
-                    // Display-only text — shown when not editing (no native view exists)
-                    Text {
-                    id: raDisplayText
+                    // Always-present TextInput — the native Android EditText always
+                    // exists in the view hierarchy. When editing ends, focus is
+                    // transferred to settingsList (forceActiveFocus) *before*
+                    // isEditing is cleared, so Android calls clearFocus() on the
+                    // EditText cleanly — no orphaned blue-box highlight.
+                    TextInput {
+                    id: raTextInput
 
-                        visible: !settingRow.isEditing
                         anchors { fill: parent; margins: vpx(8) }
-                        text: {
-                            if (!api.memory.has(settingName)) return "";
-                            var val = api.memory.get(settingName);
-                            return (typeof masked !== 'undefined' && masked && val !== "")
-                                   ? "•".repeat(val.length)
-                                   : val;
-                        }
+                        // Seed initial text from persistent storage
+                        text: api.memory.has(settingName) ? api.memory.get(settingName) : ""
                         color: theme.text
                         font.family: subtitleFont.name
                         font.pixelSize: vpx(16)
-                        verticalAlignment: Text.AlignVCenter
+                        clip: true
+                        selectionColor: theme.accent
+                        selectedTextColor: theme.text
                         opacity: settingRow.selected ? 1 : 0.2
-                    }
+                        verticalAlignment: Text.AlignVCenter
 
-                    // Loader: only instantiates a native TextInput (Android EditText)
-                    // while editing. When isEditing goes false the object is destroyed
-                    // and the Android IME loses its target, eliminating the blue square.
-                    Loader {
-                    id: raLoader
+                        // Only accept key events / show cursor when editing
+                        readOnly: !settingRow.isEditing
+                        // Show masked dots at rest (if masked field); plain text while editing
+                        echoMode: (typeof masked !== 'undefined' && masked && !settingRow.isEditing)
+                                  ? TextInput.Password : TextInput.Normal
 
-                        anchors.fill: parent
-                        active: settingRow.isEditing
-                        asynchronous: false
-                        onLoaded: {
-                            item.forceActiveFocus();
-                            item.cursorPosition = item.text.length;
-                        }
-
-                        sourceComponent: Component {
-                            TextInput {
-                                anchors { fill: parent; margins: vpx(8) }
-                                text: api.memory.has(settingName) ? api.memory.get(settingName) : ""
-                                color: theme.text
-                                font.family: subtitleFont.name
-                                font.pixelSize: vpx(16)
-                                clip: true
-                                selectionColor: theme.accent
-                                selectedTextColor: theme.text
-                                echoMode: TextInput.Normal
-                                opacity: settingRow.selected ? 1 : 0.2
-
-                                // Safety net: if the screen is torn down while editing
-                                // (e.g. a screen transition), ensure Android's IME is
-                                // notified before the native EditText is removed.
-                                Component.onDestruction: Qt.inputMethod.hide()
-
-                                Keys.onPressed: {
-                                    if (api.keys.isCancel(event) && !event.isAutoRepeat) {
-                                        event.accepted = true;
-                                        Qt.inputMethod.hide();
-                                        // forceActiveFocus BEFORE isEditing = false so Qt
-                                        // calls Android clearFocus() on the EditText first,
-                                        // then the Loader safely removes it.
-                                        settingsList.forceActiveFocus();
-                                        settingRow.isEditing = false;
-                                    }
-                                }
-                                Keys.onReturnPressed: {
-                                    api.memory.set(settingName, text);
-                                    Qt.inputMethod.hide();
-                                    // Same ordering fix as the cancel path above.
-                                    settingsList.forceActiveFocus();
-                                    settingRow.isEditing = false;
+                        // Take focus when editing starts; release it before isEditing
+                        // is cleared so Android can run clearFocus() properly.
+                        Connections {
+                            target: settingRow
+                            function onIsEditingChanged() {
+                                if (settingRow.isEditing) {
+                                    raTextInput.forceActiveFocus();
+                                    raTextInput.cursorPosition = raTextInput.text.length;
                                 }
                             }
+                        }
+
+                        Keys.onPressed: {
+                            if (api.keys.isCancel(event) && !event.isAutoRepeat) {
+                                event.accepted = true;
+                                text = settingRow.originalText;
+                                Qt.inputMethod.hide();
+                                settingsList.forceActiveFocus();
+                                settingRow.isEditing = false;
+                            }
+                        }
+                        Keys.onReturnPressed: {
+                            api.memory.set(settingName, text);
+                            Qt.inputMethod.hide();
+                            settingsList.forceActiveFocus();
+                            settingRow.isEditing = false;
                         }
                     }
                 }
@@ -710,7 +691,7 @@ id: root
                             // Capture current saved value before opening editor
                             originalText = api.memory.has(settingName) ? api.memory.get(settingName) : "";
                             isEditing = true;
-                            // Focus and cursor position handled by raLoader.onLoaded
+                            // Focus and cursor position handled by raTextInput.onIsEditingChanged
                         } else {
                             sfxToggle.play();
                             nextSetting();
@@ -735,7 +716,7 @@ id: root
                             if (isTextInput) {
                                 originalText = api.memory.has(settingName) ? api.memory.get(settingName) : "";
                                 isEditing = true;
-                                // Focus and cursor position handled by raLoader.onLoaded
+                                // Focus and cursor position handled by raTextInput.onIsEditingChanged
                             } else {
                                 sfxToggle.play();
                                 nextSetting();
