@@ -637,19 +637,28 @@ id: root
                                 echoMode: TextInput.Normal
                                 opacity: settingRow.selected ? 1 : 0.2
 
+                                // Safety net: if the screen is torn down while editing
+                                // (e.g. a screen transition), ensure Android's IME is
+                                // notified before the native EditText is removed.
+                                Component.onDestruction: Qt.inputMethod.hide()
+
                                 Keys.onPressed: {
                                     if (api.keys.isCancel(event) && !event.isAutoRepeat) {
                                         event.accepted = true;
                                         Qt.inputMethod.hide();
-                                        settingRow.isEditing = false;
+                                        // forceActiveFocus BEFORE isEditing = false so Qt
+                                        // calls Android clearFocus() on the EditText first,
+                                        // then the Loader safely removes it.
                                         settingsList.forceActiveFocus();
+                                        settingRow.isEditing = false;
                                     }
                                 }
                                 Keys.onReturnPressed: {
                                     api.memory.set(settingName, text);
                                     Qt.inputMethod.hide();
-                                    settingRow.isEditing = false;
+                                    // Same ordering fix as the cancel path above.
                                     settingsList.forceActiveFocus();
+                                    settingRow.isEditing = false;
                                 }
                             }
                         }
