@@ -93,4 +93,4 @@ It is recommended to use [Skraper.net](http://www.skraper.net/) to acquire media
 
  - Added an option in gamesdetail section "more by genre display" (genre: genre / subgenre in metadata) option main= displays more by main genre, option subgenre= displays more by subgenre, option full= shows more by full genre / subgenre (Works with variations: "genre/subgenre" "genre / subgenre" "genre/ subgenre" "genre /subgenre" "genre,subgenre" "genre , subgenre" "genre, subgenre" "genre ,subgenre")✅
 
- - Added Retroacheivment tracker (Experimental) 
+ - Added Retro Achievment tracker (Experimental) 
