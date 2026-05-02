@@ -12,7 +12,6 @@ id: root
     anchors.fill: parent
 
     property bool initialized: false
-    property int  currentIndex: 0
 
     // ── Lifecycle ────────────────────────────────────────────────────────
     onActiveFocusChanged: {
@@ -138,7 +137,6 @@ id: root
         }
 
         model: cheevosData.raRecentGames
-        currentIndex: root.currentIndex
         clip: true
 
         highlightMoveDuration: 100
@@ -291,10 +289,10 @@ id: root
             MouseArea {
                 anchors.fill: parent
                 hoverEnabled: settings.MouseHover === "Yes"
-                onEntered: { sfxNav.play(); root.currentIndex = index; }
+                onEntered: { sfxNav.play(); gameList.currentIndex = index; }
                 onClicked: {
                     if (isSelected) openSelectedGame();
-                    else { sfxNav.play(); root.currentIndex = index; }
+                    else { sfxNav.play(); gameList.currentIndex = index; }
                 }
             }
         }
@@ -304,7 +302,7 @@ id: root
 
     function openSelectedGame() {
         if (cheevosData.raRecentGames.count === 0) return;
-        var gameID = cheevosData.raRecentGames.get(currentIndex).GameID;
+        var gameID = cheevosData.raRecentGames.get(gameList.currentIndex).GameID;
         cheevosData.loadGameAchievements(gameID);
         gameAchievementsScreen();
     }
@@ -314,12 +312,12 @@ id: root
     Keys.onUpPressed: {
         event.accepted = true;
         sfxNav.play();
-        if (currentIndex > 0) currentIndex--;
+        if (gameList.currentIndex > 0) gameList.currentIndex--;
     }
     Keys.onDownPressed: {
         event.accepted = true;
         sfxNav.play();
-        if (currentIndex < cheevosData.raRecentGames.count - 1) currentIndex++;
+        if (gameList.currentIndex < cheevosData.raRecentGames.count - 1) gameList.currentIndex++;
     }
     Keys.onPressed: {
         // Accept → drill into game
