@@ -22,13 +22,11 @@ id: root
         currentHelpbarModel = entryHelpModel;
         buttonRow.selectedIndex = 0;
 
-        // Safety: if a previous lookup already found the game, skip back rather
-        // than looping (should not normally occur given the navigation design).
-        if (cheevosData.pendingGameID > 0) {
-            previousScreen();
-            return;
-        }
-
+        // Always (re-)run the lookup when this screen gains focus.
+        // lookupGame() resets pendingGameID to -1 immediately, so stale state
+        // from a previous visit never causes a spurious early-exit.
+        // Cache hits resolve synchronously, so repeated visits for the same
+        // console never hit the network after the first fetch.
         if (currentGame)
             cheevosData.lookupGame(
                 currentGame.title,

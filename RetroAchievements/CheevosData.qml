@@ -245,26 +245,52 @@ id: root
 
     // ── Game-title lookup helpers ────────────────────────────────────────
 
-    // Normalise a title for fuzzy matching: lowercase, strip subtitle, collapse
-    // punctuation/whitespace.
+    // Normalise a title for fuzzy matching: lowercase, strip regional/version
+    // tags in parentheses (e.g. "(USA)", "(Europe)", "(Rev A)"), then replace all
+    // remaining punctuation (including colons) with spaces and collapse whitespace.
+    // Subtitles are preserved so "Castlevania: Symphony of the Night" normalises
+    // to "castlevania symphony of the night" and still matches the RA entry.
     function normalizeTitle(t) {
         return (t || "").toLowerCase()
-            .replace(/:\s*.*/g,     "")   // strip subtitle after colon
-            .replace(/[^a-z0-9 ]/g, " ") // replace punctuation with space
-            .replace(/\s+/g,        " ") // collapse whitespace
+            .replace(/\s*\([^)]*\)\s*/g, " ") // remove parenthetical tags
+            .replace(/[^a-z0-9 ]/g,     " ") // replace punctuation (incl. :) with space
+            .replace(/\s+/g,            " ") // collapse whitespace
             .trim();
     }
 
     // Search a RA game-list response (array or ID-keyed object) for a matching
     // title; returns the RA game ID (>0) or 0 if not found.
+    // Two passes are used:
+    //   Pass 1 – exact match after normalisation (handles (USA) / punctuation diffs).
+    //   Pass 2 – prefix match: Pegasus title is a left-anchored prefix of the RA
+    //            title followed by a space (handles RA adding an extra subtitle such
+    //            as "Street Fighter II: The World Warrior" when Pegasus just has
+    //            "Street Fighter II").  Guarded to titles of 8+ chars to avoid
+    //            spurious short-prefix false-positives.
     function findGameInList(title, data) {
         var norm = normalizeTitle(title);
         var list = Array.isArray(data) ? data : Object.keys(data).map(function(k){ return data[k]; });
+
+        // Pass 1: exact match
         for (var i = 0; i < list.length; i++) {
             var item = list[i];
-            if (normalizeTitle(item.Title || "") === norm)
-                return parseInt(item.ID) || parseInt(item.GameID) || 0;
+            var id = parseInt(item.ID) || parseInt(item.GameID) || 0;
+            if (id > 0 && normalizeTitle(item.Title || "") === norm)
+                return id;
         }
+
+        // Pass 2: Pegasus title is a prefix of RA title (word-boundary safe)
+        if (norm.length >= 8) {
+            for (var i = 0; i < list.length; i++) {
+                var item = list[i];
+                var id = parseInt(item.ID) || parseInt(item.GameID) || 0;
+                if (id <= 0) continue;
+                var raTitle = normalizeTitle(item.Title || "");
+                if (raTitle.length > norm.length && raTitle.indexOf(norm + " ") === 0)
+                    return id;
+            }
+        }
+
         return 0;
     }
 
