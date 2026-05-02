@@ -199,41 +199,4 @@ id: root
         loadUserProfile();
         loadRecentGames();
     }
-
-    // Option 1 helper: look up a game by title in the already-loaded recent-games
-    // cache and load its achievements directly.  Returns the found GameID (> 0) on
-    // a match, or 0 when the game is not in the cache.
-    // Matching is case-insensitive and tries exact title first, then substring.
-    function loadGameAchievementsByTitle(title) {
-        var needle = title.toLowerCase().trim();
-
-        // 1. Exact match
-        for (var i = 0; i < raRecentGames.count; i++) {
-            var g = raRecentGames.get(i);
-            if (g.Title.toLowerCase().trim() === needle) {
-                loadGameAchievements(g.GameID);
-                return g.GameID;
-            }
-        }
-
-        // 2. Substring match (Pegasus title contains RA title or vice-versa)
-        for (var j = 0; j < raRecentGames.count; j++) {
-            var g2 = raRecentGames.get(j);
-            var raTitle = g2.Title.toLowerCase().trim();
-            if (raTitle.indexOf(needle) !== -1 || needle.indexOf(raTitle) !== -1) {
-                loadGameAchievements(g2.GameID);
-                return g2.GameID;
-            }
-        }
-
-        // 3. Not found — populate a placeholder so GameAchievementsView shows a
-        //    useful message rather than a blank screen.
-        raGameCheevos.clear();
-        currentGameDetails = {
-            "Title": title, "ImageIcon": "", "ConsoleName": "",
-            "NumAchievements": 0, "NumAwardedToUser": 0, "NumAwardedToUserHardcore": 0
-        };
-        statusText = "\"" + title + "\" was not found in your recently played games";
-        return 0;
-    }
 }
