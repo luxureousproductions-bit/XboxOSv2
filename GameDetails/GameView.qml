@@ -612,7 +612,32 @@ id: root
             onActivated:
                 if (selected) {
                     sfxAccept.play();
-                    achievementsScreen();
+                    // Option 1 — skip the RA overview, go straight to the
+                    // per-game achievements for the currently viewed game.
+                    cheevosData.reload();
+                    if (cheevosData.raUserName === "") {
+                        // Credentials not configured — overview shows setup message
+                        achievementsScreen();
+                    } else {
+                        // Ensure the recent-games cache is populated so the title
+                        // lookup has data to search.  The load is async; if the
+                        // cache is already warm the lookup below returns immediately.
+                        if (cheevosData.raRecentGames.count === 0)
+                            cheevosData.loadRecentGames();
+                        var foundID = cheevosData.loadGameAchievementsByTitle(
+                                          game ? game.title : "");
+                        if (foundID > 0) {
+                            // Jump directly to this game's achievements
+                            gameAchievementsScreen();
+                        } else if (cheevosData.raRecentGames.count === 0) {
+                            // Cache was empty (still loading) — fall back to overview
+                            achievementsScreen();
+                        } else {
+                            // Game not in recent list — navigate to game-achievements
+                            // view which will show the "not found" status message.
+                            gameAchievementsScreen();
+                        }
+                    }
                 } else {
                     sfxNav.play();
                     menu.currentIndex = ObjectModel.index;
