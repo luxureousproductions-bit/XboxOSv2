@@ -601,6 +601,24 @@ id: root
                 }
         }
 
+        Button {
+        id: button5
+
+            icon: "../assets/images/icon_ra.svg"
+            iconPadding: vpx(16)
+            height: parent.height
+            selected: ListView.isCurrentItem && menu.focus
+            onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
+            onActivated:
+                if (selected) {
+                    sfxAccept.play();
+                    achievementsScreen();
+                } else {
+                    sfxNav.play();
+                    menu.currentIndex = ObjectModel.index;
+                }
+        }
+
         Button { 
         id: button2 
 

@@ -297,7 +297,35 @@ id: root
         }
     }
 
-    property var settingsArr: [generalPage, showcasePage, gridPage, gamePage, mediaCarouselPage, advancedPage]
+    // ── RetroAchievements credentials page ──────────────────────────────
+    ListModel {
+    id: raSettingsModel
+
+        // inputType: "text" marks rows that take free-form keyboard input
+        // instead of cycling through a comma-separated list.
+        ListElement {
+            settingName: "RA Username"
+            setting:     ""
+            inputType:   "text"
+            note:        "Your retroachievements.org username"
+        }
+        ListElement {
+            settingName: "RA API Key"
+            setting:     ""
+            inputType:   "text"
+            masked:      true
+            note:        "Web API key from retroachievements.org/settings"
+        }
+    }
+
+    property var raPage: {
+        return {
+            pageName:  "Retro Achievements",
+            listmodel: raSettingsModel
+        }
+    }
+
+    property var settingsArr: [generalPage, showcasePage, gridPage, gamePage, mediaCarouselPage, advancedPage, raPage]
 
     property real itemheight: vpx(50)
 
@@ -461,12 +489,19 @@ id: root
                 property int savedIndex: api.memory.get(settingName + 'Index') || 0
                 property string itemNote: (typeof note !== 'undefined') ? note : ""
 
+                // Text-input rows (RA credentials) skip the cycling logic
+                property bool isTextInput: inputType === "text"
+                property bool isEditing:   false
+                property string originalText: ""
+
                 function saveSetting() {
+                    if (isTextInput) return;
                     api.memory.set(settingName + 'Index', savedIndex);
                     api.memory.set(settingName, settingList[savedIndex]);
                 }
 
                 function nextSetting() {
+                    if (isTextInput) return;
                     if (savedIndex != settingList.length -1)
                         savedIndex++;
                     else
@@ -474,6 +509,7 @@ id: root
                 }
 
                 function prevSetting() {
+                    if (isTextInput) return;
                     if (savedIndex > 0)
                         savedIndex--;
                     else
@@ -483,10 +519,11 @@ id: root
                 width: ListView.view.width
                 height: itemNote !== "" ? itemheight + vpx(22) : itemheight
 
-                // Setting name
+                // ── Cycle-value rows (existing style) ──────────────────────
                 Text {
                 id: settingNameText
-                
+
+                    visible: !isTextInput
                     text: settingName + ": "
                     color: theme.text
                     font.family: subtitleFont.name
@@ -500,11 +537,11 @@ id: root
                         left: parent.left; leftMargin: vpx(25)
                     }
                 }
-                // Setting value
-                Text { 
-                id: settingtext; 
-                
-                    text: settingList[savedIndex]; 
+                Text {
+                id: settingtext
+
+                    visible: !isTextInput
+                    text: settingList[savedIndex]
                     color: theme.text
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(20)
@@ -517,7 +554,99 @@ id: root
                     }
                 }
 
-                // Optional note below the setting row
+                // ── Text-input rows (RA credentials) ───────────────────────
+                Text {
+                id: textInputLabel
+
+                    visible: isTextInput
+                    text: settingName + ":"
+                    color: theme.text
+                    font.family: subtitleFont.name
+                    font.pixelSize: vpx(20)
+                    verticalAlignment: Text.AlignVCenter
+                    opacity: selected ? 1 : 0.2
+
+                    width: contentWidth
+                    height: itemheight
+                    anchors {
+                        left: parent.left; leftMargin: vpx(25)
+                    }
+                }
+
+                // Container that looks plain when reading, bordered when editing
+                Rectangle {
+                id: textInputContainer
+
+                    visible: isTextInput
+                    anchors {
+                        right: parent.right; rightMargin: vpx(25)
+                        top: parent.top
+                    }
+                    y: (itemheight - height) / 2   // vertically center within the label row
+                    width:  vpx(280)
+                    height: vpx(34)
+                    color:  isEditing ? theme.secondary : "transparent"
+                    border.width: isEditing ? vpx(1) : 0
+                    border.color: theme.accent
+                    radius: vpx(4)
+
+                    // Always-present TextInput — the native Android EditText always
+                    // exists in the view hierarchy. When editing ends, focus is
+                    // transferred to settingsList (forceActiveFocus) *before*
+                    // isEditing is cleared, so Android calls clearFocus() on the
+                    // EditText cleanly — no orphaned blue-box highlight.
+                    TextInput {
+                    id: raTextInput
+
+                        anchors { fill: parent; margins: vpx(8) }
+                        // Seed initial text from persistent storage
+                        text: api.memory.has(settingName) ? api.memory.get(settingName) : ""
+                        color: theme.text
+                        font.family: subtitleFont.name
+                        font.pixelSize: vpx(16)
+                        clip: true
+                        selectionColor: theme.accent
+                        selectedTextColor: theme.text
+                        opacity: settingRow.selected ? 1 : 0.2
+                        verticalAlignment: Text.AlignVCenter
+
+                        // Only accept key events / show cursor when editing
+                        readOnly: !settingRow.isEditing
+                        // Show masked dots at rest (if masked field); plain text while editing
+                        echoMode: (typeof masked !== 'undefined' && masked && !settingRow.isEditing)
+                                  ? TextInput.Password : TextInput.Normal
+
+                        // Take focus when editing starts; release it before isEditing
+                        // is cleared so Android can run clearFocus() properly.
+                        Connections {
+                            target: settingRow
+                            function onIsEditingChanged() {
+                                if (settingRow.isEditing) {
+                                    raTextInput.forceActiveFocus();
+                                    raTextInput.cursorPosition = raTextInput.text.length;
+                                }
+                            }
+                        }
+
+                        Keys.onPressed: {
+                            if (api.keys.isCancel(event) && !event.isAutoRepeat) {
+                                event.accepted = true;
+                                text = settingRow.originalText;
+                                Qt.inputMethod.hide();
+                                settingsList.forceActiveFocus();
+                                settingRow.isEditing = false;
+                            }
+                        }
+                        Keys.onReturnPressed: {
+                            api.memory.set(settingName, text);
+                            Qt.inputMethod.hide();
+                            settingsList.forceActiveFocus();
+                            settingRow.isEditing = false;
+                        }
+                    }
+                }
+
+                // ── Optional note (shared) ────────────────────────────────
                 Text {
                 id: settingNoteText
 
@@ -536,7 +665,7 @@ id: root
                 }
 
                 Rectangle {
-                    anchors { 
+                    anchors {
                         left: parent.left; leftMargin: vpx(25)
                         right: parent.right; rightMargin: vpx(25)
                         bottom: parent.bottom
@@ -546,32 +675,33 @@ id: root
                     height: vpx(1)
                 }
 
-                // Input handling
-                // Next setting
+                // ── Input handling ────────────────────────────────────────
                 Keys.onRightPressed: {
-                    sfxToggle.play()
-                    nextSetting();
-                    saveSetting();
+                    if (!isTextInput) { sfxToggle.play(); nextSetting(); saveSetting(); }
                 }
-                // Previous setting
                 Keys.onLeftPressed: {
-                    sfxToggle.play();
-                    prevSetting();
-                    saveSetting();
+                    if (!isTextInput) { sfxToggle.play(); prevSetting(); saveSetting(); }
                 }
 
                 Keys.onPressed: {
                     // Accept
                     if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                         event.accepted = true;
-                        sfxToggle.play()
-                        nextSetting();
-                        saveSetting();
+                        if (isTextInput) {
+                            // Capture current saved value before opening editor
+                            originalText = api.memory.has(settingName) ? api.memory.get(settingName) : "";
+                            isEditing = true;
+                            // Focus and cursor position handled by raTextInput.onIsEditingChanged
+                        } else {
+                            sfxToggle.play();
+                            nextSetting();
+                            saveSetting();
+                        }
                     }
                     // Back
                     if (api.keys.isCancel(event) && !event.isAutoRepeat) {
                         event.accepted = true;
-                        sfxBack.play()
+                        sfxBack.play();
                         pagelist.focus = true;
                     }
                 }
@@ -582,12 +712,18 @@ id: root
                     hoverEnabled: settings.MouseHover == "Yes"
                     onEntered: { sfxNav.play(); }
                     onClicked: {
-                        sfxToggle.play();
-                        if(selected){ 
-                            nextSetting();
-                            saveSetting();
+                        if (selected) {
+                            if (isTextInput) {
+                                originalText = api.memory.has(settingName) ? api.memory.get(settingName) : "";
+                                isEditing = true;
+                                // Focus and cursor position handled by raTextInput.onIsEditingChanged
+                            } else {
+                                sfxToggle.play();
+                                nextSetting();
+                                saveSetting();
+                            }
                         } else {
-                            settingsList.focus = true;
+                            settingsList.forceActiveFocus();
                             settingsList.currentIndex = index;
                         }
                     }

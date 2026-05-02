@@ -18,6 +18,7 @@ import QtQuick 2.0
 import QtQuick.Layouts 1.11
 import SortFilterProxyModel 0.2
 import QtMultimedia 5.9
+import "RetroAchievements"
 import "VerticalList"
 import "GridView"
 import "Global"
@@ -31,6 +32,11 @@ id: root
     FontLoader { id: titleFont; source:      "assets/fonts/SegoeProDisplay-Bold.ttf" }
     FontLoader { id: subtitleFont; source:   "assets/fonts/SegoeProDisplay-Bold.ttf" }
     FontLoader { id: bodyFont; source:       "assets/fonts/SegoeProDisplay-Semibold.ttf" }
+
+    // ── RetroAchievements data layer ─────────────────────────────────────
+    CheevosData {
+    id: cheevosData
+    }
 
     // Load settings
     property var settings: {
@@ -342,6 +348,12 @@ id: root
         },
         State {
             name: "launchgamescreen";
+        },
+        State {
+            name: "achievementsscreen";
+        },
+        State {
+            name: "gameachievementsscreen";
         }
     ]
 
@@ -388,6 +400,18 @@ id: root
         sfxAccept.play();
         lastState.push(state);
         root.state = "settingsscreen";
+    }
+
+    function achievementsScreen() {
+        sfxAccept.play();
+        lastState.push(state);
+        root.state = "achievementsscreen";
+    }
+
+    function gameAchievementsScreen() {
+        sfxAccept.play();
+        lastState.push(state);
+        root.state = "gameachievementsscreen";
     }
 
     function launchGameScreen() {
@@ -514,6 +538,32 @@ id: root
         asynchronous: true
     }
 
+    Loader {
+    id: achievementsloader
+
+        focus: (root.state === "achievementsscreen")
+        active: opacity !== 0
+        opacity: focus ? 1 : 0
+        Behavior on opacity { PropertyAnimation { duration: transitionTime } }
+
+        anchors.fill: parent
+        sourceComponent: achievementsview
+        asynchronous: true
+    }
+
+    Loader {
+    id: gameachievementsloader
+
+        focus: (root.state === "gameachievementsscreen")
+        active: opacity !== 0
+        opacity: focus ? 1 : 0
+        Behavior on opacity { PropertyAnimation { duration: transitionTime } }
+
+        anchors.fill: parent
+        sourceComponent: gameachievementsview
+        asynchronous: true
+    }
+
     Component {
     id: showcaseview
 
@@ -551,6 +601,18 @@ id: root
     id: settingsview
 
         SettingsScreen { focus: true }
+    }
+
+    Component {
+    id: achievementsview
+
+        AchievementsView { focus: true }
+    }
+
+    Component {
+    id: gameachievementsview
+
+        GameAchievementsView { focus: true }
     }
 
     

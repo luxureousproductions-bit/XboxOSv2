@@ -24,6 +24,7 @@ id: root
     property alias icon: buttonicon.source
     property alias buttonWidth: container.width
     property real buttonMargin: vpx(25)
+    property real iconPadding: vpx(30)
     width: container.width
 
     signal activated
@@ -45,8 +46,9 @@ id: root
         id: buttonicon
 
             source: "../assets/images/icon_play.svg"
-            width: parent.height - vpx(30)
-            height: parent.height - vpx(30)
+            visible: source !== ""
+            width: source !== "" ? parent.height - iconPadding : 0
+            height: parent.height - iconPadding
             fillMode: Image.PreserveAspectFit
             asynchronous: true
             //opacity: selected ? 1 : 0.2
@@ -54,8 +56,8 @@ id: root
             scale: selected ? 1.2 : 1
             Behavior on scale { NumberAnimation { duration: 100 } }
             
-            property real iconMargin: (buttonlabel.text === "") ? vpx(15) : buttonMargin
-            anchors { left: parent.left; leftMargin: iconMargin }
+            property real iconMargin: (buttonlabel.text === "") ? iconPadding / 2 : buttonMargin
+            anchors { left: parent.left; leftMargin: visible ? iconMargin : 0 }
             //anchors.horizontalCenter: (buttonlabel.text === "") ? parent.horizontalCenter : parent.left
             anchors.verticalCenter: parent.verticalCenter
         }
@@ -70,7 +72,10 @@ id: root
             //opacity: selected ? 1 : 0.2
             visible: text !== ""
             
-            anchors { left: buttonicon.right; leftMargin: vpx(15) }
+            anchors {
+                left: buttonicon.visible ? buttonicon.right : parent.left
+                leftMargin: buttonicon.visible ? vpx(15) : buttonMargin
+            }
             anchors.verticalCenter: parent.verticalCenter
         }
     }

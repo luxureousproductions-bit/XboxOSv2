@@ -29,7 +29,17 @@ id: root
     onFocusChanged: buttonbar.currentIndex = 0;
 
     function toggleSearch() {
-        searchActive = !searchActive;
+        if (searchActive) {
+            // On Android, Qt.inputMethod.hide() must be called while the TextInput
+            // still exists and has focus. Calling it after changing searchActive
+            // destroys (or defocuses) the native EditText first, leaving Android's
+            // IME attached to a dead view — which causes the persistent blue box.
+            Qt.inputMethod.hide();
+            searchActive = false;
+            buttonbar.forceActiveFocus();
+        } else {
+            searchActive = true;
+        }
     }
 
     Item {
@@ -145,29 +155,44 @@ id: root
                     asynchronous: true
                 }
 
-                TextInput {
-                id: searchInput
-                    
-                    anchors { 
+                // Loader: only instantiates a native TextInput (Android EditText)
+                // while the search bar is actively open. When searchActive goes
+                // false the object is destroyed and the Android IME loses its
+                // target, eliminating the persistent blue-square highlight.
+                Loader {
+                id: searchLoader
+
+                    anchors {
                         left: searchicon.right; leftMargin: vpx(10)
                         top: parent.top; bottom: parent.bottom
                         right: modeLabel.left; rightMargin: vpx(5)
                     }
-                    verticalAlignment: Text.AlignVCenter
-                    color: theme.text
-                    focus: searchbar.selected && searchActive
-                    font.family: subtitleFont.name
-                    font.pixelSize: vpx(18)
-                    clip: true
-                    text: searchTerm
-                    onTextEdited: {
-                        searchTerm = searchInput.text
+                    active: searchActive
+                    asynchronous: false
+                    onLoaded: {
+                        if (item) {
+                            item.forceActiveFocus();
+                            item.selectAll();
+                        }
                     }
 
-                    Keys.onDownPressed: {
-                        if (searchActive) {
-                            event.accepted = true;
-                            searchModeDropdown.forceActiveFocus();
+                    sourceComponent: Component {
+                        TextInput {
+                            verticalAlignment: Text.AlignVCenter
+                            color: theme.text
+                            font.family: subtitleFont.name
+                            font.pixelSize: vpx(18)
+                            clip: true
+                            text: searchTerm
+                            selectionColor: theme.accent
+                            selectedTextColor: theme.text
+                            onTextEdited: {
+                                searchTerm = text
+                            }
+                            Keys.onDownPressed: {
+                                event.accepted = true;
+                                searchModeDropdown.forceActiveFocus();
+                            }
                         }
                     }
                 }
@@ -238,7 +263,7 @@ id: root
                                 anchors.fill: parent
                                 onClicked: {
                                     searchMode = modelData;
-                                    searchInput.forceActiveFocus();
+                                    if (searchLoader.item) searchLoader.item.forceActiveFocus();
                                 }
                             }
                         }
@@ -248,7 +273,7 @@ id: root
                                 sfxNav.play();
                                 currentIndex--;
                             } else {
-                                searchInput.forceActiveFocus();
+                                if (searchLoader.item) searchLoader.item.forceActiveFocus();
                             }
                         }
                         Keys.onDownPressed: {
@@ -262,11 +287,11 @@ id: root
                                 event.accepted = true;
                                 searchMode = model[currentIndex];
                                 sfxToggle.play();
-                                searchInput.forceActiveFocus();
+                                if (searchLoader.item) searchLoader.item.forceActiveFocus();
                             }
                             if (api.keys.isCancel(event) && !event.isAutoRepeat) {
                                 event.accepted = true;
-                                searchInput.forceActiveFocus();
+                                if (searchLoader.item) searchLoader.item.forceActiveFocus();
                             }
                         }
                     }
@@ -283,7 +308,7 @@ id: root
                         if (!searchActive)
                         {
                             toggleSearch();
-                            searchInput.selectAll();
+                            if (searchLoader.item) searchLoader.item.selectAll();
                         }
                     }
                 }
@@ -294,9 +319,9 @@ id: root
                         event.accepted = true;
                         if (!searchActive) {
                             toggleSearch();
-                            searchInput.selectAll();
+                            if (searchLoader.item) searchLoader.item.selectAll();
                         } else {
-                            searchInput.selectAll();
+                            if (searchLoader.item) searchLoader.item.selectAll();
                         }
                     }
                 }
