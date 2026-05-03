@@ -149,10 +149,10 @@ id: root
                     border.width: vpx(2)
                     radius: vpx(2)
                     opacity: 0.8
-                    // Battery fill (~70%)
+                    // Battery fill (real device percentage)
                     Rectangle {
                         anchors { left: parent.left; top: parent.top; bottom: parent.bottom; margins: vpx(3) }
-                        width: parent.width * 0.70
+                        width: parent.width * Math.max(0, Math.min(1, api.device.batteryPercent))
                         color: theme.text
                         radius: vpx(1)
                         opacity: 0.9
@@ -565,8 +565,8 @@ id: root
     ListModel {
     id: localHelpModel
         ListElement { name: "Back";     button: "cancel"  }
-        ListElement { name: "Overview"; button: "details" }
         ListElement { name: "Refresh";  button: "filters" }
+        ListElement { name: "Overview"; button: "details" }
     }
 
     // ── Key handling ─────────────────────────────────────────────────────
