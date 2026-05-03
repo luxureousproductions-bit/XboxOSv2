@@ -24,7 +24,10 @@ id: root
 
     anchors.fill: parent
 
-    // Shuffled list of game objects that have a video asset
+    // Whether the info overlay (title + logo) is visible
+    property bool showInfo: true
+
+    // List of games with video assets; populated on first load
     property var gameList: []
     property int currentIndex: 0
     property var currentGame: (gameList.length > 0 && currentIndex < gameList.length)
@@ -37,29 +40,27 @@ id: root
             if (allGames[i].assets.video)
                 withVideos.push(allGames[i]);
         }
-        // Fisher-Yates shuffle
-        for (var j = withVideos.length - 1; j > 0; j--) {
-            var k = Math.floor(Math.random() * (j + 1));
-            var tmp = withVideos[j];
-            withVideos[j] = withVideos[k];
-            withVideos[k] = tmp;
-        }
         gameList = withVideos;
     }
 
-    function next() {
+    // Pick a random game different from the current one
+    function randomJump() {
         if (gameList.length === 0) return;
         sfxNav.play();
-        currentIndex = (currentIndex + 1) % gameList.length;
+        if (gameList.length === 1) return;
+        var newIndex;
+        do {
+            newIndex = Math.floor(Math.random() * gameList.length);
+        } while (newIndex === currentIndex);
+        currentIndex = newIndex;
     }
 
-    function previous() {
-        if (gameList.length === 0) return;
-        sfxNav.play();
-        currentIndex = (currentIndex - 1 + gameList.length) % gameList.length;
+    Component.onCompleted: {
+        buildList();
+        // Start on a random game
+        if (gameList.length > 0)
+            currentIndex = Math.floor(Math.random() * gameList.length);
     }
-
-    Component.onCompleted: buildList()
 
     // Black background
     Rectangle {
@@ -78,7 +79,7 @@ id: root
         loops: MediaPlayer.Infinite
         autoPlay: true
 
-        // Ensure playback restarts when the source changes (e.g. when navigating)
+        // Restart playback whenever the source changes
         onSourceChanged: play()
     }
 
@@ -86,71 +87,80 @@ id: root
     Rectangle {
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
         height: vpx(180)
+        visible: showInfo
         gradient: Gradient {
             GradientStop { position: 0.0; color: "transparent" }
             GradientStop { position: 1.0; color: "#E0000000" }
         }
     }
 
-    // Top gradient for title bar
-    Rectangle {
-        anchors { left: parent.left; right: parent.right; top: parent.top }
-        height: vpx(90)
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#B0000000" }
-            GradientStop { position: 1.0; color: "transparent" }
+    // Info overlay: game title + system logo
+    Item {
+    id: infoOverlay
+
+        visible: showInfo
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+        height: vpx(110)
+
+        // Game title
+        Text {
+        id: gameTitle
+
+            anchors {
+                bottom: systemLogo.top; bottomMargin: vpx(4)
+                left: parent.left; leftMargin: globalMargin
+                right: parent.right; rightMargin: globalMargin
+            }
+            text: currentGame ? currentGame.title : ""
+            color: theme.text
+            font.family: subtitleFont.name
+            font.pixelSize: vpx(30)
+            font.bold: true
+            style: Text.Outline
+            styleColor: "#80000000"
+            elide: Text.ElideRight
         }
-    }
 
-    // "Random" label – top left
-    Text {
-        anchors { top: parent.top; topMargin: vpx(20); left: parent.left; leftMargin: globalMargin }
-        text: "Random"
-        color: theme.accent
-        font.family: subtitleFont.name
-        font.pixelSize: vpx(26)
-        font.bold: true
-    }
+        // System logo image (shortName-based)
+        Image {
+        id: systemLogo
 
-    // Position counter – top right (e.g. "3 / 47")
-    Text {
-        anchors { top: parent.top; topMargin: vpx(24); right: parent.right; rightMargin: globalMargin }
-        text: gameList.length > 0 ? (currentIndex + 1) + " / " + gameList.length : ""
-        color: theme.text
-        opacity: 0.7
-        font.family: subtitleFont.name
-        font.pixelSize: vpx(18)
-    }
+            property string shortName: currentGame && currentGame.collections.count > 0
+                                       ? currentGame.collections.get(0).shortName : ""
 
-    // Game title – bottom left
-    Text {
-        anchors {
-            bottom: parent.bottom; bottomMargin: vpx(70)
-            left: parent.left; leftMargin: globalMargin
-            right: parent.right; rightMargin: globalMargin
+            anchors {
+                bottom: parent.bottom; bottomMargin: vpx(55)
+                left: parent.left; leftMargin: globalMargin
+            }
+            height: vpx(30)
+            width: vpx(120)
+            source: shortName !== ""
+                    ? "../assets/images/logospng/" + Utils.processPlatformName(shortName) + ".png"
+                    : ""
+            sourceSize { width: 240; height: 60 }
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            asynchronous: true
+            visible: status !== Image.Error && shortName !== ""
+            horizontalAlignment: Image.AlignLeft
         }
-        text: currentGame ? currentGame.title : ""
-        color: theme.text
-        font.family: subtitleFont.name
-        font.pixelSize: vpx(30)
-        font.bold: true
-        style: Text.Outline
-        styleColor: "#80000000"
-        elide: Text.ElideRight
-    }
 
-    // Collection / platform name – bottom left, below title
-    Text {
-        anchors {
-            bottom: parent.bottom; bottomMargin: vpx(42)
-            left: parent.left; leftMargin: globalMargin
+        // Fallback: collection name as text when logo image is unavailable
+        Text {
+        id: systemName
+
+            anchors {
+                bottom: parent.bottom; bottomMargin: vpx(55)
+                left: parent.left; leftMargin: globalMargin
+            }
+            text: currentGame && currentGame.collections.count > 0
+                  ? currentGame.collections.get(0).name : ""
+            color: theme.text
+            opacity: 0.7
+            font.family: subtitleFont.name
+            font.pixelSize: vpx(16)
+            visible: systemLogo.status === Image.Error || systemLogo.shortName === ""
         }
-        text: currentGame && currentGame.collections.count > 0
-              ? currentGame.collections.get(0).name : ""
-        color: theme.text
-        opacity: 0.7
-        font.family: subtitleFont.name
-        font.pixelSize: vpx(16)
     }
 
     // "No videos available" fallback message
@@ -167,14 +177,13 @@ id: root
         width: parent.width * 0.7
     }
 
-    // Helpbar
+    // Helpbar: A Launch | X Hide | B Back  (RightToLeft → B rightmost, A leftmost)
     ListModel {
     id: randomHelpModel
 
-        ListElement { name: "Back";     button: "cancel"   }
-        ListElement { name: "Launch";   button: "accept"   }
-        ListElement { name: "Previous"; button: "prevPage" }
-        ListElement { name: "Next";     button: "nextPage" }
+        ListElement { name: "Back";   button: "cancel"  }
+        ListElement { name: "Hide";   button: "details" }
+        ListElement { name: "Launch"; button: "accept"  }
     }
 
     onActiveFocusChanged: {
@@ -182,31 +191,35 @@ id: root
             currentHelpbarModel = randomHelpModel;
     }
 
-    // Navigation
-    Keys.onLeftPressed:  previous()
-    Keys.onRightPressed: next()
+    // Navigation: left/right and LT/RT all jump to a random game
+    Keys.onLeftPressed:  randomJump()
+    Keys.onRightPressed: randomJump()
 
     Keys.onPressed: {
-        // Accept – go to game details
+        // Accept – launch the game directly
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
             if (currentGame)
-                gameDetails(currentGame);
+                launchGame(currentGame);
         }
         // Cancel – return to showcase
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
             previousScreen();
         }
-        // LT – previous game
+        // Details (X) – toggle info overlay
+        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
+            event.accepted = true;
+            showInfo = !showInfo;
+        }
+        // LT or RT – random jump
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            previous();
+            randomJump();
         }
-        // RT – next game
         if (api.keys.isNextPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            next();
+            randomJump();
         }
     }
 }

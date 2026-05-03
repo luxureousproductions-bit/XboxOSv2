@@ -895,12 +895,12 @@ id: root
             button: "details"
         }
         ListElement {
-            name: "Random"
-            button: "prevPage"
-        }
-        ListElement {
             name: "Select"
             button: "accept"
+        }
+        ListElement {
+            name: "Random"
+            button: "prevPage"
         }
     }
 
