@@ -1,9 +1,11 @@
 // XboxOSv2 – RetroAchievements browser
 // Shows the user's recently-played games with per-game achievement progress.
 // Selecting a game drills down to GameAchievementsView.
+// Layout matches the retromega-sleipnir style with the XboxOSv2 colour scheme:
+//   header: avatar + name + points (left)
+//   rows: [full-height icon] [title / platform · Played N ago] [N of M right]
 
 import QtQuick 2.0
-import QtQuick.Layouts 1.11
 import "../Global"
 
 FocusScope {
@@ -13,10 +15,26 @@ id: root
 
     property bool initialized: false
 
+    // Returns a relative "Played X ago" string from an ISO-8601 LastPlayed string.
+    function lastPlayedText(lastPlayed) {
+        var ms = Date.parse(lastPlayed);
+        if (isNaN(ms)) return "";
+        var s = Math.floor((Date.now() - ms) / 1000);
+        if (s < 120)  return "Played just now";
+        var m = Math.floor(s / 60);
+        if (m < 60)   return "Played " + m + " min ago";
+        var h = Math.floor(m / 60);
+        if (h < 24)   return h === 1 ? "Played 1 hr ago" : "Played " + h + " hrs ago";
+        var d = Math.floor(h / 24);
+        if (d === 1)  return "Played yesterday";
+        if (d < 365)  return "Played " + d + " days ago";
+        return Qt.formatDate(new Date(ms), "MMM d, yyyy");
+    }
+
     // ── Lifecycle ────────────────────────────────────────────────────────
     onActiveFocusChanged: {
         if (activeFocus) {
-            currentHelpbarModel = achievementsHelpModel;
+            currentHelpbarModel = null;   // hide global bar; we draw our own bottom-left bar
             cheevosData.reload();
             if (!initialized && cheevosData.raUserName !== "") {
                 initialized = true;
@@ -33,35 +51,39 @@ id: root
     }
 
     // ── Header ───────────────────────────────────────────────────────────
+    // Left: RA logo → avatar → username + points
     Item {
     id: achievementsHeader
 
         anchors { top: parent.top; left: parent.left; right: parent.right }
-        height: vpx(75)
+        height: vpx(110)
 
-        Text {
+        // RetroAchievements logo – anchored directly to fill the full header height
+        Image {
+        id: raLogo
+
             anchors {
-                left: parent.left; leftMargin: globalMargin
-                verticalCenter: parent.verticalCenter
+                left: parent.left; leftMargin: vpx(5)
+                top: parent.top; bottom: parent.bottom
+                topMargin: vpx(4); bottomMargin: vpx(4)
             }
-            text: "RetroAchievements"
-            color: theme.text
-            font.family: titleFont.name
-            font.pixelSize: vpx(28)
-            font.bold: true
+            width: height
+            source: "../assets/images/icon_ra.svg"
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            asynchronous: true
         }
 
-        // User avatar + name + points (top-right)
         Row {
+        id: headerRow
+
             anchors {
-                right: parent.right; rightMargin: globalMargin
+                left: raLogo.right; leftMargin: vpx(12)
                 verticalCenter: parent.verticalCenter
             }
-            spacing: vpx(10)
-            visible: cheevosData.raUserName !== ""
-
+            spacing: vpx(12)            // User avatar (hidden until logged in)
             Image {
-                width: vpx(44); height: vpx(44)
+                width: vpx(48); height: vpx(48)
                 source: cheevosData.avatarUrl
                 fillMode: Image.PreserveAspectCrop
                 smooth: true
@@ -69,23 +91,82 @@ id: root
                 visible: cheevosData.avatarUrl !== ""
             }
 
+            // Username + points
             Column {
                 anchors.verticalCenter: parent.verticalCenter
+                spacing: vpx(2)
+                visible: cheevosData.raUserName !== ""
 
                 Text {
                     text: cheevosData.raUserName
                     color: theme.text
-                    font.family: subtitleFont.name
-                    font.pixelSize: vpx(16)
+                    font.family: titleFont.name
+                    font.pixelSize: vpx(24)
                     font.bold: true
                 }
                 Text {
                     text: cheevosData.pointsText
                     color: theme.text
                     font.family: bodyFont.name
-                    font.pixelSize: vpx(13)
-                    opacity: 0.7
-                    visible: cheevosData.pointsText !== ""
+                    font.pixelSize: vpx(16)
+                    opacity: 0.65
+                    visible: cheevosData.raUserName !== ""
+                }
+            }
+        }
+
+        // ── Top-right: 12hr clock + battery icon ─────────────────────────
+        Row {
+            anchors {
+                right: parent.right; rightMargin: vpx(10)
+                verticalCenter: parent.verticalCenter
+            }
+            spacing: vpx(14)
+
+            // 12-hour clock
+            Text {
+                id: raClockText
+                function set() { raClockText.text = Qt.formatTime(new Date(), "h:mm AP") }
+                Timer {
+                    interval: 60000; repeat: true; running: true; triggeredOnStart: true
+                    onTriggered: raClockText.set()
+                }
+                color: theme.text
+                font.family: subtitleFont.name
+                font.pixelSize: vpx(22)
+                font.bold: true
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            // Battery icon (drawn in QML)
+            Item {
+                width: vpx(32); height: vpx(16)
+                anchors.verticalCenter: parent.verticalCenter
+                // Battery body
+                Rectangle {
+                    anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+                    width: parent.width - vpx(4)
+                    color: "transparent"
+                    border.color: theme.text
+                    border.width: vpx(2)
+                    radius: vpx(2)
+                    opacity: 0.8
+                    // Battery fill (real device percentage)
+                    Rectangle {
+                        anchors { left: parent.left; top: parent.top; bottom: parent.bottom; margins: vpx(3) }
+                        width: parent.width * Math.max(0, Math.min(1, api.device.batteryPercent))
+                        color: theme.text
+                        radius: vpx(1)
+                        opacity: 0.9
+                    }
+                }
+                // Battery nub
+                Rectangle {
+                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                    width: vpx(4); height: vpx(8)
+                    color: theme.text
+                    radius: vpx(1)
+                    opacity: 0.8
                 }
             }
         }
@@ -109,7 +190,7 @@ id: root
 
         Text {
             anchors.centerIn: parent
-            text: "RetroAchievements not configured.\n\n"
+            text: "Retro Achievements not configured.\n\n"
                 + "Go to  Settings → Retro Achievements\n"
                 + "and enter your RA username and API key.\n\n"
                 + "Get your API key at: https://retroachievements.org/settings"
@@ -130,24 +211,25 @@ id: root
         focus: visible
 
         anchors {
-            top:    achievementsHeader.bottom; topMargin:    vpx(10)
-            bottom: parent.bottom;            bottomMargin: helpMargin + vpx(10)
-            left:   parent.left;              leftMargin:   globalMargin
-            right:  parent.right;             rightMargin:  globalMargin
+            top:    achievementsHeader.bottom; topMargin:    vpx(4)
+            bottom: parent.bottom;            bottomMargin: vpx(56)
+            left:   parent.left
+            right:  parent.right
         }
 
         model: cheevosData.raRecentGames
         clip: true
 
         highlightMoveDuration: 100
-        preferredHighlightBegin: height / 2 - vpx(45)
-        preferredHighlightEnd:   height / 2 + vpx(45)
+        preferredHighlightBegin: vpx(96)
+        preferredHighlightEnd:   height - vpx(96)
         highlightRangeMode: ListView.ApplyRange
 
+        // Full-opacity accent highlight – matches the sleipnir solid row style
         highlight: Rectangle {
             color:   theme.accent
-            opacity: 0.25
-            radius:  vpx(4)
+            opacity: 0.55
+            radius:  vpx(0)
             width:   gameList.width
         }
 
@@ -166,113 +248,115 @@ id: root
         id: gameRow
 
             width:  gameList.width
-            height: vpx(80)
+            height: vpx(96)
 
             property bool isSelected: ListView.isCurrentItem && gameList.focus
 
-            Row {
+            // ── Row inner layout (Item+anchors so icon fills full height) ─
+            Item {
                 anchors {
-                    fill: parent
-                    leftMargin:  vpx(8)
-                    rightMargin: vpx(8)
+                    fill:        parent
+                    leftMargin:  vpx(0)
+                    rightMargin: vpx(globalMargin)
                 }
-                spacing: vpx(12)
 
-                // ── Game icon ────────────────────────────────────────────
+                // Game icon – fills full row height (square, left edge)
                 Item {
-                    width:  vpx(56)
-                    height: vpx(56)
-                    anchors.verticalCenter: parent.verticalCenter
+                id: gameIcon
+
+                    anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+                    width: height // square
 
                     Rectangle {
                         anchors.fill: parent
                         color:   theme.secondary
-                        radius:  vpx(4)
-                        opacity: 0.5
+                        opacity: 0.4
                     }
                     Image {
                         anchors.fill: parent
-                        source: ImageIcon ? "https://media.retroachievements.org" + ImageIcon : ""
+                        source: ImageIcon
+                                ? "https://media.retroachievements.org" + ImageIcon
+                                : ""
                         fillMode: Image.PreserveAspectFit
                         smooth: true
                         asynchronous: true
-                        sourceSize { width: 64; height: 64 }
+                        sourceSize { width: 96; height: 96 }
                     }
                 }
 
-                // ── Title + console + progress bar ───────────────────────
+                // Achievement count – right edge, vertically centered
                 Column {
-                    width:  parent.width - vpx(56) - vpx(120) - vpx(32)
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: vpx(4)
+                id: countCol
+
+                    anchors {
+                        right: parent.right; rightMargin: vpx(0)
+                        verticalCenter: parent.verticalCenter
+                    }
+                    width: vpx(130)
 
                     Text {
-                        text:  Title
+                        text: NumPossibleAchievements > 0
+                              ? NumAchieved + " of " + NumPossibleAchievements
+                              : "No cheevos"
                         color: theme.text
-                        font.family:    subtitleFont.name
-                        font.pixelSize: vpx(17)
+                        font.family:    titleFont.name
+                        font.pixelSize: vpx(24)
+                        font.bold:      true
+                        horizontalAlignment: Text.AlignRight
+                        width: parent.width
+                        opacity: isSelected ? 1.0 : 0.75
+                    }
+                }
+
+                // Title + platform + "Played N ago"
+                Column {
+                    anchors {
+                        left:  gameIcon.right;  leftMargin:  vpx(14)
+                        right: countCol.left;   rightMargin: vpx(10)
+                        verticalCenter: parent.verticalCenter
+                    }
+                    spacing: vpx(6)
+
+                    Text {
+                        text: Title
+                        color: theme.text
+                        font.family:    titleFont.name
+                        font.pixelSize: vpx(22)
                         font.bold:      true
                         elide: Text.ElideRight
                         width: parent.width
-                        opacity: isSelected ? 1.0 : 0.85
-                    }
-                    Text {
-                        text:  ConsoleName
-                        color: theme.text
-                        font.family:    bodyFont.name
-                        font.pixelSize: vpx(13)
-                        opacity: isSelected ? 0.8 : 0.5
+                        opacity: isSelected ? 1.0 : 0.9
                     }
 
-                    // Progress bar (only shown for games that have achievements)
+                    // Platform + last-played on the same line
                     Item {
-                        width:   parent.width
-                        height:  vpx(6)
-                        visible: NumPossibleAchievements > 0
+                        width:  parent.width
+                        height: platformText.implicitHeight
 
-                        Rectangle {
-                            anchors.fill: parent
-                            color:   theme.text
-                            opacity: 0.15
-                            radius:  height / 2
+                        Text {
+                        id: platformText
+
+                            text: ConsoleName
+                            color: theme.text
+                            font.family:    subtitleFont.name
+                            font.pixelSize: vpx(16)
+                            font.bold:      true
+                            opacity: isSelected ? 0.9 : 0.55
+                            elide: Text.ElideRight
+                            width: parent.width * 0.5
                         }
-                        Rectangle {
-                            anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
-                            width:   NumPossibleAchievements > 0
-                                     ? parent.width * (NumAchieved / NumPossibleAchievements)
-                                     : 0
-                            color:   theme.accent
-                            radius:  height / 2
+
+                        Text {
+                            anchors.right: parent.right
+                            text: root.lastPlayedText(LastPlayed)
+                            color: theme.text
+                            font.family:    bodyFont.name
+                            font.pixelSize: vpx(16)
+                            opacity: isSelected ? 0.75 : 0.4
+                            elide: Text.ElideRight
+                            width: parent.width * 0.5
+                            horizontalAlignment: Text.AlignRight
                         }
-                    }
-                }
-
-                // ── Completion counts ────────────────────────────────────
-                Column {
-                    width: vpx(112)
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    Text {
-                        text: NumPossibleAchievements > 0
-                              ? NumAchieved + " / " + NumPossibleAchievements
-                              : "No cheevos"
-                        color: theme.text
-                        font.family:    subtitleFont.name
-                        font.pixelSize: vpx(15)
-                        horizontalAlignment: Text.AlignRight
-                        width: parent.width
-                        opacity: isSelected ? 1.0 : 0.7
-                    }
-                    Text {
-                        text: NumPossibleAchievements > 0
-                              ? ScoreAchieved + " / " + PossibleScore + " pts"
-                              : ""
-                        color: theme.text
-                        font.family:    bodyFont.name
-                        font.pixelSize: vpx(12)
-                        horizontalAlignment: Text.AlignRight
-                        width: parent.width
-                        opacity: isSelected ? 0.75 : 0.45
                     }
                 }
             }
@@ -282,7 +366,7 @@ id: root
                 anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                 height:  vpx(1)
                 color:   theme.text
-                opacity: 0.06
+                opacity: 0.08
             }
 
             // Mouse / touch
@@ -296,6 +380,59 @@ id: root
                 }
             }
         }
+    }
+
+    // ── Page counter (bottom-right, above help bar) ───────────────────────
+    Text {
+        visible: cheevosData.raUserName !== "" && cheevosData.raRecentGames.count > 0
+        anchors {
+            right:  parent.right; rightMargin: globalMargin
+            bottom: parent.bottom; bottomMargin: vpx(10)
+        }
+        text: (gameList.currentIndex + 1) + " of " + cheevosData.raRecentGames.count
+        color: theme.text
+        font.family: bodyFont.name
+        font.pixelSize: vpx(22)
+        font.bold: true
+        opacity: 0.75
+    }
+
+    // ── Local help bar (bottom-left) ─────────────────────────────────────
+    // Drawn directly so it appears on the LEFT, unlike the global bar (right-aligned).
+    Row {
+        anchors {
+            left: parent.left; leftMargin: globalMargin
+            bottom: parent.bottom; bottomMargin: vpx(10)
+        }
+        spacing: vpx(20)
+
+        Repeater {
+            model: localHelpModel
+            delegate: Row {
+                spacing: vpx(8)
+                Image {
+                    source: "../assets/images/controller/"
+                            + buttonbar.processButtonArt(button) + ".png"
+                    width: vpx(36); height: vpx(36)
+                    asynchronous: true
+                }
+                Text {
+                    text: name
+                    font.family: subtitleFont.name
+                    font.pixelSize: vpx(22)
+                    color: theme.text
+                    height: vpx(36)
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
+        }
+    }
+
+    ListModel {
+    id: localHelpModel
+        ListElement { name: "Details"; button: "accept"  }
+        ListElement { name: "Refresh"; button: "details" }
+        ListElement { name: "Back";    button: "cancel"  }
     }
 
     // ── Navigation helpers ───────────────────────────────────────────────
@@ -332,7 +469,7 @@ id: root
             previousScreen();
         }
         // Filters → refresh
-        if (api.keys.isFilters(event) && !event.isAutoRepeat) {
+        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
             initialized = false;
             cheevosData.refreshAll();
@@ -340,10 +477,5 @@ id: root
     }
 
     // ── Help bar ─────────────────────────────────────────────────────────
-    ListModel {
-    id: achievementsHelpModel
-        ListElement { name: "Back";    button: "cancel"  }
-        ListElement { name: "Details"; button: "accept"  }
-        ListElement { name: "Refresh"; button: "filters" }
-    }
+    // (local left-aligned bar is drawn above; no global model needed)
 }

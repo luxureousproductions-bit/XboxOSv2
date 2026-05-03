@@ -612,7 +612,7 @@ id: root
             onActivated:
                 if (selected) {
                     sfxAccept.play();
-                    achievementsScreen();
+                    raEntryScreen();
                 } else {
                     sfxNav.play();
                     menu.currentIndex = ObjectModel.index;
