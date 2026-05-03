@@ -604,6 +604,8 @@ id: root
         Button {
         id: button5
 
+            visible: settings.RAEnabled !== "Disable"
+            width: visible ? height : 0
             icon: "../assets/images/icon_ra.svg"
             iconPadding: vpx(16)
             height: parent.height

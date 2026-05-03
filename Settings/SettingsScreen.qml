@@ -301,6 +301,12 @@ id: root
     ListModel {
     id: raSettingsModel
 
+        ListElement {
+            settingName: "RetroAchievements"
+            setting:     "Enable,Disable"
+            note:        "A Pegasus reload is required for changes to take effect"
+        }
+
         // inputType: "text" marks rows that take free-form keyboard input
         // instead of cycling through a comma-separated list.
         ListElement {
