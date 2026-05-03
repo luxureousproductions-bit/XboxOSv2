@@ -214,7 +214,7 @@ id: root
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
             if (currentGame)
-                launchGame(currentGame);
+                launchGameFromRandom(currentGame);
         }
         // Cancel – return to showcase
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
@@ -230,7 +230,7 @@ id: root
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
             if (currentGame)
-                gameDetails(currentGame);
+                gameDetailsFromRandom(currentGame);
         }
         // LT or RT – random jump
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {

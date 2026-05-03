@@ -440,6 +440,29 @@ id: root
         root.state = "randomscreen";
     }
 
+    // Navigate to game details without pushing "randomscreen" onto lastState.
+    // Called by RandomView so that pressing Back in Game Details returns to
+    // Showcase (or wherever the user came from) rather than back to Random.
+    function gameDetailsFromRandom(game) {
+        sfxAccept.play();
+        if (lastState.length != 0)
+            lastGame.push(currentGame);
+        if (game !== null)
+            currentGame = game;
+        root.state = "gameviewscreen";
+    }
+
+    // Launch a game from RandomView without pushing "randomscreen" onto
+    // lastState so that returning from the game skips the Random screen.
+    function launchGameFromRandom(game) {
+        if (game !== null) {
+            sfxAccept.play();
+            root.state = "launchgamescreen";
+            saveCurrentState(game);
+            game.launch();
+        }
+    }
+
     function launchGameScreen() {
         sfxAccept.play();
         lastState.push(state);
