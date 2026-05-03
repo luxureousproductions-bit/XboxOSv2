@@ -565,8 +565,8 @@ id: root
     ListModel {
     id: localHelpModel
         ListElement { name: "Back";     button: "cancel"  }
-        ListElement { name: "Refresh";  button: "filters" }
-        ListElement { name: "Overview"; button: "details" }
+        ListElement { name: "Refresh";  button: "details" }
+        ListElement { name: "Overview"; button: "filters" }
     }
 
     // ── Key handling ─────────────────────────────────────────────────────
@@ -587,13 +587,13 @@ id: root
             event.accepted = true;
             previousScreen();
         }
-        // Details → open the full RA overview (recently-played list)
-        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
+        // Filters → open the full RA overview (recently-played list)
+        if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
             achievementsScreen();
         }
-        // Filters → refresh current game
-        if (api.keys.isFilters(event) && !event.isAutoRepeat) {
+        // Details → refresh current game
+        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
             if (cheevosData.currentGameDetails.Title !== "")
                 cheevosData.loadGameAchievements(cheevosData.currentGameID);

@@ -431,7 +431,7 @@ id: root
     ListModel {
     id: localHelpModel
         ListElement { name: "Details"; button: "accept"  }
-        ListElement { name: "Refresh"; button: "filters" }
+        ListElement { name: "Refresh"; button: "details" }
         ListElement { name: "Back";    button: "cancel"  }
     }
 
@@ -469,7 +469,7 @@ id: root
             previousScreen();
         }
         // Filters → refresh
-        if (api.keys.isFilters(event) && !event.isAutoRepeat) {
+        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
             initialized = false;
             cheevosData.refreshAll();
