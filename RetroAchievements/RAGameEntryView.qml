@@ -24,7 +24,7 @@ id: root
     onActiveFocusChanged: {
         if (!activeFocus) return;
 
-        currentHelpbarModel = entryHelpModel;
+        currentHelpbarModel = null;  // this screen draws its own local help bar
         buttonRow.selectedIndex = 0;
         hasNavigated = false;
 

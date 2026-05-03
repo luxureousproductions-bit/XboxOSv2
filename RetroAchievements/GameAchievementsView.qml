@@ -38,7 +38,7 @@ id: root
 
     onActiveFocusChanged: {
         if (activeFocus) {
-            currentHelpbarModel = gameAchievementsHelpModel;
+            currentHelpbarModel = null;   // hide global bar; we draw our own bottom-left bar
             currentIndex = 0;
         }
     }
@@ -49,7 +49,7 @@ id: root
         color: theme.main
     }
 
-    // ── Header: avatar + name + points ───────────────────────────────────
+    // ── Header: RA logo + avatar + name + points ─────────────────────────
     Item {
     id: brandHeader
 
@@ -62,8 +62,17 @@ id: root
                 verticalCenter: parent.verticalCenter
             }
             spacing: vpx(12)
-            visible: cheevosData.raUserName !== ""
 
+            // RetroAchievements logo
+            Image {
+                width: vpx(52); height: vpx(52)
+                source: "../assets/images/icon_ra.svg"
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+                asynchronous: true
+            }
+
+            // User avatar (hidden until logged in)
             Image {
                 width: vpx(48); height: vpx(48)
                 source: cheevosData.avatarUrl
@@ -73,9 +82,11 @@ id: root
                 visible: cheevosData.avatarUrl !== ""
             }
 
+            // Username + points
             Column {
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: vpx(2)
+                visible: cheevosData.raUserName !== ""
 
                 Text {
                     text: cheevosData.raUserName
@@ -93,20 +104,6 @@ id: root
                     visible: cheevosData.pointsText !== ""
                 }
             }
-        }
-
-        // "Retro Achievements" label when not logged in
-        Text {
-            anchors {
-                left: parent.left; leftMargin: globalMargin
-                verticalCenter: parent.verticalCenter
-            }
-            text: "Retro Achievements"
-            color: theme.text
-            font.family: titleFont.name
-            font.pixelSize: vpx(22)
-            font.bold: true
-            visible: cheevosData.raUserName === ""
         }
 
         Rectangle {
@@ -269,7 +266,7 @@ id: root
 
         anchors {
             top:    gameSummary.bottom;  topMargin:    vpx(0)
-            bottom: parent.bottom;       bottomMargin: helpMargin
+            bottom: parent.bottom;       bottomMargin: vpx(50)
             left:   parent.left
             right:  parent.right
         }
@@ -462,13 +459,51 @@ id: root
         visible: cheevosData.raGameCheevos.count > 0
         anchors {
             right:  parent.right; rightMargin: globalMargin
-            bottom: parent.bottom; bottomMargin: helpMargin + vpx(10)
+            bottom: parent.bottom; bottomMargin: vpx(10)
         }
         text: (root.currentIndex + 1) + " of " + cheevosData.raGameCheevos.count
         color: theme.text
         font.family: bodyFont.name
-        font.pixelSize: vpx(14)
-        opacity: 0.6
+        font.pixelSize: vpx(16)
+        font.bold: true
+        opacity: 0.75
+    }
+
+    // ── Local help bar (bottom-left) ─────────────────────────────────────
+    Row {
+        anchors {
+            left: parent.left; leftMargin: globalMargin
+            bottom: parent.bottom; bottomMargin: vpx(10)
+        }
+        spacing: vpx(20)
+
+        Repeater {
+            model: localHelpModel
+            delegate: Row {
+                spacing: vpx(8)
+                Image {
+                    source: "../assets/images/controller/"
+                            + buttonbar.processButtonArt(button) + ".png"
+                    width: vpx(30); height: vpx(30)
+                    asynchronous: true
+                }
+                Text {
+                    text: name
+                    font.family: subtitleFont.name
+                    font.pixelSize: vpx(16)
+                    color: theme.text
+                    height: vpx(30)
+                    verticalAlignment: Text.AlignVCenter
+                }
+            }
+        }
+    }
+
+    ListModel {
+    id: localHelpModel
+        ListElement { name: "Back";     button: "cancel"  }
+        ListElement { name: "Overview"; button: "details" }
+        ListElement { name: "Refresh";  button: "filters" }
     }
 
     // ── Key handling ─────────────────────────────────────────────────────
@@ -503,9 +538,5 @@ id: root
     }
 
     // ── Help bar ─────────────────────────────────────────────────────────
-    ListModel {
-    id: gameAchievementsHelpModel
-        ListElement { name: "Refresh";  button: "filters" }
-        ListElement { name: "Back";     button: "cancel"  }
-    }
+    // (local left-aligned bar is drawn above; no global model needed)
 }
