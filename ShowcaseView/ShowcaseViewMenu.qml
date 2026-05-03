@@ -875,8 +875,8 @@ id: root
             event.accepted = true;
             refreshLists();
         }
-        // Random mode (LT)
-        if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {
+        // Random mode (B)
+        if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
             randomScreen();
         }
@@ -886,6 +886,10 @@ id: root
     ListModel {
         id: gridviewHelpModel
 
+        ListElement {
+            name: "Random"
+            button: "cancel"
+        }
         ListElement {
             name: "Settings"
             button: "filters"
@@ -897,10 +901,6 @@ id: root
         ListElement {
             name: "Select"
             button: "accept"
-        }
-        ListElement {
-            name: "Random"
-            button: "prevPage"
         }
     }
 
