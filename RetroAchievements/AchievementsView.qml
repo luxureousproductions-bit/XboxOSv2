@@ -58,26 +58,30 @@ id: root
         anchors { top: parent.top; left: parent.left; right: parent.right }
         height: vpx(110)
 
+        // RetroAchievements logo – anchored directly to fill the full header height
+        Image {
+        id: raLogo
+
+            anchors {
+                left: parent.left; leftMargin: vpx(5)
+                top: parent.top; bottom: parent.bottom
+                topMargin: vpx(4); bottomMargin: vpx(4)
+            }
+            width: height
+            source: "../assets/images/icon_ra.svg"
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            asynchronous: true
+        }
+
         Row {
         id: headerRow
 
             anchors {
-                left: parent.left; leftMargin: globalMargin
+                left: raLogo.right; leftMargin: vpx(12)
                 verticalCenter: parent.verticalCenter
             }
-            spacing: vpx(12)
-
-            // RetroAchievements logo – fills the full header height
-            Image {
-                height: achievementsHeader.height - vpx(4)
-                width: height
-                source: "../assets/images/icon_ra.svg"
-                fillMode: Image.PreserveAspectFit
-                smooth: true
-                asynchronous: true
-            }
-
-            // User avatar (hidden until logged in)
+            spacing: vpx(12)            // User avatar (hidden until logged in)
             Image {
                 width: vpx(48); height: vpx(48)
                 source: cheevosData.avatarUrl

@@ -70,8 +70,7 @@ id: root
     // stays visible even while the async API call is still in flight.
     property string pointsText: {
         if (raUserName === "") return "";
-        var total = hardcorePoints + softcorePoints;
-        return total + " pts  ·  " + hardcorePoints + " HC";
+        return softcorePoints + " Softcore, " + hardcorePoints + " Hardcore";
     }
 
     // ── Internal models ──────────────────────────────────────────────────
