@@ -48,15 +48,25 @@ id: root
         "genesis":    1,  "megadrive":  1,  "md":         1,
         "sms":       11,  "mastersystem": 11,  "sg1000":  11,
         "gamegear":  15,  "gg":        15,
-        "32x":       10,
+        "32x":       10,  "sega32x":   10,
+        "segacd":     9,  "megacd":     9,  "scd":        9,
         "pce":        8,  "tg16":       8,  "pcengine":   8,
         "neogeo":    14,
         "atari2600": 25,  "2600":      25,
-        "atari7800": 51,
+        "atari7800": 51,  "7800":      51,
         "lynx":      13,
         "psx":       12,  "ps1":       12,
+        "ps2":       21,  "playstation2": 21,
+        "psp":       41,
+        "gc":        16,  "gamecube":  16,  "ngc":       16,
+        "wii":       19,
         "saturn":    39,
         "dreamcast": 40,  "dc":        40,
+        "virtualboy": 28, "vb":        28,  "vboy":      28,
+        "wonderswan": 53, "ws":        53,  "wsc":       53,
+        "pokemini":  24,
+        "intellivision": 37, "intv":   37,
+        "c64":       30,  "commodore64": 30,
         "msx":       29,
         "coleco":    44,
         "jaguar":    17,
@@ -249,13 +259,17 @@ id: root
 
     // ── Game-title lookup helpers ────────────────────────────────────────
 
-    // Normalise a title for fuzzy matching: lowercase, strip regional/version
-    // tags in parentheses (e.g. "(USA)", "(Europe)", "(Rev A)"), then replace all
-    // remaining punctuation (including colons) with spaces and collapse whitespace.
+    // Normalise a title for fuzzy matching: strip RA category prefixes such as
+    // ~Hack~, ~Homebrew~, ~Demo~, ~Prototype~, etc. that RA prepends to special
+    // entries, lowercase, strip regional/version tags in parentheses (e.g. "(USA)",
+    // "(Europe)", "(Rev A)"), then replace all remaining punctuation (including
+    // colons) with spaces and collapse whitespace.
     // Subtitles are preserved so "Castlevania: Symphony of the Night" normalises
     // to "castlevania symphony of the night" and still matches the RA entry.
     function normalizeTitle(t) {
-        return (t || "").toLowerCase()
+        return (t || "")
+            .replace(/^~[^~]+~\s*/i,    "")  // strip RA category prefix e.g. ~Hack~
+            .toLowerCase()
             .replace(/\s*\([^)]*\)\s*/g, " ") // remove parenthetical tags
             .replace(/[^a-z0-9 ]/g,     " ") // replace punctuation (incl. :) with space
             .replace(/\s+/g,            " ") // collapse whitespace
@@ -316,6 +330,24 @@ id: root
         }
 
         var consoleID = consoleMappings[shortName.toLowerCase()] || 0;
+
+        // Fast path: if the title is already in the user's recently-played RA
+        // cache (populated when the RA Overview screen is visited) we can resolve
+        // the game ID instantly without a network call.  This is the primary fix
+        // for ROM hacks whose RA titles start with a ~Category~ prefix that
+        // prevents title-based matching against the full console game list.
+        if (raRecentGames.count > 0) {
+            var normTitle = normalizeTitle(title);
+            for (var r = 0; r < raRecentGames.count; r++) {
+                var entry = raRecentGames.get(r);
+                if (normalizeTitle(entry.Title) === normTitle) {
+                    pendingGameID   = entry.GameID;
+                    lookupStatusMsg = "";
+                    return;
+                }
+            }
+        }
+
         if (!consoleID) {
             lookupStatusMsg = "Console not supported by Retro Achievements";
             pendingGameID   = 0;
