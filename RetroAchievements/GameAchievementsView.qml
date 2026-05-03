@@ -1,13 +1,15 @@
 // XboxOSv2 – Per-game achievements list
-// Redesigned in the style of retromega-sleipnir with the XboxOSv2 colour scheme.
-// Layout:
-//   ─ brand header (60 px): "Retro Achievements" title + user avatar / name / pts
-//   ─ game summary bar (100 px): game icon, title, platform, completion %, progress bar
-//   ─ scrollable achievement list (fills remaining space)
+// Layout matches retromega-sleipnir with XboxOSv2 colour scheme.
 //
-// Each achievement row:  [badge] [title + HC pill + description] [pts + relative date]
-// Unearned achievements are dimmed; the badge is shown at 25 % opacity instead
-// of a separate dark lock overlay.
+// ─ Header (72 px): avatar + name + points (left)
+// ─ Game summary bar (110 px):
+//     LEFT  – game title (very large) + platform (bold, smaller)
+//     CENTER-RIGHT – large "%" in accent + "N of M" below
+//     FAR RIGHT – game icon (square, fills bar height)
+// ─ Achievement list rows (84 px):
+//     LEFT  – badge (square, fills row height)
+//     CENTER – title + HC pill + description
+//     RIGHT – "N points" (accent) + "Locked"/"Earned N ago"
 
 import QtQuick 2.0
 import "../Global"
@@ -20,7 +22,6 @@ id: root
     property int currentIndex: 0
 
     // Returns a human-readable string for when an achievement was earned.
-    // ts is the Unix-millisecond timestamp stored in DateEarned (0 = locked).
     function earnedText(ts) {
         if (!ts) return "Locked";
         var s = Math.floor((Date.now() - ts) / 1000);
@@ -48,38 +49,23 @@ id: root
         color: theme.main
     }
 
-    // ── Brand header ─────────────────────────────────────────────────────
-    // Mirrors the header of AchievementsView: "Retro Achievements" on the left,
-    // the logged-in user's avatar / name / points on the right.
+    // ── Header: avatar + name + points ───────────────────────────────────
     Item {
     id: brandHeader
 
         anchors { top: parent.top; left: parent.left; right: parent.right }
-        height: vpx(60)
+        height: vpx(72)
 
-        Text {
+        Row {
             anchors {
                 left: parent.left; leftMargin: globalMargin
                 verticalCenter: parent.verticalCenter
             }
-            text: "Retro Achievements"
-            color: theme.text
-            font.family: titleFont.name
-            font.pixelSize: vpx(24)
-            font.bold: true
-        }
-
-        // User avatar + name + points (top-right)
-        Row {
-            anchors {
-                right: parent.right; rightMargin: globalMargin
-                verticalCenter: parent.verticalCenter
-            }
-            spacing: vpx(10)
+            spacing: vpx(12)
             visible: cheevosData.raUserName !== ""
 
             Image {
-                width: vpx(38); height: vpx(38)
+                width: vpx(48); height: vpx(48)
                 source: cheevosData.avatarUrl
                 fillMode: Image.PreserveAspectCrop
                 smooth: true
@@ -89,24 +75,38 @@ id: root
 
             Column {
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: vpx(1)
+                spacing: vpx(2)
 
                 Text {
                     text: cheevosData.raUserName
                     color: theme.text
-                    font.family: subtitleFont.name
-                    font.pixelSize: vpx(14)
+                    font.family: titleFont.name
+                    font.pixelSize: vpx(20)
                     font.bold: true
                 }
                 Text {
                     text: cheevosData.pointsText
                     color: theme.text
                     font.family: bodyFont.name
-                    font.pixelSize: vpx(11)
+                    font.pixelSize: vpx(13)
                     opacity: 0.65
                     visible: cheevosData.pointsText !== ""
                 }
             }
+        }
+
+        // "Retro Achievements" label when not logged in
+        Text {
+            anchors {
+                left: parent.left; leftMargin: globalMargin
+                verticalCenter: parent.verticalCenter
+            }
+            text: "Retro Achievements"
+            color: theme.text
+            font.family: titleFont.name
+            font.pixelSize: vpx(22)
+            font.bold: true
+            visible: cheevosData.raUserName === ""
         }
 
         Rectangle {
@@ -118,8 +118,7 @@ id: root
     }
 
     // ── Game summary bar ─────────────────────────────────────────────────
-    // Prominently displays the game icon, title, platform, completion percentage
-    // and a thin progress bar along the bottom edge.
+    // Title + platform left; completion % + count center-right; icon far right.
     Item {
     id: gameSummary
 
@@ -127,30 +126,29 @@ id: root
             top: brandHeader.bottom
             left: parent.left; right: parent.right
         }
-        height: vpx(100)
+        height: vpx(110)
 
-        // Subtle tint to distinguish this section from the list
+        // Subtle background tint
         Rectangle {
             anchors.fill: parent
             color:   theme.secondary
             opacity: 0.10
         }
 
-        // Game icon (left edge)
+        // ── Game icon – far RIGHT, square, fills bar height ───────────────
         Item {
         id: summaryIcon
 
             anchors {
-                left: parent.left; leftMargin: globalMargin
-                verticalCenter: parent.verticalCenter
+                right: parent.right
+                top: parent.top; bottom: parent.bottom
             }
-            width: vpx(70); height: vpx(70)
+            width: height // square
 
             Rectangle {
                 anchors.fill: parent
                 color:   theme.secondary
-                radius:  vpx(6)
-                opacity: 0.5
+                opacity: 0.4
             }
             Image {
                 anchors.fill: parent
@@ -161,20 +159,20 @@ id: root
                 fillMode: Image.PreserveAspectFit
                 smooth: true
                 asynchronous: true
-                sourceSize { width: 80; height: 80 }
+                sourceSize { width: 120; height: 120 }
             }
         }
 
-        // Completion stats column (right-aligned)
+        // ── Completion stats – right side, left of icon ───────────────────
         Column {
         id: statsCol
 
             visible: cheevosData.currentGameDetails.NumAchievements > 0
             anchors {
-                right: parent.right; rightMargin: globalMargin
+                right: summaryIcon.left; rightMargin: vpx(20)
                 verticalCenter: parent.verticalCenter
             }
-            spacing: vpx(3)
+            spacing: vpx(4)
 
             property int awarded:  cheevosData.currentGameDetails.NumAwardedToUser
             property int total:    cheevosData.currentGameDetails.NumAchievements
@@ -187,7 +185,7 @@ id: root
                       : ""
                 color: theme.accent
                 font.family: titleFont.name
-                font.pixelSize: vpx(30)
+                font.pixelSize: vpx(42)
                 font.bold: true
                 horizontalAlignment: Text.AlignRight
                 anchors.right: parent.right
@@ -200,30 +198,31 @@ id: root
                     return s;
                 }
                 color: theme.text
-                font.family: bodyFont.name
-                font.pixelSize: vpx(12)
-                opacity: 0.6
+                font.family: subtitleFont.name
+                font.pixelSize: vpx(14)
+                font.bold: true
+                opacity: 0.75
                 horizontalAlignment: Text.AlignRight
                 anchors.right: parent.right
             }
         }
 
-        // Game title + platform name (fills the space between icon and stats)
+        // ── Game title + platform – left side ─────────────────────────────
         Column {
             anchors {
-                left:  summaryIcon.right; leftMargin:  vpx(14)
+                left:  parent.left; leftMargin: globalMargin
                 right: cheevosData.currentGameDetails.NumAchievements > 0
-                       ? statsCol.left : parent.right
+                       ? statsCol.left : summaryIcon.left
                 rightMargin: vpx(12)
                 verticalCenter: parent.verticalCenter
             }
-            spacing: vpx(5)
+            spacing: vpx(6)
 
             Text {
                 text: cheevosData.currentGameDetails.Title
                 color: theme.text
                 font.family: titleFont.name
-                font.pixelSize: vpx(20)
+                font.pixelSize: vpx(26)
                 font.bold: true
                 elide: Text.ElideRight
                 width: parent.width
@@ -231,15 +230,16 @@ id: root
             Text {
                 text: cheevosData.currentGameDetails.ConsoleName
                 color: theme.text
-                font.family: bodyFont.name
-                font.pixelSize: vpx(13)
-                opacity: 0.55
+                font.family: subtitleFont.name
+                font.pixelSize: vpx(15)
+                font.bold: true
+                opacity: 0.65
                 elide: Text.ElideRight
                 width: parent.width
             }
         }
 
-        // Thin progress bar along the bottom edge of the summary bar
+        // Thin progress bar along the bottom edge
         Item {
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
             height: vpx(4)
@@ -268,25 +268,26 @@ id: root
     id: achievementList
 
         anchors {
-            top:    gameSummary.bottom;  topMargin:    vpx(6)
-            bottom: parent.bottom;       bottomMargin: helpMargin + vpx(6)
-            left:   parent.left;         leftMargin:   globalMargin
-            right:  parent.right;        rightMargin:  globalMargin
+            top:    gameSummary.bottom;  topMargin:    vpx(0)
+            bottom: parent.bottom;       bottomMargin: helpMargin
+            left:   parent.left
+            right:  parent.right
         }
 
         model: cheevosData.raGameCheevos
         currentIndex: root.currentIndex
         clip: true
 
-        highlightMoveDuration: 120
-        preferredHighlightBegin: height / 2 - vpx(42)
-        preferredHighlightEnd:   height / 2 + vpx(42)
+        highlightMoveDuration: 100
+        preferredHighlightBegin: vpx(84)
+        preferredHighlightEnd:   height - vpx(84)
         highlightRangeMode: ListView.ApplyRange
 
+        // Solid-ish accent highlight matching the sleipnir style
         highlight: Rectangle {
             color:   theme.accent
-            opacity: 0.18
-            radius:  vpx(6)
+            opacity: 0.55
+            radius:  vpx(0)
             width:   achievementList.width
         }
 
@@ -310,19 +311,15 @@ id: root
             property bool isSelected: ListView.isCurrentItem && achievementList.focus
             property bool isEarned:   DateEarned > 0
 
-            // ── Row content ──────────────────────────────────────────────
-            // Uses Item+anchors (rather than Row) so the badge can take its
-            // full natural height without manual width arithmetic.
+            // ── Row inner layout ─────────────────────────────────────────
             Item {
                 anchors {
                     fill:         parent
-                    leftMargin:   vpx(6)
-                    rightMargin:  vpx(6)
-                    topMargin:    vpx(8)
-                    bottomMargin: vpx(8)
+                    leftMargin:   vpx(0)
+                    rightMargin:  vpx(globalMargin)
                 }
 
-                // Badge image – square, fills the content area height
+                // Badge – square, fills full row height (left edge)
                 Item {
                 id: badge
 
@@ -332,8 +329,7 @@ id: root
                     Rectangle {
                         anchors.fill: parent
                         color:   theme.secondary
-                        radius:  vpx(6)
-                        opacity: isEarned ? 0.25 : 0.5
+                        opacity: isEarned ? 0.2 : 0.45
                     }
                     Image {
                         anchors.fill: parent
@@ -345,51 +341,48 @@ id: root
                         smooth: true
                         asynchronous: true
                         sourceSize { width: 64; height: 64 }
-                        // Unearned: shown at 25 % opacity (no separate lock overlay needed)
                         opacity: isEarned ? 1.0 : 0.25
                     }
                 }
 
-                // Points + earned date (right column, fixed width)
+                // Points + earned/locked (right column, fixed width)
                 Column {
                 id: pointsCol
 
-                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                    width:   vpx(90)
+                    anchors { right: parent.right; rightMargin: vpx(0); verticalCenter: parent.verticalCenter }
+                    width: vpx(100)
                     spacing: vpx(6)
 
-                    // Point value, e.g. "25 pts"
                     Text {
-                        text: Points + " pts"
+                        text: Points + " points"
                         color: isEarned ? theme.accent : theme.text
                         font.family:    subtitleFont.name
                         font.pixelSize: vpx(15)
                         font.bold:      true
                         horizontalAlignment: Text.AlignRight
                         width: parent.width
-                        opacity: isEarned ? (isSelected ? 1.0 : 0.85) : 0.3
+                        opacity: isEarned ? (isSelected ? 1.0 : 0.9) : 0.35
                     }
-                    // "Earned 3 days ago" / "Earned yesterday" / "Locked"
                     Text {
                         text: root.earnedText(DateEarned)
                         color: theme.text
                         font.family:    bodyFont.name
-                        font.pixelSize: vpx(10)
+                        font.pixelSize: vpx(12)
                         horizontalAlignment: Text.AlignRight
                         width: parent.width
                         wrapMode: Text.WordWrap
-                        opacity: isEarned ? (isSelected ? 0.7 : 0.45) : 0.25
+                        opacity: isEarned ? (isSelected ? 0.75 : 0.5) : 0.3
                     }
                 }
 
-                // Title + description (fills remaining centre space)
+                // Title + description (centre)
                 Column {
                     anchors {
-                        left:  badge.right;     leftMargin:  vpx(12)
-                        right: pointsCol.left;  rightMargin: vpx(8)
+                        left:  badge.right;     leftMargin:  vpx(14)
+                        right: pointsCol.left;  rightMargin: vpx(10)
                         verticalCenter: parent.verticalCenter
                     }
-                    spacing: vpx(5)
+                    spacing: vpx(6)
 
                     // Title row: name + optional "HC" pill
                     Row {
@@ -400,19 +393,18 @@ id: root
                         id: achievTitle
 
                             text:  Title
-                            color: isSelected ? theme.accent : theme.text
-                            font.family:    subtitleFont.name
-                            font.pixelSize: vpx(15)
+                            color: theme.text
+                            font.family:    titleFont.name
+                            font.pixelSize: vpx(16)
                             font.bold:      true
                             elide: Text.ElideRight
                             width: parent.width
                                    - (hcPill.visible ? hcPill.width + vpx(6) : 0)
                             opacity: isEarned
                                      ? (isSelected ? 1.0 : 0.9)
-                                     : (isSelected ? 0.65 : 0.38)
+                                     : (isSelected ? 0.65 : 0.4)
                         }
 
-                        // "HC" badge for hardcore-earned achievements
                         Rectangle {
                         id: hcPill
 
@@ -437,12 +429,12 @@ id: root
                         text:  Description
                         color: theme.text
                         font.family:    bodyFont.name
-                        font.pixelSize: vpx(12)
+                        font.pixelSize: vpx(13)
                         elide: Text.ElideRight
                         width: parent.width
                         opacity: isEarned
-                                 ? (isSelected ? 0.7 : 0.5)
-                                 : (isSelected ? 0.42 : 0.26)
+                                 ? (isSelected ? 0.75 : 0.55)
+                                 : (isSelected ? 0.45 : 0.28)
                     }
                 }
             }
@@ -452,7 +444,7 @@ id: root
                 anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                 height:  vpx(1)
                 color:   theme.text
-                opacity: 0.06
+                opacity: 0.08
             }
 
             // Mouse / touch
@@ -463,6 +455,20 @@ id: root
                 onClicked: { sfxNav.play(); root.currentIndex = index; }
             }
         }
+    }
+
+    // ── Page counter (bottom-right) ───────────────────────────────────────
+    Text {
+        visible: cheevosData.raGameCheevos.count > 0
+        anchors {
+            right:  parent.right; rightMargin: globalMargin
+            bottom: parent.bottom; bottomMargin: helpMargin + vpx(10)
+        }
+        text: (root.currentIndex + 1) + " of " + cheevosData.raGameCheevos.count
+        color: theme.text
+        font.family: bodyFont.name
+        font.pixelSize: vpx(14)
+        opacity: 0.6
     }
 
     // ── Key handling ─────────────────────────────────────────────────────
@@ -499,8 +505,7 @@ id: root
     // ── Help bar ─────────────────────────────────────────────────────────
     ListModel {
     id: gameAchievementsHelpModel
-        ListElement { name: "Back";     button: "cancel"  }
-        ListElement { name: "Overview"; button: "details" }
         ListElement { name: "Refresh";  button: "filters" }
+        ListElement { name: "Back";     button: "cancel"  }
     }
 }
