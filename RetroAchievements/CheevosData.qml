@@ -65,11 +65,13 @@ id: root
         "arcade":    27,  "mame":      27
     })
 
-    // Formatted points summary shown in view headers
+    // Formatted points summary shown in view headers.
+    // Always returns a string once the user is logged in so the Text item
+    // stays visible even while the async API call is still in flight.
     property string pointsText: {
+        if (raUserName === "") return "";
         var total = hardcorePoints + softcorePoints;
-        if (total === 0) return "";
-        return total + " Points: " + softcorePoints + " Softcore points, " + hardcorePoints + " Hardcore points.";
+        return total + " pts  ·  " + hardcorePoints + " HC";
     }
 
     // ── Internal models ──────────────────────────────────────────────────
@@ -137,8 +139,10 @@ id: root
 
     function loadUserProfile() {
         raRequest("GetUserSummary", "u=" + encodeURIComponent(raUserName), function(resp) {
-            softcorePoints = parseInt(resp.SoftcorePoints) || 0;
-            hardcorePoints = parseInt(resp.Points)         || 0;
+            // The RA API returns TotalSoftcorePoints / TotalPoints on GetUserSummary.
+            // Fall back to the legacy field names in case a future API version changes them.
+            softcorePoints = parseInt(resp.TotalSoftcorePoints || resp.SoftcorePoints) || 0;
+            hardcorePoints = parseInt(resp.TotalPoints         || resp.Points)         || 0;
             if (resp.UserPic) {
                 avatarUrl = "https://media.retroachievements.org" + resp.UserPic;
                 api.memory.set("raAvatarPath", resp.UserPic);

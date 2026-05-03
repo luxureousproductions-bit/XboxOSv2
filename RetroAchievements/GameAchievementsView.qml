@@ -54,7 +54,7 @@ id: root
     id: brandHeader
 
         anchors { top: parent.top; left: parent.left; right: parent.right }
-        height: vpx(90)
+        height: vpx(110)
 
         Row {
             anchors {
@@ -102,15 +102,15 @@ id: root
                     font.family: bodyFont.name
                     font.pixelSize: vpx(16)
                     opacity: 0.65
-                    visible: cheevosData.pointsText !== ""
+                    visible: cheevosData.raUserName !== ""
                 }
             }
         }
 
-        // ── Top-right: 12hr clock + battery icon + settings icon ──────────
+        // ── Top-right: 12hr clock + battery icon ─────────────────────────
         Row {
             anchors {
-                right: parent.right; rightMargin: globalMargin
+                right: parent.right; rightMargin: vpx(10)
                 verticalCenter: parent.verticalCenter
             }
             spacing: vpx(14)
@@ -160,17 +160,6 @@ id: root
                     radius: vpx(1)
                     opacity: 0.8
                 }
-            }
-
-            // Settings icon
-            Image {
-                width: vpx(26); height: vpx(26)
-                source: "../assets/images/settingsicon.svg"
-                fillMode: Image.PreserveAspectFit
-                smooth: true
-                asynchronous: true
-                opacity: 0.85
-                anchors.verticalCenter: parent.verticalCenter
             }
         }
 
