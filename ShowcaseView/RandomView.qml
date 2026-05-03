@@ -83,11 +83,16 @@ id: root
         source: currentGame ? currentGame.assets.video : ""
         fillMode: VideoOutput.PreserveAspectFit
         muted: false
-        loops: MediaPlayer.Infinite
         autoPlay: true
 
         // Restart playback whenever the source changes
         onSourceChanged: play()
+
+        // Auto-advance to the next random game when the video finishes
+        onStatusChanged: {
+            if (status === MediaPlayer.EndOfMedia)
+                randomJump();
+        }
     }
 
     // Top gradient for game title readability
