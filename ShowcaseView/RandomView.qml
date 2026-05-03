@@ -190,13 +190,14 @@ id: root
         width: parent.width * 0.7
     }
 
-    // Helpbar: A Launch | X Hide | B Back  (RightToLeft → B rightmost, A leftmost)
+    // Helpbar: A Launch | X Hide | Y Game Details | B Back  (RightToLeft → B rightmost, A leftmost)
     ListModel {
     id: randomHelpModel
 
-        ListElement { name: "Back";   button: "cancel"  }
-        ListElement { name: "Hide";   button: "details" }
-        ListElement { name: "Launch"; button: "accept"  }
+        ListElement { name: "Back";         button: "cancel"  }
+        ListElement { name: "Game Details"; button: "filters" }
+        ListElement { name: "Hide";         button: "details" }
+        ListElement { name: "Launch";       button: "accept"  }
     }
 
     onActiveFocusChanged: {
@@ -224,6 +225,12 @@ id: root
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
             showInfo = !showInfo;
+        }
+        // Filters (Y) – open game details page
+        if (api.keys.isFilters(event) && !event.isAutoRepeat) {
+            event.accepted = true;
+            if (currentGame)
+                gameDetails(currentGame);
         }
         // LT or RT – random jump
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {
