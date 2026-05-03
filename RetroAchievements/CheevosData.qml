@@ -69,7 +69,7 @@ id: root
     property string pointsText: {
         var total = hardcorePoints + softcorePoints;
         if (total === 0) return "";
-        return total + " pts  ·  " + hardcorePoints + " HC";
+        return total + " Points: " + softcorePoints + " Softcore points, " + hardcorePoints + " Hardcore points.";
     }
 
     // ── Internal models ──────────────────────────────────────────────────

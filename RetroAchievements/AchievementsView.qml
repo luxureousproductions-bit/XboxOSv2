@@ -56,7 +56,7 @@ id: root
     id: achievementsHeader
 
         anchors { top: parent.top; left: parent.left; right: parent.right }
-        height: vpx(72)
+        height: vpx(90)
 
         Row {
         id: headerRow
@@ -67,9 +67,10 @@ id: root
             }
             spacing: vpx(12)
 
-            // RetroAchievements logo
+            // RetroAchievements logo – fills the full header height
             Image {
-                width: vpx(52); height: vpx(52)
+                height: achievementsHeader.height - vpx(4)
+                width: height
                 source: "../assets/images/icon_ra.svg"
                 fillMode: Image.PreserveAspectFit
                 smooth: true
