@@ -96,14 +96,14 @@ id: root
                     text: cheevosData.raUserName
                     color: theme.text
                     font.family: titleFont.name
-                    font.pixelSize: vpx(20)
+                    font.pixelSize: vpx(24)
                     font.bold: true
                 }
                 Text {
                     text: cheevosData.pointsText
                     color: theme.text
                     font.family: bodyFont.name
-                    font.pixelSize: vpx(13)
+                    font.pixelSize: vpx(16)
                     opacity: 0.65
                     visible: cheevosData.pointsText !== ""
                 }
@@ -151,7 +151,7 @@ id: root
 
         anchors {
             top:    achievementsHeader.bottom; topMargin:    vpx(4)
-            bottom: parent.bottom;            bottomMargin: vpx(50)
+            bottom: parent.bottom;            bottomMargin: vpx(56)
             left:   parent.left
             right:  parent.right
         }
@@ -160,8 +160,8 @@ id: root
         clip: true
 
         highlightMoveDuration: 100
-        preferredHighlightBegin: vpx(90)
-        preferredHighlightEnd:   height - vpx(90)
+        preferredHighlightBegin: vpx(96)
+        preferredHighlightEnd:   height - vpx(96)
         highlightRangeMode: ListView.ApplyRange
 
         // Full-opacity accent highlight – matches the sleipnir solid row style
@@ -187,7 +187,7 @@ id: root
         id: gameRow
 
             width:  gameList.width
-            height: vpx(90)
+            height: vpx(96)
 
             property bool isSelected: ListView.isCurrentItem && gameList.focus
 
@@ -231,7 +231,7 @@ id: root
                         right: parent.right; rightMargin: vpx(0)
                         verticalCenter: parent.verticalCenter
                     }
-                    width: vpx(110)
+                    width: vpx(130)
 
                     Text {
                         text: NumPossibleAchievements > 0
@@ -239,7 +239,7 @@ id: root
                               : "No cheevos"
                         color: theme.text
                         font.family:    titleFont.name
-                        font.pixelSize: vpx(17)
+                        font.pixelSize: vpx(24)
                         font.bold:      true
                         horizontalAlignment: Text.AlignRight
                         width: parent.width
@@ -260,7 +260,7 @@ id: root
                         text: Title
                         color: theme.text
                         font.family:    titleFont.name
-                        font.pixelSize: vpx(18)
+                        font.pixelSize: vpx(22)
                         font.bold:      true
                         elide: Text.ElideRight
                         width: parent.width
@@ -278,7 +278,7 @@ id: root
                             text: ConsoleName
                             color: theme.text
                             font.family:    subtitleFont.name
-                            font.pixelSize: vpx(13)
+                            font.pixelSize: vpx(16)
                             font.bold:      true
                             opacity: isSelected ? 0.9 : 0.55
                             elide: Text.ElideRight
@@ -290,7 +290,7 @@ id: root
                             text: root.lastPlayedText(LastPlayed)
                             color: theme.text
                             font.family:    bodyFont.name
-                            font.pixelSize: vpx(13)
+                            font.pixelSize: vpx(16)
                             opacity: isSelected ? 0.75 : 0.4
                             elide: Text.ElideRight
                             width: parent.width * 0.5
@@ -331,7 +331,7 @@ id: root
         text: (gameList.currentIndex + 1) + " of " + cheevosData.raRecentGames.count
         color: theme.text
         font.family: bodyFont.name
-        font.pixelSize: vpx(16)
+        font.pixelSize: vpx(22)
         font.bold: true
         opacity: 0.75
     }
@@ -352,15 +352,15 @@ id: root
                 Image {
                     source: "../assets/images/controller/"
                             + buttonbar.processButtonArt(button) + ".png"
-                    width: vpx(30); height: vpx(30)
+                    width: vpx(36); height: vpx(36)
                     asynchronous: true
                 }
                 Text {
                     text: name
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(16)
+                    font.pixelSize: vpx(22)
                     color: theme.text
-                    height: vpx(30)
+                    height: vpx(36)
                     verticalAlignment: Text.AlignVCenter
                 }
             }
