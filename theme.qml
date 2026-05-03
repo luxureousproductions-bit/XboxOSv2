@@ -357,6 +357,9 @@ id: root
         },
         State {
             name: "raentryscreen";
+        },
+        State {
+            name: "randomscreen";
         }
     ]
 
@@ -429,6 +432,35 @@ id: root
         sfxAccept.play();
         lastState.push(state);
         root.state = "raentryscreen";
+    }
+
+    function randomScreen() {
+        sfxAccept.play();
+        lastState.push(state);
+        root.state = "randomscreen";
+    }
+
+    // Navigate to game details without pushing "randomscreen" onto lastState.
+    // Called by RandomView so that pressing Back in Game Details returns to
+    // Showcase (or wherever the user came from) rather than back to Random.
+    function gameDetailsFromRandom(game) {
+        sfxAccept.play();
+        if (lastState.length != 0)
+            lastGame.push(currentGame);
+        if (game !== null)
+            currentGame = game;
+        root.state = "gameviewscreen";
+    }
+
+    // Launch a game from RandomView without pushing "randomscreen" onto
+    // lastState so that returning from the game skips the Random screen.
+    function launchGameFromRandom(game) {
+        if (game !== null) {
+            sfxAccept.play();
+            root.state = "launchgamescreen";
+            saveCurrentState(game);
+            game.launch();
+        }
     }
 
     function launchGameScreen() {
@@ -649,6 +681,25 @@ id: root
     id: raentryview
 
         RAGameEntryView { focus: true }
+    }
+
+    Loader {
+    id: randomviewloader
+
+        focus: (root.state === "randomscreen")
+        active: opacity !== 0
+        opacity: focus ? 1 : 0
+        Behavior on opacity { PropertyAnimation { duration: transitionTime } }
+
+        anchors.fill: parent
+        sourceComponent: randomview
+        asynchronous: true
+    }
+
+    Component {
+    id: randomview
+
+        RandomView { focus: true }
     }
 
     
