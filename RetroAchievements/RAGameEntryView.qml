@@ -16,11 +16,17 @@ id: root
     anchors.fill: parent
 
     // ── Lifecycle ────────────────────────────────────────────────────────
+
+    // Guards against double-navigation when both the Connections signal and the
+    // inline fallback below try to navigate in the same activation cycle.
+    property bool hasNavigated: false
+
     onActiveFocusChanged: {
         if (!activeFocus) return;
 
         currentHelpbarModel = entryHelpModel;
         buttonRow.selectedIndex = 0;
+        hasNavigated = false;
 
         // Always (re-)run the lookup when this screen gains focus.
         // lookupGame() resets pendingGameID to -1 immediately, so stale state
@@ -36,16 +42,28 @@ id: root
             cheevosData.lookupStatusMsg = "No game selected";
             cheevosData.pendingGameID   = 0;
         }
+
+        // Fallback for synchronous cache hits.  When lookupGame() resolves via
+        // the in-memory cache, pendingGameID is already set to a valid game ID
+        // by the time we return here.  The Connections handler below may have
+        // already fired and set hasNavigated = true; if it did not (rare QML
+        // async-Loader focus-timing edge-case) we navigate here instead.
+        if (!hasNavigated && cheevosData.pendingGameID > 0) {
+            hasNavigated = true;
+            cheevosData.loadGameAchievements(cheevosData.pendingGameID);
+            gameAchievementsScreenFromEntry();
+        }
     }
 
-    // Watch for lookup completion; auto-navigate when a match is found.
-    // Uses gameAchievementsScreenFromEntry() which deliberately does NOT push
-    // "raentryscreen" onto lastState so Back in GameAchievementsView skips
-    // straight back to GameView.
+    // Handles the asynchronous case: pendingGameID is set later (network
+    // response) rather than synchronously inside lookupGame().  Also fires for
+    // synchronous cache hits; the hasNavigated guard prevents double-navigation.
     Connections {
         target: cheevosData
         onPendingGameIDChanged: {
-            if (root.activeFocus && cheevosData.pendingGameID > 0) {
+            if (root.hasNavigated || !root.activeFocus) return;
+            if (cheevosData.pendingGameID > 0) {
+                root.hasNavigated = true;
                 cheevosData.loadGameAchievements(cheevosData.pendingGameID);
                 gameAchievementsScreenFromEntry();
             }
