@@ -55,6 +55,7 @@ id: root
         "atari7800": 51,
         "lynx":      13,
         "psx":       12,  "ps1":       12,
+        "ps2":       21,  "playstation2": 21,
         "saturn":    39,
         "dreamcast": 40,  "dc":        40,
         "msx":       29,
