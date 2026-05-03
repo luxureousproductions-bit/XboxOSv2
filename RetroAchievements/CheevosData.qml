@@ -56,6 +56,7 @@ id: root
         "lynx":      13,
         "psx":       12,  "ps1":       12,
         "ps2":       21,  "playstation2": 21,
+        "psp":       41,
         "saturn":    39,
         "dreamcast": 40,  "dc":        40,
         "msx":       29,
