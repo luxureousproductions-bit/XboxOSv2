@@ -357,6 +357,9 @@ id: root
         },
         State {
             name: "raentryscreen";
+        },
+        State {
+            name: "randomscreen";
         }
     ]
 
@@ -429,6 +432,12 @@ id: root
         sfxAccept.play();
         lastState.push(state);
         root.state = "raentryscreen";
+    }
+
+    function randomScreen() {
+        sfxAccept.play();
+        lastState.push(state);
+        root.state = "randomscreen";
     }
 
     function launchGameScreen() {
@@ -649,6 +658,25 @@ id: root
     id: raentryview
 
         RAGameEntryView { focus: true }
+    }
+
+    Loader {
+    id: randomviewloader
+
+        focus: (root.state === "randomscreen")
+        active: opacity !== 0
+        opacity: focus ? 1 : 0
+        Behavior on opacity { PropertyAnimation { duration: transitionTime } }
+
+        anchors.fill: parent
+        sourceComponent: randomview
+        asynchronous: true
+    }
+
+    Component {
+    id: randomview
+
+        RandomView { focus: true }
     }
 
     

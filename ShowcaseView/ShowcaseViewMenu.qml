@@ -875,6 +875,11 @@ id: root
             event.accepted = true;
             refreshLists();
         }
+        // Random mode (LT)
+        if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {
+            event.accepted = true;
+            randomScreen();
+        }
     }
 
     // Helpbar buttons
@@ -888,6 +893,10 @@ id: root
         ListElement {
             name: "Refresh"
             button: "details"
+        }
+        ListElement {
+            name: "Random"
+            button: "prevPage"
         }
         ListElement {
             name: "Select"
