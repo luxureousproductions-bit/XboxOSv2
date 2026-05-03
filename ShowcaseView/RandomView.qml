@@ -24,8 +24,15 @@ id: root
 
     anchors.fill: parent
 
-    // Whether the info overlay (title + logo) is visible
+    // Whether the info overlay (title + logo + helpbar) is visible
     property bool showInfo: true
+
+    onShowInfoChanged: {
+        if (showInfo)
+            currentHelpbarModel = randomHelpModel;
+        else
+            currentHelpbarModel = null;
+    }
 
     // List of games with video assets; populated on first load
     property var gameList: []
@@ -68,13 +75,13 @@ id: root
         color: "black"
     }
 
-    // Fullscreen video player
+    // Fullscreen video player – preserve original aspect ratio (black bars on sides)
     Video {
     id: videoPlayer
 
         anchors.fill: parent
         source: currentGame ? currentGame.assets.video : ""
-        fillMode: VideoOutput.PreserveAspectCrop
+        fillMode: VideoOutput.PreserveAspectFit
         muted: false
         loops: MediaPlayer.Infinite
         autoPlay: true
@@ -83,43 +90,56 @@ id: root
         onSourceChanged: play()
     }
 
-    // Bottom gradient for text readability
+    // Top gradient for game title readability
     Rectangle {
-        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-        height: vpx(180)
+        anchors { left: parent.left; right: parent.right; top: parent.top }
+        height: vpx(120)
         visible: showInfo
         gradient: Gradient {
-            GradientStop { position: 0.0; color: "transparent" }
-            GradientStop { position: 1.0; color: "#E0000000" }
+            GradientStop { position: 0.0; color: "#CC000000" }
+            GradientStop { position: 1.0; color: "transparent" }
         }
     }
 
-    // Info overlay: game title + system logo
+    // Game title – top left
+    Text {
+    id: gameTitle
+
+        visible: showInfo
+        anchors {
+            top: parent.top; topMargin: vpx(20)
+            left: parent.left; leftMargin: globalMargin
+            right: parent.right; rightMargin: globalMargin
+        }
+        text: currentGame ? currentGame.title : ""
+        color: theme.text
+        font.family: subtitleFont.name
+        font.pixelSize: vpx(28)
+        font.bold: true
+        style: Text.Outline
+        styleColor: "#80000000"
+        elide: Text.ElideRight
+    }
+
+    // Bottom gradient for system logo readability
+    Rectangle {
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+        height: vpx(120)
+        visible: showInfo
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "transparent" }
+            GradientStop { position: 1.0; color: "#CC000000" }
+        }
+    }
+
+    // Bottom-left info: system logo (or fallback text)
     Item {
     id: infoOverlay
 
         visible: showInfo
-        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-        height: vpx(110)
-
-        // Game title
-        Text {
-        id: gameTitle
-
-            anchors {
-                bottom: systemLogo.top; bottomMargin: vpx(4)
-                left: parent.left; leftMargin: globalMargin
-                right: parent.right; rightMargin: globalMargin
-            }
-            text: currentGame ? currentGame.title : ""
-            color: theme.text
-            font.family: subtitleFont.name
-            font.pixelSize: vpx(30)
-            font.bold: true
-            style: Text.Outline
-            styleColor: "#80000000"
-            elide: Text.ElideRight
-        }
+        anchors { left: parent.left; bottom: parent.bottom; bottomMargin: vpx(50) }
+        width: vpx(200)
+        height: vpx(40)
 
         // System logo image (shortName-based)
         Image {
@@ -128,37 +148,30 @@ id: root
             property string shortName: currentGame && currentGame.collections.count > 0
                                        ? currentGame.collections.get(0).shortName : ""
 
-            anchors {
-                bottom: parent.bottom; bottomMargin: vpx(55)
-                left: parent.left; leftMargin: globalMargin
-            }
-            height: vpx(30)
-            width: vpx(120)
+            anchors.fill: parent
             source: shortName !== ""
                     ? "../assets/images/logospng/" + Utils.processPlatformName(shortName) + ".png"
                     : ""
-            sourceSize { width: 240; height: 60 }
+            sourceSize { width: 400; height: 80 }
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true
             visible: status !== Image.Error && shortName !== ""
             horizontalAlignment: Image.AlignLeft
+            anchors.leftMargin: globalMargin
         }
 
         // Fallback: collection name as text when logo image is unavailable
         Text {
         id: systemName
 
-            anchors {
-                bottom: parent.bottom; bottomMargin: vpx(55)
-                left: parent.left; leftMargin: globalMargin
-            }
+            anchors { left: parent.left; leftMargin: globalMargin; verticalCenter: parent.verticalCenter }
             text: currentGame && currentGame.collections.count > 0
                   ? currentGame.collections.get(0).name : ""
             color: theme.text
             opacity: 0.7
             font.family: subtitleFont.name
-            font.pixelSize: vpx(16)
+            font.pixelSize: vpx(18)
             visible: systemLogo.status === Image.Error || systemLogo.shortName === ""
         }
     }
