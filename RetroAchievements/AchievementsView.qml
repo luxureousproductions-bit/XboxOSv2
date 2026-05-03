@@ -111,6 +111,73 @@ id: root
             }
         }
 
+        // ── Top-right: 12hr clock + battery icon + settings icon ──────────
+        Row {
+            anchors {
+                right: parent.right; rightMargin: globalMargin
+                verticalCenter: parent.verticalCenter
+            }
+            spacing: vpx(14)
+
+            // 12-hour clock
+            Text {
+                id: raClockText
+                function set() { raClockText.text = Qt.formatTime(new Date(), "h:mm AP") }
+                Timer {
+                    interval: 60000; repeat: true; running: true; triggeredOnStart: true
+                    onTriggered: raClockText.set()
+                }
+                color: theme.text
+                font.family: subtitleFont.name
+                font.pixelSize: vpx(22)
+                font.bold: true
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            // Battery icon (drawn in QML)
+            Item {
+                width: vpx(32); height: vpx(16)
+                anchors.verticalCenter: parent.verticalCenter
+                // Battery body
+                Rectangle {
+                    anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+                    width: parent.width - vpx(4)
+                    color: "transparent"
+                    border.color: theme.text
+                    border.width: vpx(2)
+                    radius: vpx(2)
+                    opacity: 0.8
+                    // Battery fill (~70%)
+                    Rectangle {
+                        anchors { left: parent.left; top: parent.top; bottom: parent.bottom; margins: vpx(3) }
+                        width: parent.width * 0.70
+                        color: theme.text
+                        radius: vpx(1)
+                        opacity: 0.9
+                    }
+                }
+                // Battery nub
+                Rectangle {
+                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                    width: vpx(4); height: vpx(8)
+                    color: theme.text
+                    radius: vpx(1)
+                    opacity: 0.8
+                }
+            }
+
+            // Settings icon
+            Image {
+                width: vpx(26); height: vpx(26)
+                source: "../assets/images/settingsicon.svg"
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+                asynchronous: true
+                opacity: 0.85
+                anchors.verticalCenter: parent.verticalCenter
+            }
+        }
+
         // Divider
         Rectangle {
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
