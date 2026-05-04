@@ -261,7 +261,7 @@ id: root
     id: header
 
         width: parent.width
-        height: vpx(70)
+        height: vpx(90)
         z: 10
         Image {
         id: logo
@@ -280,11 +280,11 @@ id: root
         Rectangle {
         id: achievementsbutton
 
-            width:  vpx(30)
-            height: vpx(30)
+            width:  vpx(36)
+            height: vpx(36)
             anchors {
-                verticalCenter: parent.verticalCenter
-                right: settingsbutton.left; rightMargin: vpx(15)
+                bottom: parent.bottom; bottomMargin: vpx(6)
+                right: settingsbutton.left; rightMargin: vpx(10)
             }
             color:   focus ? theme.accent : "transparent"
             radius:  height / 2
@@ -325,26 +325,22 @@ id: root
 
             text: "🏆"
             anchors.centerIn: achievementsbutton
-            font.pixelSize: vpx(14)
+            font.pixelSize: vpx(18)
             opacity: achievementsbutton.focus ? 1 : 0.7
         }
 
         Rectangle {
         id: settingsbutton
 
-            width: vpx(30)
-            height: vpx(30)
-            anchors { 
-			verticalCenter: parent.verticalCenter
-			right: sysTime.left; rightMargin: vpx(10)
-			}
+            width: vpx(36)
+            height: vpx(36)
+            anchors {
+                bottom: parent.bottom; bottomMargin: vpx(6)
+                right: parent.right; rightMargin: vpx(25)
+            }
             color: focus ? theme.accent : "transparent"
             radius: height/2
             opacity: focus ? 1 : 0.2
-            anchors {
-			verticalCenter: parent.verticalCenter
-			right: settingsButton.left; rightMargin: vpx(50)
-			}
             onFocusChanged: {
                 sfxNav.play()
                 if (focus)
@@ -383,7 +379,7 @@ id: root
         id: settingsicon
 
             width: height
-            height: vpx(20)
+            height: vpx(24)
             anchors.centerIn: settingsbutton
             smooth: true
             asynchronous: true
@@ -407,8 +403,9 @@ id: root
                 onTriggered: sysTime.set()
             }
 
+            height: vpx(40)
             anchors {
-                top: parent.top; bottom: parent.bottom
+                top: parent.top; topMargin: vpx(5)
                 right: parent.right; rightMargin: vpx(25)
             }
             color: "white"
@@ -422,13 +419,15 @@ id: root
         Row {
         id: batteryDisplay
 
+            property bool batteryAvailable: !isNaN(api.device.batteryPercent) && api.device.batteryPercent >= 0
+
             spacing: vpx(4)
             anchors {
                 right: sysTime.left; rightMargin: vpx(10)
-                verticalCenter: parent.verticalCenter
+                top: parent.top; topMargin: vpx(12)
             }
             // Hide when no battery is present (batteryPercent is NaN on desktop/no-battery systems)
-            visible: !isNaN(api.device.batteryPercent) && api.device.batteryPercent >= 0
+            visible: batteryAvailable
 
             // Lightning bolt shown while charging
             Text {
@@ -441,7 +440,7 @@ id: root
             }
 
             Text {
-                property int pct: (!isNaN(api.device.batteryPercent) && api.device.batteryPercent >= 0)
+                property int pct: batteryDisplay.batteryAvailable
                                   ? Math.round(api.device.batteryPercent * 100) : 0
                 text: pct + "%"
                 // Turn red when critically low and not charging
@@ -463,7 +462,7 @@ id: root
             height: vpx(20)
             anchors {
                 right: batteryDisplay.left; rightMargin: vpx(8)
-                verticalCenter: parent.verticalCenter
+                top: parent.top; topMargin: vpx(14)
             }
 
             property bool online: false
@@ -481,6 +480,7 @@ id: root
                             wifiIndicator.online = xhr.status >= 200 && xhr.status < 300;
                         }
                     };
+                    xhr.onerror = function() { wifiIndicator.online = false; };
                     xhr.open("HEAD", "https://1.1.1.1", true);
                     xhr.timeout = 5000;
                     xhr.send();
