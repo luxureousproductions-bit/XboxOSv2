@@ -93,7 +93,6 @@ id: root
             OmitApplicationFromShowcase:   api.memory.has("Omit genre: Application from Showcase") ? api.memory.get("Omit genre: Application from Showcase") : "Enable",
             OmitEmulatorFromShowcase:      api.memory.has("Omit genre: Emulator from Showcase") ? api.memory.get("Omit genre: Emulator from Showcase") : "Enable",
             MoreByGenreDisplay:            api.memory.has("More by Genre Display") ? api.memory.get("More by Genre Display") : "Main Genre",
-            RAEnabled:                     api.memory.has("RetroAchievements") ? api.memory.get("RetroAchievements") : "Enable",
             AllowRandomVideoAudio:         api.memory.has("Play random video audio") ? api.memory.get("Play random video audio") : "No"
             
         }

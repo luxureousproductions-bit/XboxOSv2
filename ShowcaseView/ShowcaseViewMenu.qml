@@ -280,7 +280,6 @@ id: root
         Rectangle {
         id: achievementsbutton
 
-            visible: settings.RAEnabled !== "Disable"
             width:  vpx(30)
             height: vpx(30)
             anchors {
@@ -324,7 +323,6 @@ id: root
         Text {
         id: achievementsTrophyIcon
 
-            visible: settings.RAEnabled !== "Disable"
             text: "🏆"
             anchors.centerIn: achievementsbutton
             font.pixelSize: vpx(14)
@@ -357,8 +355,7 @@ id: root
 
             Keys.onDownPressed: mainList.focus = true;
             Keys.onLeftPressed: {
-                if (settings.RAEnabled !== "Disable")
-                    achievementsbutton.focus = true;
+                achievementsbutton.focus = true;
             }
             Keys.onPressed: {
                 // Accept

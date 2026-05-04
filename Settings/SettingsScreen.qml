@@ -305,19 +305,12 @@ id: root
     ListModel {
     id: raSettingsModel
 
-        ListElement {
-            settingName: "RetroAchievements"
-            setting:     "Enable,Disable"
-        }
-
         // inputType: "text" marks rows that take free-form keyboard input
         // instead of cycling through a comma-separated list.
-        // requiresRA: true marks rows that are locked when RetroAchievements is Disabled.
         ListElement {
             settingName: "RA Username"
             setting:     ""
             inputType:   "text"
-            requiresRA:  true
             note:        "Your retroachievements.org username"
         }
         ListElement {
@@ -325,7 +318,6 @@ id: root
             setting:     ""
             inputType:   "text"
             masked:      true
-            requiresRA:  true
             note:        "Web API key from retroachievements.org/settings"
         }
     }
@@ -506,12 +498,6 @@ id: root
                 property bool isEditing:   false
                 property string originalText: ""
 
-                // True when this row requires RA to be enabled but it is currently disabled
-                property bool raDisabled: (typeof requiresRA !== 'undefined' && requiresRA)
-                                          && (api.memory.has("RetroAchievements")
-                                              ? api.memory.get("RetroAchievements") !== "Enable"
-                                              : false)
-
                 function saveSetting() {
                     if (isTextInput) return;
                     api.memory.set(settingName + 'Index', savedIndex);
@@ -547,7 +533,7 @@ id: root
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(20)
                     verticalAlignment: Text.AlignVCenter
-                    opacity: raDisabled ? 0.1 : (selected ? 1 : 0.2)
+                    opacity: selected ? 1 : 0.2
 
                     width: contentWidth
                     height: itemheight
@@ -564,7 +550,7 @@ id: root
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(20)
                     verticalAlignment: Text.AlignVCenter
-                    opacity: raDisabled ? 0.1 : (selected ? 1 : 0.2)
+                    opacity: selected ? 1 : 0.2
 
                     height: itemheight
                     anchors {
@@ -582,7 +568,7 @@ id: root
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(20)
                     verticalAlignment: Text.AlignVCenter
-                    opacity: raDisabled ? 0.1 : (selected ? 1 : 0.2)
+                    opacity: selected ? 1 : 0.2
 
                     width: contentWidth
                     height: itemheight
@@ -625,11 +611,11 @@ id: root
                         clip: true
                         selectionColor: theme.accent
                         selectedTextColor: theme.text
-                        opacity: settingRow.raDisabled ? 0.1 : (settingRow.selected ? 1 : 0.2)
+                        opacity: settingRow.selected ? 1 : 0.2
                         verticalAlignment: Text.AlignVCenter
 
                         // Only accept key events / show cursor when editing
-                        readOnly: !settingRow.isEditing || settingRow.raDisabled
+                        readOnly: !settingRow.isEditing
                         // Show masked dots at rest (if masked field); plain text while editing
                         echoMode: (typeof masked !== 'undefined' && masked && !settingRow.isEditing)
                                   ? TextInput.Password : TextInput.Normal
@@ -706,12 +692,10 @@ id: root
                     if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                         event.accepted = true;
                         if (isTextInput) {
-                            if (!raDisabled) {
-                                // Capture current saved value before opening editor
-                                originalText = api.memory.has(settingName) ? api.memory.get(settingName) : "";
-                                isEditing = true;
-                                // Focus and cursor position handled by raTextInput.onIsEditingChanged
-                            }
+                            // Capture current saved value before opening editor
+                            originalText = api.memory.has(settingName) ? api.memory.get(settingName) : "";
+                            isEditing = true;
+                            // Focus and cursor position handled by raTextInput.onIsEditingChanged
                         } else {
                             sfxToggle.play();
                             nextSetting();
@@ -734,11 +718,9 @@ id: root
                     onClicked: {
                         if (selected) {
                             if (isTextInput) {
-                                if (!raDisabled) {
-                                    originalText = api.memory.has(settingName) ? api.memory.get(settingName) : "";
-                                    isEditing = true;
-                                    // Focus and cursor position handled by raTextInput.onIsEditingChanged
-                                }
+                                originalText = api.memory.has(settingName) ? api.memory.get(settingName) : "";
+                                isEditing = true;
+                                // Focus and cursor position handled by raTextInput.onIsEditingChanged
                             } else {
                                 sfxToggle.play();
                                 nextSetting();
