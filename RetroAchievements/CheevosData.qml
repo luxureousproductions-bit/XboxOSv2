@@ -39,40 +39,71 @@ id: root
     property string lookupStatusMsg:  ""
 
     // Pegasus collection shortName → RetroAchievements console ID
+    // Source of truth for IDs: https://github.com/RetroAchievements/RAWeb/blob/master/config/systems.php
     readonly property var consoleMappings: ({
-        "nes":        7,  "fds":        7,
-        "snes":       3,
-        "gb":         4,  "gbc":        6,  "gba":        5,
-        "n64":        2,
-        "nds":       18,
-        "genesis":    1,  "megadrive":  1,  "md":         1,
-        "sms":       11,  "mastersystem": 11,  "sg1000":  11,
-        "gamegear":  15,  "gg":        15,
-        "32x":       10,  "sega32x":   10,
-        "segacd":     9,  "megacd":     9,  "scd":        9,
-        "pce":        8,  "tg16":       8,  "pcengine":   8,
-        "neogeo":    14,
-        "atari2600": 25,  "2600":      25,
-        "atari7800": 51,  "7800":      51,
-        "lynx":      13,
-        "psx":       12,  "ps1":       12,
-        "ps2":       21,  "playstation2": 21,
-        "psp":       41,
-        "gc":        16,  "gamecube":  16,  "ngc":       16,
-        "wii":       19,
-        "saturn":    39,
-        "dreamcast": 40,  "dc":        40,
-        "virtualboy": 28, "vb":        28,  "vboy":      28,
-        "wonderswan": 53, "ws":        53,  "wsc":       53,
-        "pokemini":  24,
-        "intellivision": 37, "intv":   37,
-        "c64":       30,  "commodore64": 30,
-        "msx":       29,
-        "coleco":    44,
-        "jaguar":    17,
-        "3do":       43,
-        "vectrex":   46,
-        "arcade":    27,  "mame":      27
+        // Nintendo handhelds
+        "gb":            4,  "gameboy":       4,
+        "gbc":           6,  "gameboycolor":  6,
+        "gba":           5,  "gameboyadvance": 5,
+        "pokemini":     24,
+        "virtualboy":   28,  "vb":           28,  "vboy":         28,
+        "nds":          18,  "ds":           18,
+        "dsi":          78,  "nintendodsi":  78,
+        // Nintendo home consoles / FDS
+        "nes":           7,  "famicom":       7,
+        "fds":          81,  "famicomdisksystem": 81,
+        "snes":          3,  "superfamicom":  3,
+        "n64":           2,  "nintendo64":    2,
+        "gc":           16,  "gamecube":     16,  "ngc":          16,
+        "wii":          19,
+        // Sega
+        "genesis":       1,  "megadrive":     1,  "md":            1,
+        "sms":          11,  "mastersystem": 11,
+        "gamegear":     15,  "gg":           15,
+        "32x":          10,  "sega32x":      10,
+        "segacd":        9,  "megacd":        9,  "scd":           9,
+        "saturn":       39,
+        "dreamcast":    40,  "dc":           40,
+        "sg1000":       33,  "sg-1000":      33,
+        "segapico":     68,  "pico":         68,
+        // Sony
+        "psx":          12,  "ps1":          12,  "playstation":  12,
+        "ps2":          21,  "playstation2": 21,
+        "psp":          41,
+        // NEC
+        "pce":           8,  "tg16":          8,  "pcengine":      8,
+        "pcecd":        76,  "tgcd":         76,  "pcenginecd":   76,
+        "pc88":         47,  "pc8800":       47,
+        "pcfx":         49,
+        // SNK
+        "neogeo":       14,  "ngp":          14,  "ngpc":         14,
+        "neogeopocket": 14,
+        "neogeocd":     56,  "ngcd":         56,
+        // Atari
+        "atari2600":    25,  "2600":         25,
+        "atari7800":    51,  "7800":         51,
+        "lynx":         13,  "atarilynx":    13,
+        "jaguar":       17,  "atarijaguar":  17,
+        "jaguarcd":     77,
+        // Other home consoles / handhelds
+        "3do":          43,
+        "coleco":       44,  "colecovision": 44,
+        "intellivision": 45, "intv":         45,
+        "vectrex":      46,
+        "wonderswan":   53,  "ws":           53,  "wsc":          53,
+        "megaduck":     69,
+        "watara":       63,  "supervision":  63,
+        "channelf":     57,  "fairchildchannelf": 57,
+        "arcadia2001":  73,  "arcadia":      73,
+        "odyssey2":     23,  "o2":           23,
+        "vc4000":       74,
+        // Home computers
+        "c64":          30,  "commodore64":  30,
+        "msx":          29,
+        "amstradcpc":   37,  "cpc":          37,
+        "apple2":       38,  "appleii":      38,
+        // Arcade
+        "arcade":       27,  "mame":         27
     })
 
     // Formatted points summary shown in view headers.
@@ -285,28 +316,41 @@ id: root
     //            as "Street Fighter II: The World Warrior" when Pegasus just has
     //            "Street Fighter II").  Guarded to titles of 8+ chars to avoid
     //            spurious short-prefix false-positives.
+    // Within each pass, canonical entries (no ~Category~ prefix) are preferred over
+    // hacks / homebrews / demos so that e.g. "Super Mario Bros. 3" never resolves
+    // to "~Hack~ Super Mario Bros. 3+" when the real game is also in the list.
     function findGameInList(title, data) {
         var norm = normalizeTitle(title);
         var list = Array.isArray(data) ? data : Object.keys(data).map(function(k){ return data[k]; });
 
-        // Pass 1: exact match
+        function isHackEntry(t) { return /^~[^~]+~\s*/i.test(t || ""); }
+
+        // Pass 1: exact match – canonical entries first, hack entries as fallback
+        var hackFallback1 = 0;
         for (var i = 0; i < list.length; i++) {
             var item = list[i];
             var id = parseInt(item.ID) || parseInt(item.GameID) || 0;
-            if (id > 0 && normalizeTitle(item.Title || "") === norm)
-                return id;
+            if (id <= 0) continue;
+            if (normalizeTitle(item.Title || "") !== norm) continue;
+            if (!isHackEntry(item.Title)) return id;
+            if (!hackFallback1) hackFallback1 = id;
         }
+        if (hackFallback1) return hackFallback1;
 
         // Pass 2: Pegasus title is a prefix of RA title (word-boundary safe)
         if (norm.length >= 8) {
-            for (var i = 0; i < list.length; i++) {
-                var item = list[i];
-                var id = parseInt(item.ID) || parseInt(item.GameID) || 0;
-                if (id <= 0) continue;
-                var raTitle = normalizeTitle(item.Title || "");
-                if (raTitle.length > norm.length && raTitle.indexOf(norm + " ") === 0)
-                    return id;
+            var hackFallback2 = 0;
+            for (var j = 0; j < list.length; j++) {
+                var item2 = list[j];
+                var id2 = parseInt(item2.ID) || parseInt(item2.GameID) || 0;
+                if (id2 <= 0) continue;
+                var raTitle = normalizeTitle(item2.Title || "");
+                if (raTitle.length > norm.length && raTitle.indexOf(norm + " ") === 0) {
+                    if (!isHackEntry(item2.Title)) return id2;
+                    if (!hackFallback2) hackFallback2 = id2;
+                }
             }
+            if (hackFallback2) return hackFallback2;
         }
 
         return 0;
