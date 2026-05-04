@@ -425,12 +425,10 @@ id: root
     // lastState.  Called by RAGameEntryView when a game is found so that pressing
     // Back in GameAchievementsView returns directly to GameView.
     function gameAchievementsScreenFromEntry() {
-        sfxAccept.play();
         root.state = "gameachievementsscreen";
     }
 
     function raEntryScreen() {
-        sfxAccept.play();
         lastState.push(state);
         root.state = "raentryscreen";
     }
