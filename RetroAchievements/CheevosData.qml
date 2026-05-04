@@ -292,18 +292,22 @@ id: root
 
     // Normalise a title for fuzzy matching: strip RA category prefixes such as
     // ~Hack~, ~Homebrew~, ~Demo~, ~Prototype~, etc. that RA prepends to special
-    // entries, lowercase, strip regional/version tags in parentheses (e.g. "(USA)",
-    // "(Europe)", "(Rev A)"), then replace all remaining punctuation (including
-    // colons) with spaces and collapse whitespace.
+    // entries, un-invert any trailing article suffix produced by ROM naming
+    // conventions (e.g. "Legend of Zelda, The - Oracle of Seasons" →
+    // "The Legend of Zelda - Oracle of Seasons") so that the Pegasus/No-Intro name
+    // matches RetroAchievements' natural-order title, lowercase, strip regional/
+    // version tags in parentheses (e.g. "(USA)", "(Europe)", "(Rev A)"), then replace
+    // all remaining punctuation (including colons) with spaces and collapse whitespace.
     // Subtitles are preserved so "Castlevania: Symphony of the Night" normalises
     // to "castlevania symphony of the night" and still matches the RA entry.
     function normalizeTitle(t) {
         return (t || "")
-            .replace(/^~[^~]+~\s*/i,    "")  // strip RA category prefix e.g. ~Hack~
+            .replace(/^~[^~]+~\s*/i,           "")       // strip RA category prefix e.g. ~Hack~
+            .replace(/^(.*),\s*(the|a|an)\b/i, "$2 $1")  // un-invert article suffix: "Zelda, The" → "The Zelda"
             .toLowerCase()
-            .replace(/\s*\([^)]*\)\s*/g, " ") // remove parenthetical tags
-            .replace(/[^a-z0-9 ]/g,     " ") // replace punctuation (incl. :) with space
-            .replace(/\s+/g,            " ") // collapse whitespace
+            .replace(/\s*\([^)]*\)\s*/g,       " ")      // remove parenthetical tags
+            .replace(/[^a-z0-9 ]/g,            " ")      // replace punctuation (incl. :) with space
+            .replace(/\s+/g,                   " ")      // collapse whitespace
             .trim();
     }
 
