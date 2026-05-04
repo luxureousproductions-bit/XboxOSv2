@@ -115,13 +115,41 @@ id: root
             }
         }
 
-        // ── Top-right: 12hr clock + battery icon ─────────────────────────
+        // ── Top-right: battery % + 12hr clock ────────────────────────────
         Row {
             anchors {
                 right: parent.right; rightMargin: vpx(10)
                 verticalCenter: parent.verticalCenter
             }
             spacing: vpx(14)
+
+            // Battery percentage display
+            Row {
+                spacing: vpx(4)
+                anchors.verticalCenter: parent.verticalCenter
+                visible: !isNaN(api.device.batteryPercent) && api.device.batteryPercent >= 0
+
+                // Lightning bolt shown while charging
+                Text {
+                    text: "⚡"
+                    font.pixelSize: vpx(12)
+                    color: "#64B5F6"
+                    verticalAlignment: Text.AlignVCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: api.device.batteryCharging
+                }
+
+                Text {
+                    property int pct: (!isNaN(api.device.batteryPercent) && api.device.batteryPercent >= 0)
+                                      ? Math.round(api.device.batteryPercent * 100) : 0
+                    text: pct + "%"
+                    color: (pct <= 20 && !api.device.batteryCharging) ? "#EF5350" : theme.text
+                    font.family: subtitleFont.name
+                    font.pixelSize: vpx(16)
+                    verticalAlignment: Text.AlignVCenter
+                    anchors.verticalCenter: parent.verticalCenter
+                }
+            }
 
             // 12-hour clock
             Text {
@@ -136,38 +164,6 @@ id: root
                 font.pixelSize: vpx(22)
                 font.bold: true
                 anchors.verticalCenter: parent.verticalCenter
-            }
-
-            // Battery icon (drawn in QML)
-            Item {
-                width: vpx(32); height: vpx(16)
-                anchors.verticalCenter: parent.verticalCenter
-                // Battery body
-                Rectangle {
-                    anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
-                    width: parent.width - vpx(4)
-                    color: "transparent"
-                    border.color: theme.text
-                    border.width: vpx(2)
-                    radius: vpx(2)
-                    opacity: 0.8
-                    // Battery fill (real device percentage)
-                    Rectangle {
-                        anchors { left: parent.left; top: parent.top; bottom: parent.bottom; margins: vpx(3) }
-                        width: parent.width * Math.max(0, Math.min(1, api.device.batteryPercent))
-                        color: theme.text
-                        radius: vpx(1)
-                        opacity: 0.9
-                    }
-                }
-                // Battery nub
-                Rectangle {
-                    anchors { right: parent.right; verticalCenter: parent.verticalCenter }
-                    width: vpx(4); height: vpx(8)
-                    color: theme.text
-                    radius: vpx(1)
-                    opacity: 0.8
-                }
             }
         }
 
