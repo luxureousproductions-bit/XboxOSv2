@@ -354,7 +354,9 @@ id: root
             }
 
             Keys.onDownPressed: mainList.focus = true;
-            Keys.onLeftPressed: achievementsbutton.focus = true;
+            Keys.onLeftPressed: {
+                achievementsbutton.focus = true;
+            }
             Keys.onPressed: {
                 // Accept
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) {

@@ -82,7 +82,7 @@ id: root
         anchors.fill: parent
         source: currentGame ? currentGame.assets.video : ""
         fillMode: VideoOutput.PreserveAspectFit
-        muted: false
+        muted: settings.AllowRandomVideoAudio !== "Yes"
         autoPlay: true
 
         // Restart playback whenever the source changes

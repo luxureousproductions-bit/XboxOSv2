@@ -36,6 +36,10 @@ id: root
             setting: "No,Yes"
         }
         ListElement {
+            settingName: "Play random video audio"
+            setting: "No,Yes"
+        }
+        ListElement {
             settingName: "Hide logo when thumbnail video plays"
             setting: "No,Yes"
         }
