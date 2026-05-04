@@ -416,7 +416,6 @@ id: root
     }
 
     function gameAchievementsScreen() {
-        sfxAccept.play();
         lastState.push(state);
         root.state = "gameachievementsscreen";
     }
