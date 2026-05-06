@@ -36,6 +36,10 @@ id: root
     property bool canPlayVideo: settings.VideoPreview === "Yes"
     property real detailsOpacity: (settings.DetailsDefault === "Yes") ? 1 : 0
     property bool blurBG: settings.GameBlurBackground === "Yes"
+    // One-way latch: true once the details panel has been opened for the first
+    // time (or immediately when "Default to full details" is enabled). Used to
+    // defer instantiation of the boxart image and GameInfo until they are needed.
+    property bool detailsEverShown: settings.DetailsDefault === "Yes"
     property string publisherName: {
         if (game !== null && game.publisher !== null) {
             var str = game.publisher;
@@ -142,6 +146,7 @@ id: root
             detailsOpacity = 0;
         }
         else {
+            detailsEverShown = true;
             detailsOpacity = 1;
             toggleVideo(false);
         }
@@ -335,13 +340,24 @@ id: root
         visible: !blurBG
     }
 
-    FastBlur {
+    // Blur background – shader is compiled only when the blur setting is active.
+    // blurSource and blurOpacity are surfaced as Loader properties so the inner
+    // Component can reference them via parent without relying on ID scope crossing.
+    Loader {
+        id: blurLoader
         anchors.fill: screenshot
-        source: screenshot
-        radius: 64
-        opacity: screenshot.opacity
-        Behavior on opacity { NumberAnimation { duration: 500 } }
-        visible: blurBG
+        active: blurBG
+        readonly property Item blurSource: screenshot
+        readonly property real blurOpacity: screenshot.opacity
+        sourceComponent: Component {
+            FastBlur {
+                anchors.fill: parent
+                source: blurLoader.blurSource
+                radius: 64
+                opacity: blurLoader.blurOpacity
+                Behavior on opacity { NumberAnimation { duration: 500 } }
+            }
+        }
     }
 
     // Scanlines
@@ -375,19 +391,28 @@ id: root
         visible: settings.GameLogo === "Show"
     }
 
-    DropShadow {
-    id: logoshadow
-
+    // Drop shadow behind the logo – shader compiled only when logo is shown.
+    // shadowSource and shadowOpacity are surfaced as Loader properties so the
+    // inner Component can reference them via parent without relying on ID scope.
+    Loader {
+        id: shadowLoader
         anchors.fill: logo
-        horizontalOffset: 0
-        verticalOffset: 0
-        radius: 8.0
-        samples: 9
-        color: "#000000"
-        source: logo
-        opacity: (content.currentIndex !== 0 || detailsScreen.opacity !== 0) ? 0 : 0.4
-        Behavior on opacity { NumberAnimation { duration: 200 } }
-        visible: settings.GameLogo === "Show"
+        active: settings.GameLogo === "Show"
+        readonly property Item shadowSource: logo
+        readonly property real shadowOpacity: (content.currentIndex !== 0 || detailsScreen.opacity !== 0) ? 0 : 0.4
+        sourceComponent: Component {
+            DropShadow {
+                anchors.fill: parent
+                horizontalOffset: 0
+                verticalOffset: 0
+                radius: 8.0
+                samples: 9
+                color: "#000000"
+                source: shadowLoader.shadowSource
+                opacity: shadowLoader.shadowOpacity
+                Behavior on opacity { NumberAnimation { duration: 200 } }
+            }
+        }
     }
 
     // Platform title
@@ -416,14 +441,13 @@ id: root
         opacity: (content.currentIndex !== 0 || detailsScreen.opacity !== 0) ? 0 : 1
     }
 
-    // Gradient
-    LinearGradient {
+    // Gradient – plain Rectangle avoids shader compilation while giving the
+    // same visual result as the previous LinearGradient.
+    Rectangle {
     id: bggradient
 
         width: parent.width
         height: parent.height/2
-        start: Qt.point(0, 0)
-        end: Qt.point(0, height)
         gradient: Gradient {
             GradientStop { position: 0.0; color: theme.gradientstart }
             GradientStop { position: 0.7; color: theme.gradientend }
@@ -452,41 +476,59 @@ id: root
         visible: opacity !== 0
         opacity: (content.currentIndex !== 0) ? 0 : detailsOpacity
         Behavior on opacity { NumberAnimation { duration: 200 } }
-        
-        Rectangle {
+
+        // Inner content is deferred until the panel is first opened (or at
+        // startup when "Default to full details" is enabled) to avoid loading
+        // the box art image and GameInfo metadata on every navigation.
+        // headerH surfaces header.height as an explicit Loader property so the
+        // inner Component can access it via parent.headerH without relying on
+        // cross-Component ID lookups.
+        Loader {
+            id: detailsContentLoader
             anchors.fill: parent
-            color: theme.main
-            opacity: 0.7
-        }
+            active: detailsEverShown
+            readonly property real headerH: header.height
+            sourceComponent: Component {
+                Item {
+                    anchors.fill: parent
 
-        Item {
-        id: details 
+                    Rectangle {
+                        anchors.fill: parent
+                        color: theme.main
+                        opacity: 0.7
+                    }
 
-            anchors { 
-                top: parent.top; topMargin: vpx(100)
-                left: parent.left; leftMargin: vpx(70)
-                right: parent.right; rightMargin: vpx(70)
-            }
-            height: vpx(450) - header.height
+                    Item {
+                    id: details
 
-            Image {
-            id: boxart
+                        anchors {
+                            top: parent.top; topMargin: vpx(100)
+                            left: parent.left; leftMargin: vpx(70)
+                            right: parent.right; rightMargin: vpx(70)
+                        }
+                        height: vpx(450) - detailsContentLoader.headerH
 
-                source: Utils.boxArt(game, settings.BoxArtStyle)
-                width: vpx(350)
-                height: parent.height
-                sourceSize { width: 512; height: 512 }
-                fillMode: Image.PreserveAspectFit
-                asynchronous: true
-                smooth: true
-            }
+                        Image {
+                        id: boxart
 
-            GameInfo {
-            id: info
+                            source: Utils.boxArt(game, settings.BoxArtStyle)
+                            width: vpx(350)
+                            height: parent.height
+                            sourceSize { width: 512; height: 512 }
+                            fillMode: Image.PreserveAspectFit
+                            asynchronous: true
+                            smooth: true
+                        }
 
-                anchors {
-                    left: boxart.right; leftMargin: vpx(30)
-                    top: parent.top; bottom: parent.bottom; right: parent.right
+                        GameInfo {
+                        id: info
+
+                            anchors {
+                                left: boxart.right; leftMargin: vpx(30)
+                                top: parent.top; bottom: parent.bottom; right: parent.right
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -504,15 +546,6 @@ id: root
 
         // Platform logo
         Image {
-        id: logobg
-
-            anchors.fill: platformlogo
-            source: "../assets/images/blank.png"
-            asynchronous: true
-            visible: false
-        }
-
-        Image {
         id: platformlogo
 
             anchors {
@@ -524,15 +557,8 @@ id: root
             source: "../assets/images/logospng/" + Utils.processPlatformName(game.collections.get(0).shortName) + ".png"
             sourceSize { width: 256; height: 256 }
             smooth: true
-            visible: false
-            asynchronous: true           
-        }
+            asynchronous: true
 
-        OpacityMask {
-            anchors.fill: platformlogo
-            source: platformlogo
-            maskSource: logobg
-            
             // Mouse/touch functionality
             MouseArea {
                 anchors.fill: parent
@@ -814,7 +840,7 @@ id: root
         snapMode: ListView.SnapToItem
         highlightMoveDuration: 100
         displayMarginEnd: 150
-        cacheBuffer: 0
+        cacheBuffer: vpx(250)
         onCurrentIndexChanged: { 
             if (content.currentIndex === 0) {
                 toggleVideo(true); 
