@@ -81,12 +81,12 @@ id: root
         ListElement {
             settingName: "Omit genre: Application from Showcase"
             setting: "Yes,No"
-            note: "(Reload all games required)"
+            note: "(Refresh List Required)"
         }
         ListElement {
             settingName: "Omit genre: Emulator from Showcase"
             setting: "Yes,No"
-            note: "(Reload all games required)"
+            note: "(Refresh List Required)"
         }
         ListElement {
             settingName: "Wide - Ratio"
