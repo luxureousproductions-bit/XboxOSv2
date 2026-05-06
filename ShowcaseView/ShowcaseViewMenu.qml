@@ -32,13 +32,13 @@ id: root
     ListAllGames    { id: listNone;        max: 0 }
     ListAllGames    { id: listAllGames;    max: settings.ShowcaseColumns }
     ListFavorites   { id: listFavorites;   max: settings.ShowcaseColumns }
-    ListLastPlayed  { id: listLastPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Enable"; omitEmulator: settings.OmitEmulatorFromShowcase === "Enable" }
-    ListMostPlayed  { id: listMostPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Enable"; omitEmulator: settings.OmitEmulatorFromShowcase === "Enable" }
-    ListRecommended { id: listRecommended; max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Enable"; omitEmulator: settings.OmitEmulatorFromShowcase === "Enable" }
-    ListPublisher   { id: listPublisher;   max: settings.ShowcaseColumns; publisher: randoPub;   omitApplication: settings.OmitApplicationFromShowcase === "Enable"; omitEmulator: settings.OmitEmulatorFromShowcase === "Enable" }
-    ListDeveloper   { id: listDeveloper;   max: settings.ShowcaseColumns; developer: randoDev;   omitApplication: settings.OmitApplicationFromShowcase === "Enable"; omitEmulator: settings.OmitEmulatorFromShowcase === "Enable" }
-    ListGenre       { id: listGenre;       max: settings.ShowcaseColumns; genre: randoGenre;     omitApplication: settings.OmitApplicationFromShowcase === "Enable"; omitEmulator: settings.OmitEmulatorFromShowcase === "Enable" }
-    ListGenre       { id: listGenre2;      max: settings.ShowcaseColumns; genre: randoGenre2;    omitApplication: settings.OmitApplicationFromShowcase === "Enable"; omitEmulator: settings.OmitEmulatorFromShowcase === "Enable" }
+    ListLastPlayed  { id: listLastPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
+    ListMostPlayed  { id: listMostPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
+    ListRecommended { id: listRecommended; max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
+    ListPublisher   { id: listPublisher;   max: settings.ShowcaseColumns; publisher: randoPub;   omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
+    ListDeveloper   { id: listDeveloper;   max: settings.ShowcaseColumns; developer: randoDev;   omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
+    ListGenre       { id: listGenre;       max: settings.ShowcaseColumns; genre: randoGenre;     omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
+    ListGenre       { id: listGenre2;      max: settings.ShowcaseColumns; genre: randoGenre2;    omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
 
     property var featuredCollection: listFavorites
     property var collection1: getCollection(settings.ShowcaseCollection1, settings.ShowcaseCollection1_Thumbnail)

@@ -470,7 +470,7 @@ id: root
             font.family: subtitleFont.name
             font.pixelSize: vpx(18)
             font.bold: true
-            visible: settings.GameCounter !== "Off"
+            visible: settings.GameCounter !== "No"
         }
         
     }
