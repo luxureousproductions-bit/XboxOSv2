@@ -123,10 +123,12 @@ id: root
     property string randoGenre2: Utils.returnRandom(Utils.uniqueGenreValues(settings.OmitApplicationFromShowcase === "Yes", settings.OmitEmulatorFromShowcase === "Yes")) || ''
 
     // Snapshot of the omit settings for the "Continue Playing" list.
-    // These are set once on startup and only updated when the user presses
-    // the refresh button, so the list does not filter live as settings change.
-    property bool lastPlayedOmitApp: false
-    property bool lastPlayedOmitEmu: false
+    // Initialized with a live binding so the ExpressionFilter evaluates
+    // correctly on first render. Component.onCompleted breaks the binding
+    // via an imperative assignment, freezing the value until refreshLists()
+    // is explicitly called by the user.
+    property bool lastPlayedOmitApp: settings.OmitApplicationFromShowcase === "Yes"
+    property bool lastPlayedOmitEmu: settings.OmitEmulatorFromShowcase === "Yes"
 
     function refreshLists() {
         var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || '';
