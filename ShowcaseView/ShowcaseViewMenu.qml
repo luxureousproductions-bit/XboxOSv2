@@ -119,13 +119,15 @@ id: root
     // complete game library available — no timer or debounce needed.
     property string randoPub:    Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || ''
     property string randoDev:    Utils.returnRandom(Utils.uniqueValuesArray('developer')) || ''
-    property string randoGenre:  Utils.returnRandom(Utils.uniqueGenreValues()) || ''
-    property string randoGenre2: Utils.returnRandom(Utils.uniqueGenreValues()) || ''
+    property string randoGenre:  Utils.returnRandom(Utils.uniqueGenreValues(settings.OmitApplicationFromShowcase === "Yes", settings.OmitEmulatorFromShowcase === "Yes")) || ''
+    property string randoGenre2: Utils.returnRandom(Utils.uniqueGenreValues(settings.OmitApplicationFromShowcase === "Yes", settings.OmitEmulatorFromShowcase === "Yes")) || ''
 
     function refreshLists() {
         var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || '';
         var dev = Utils.returnRandom(Utils.uniqueValuesArray('developer')) || '';
-        var genres = Utils.uniqueGenreValues();
+        var omitApp = settings.OmitApplicationFromShowcase === "Yes";
+        var omitEmu = settings.OmitEmulatorFromShowcase === "Yes";
+        var genres = Utils.uniqueGenreValues(omitApp, omitEmu);
         var genre = Utils.returnRandom(genres) || '';
         var filtered = genres.filter(function(g) { return g !== genre; });
         var pick = filtered.length > 0 ? filtered : genres;

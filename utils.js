@@ -481,7 +481,7 @@ function returnRandom(array) {
 // whitespace) the full string is kept AND each individual part is also added as
 // a standalone entry so that either can be used to match games by genre or
 // sub-genre alone.
-function uniqueGenreValues() {
+function uniqueGenreValues(omitApplication, omitEmulator) {
   const seen = new Set();
   const allGames = api.allGames.toVarArray();
   for (let i = 0; i < allGames.length; i++) {
@@ -490,7 +490,9 @@ function uniqueGenreValues() {
     for (let j = 0; j < genres.length; j++) {
       const g = genres[j];
       if (!g) continue;
-      if (g.toLowerCase() === "application") continue;
+      const gl = g.toLowerCase();
+      if (omitApplication && gl === "application") continue;
+      if (omitEmulator   && gl === "emulator")     continue;
       seen.add(g);
       // Split on either "/" or "," handling any surrounding whitespace.
       const separatorIdx = g.search(/\s*[/,]\s*/);

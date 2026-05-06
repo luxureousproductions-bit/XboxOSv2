@@ -441,8 +441,9 @@ id: root
         opacity: (content.currentIndex !== 0 || detailsScreen.opacity !== 0) ? 0 : 1
     }
 
-    // Gradient – plain Rectangle avoids shader compilation while giving the
-    // same visual result as the previous LinearGradient.
+    // Gradient – plain Rectangle avoids the shader-compilation stall on first
+    // load that the QtGraphicalEffects LinearGradient causes. Qt's built-in
+    // Rectangle gradient is rendered without a custom GLSL effect.
     Rectangle {
     id: bggradient
 
