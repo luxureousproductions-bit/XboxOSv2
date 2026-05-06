@@ -5,7 +5,7 @@
 //   header: avatar + name + points (left)
 //   rows: [full-height icon] [title / platform · Played N ago] [N of M right]
 
-import QtQuick 2.0
+import QtQuick 2.15
 import "../Global"
 
 FocusScope {

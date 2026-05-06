@@ -11,7 +11,7 @@
 //     CENTER – title + HC pill + description
 //     RIGHT – "N points" (accent) + "Locked"/"Earned N ago"
 
-import QtQuick 2.0
+import QtQuick 2.15
 import "../Global"
 
 FocusScope {

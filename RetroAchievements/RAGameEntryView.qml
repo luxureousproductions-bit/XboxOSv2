@@ -7,7 +7,7 @@
 //                 GameAchievementsView returns directly to GameView.
 //   • Not found – shows the reason and two buttons: "View Overview" / "Go Back".
 
-import QtQuick 2.0
+import QtQuick 2.15
 import "../Global"
 
 FocusScope {
