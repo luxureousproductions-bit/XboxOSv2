@@ -32,7 +32,7 @@ id: root
     ListAllGames    { id: listNone;        max: 0 }
     ListAllGames    { id: listAllGames;    max: settings.ShowcaseColumns }
     ListFavorites   { id: listFavorites;   max: settings.ShowcaseColumns }
-    ListLastPlayed  { id: listLastPlayed;  max: settings.ShowcaseColumns; omitApplication: lastPlayedOmitApp; omitEmulator: lastPlayedOmitEmu }
+    ListLastPlayed  { id: listLastPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
     ListMostPlayed  { id: listMostPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
     ListRecommended { id: listRecommended; max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
     ListPublisher   { id: listPublisher;   max: settings.ShowcaseColumns; publisher: randoPub;   omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
@@ -122,14 +122,6 @@ id: root
     property string randoGenre:  Utils.returnRandom(Utils.uniqueGenreValues(settings.OmitApplicationFromShowcase === "Yes", settings.OmitEmulatorFromShowcase === "Yes")) || ''
     property string randoGenre2: Utils.returnRandom(Utils.uniqueGenreValues(settings.OmitApplicationFromShowcase === "Yes", settings.OmitEmulatorFromShowcase === "Yes")) || ''
 
-    // Snapshot of the omit settings for the "Continue Playing" list.
-    // Initialized with a live binding so the ExpressionFilter evaluates
-    // correctly on first render. Component.onCompleted breaks the binding
-    // via an imperative assignment, freezing the value until refreshLists()
-    // is explicitly called by the user.
-    property bool lastPlayedOmitApp: settings.OmitApplicationFromShowcase === "Yes"
-    property bool lastPlayedOmitEmu: settings.OmitEmulatorFromShowcase === "Yes"
-
     function refreshLists() {
         var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || '';
         var dev = Utils.returnRandom(Utils.uniqueValuesArray('developer')) || '';
@@ -144,8 +136,6 @@ id: root
         randoDev = dev;
         randoGenre = genre;
         randoGenre2 = genre2;
-        lastPlayedOmitApp = omitApp;
-        lastPlayedOmitEmu = omitEmu;
         api.memory.set("Showcase randoPub", pub);
         api.memory.set("Showcase randoDev", dev);
         api.memory.set("Showcase randoGenre", genre);
@@ -180,11 +170,6 @@ id: root
             api.memory.set("Showcase randoGenre",  randoGenre);
             api.memory.set("Showcase randoGenre2", randoGenre2);
         }
-        // Snapshot the omit settings for the "Continue Playing" list.
-        // Imperative assignment breaks the QML binding so this value only
-        // changes again when refreshLists() is explicitly called.
-        lastPlayedOmitApp = settings.OmitApplicationFromShowcase === "Yes";
-        lastPlayedOmitEmu = settings.OmitEmulatorFromShowcase === "Yes";
         // Seed the recommended list so it is populated on first display with
         // omitApplication / omitEmulator already in effect. This was previously
         // handled by ListRecommended.Component.onCompleted which was removed as
