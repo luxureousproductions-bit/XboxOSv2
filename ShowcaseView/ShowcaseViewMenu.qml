@@ -140,6 +140,7 @@ id: root
         api.memory.set("Showcase randoDev", dev);
         api.memory.set("Showcase randoGenre", genre);
         api.memory.set("Showcase randoGenre2", genre2);
+        listLastPlayed.refresh();
         listRecommended.refresh();
         currentHelpbarModel = gridviewHelpModel;
     }
