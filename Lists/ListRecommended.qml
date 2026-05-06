@@ -38,8 +38,6 @@ id: root
         randomIndices = indices;
     }
 
-    Component.onCompleted: refresh()
-
     SortFilterProxyModel {
     id: gamesFiltered
         sourceModel: api.allGames

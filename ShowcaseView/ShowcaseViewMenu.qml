@@ -119,13 +119,15 @@ id: root
     // complete game library available — no timer or debounce needed.
     property string randoPub:    Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || ''
     property string randoDev:    Utils.returnRandom(Utils.uniqueValuesArray('developer')) || ''
-    property string randoGenre:  Utils.returnRandom(Utils.uniqueGenreValues()) || ''
-    property string randoGenre2: Utils.returnRandom(Utils.uniqueGenreValues()) || ''
+    property string randoGenre:  Utils.returnRandom(Utils.uniqueGenreValues(settings.OmitApplicationFromShowcase === "Yes", settings.OmitEmulatorFromShowcase === "Yes")) || ''
+    property string randoGenre2: Utils.returnRandom(Utils.uniqueGenreValues(settings.OmitApplicationFromShowcase === "Yes", settings.OmitEmulatorFromShowcase === "Yes")) || ''
 
     function refreshLists() {
         var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || '';
         var dev = Utils.returnRandom(Utils.uniqueValuesArray('developer')) || '';
-        var genres = Utils.uniqueGenreValues();
+        var omitApp = settings.OmitApplicationFromShowcase === "Yes";
+        var omitEmu = settings.OmitEmulatorFromShowcase === "Yes";
+        var genres = Utils.uniqueGenreValues(omitApp, omitEmu);
         var genre = Utils.returnRandom(genres) || '';
         var filtered = genres.filter(function(g) { return g !== genre; });
         var pick = filtered.length > 0 ? filtered : genres;
@@ -138,6 +140,7 @@ id: root
         api.memory.set("Showcase randoDev", dev);
         api.memory.set("Showcase randoGenre", genre);
         api.memory.set("Showcase randoGenre2", genre2);
+        listLastPlayed.refresh();
         listRecommended.refresh();
         currentHelpbarModel = gridviewHelpModel;
     }
@@ -168,6 +171,12 @@ id: root
             api.memory.set("Showcase randoGenre",  randoGenre);
             api.memory.set("Showcase randoGenre2", randoGenre2);
         }
+        // Seed the recommended list so it is populated on first display with
+        // omitApplication / omitEmulator already in effect. This was previously
+        // handled by ListRecommended.Component.onCompleted which was removed as
+        // part of the load-time optimizations (GameView has a filterDebounce
+        // replacement; the showcase does not, so we seed it here instead).
+        listRecommended.refresh();
     }
     
     anchors.fill: parent
