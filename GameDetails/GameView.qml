@@ -365,7 +365,7 @@ id: root
     id: scanlines
 
         anchors.fill: parent
-        source: "../assets/images/scanlines_v3.png"
+        source: settings.ShowScanlines === "Yes" ? "../assets/images/scanlines_v3.png" : ""
         asynchronous: true
         opacity: 0.2
         visible: !iamsteam && (settings.ShowScanlines == "Yes")
@@ -381,7 +381,7 @@ id: root
         }
         width: vpx(500)
         height: vpx(450) + header.height
-        source: game ? Utils.logo(game) : ""
+        source: settings.GameLogo === "Show" && game ? Utils.logo(game) : ""
         sourceSize { width: 512; height: 512 }
         fillMode: Image.PreserveAspectFit
         asynchronous: true
@@ -841,7 +841,8 @@ id: root
         snapMode: ListView.SnapToItem
         highlightMoveDuration: 100
         displayMarginEnd: 150
-        cacheBuffer: vpx(250)
+        // ObjectModel always instantiates all items regardless of cacheBuffer,
+        // so no cacheBuffer is needed here.
         onCurrentIndexChanged: { 
             if (content.currentIndex === 0) {
                 toggleVideo(true); 

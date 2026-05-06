@@ -67,6 +67,7 @@ id: root
         highlightMoveDuration: 100
         highlight: highlightcomponent
         displayMarginEnd: itemWidth
+        cacheBuffer: itemWidth * 2
         keyNavigationWraps: true
         
         property int savedIndex: 0
