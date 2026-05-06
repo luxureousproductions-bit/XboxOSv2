@@ -168,6 +168,12 @@ id: root
             api.memory.set("Showcase randoGenre",  randoGenre);
             api.memory.set("Showcase randoGenre2", randoGenre2);
         }
+        // Seed the recommended list so it is populated on first display with
+        // omitApplication / omitEmulator already in effect. This was previously
+        // handled by ListRecommended.Component.onCompleted which was removed as
+        // part of the load-time optimisations (GameView has a filterDebounce
+        // replacement; the showcase does not, so we seed it here instead).
+        listRecommended.refresh();
     }
     
     anchors.fill: parent
