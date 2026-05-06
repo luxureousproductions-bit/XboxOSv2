@@ -61,8 +61,8 @@ id: root
     ListRecommended {
         id: recommendedCollection
         max: 20
-        omitApplication: settings.OmitApplicationFromShowcase === "Enable"
-        omitEmulator: settings.OmitEmulatorFromShowcase === "Enable"
+        omitApplication: settings.OmitApplicationFromShowcase === "Yes"
+        omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"
     }
     // --- END: More section – Recommended Games fallback ---
 
@@ -78,34 +78,34 @@ id: root
     // Combine the video and the screenshot arrays into one
     function mediaArray() {
         let mediaList = [];
-        if (game && game.assets.video && settings.CarouselVideo === "On")
+        if (game && game.assets.video && settings.CarouselVideo === "Yes")
             game.assets.videoList.forEach(v => mediaList.push(v));
 
         if (game) {
-            if (settings.CarouselScreenshots === "On")
+            if (settings.CarouselScreenshots === "Yes")
                 game.assets.screenshotList.forEach(v => mediaList.push(v));
-            if (settings.CarouselTitleScreen === "On" && game.assets.titlescreen)
+            if (settings.CarouselTitleScreen === "Yes" && game.assets.titlescreen)
                 mediaList.push(game.assets.titlescreen);
-            if (settings.CarouselFanart === "On")
+            if (settings.CarouselFanart === "Yes")
                 game.assets.backgroundList.forEach(v => mediaList.push(v));
             var art3d = Utils.get3dBoxArt(game);
-            if (settings.Carousel3DBox === "On" && art3d)
+            if (settings.Carousel3DBox === "Yes" && art3d)
                 mediaList.push(art3d);
             // In Pegasus, ALL box images (box3d, box2dFront, etc.) are stored in boxFrontList.
             // Push every 2D entry that wasn't already added as the 3D art above.
-            if (settings.Carousel2DBox === "On" && game.assets.boxFrontList) {
+            if (settings.Carousel2DBox === "Yes" && game.assets.boxFrontList) {
                 game.assets.boxFrontList.forEach(function(url) {
                     if (url && url !== art3d) mediaList.push(url);
                 });
             }
-            if (settings.CarouselBackBox === "On" && game.assets.boxBack)
+            if (settings.CarouselBackBox === "Yes" && game.assets.boxBack)
                 mediaList.push(game.assets.boxBack);
-            if (settings.CarouselCartridge === "On" && game.assets.cartridge)
+            if (settings.CarouselCartridge === "Yes" && game.assets.cartridge)
                 mediaList.push(game.assets.cartridge);
             // steamList contains all steamgrid/miximage images (UI_STEAMGRID slot in Pegasus).
             // Push all entries so they appear in the media viewer for browsing.
             // getMiximage() separately picks the best one for the box art thumbnail.
-            if (settings.CarouselMiximage === "On" && game.assets.steamList) {
+            if (settings.CarouselMiximage === "Yes" && game.assets.steamList) {
                 game.assets.steamList.forEach(function(url) {
                     if (url) mediaList.push(url);
                 });
@@ -113,7 +113,7 @@ id: root
             if (game.assets.poster)     mediaList.push(game.assets.poster);
             if (game.assets.banner)     mediaList.push(game.assets.banner);
             if (game.assets.tile)       mediaList.push(game.assets.tile);
-            if (settings.CarouselWheel === "On" && game.assets.logo)
+            if (settings.CarouselWheel === "Yes" && game.assets.logo)
                 mediaList.push(game.assets.logo);
         }
 

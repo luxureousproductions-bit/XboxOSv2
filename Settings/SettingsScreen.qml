@@ -80,12 +80,12 @@ id: root
         id: advancedSettingsModel
         ListElement {
             settingName: "Omit genre: Application from Showcase"
-            setting: "Enable,Disable"
+            setting: "Yes,No"
             note: "(Reload all games required)"
         }
         ListElement {
             settingName: "Omit genre: Emulator from Showcase"
-            setting: "Enable,Disable"
+            setting: "Yes,No"
             note: "(Reload all games required)"
         }
         ListElement {
@@ -186,7 +186,7 @@ id: root
         }
         ListElement {
             settingName: "Game Counter"
-            setting: "On,Off"
+            setting: "Yes,No"
         }
     }
 
@@ -254,43 +254,43 @@ id: root
 
         ListElement {
             settingName: "Video"
-            setting: "On,Off"
+            setting: "Yes,No"
         }
         ListElement {
             settingName: "Screenshots"
-            setting: "On,Off"
+            setting: "Yes,No"
         }
         ListElement {
             settingName: "Title Screen"
-            setting: "On,Off"
+            setting: "Yes,No"
         }
         ListElement {
             settingName: "Fanart"
-            setting: "On,Off"
+            setting: "Yes,No"
         }
         ListElement {
             settingName: "3D Box"
-            setting: "On,Off"
+            setting: "Yes,No"
         }
         ListElement {
             settingName: "2D Box"
-            setting: "On,Off"
+            setting: "Yes,No"
         }
         ListElement {
             settingName: "Back Box"
-            setting: "On,Off"
+            setting: "Yes,No"
         }
         ListElement {
             settingName: "Cartridge"
-            setting: "On,Off"
+            setting: "Yes,No"
         }
         ListElement {
             settingName: "Miximage"
-            setting: "On,Off"
+            setting: "Yes,No"
         }
         ListElement {
             settingName: "Logo"
-            setting: "On,Off"
+            setting: "Yes,No"
         }
     }
 
