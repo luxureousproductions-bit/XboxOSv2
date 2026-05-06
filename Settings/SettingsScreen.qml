@@ -205,6 +205,10 @@ id: root
             setting: "2D,3D,Miximage"
         }
         ListElement {
+            settingName: "More by Genre Display"
+            setting: "Full,Main Genre,Sub Genre"
+        }
+        ListElement {
             settingName: "Game Background"
             setting: "Screenshot,Fanart"
         }
@@ -235,10 +239,6 @@ id: root
         ListElement {
             settingName: "Show scanlines"
             setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "More by Genre Display"
-            setting: "Main Genre,Sub Genre,Full"
         }
     }
 
