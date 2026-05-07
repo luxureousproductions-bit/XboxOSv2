@@ -164,12 +164,27 @@ id: root
             randoGenre  = api.memory.get("Showcase randoGenre")  || "";
             randoGenre2 = api.memory.get("Showcase randoGenre2") || "";
         } else {
-            // Fresh startup — persist the property-initializer values so they
-            // survive a game launch and can be restored on the way back
-            api.memory.set("Showcase randoPub",    randoPub);
-            api.memory.set("Showcase randoDev",    randoDev);
-            api.memory.set("Showcase randoGenre",  randoGenre);
-            api.memory.set("Showcase randoGenre2", randoGenre2);
+            // Capture the initial binding values before any api.memory.set() call.
+            // randoGenre/randoGenre2 are reactive bindings on settings.Omit*, which
+            // depends on api.memory.  Any api.memory.set() call (including the ones
+            // below, or later from CheevosData) re-evaluates settings and causes
+            // Utils.returnRandom() to produce a new value, silently re-randomizing the
+            // genre lists while the user is browsing.  Breaking the bindings HERE
+            // (before any api.memory.set) prevents all future re-evaluations.
+            var initPub    = randoPub;
+            var initDev    = randoDev;
+            var initGenre  = randoGenre;
+            var initGenre2 = randoGenre2;
+            // Imperative assignment breaks the reactive binding for each property.
+            randoPub    = initPub;
+            randoDev    = initDev;
+            randoGenre  = initGenre;
+            randoGenre2 = initGenre2;
+            // Fresh startup — persist to memory so values survive a game launch.
+            api.memory.set("Showcase randoPub",    initPub);
+            api.memory.set("Showcase randoDev",    initDev);
+            api.memory.set("Showcase randoGenre",  initGenre);
+            api.memory.set("Showcase randoGenre2", initGenre2);
         }
         // Seed the recommended list so it is populated on first display with
         // omitApplication / omitEmulator already in effect. This was previously

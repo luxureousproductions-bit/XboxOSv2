@@ -169,13 +169,15 @@ id: root
 
     onGameChanged: reset();
 
-    // Re-run the genre rebuild whenever GameView regains focus (e.g. returning
-    // from Settings after changing "More by Genre Display").  The filterDebounce
-    // timer already reads the setting fresh from api.memory, so re-triggering it
-    // here is all that is needed.  It is safe to fire alongside onGameChanged
-    // because filterDebounce is debounced – duplicate restarts just reset the
-    // 200 ms window.
-    onFocusChanged: { if (focus) filterDebounce.restart(); }
+    // Re-run the genre rebuild whenever GameView regains active focus (e.g. returning
+    // from Settings after changing "More by Genre Display").  activeFocus changes when
+    // the item actually gains/loses keyboard focus; the static `focus: true` declaration
+    // never changes, so onFocusChanged never fires on return from another screen.
+    // The filterDebounce timer reads the setting fresh from api.memory, so
+    // re-triggering it here is all that is needed.  It is safe to fire alongside
+    // onGameChanged because filterDebounce is debounced – duplicate restarts just
+    // reset the 200 ms window.
+    onActiveFocusChanged: { if (activeFocus) filterDebounce.restart(); }
 
     // Pre-computed media list for this game; used by both the strip and the full-screen viewer.
     // Binding to `game` means it is computed once per game change instead of twice.
