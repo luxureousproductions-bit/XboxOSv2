@@ -279,6 +279,24 @@ id: root
             else if (settings.ColorLayout === "Light Brown") {
 				accent = "#7e715c";
 			}
+            else if (settings.ColorLayout === "Cyan") {
+				accent = "#19c6d1";
+			}
+            else if (settings.ColorLayout === "Crimson") {
+				accent = "#c6283c";
+			}
+            else if (settings.ColorLayout === "Lime") {
+				accent = "#86c440";
+			}
+            else if (settings.ColorLayout === "Gold") {
+				accent = "#c8961a";
+			}
+            else if (settings.ColorLayout === "Violet") {
+				accent = "#7d4bc4";
+			}
+            else if (settings.ColorLayout === "Teal") {
+				accent = "#3f8f86";
+			}
 			return {
 				main:           background,
 				secondary:      "#303030",

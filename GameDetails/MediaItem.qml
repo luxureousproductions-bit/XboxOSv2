@@ -27,6 +27,15 @@ id: root
     property string mediaItem: ""
     property bool selected
     property bool isVideo: mediaItem.includes(".mp4") || mediaItem.includes(".webm")
+    function mapLayoutImage(layoutName) {
+        if (layoutName === "Cyan") return "Turquoise";
+        if (layoutName === "Crimson") return "Dark Red";
+        if (layoutName === "Lime") return "Light Green";
+        if (layoutName === "Gold") return "Yellow";
+        if (layoutName === "Violet") return "Purple";
+        if (layoutName === "Teal") return "Stone";
+        return layoutName;
+    }
 
     scale: selected ? 1.05 : 1
     Behavior on scale { NumberAnimation { duration: 100 } }
@@ -49,7 +58,7 @@ id: root
     id: border
 
         anchors.fill: parent
-        source: "../assets/images/" + settings.ColorLayout + ".png"
+        source: "../assets/images/" + mapLayoutImage(settings.ColorLayout) + ".png"
         visible: selected
         asynchronous: true
 
@@ -116,7 +125,7 @@ id: root
         id: iconFill
 
             anchors.fill: parent
-            source: "../assets/images/" + settings.ColorLayout + ".png"
+            source: "../assets/images/" + mapLayoutImage(settings.ColorLayout) + ".png"
             fillMode: Image.PreserveAspectCrop
             visible: false
             asynchronous: true

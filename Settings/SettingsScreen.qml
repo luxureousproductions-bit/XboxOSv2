@@ -61,7 +61,7 @@ id: root
         }
         ListElement {
             settingName: "Color Layout"
-            setting: "Dark Green,Light Green,Turquoise,Dark Red,Light Red,Dark Pink,Light Pink,Dark Blue,Light Blue,Orange,Yellow,Magenta,Purple,Dark Gray,Light Gray,Steel,Stone,Dark Brown,Light Brown"
+            setting: "Dark Green,Light Green,Turquoise,Dark Red,Light Red,Dark Pink,Light Pink,Dark Blue,Light Blue,Orange,Yellow,Magenta,Purple,Dark Gray,Light Gray,Steel,Stone,Dark Brown,Light Brown,Cyan,Crimson,Lime,Gold,Violet,Teal"
         }
     }
 
@@ -328,6 +328,7 @@ id: root
     property var settingsArr: [generalPage, showcasePage, gridPage, gamePage, mediaCarouselPage, advancedPage, raPage]
 
     property real itemheight: vpx(50)
+    property color settingsTextColor: theme.accent
 
     Rectangle {
     id: header
@@ -354,7 +355,7 @@ id: root
                 bottom: parent.bottom
             }
             
-            color: theme.text
+            color: settingsTextColor
             font.family: titleFont.name
             font.pixelSize: vpx(30)
             font.bold: true
@@ -399,7 +400,7 @@ id: root
                 id: oageNameText
                 
                     text: modelData.pageName
-                    color: theme.text
+                    color: settingsTextColor
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(24)
                     font.bold: true
@@ -525,7 +526,7 @@ id: root
 
                     visible: !isTextInput
                     text: settingName + ": "
-                    color: theme.text
+                    color: settingsTextColor
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(22)
                     verticalAlignment: Text.AlignVCenter
@@ -542,7 +543,7 @@ id: root
 
                     visible: !isTextInput
                     text: settingList[savedIndex]
-                    color: theme.text
+                    color: settingsTextColor
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(22)
                     verticalAlignment: Text.AlignVCenter
@@ -560,7 +561,7 @@ id: root
 
                     visible: isTextInput
                     text: settingName + ":"
-                    color: theme.text
+                    color: settingsTextColor
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(22)
                     verticalAlignment: Text.AlignVCenter
@@ -601,12 +602,12 @@ id: root
                         anchors { fill: parent; margins: vpx(8) }
                         // Seed initial text from persistent storage
                         text: api.memory.has(settingName) ? api.memory.get(settingName) : ""
-                        color: theme.text
+                        color: settingsTextColor
                         font.family: subtitleFont.name
                         font.pixelSize: vpx(18)
                         clip: true
                         selectionColor: theme.accent
-                        selectedTextColor: theme.text
+                        selectedTextColor: settingsTextColor
                         opacity: settingRow.selected ? 1 : 0.2
                         verticalAlignment: Text.AlignVCenter
 
@@ -652,7 +653,7 @@ id: root
 
                     visible: itemNote !== ""
                     text: itemNote
-                    color: theme.text
+                    color: settingsTextColor
                     font.family: bodyFont.name
                     font.pixelSize: vpx(15)
                     font.italic: true
