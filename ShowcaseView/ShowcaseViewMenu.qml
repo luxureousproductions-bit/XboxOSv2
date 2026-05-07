@@ -149,11 +149,19 @@ id: root
         api.memory.set("Showcase randoGenre2", randoGenre2);
     }
 
+    function refreshShowcaseLists() {
+        listPublisher.refresh();
+        listDeveloper.refresh();
+        listGenre.refresh();
+        listGenre2.refresh();
+        listLastPlayed.refresh();
+        listRecommended.refresh();
+    }
+
     function refreshLists() {
         applyRandomShowcaseValues(pickRandomShowcaseValues());
         persistRandomShowcaseValues();
-        listLastPlayed.refresh();
-        listRecommended.refresh();
+        refreshShowcaseLists();
         currentHelpbarModel = gridviewHelpModel;
     }
 
@@ -179,12 +187,7 @@ id: root
             applyRandomShowcaseValues(pickRandomShowcaseValues());
             persistRandomShowcaseValues();
         }
-        // Seed the recommended list so it is populated on first display with
-        // omitApplication / omitEmulator already in effect. This was previously
-        // handled by ListRecommended.Component.onCompleted which was removed as
-        // part of the load-time optimizations (GameView has a filterDebounce
-        // replacement; the showcase does not, so we seed it here instead).
-        listRecommended.refresh();
+        refreshShowcaseLists();
     }
     
     anchors.fill: parent

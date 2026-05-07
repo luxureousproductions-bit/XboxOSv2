@@ -28,13 +28,30 @@ id: root
     property bool omitApplication: true
     property bool omitEmulator: true
 
+    function refresh() {
+        publisherFilter.enabled = false;
+        publisherGenreFilter.enabled = false;
+        publisherGenreFilter.enabled = true;
+        publisherFilter.enabled = true;
+    }
+
+    onPublisherChanged:       refresh()
+    onOmitApplicationChanged: refresh()
+    onOmitEmulatorChanged:    refresh()
+
     SortFilterProxyModel {
     id: publisherGames
 
         sourceModel: api.allGames
         filters: [
-            RegExpFilter { roleName: "publisher"; pattern: publisher; caseSensitivity: Qt.CaseInsensitive },
+            RegExpFilter {
+                id: publisherFilter
+                roleName: "publisher"
+                pattern: publisher
+                caseSensitivity: Qt.CaseInsensitive
+            },
             ExpressionFilter {
+                id: publisherGenreFilter
                 expression: {
                     var genres = model.genreList;
                     for (var i = 0; i < genres.length; i++) {
