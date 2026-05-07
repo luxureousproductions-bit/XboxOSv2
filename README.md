@@ -1,8 +1,28 @@
 # XboxOSv2 (a fork of a fork of gameOS)
-<img width="1920" height="1080" alt="screenshot" src="https://github.com/user-attachments/assets/a7d03809-fb5d-4b50-a9a0-85d9cc7d8fcd" />
-<img width="1920" height="1080" alt="Screenshot_20260419-152713" src="https://github.com/user-attachments/assets/6da5cebc-db5d-41c9-ba2b-9cf12f8a6f8c" />
-<img width="1920" height="1080" alt="Screenshot_20260419-152800" src="https://github.com/user-attachments/assets/8edaecd9-ad31-4dc6-821b-dec1f3c55f56" />
-<img width="1920" height="1080" alt="Screenshot_20260419-152824" src="https://github.com/user-attachments/assets/5df1f4ad-cd60-4b52-92ff-16b53a33ca10" />
+<img width="1920" height="1080" alt="Screenshot_20260506-210910" src="https://github.com/user-attachments/assets/3c0bb083-6c9a-4ec4-b335-1ecabb80a1ad" />
+
+- Change box art image on the fly (2D, 3D, Miximage)
+<img width="1920" height="1080" alt="Screenshot_20260506-211716" src="https://github.com/user-attachments/assets/587c4192-8cc6-4318-8ca0-94cfd47fdee0" />
+<img width="1920" height="1080" alt="Screenshot_20260506-211732" src="https://github.com/user-attachments/assets/f172e12b-1d6a-4ba4-8733-c4a01ae195a2" />
+<img width="1920" height="1080" alt="Screenshot_20260506-211009" src="https://github.com/user-attachments/assets/7940acd2-3e7b-4757-a215-56dc26682a12" />
+
+- RetroAchievment Intergration(Experimental)
+<img width="1920" height="1080" alt="Screenshot_20260506-211112" src="https://github.com/user-attachments/assets/1cf58b7d-77c5-436c-9513-9b1dd15dc79a" />
+<img width="1920" height="1080" alt="Screenshot_20260506-211100" src="https://github.com/user-attachments/assets/78d7d004-8182-471e-a3a4-9d9c4ecaabf5" />
+<img width="1920" height="1080" alt="Screenshot_20260506-211050" src="https://github.com/user-attachments/assets/3be0a497-a80b-44eb-8baa-40fb5cca5e01" />
+
+- Many New showcase options:
+    - Options to display fanart or screenshot
+    - More collections with added collection options
+<img width="1920" height="1080" alt="Screenshot_20260506-211404" src="https://github.com/user-attachments/assets/2c317626-1681-4dae-91ab-faf65d16dd21" />
+<img width="1920" height="1080" alt="Screenshot_20260506-211424" src="https://github.com/user-attachments/assets/4d53c807-5c38-42ca-9726-d3e89ea705c5" />
+
+- Dont know what to play? Hit the Random button to get a random shuffle of game videos. You can launch directly into a game you like or go to the game details lage to learn more
+<img width="1920" height="1080" alt="Screenshot_20260506-211551" src="https://github.com/user-attachments/assets/283320cd-db37-4433-8e9d-d4c3814e6200" />
+
+
+
+
 
 
 
