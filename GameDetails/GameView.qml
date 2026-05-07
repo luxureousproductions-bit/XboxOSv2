@@ -169,14 +169,6 @@ id: root
 
     onGameChanged: reset();
 
-    // Re-run the genre rebuild whenever GameView regains focus (e.g. returning
-    // from Settings after changing "More by Genre Display").  The filterDebounce
-    // timer already reads the setting fresh from api.memory, so re-triggering it
-    // here is all that is needed.  It is safe to fire alongside onGameChanged
-    // because filterDebounce is debounced – duplicate restarts just reset the
-    // 200 ms window.
-    onFocusChanged: { if (focus) filterDebounce.restart(); }
-
     // Pre-computed media list for this game; used by both the strip and the full-screen viewer.
     // Binding to `game` means it is computed once per game change instead of twice.
     readonly property var mediaList: game ? mediaArray() : []
@@ -272,7 +264,7 @@ id: root
             var sepMatch  = genreStr.match(/^(.*?)\s*[\/,]\s*(.+)$/);
             var mainGenre = sepMatch ? sepMatch[1].trim() : genreStr;
             var subGenre  = sepMatch ? sepMatch[2].trim() : mainGenre;
-            var modeStr   = api.memory.has("More by Genre Display") ? api.memory.get("More by Genre Display") : "Full";
+            var modeStr   = settings.MoreByGenreDisplay || "Main Genre";
             var genreTarget, genreMatchMode;
             if (modeStr === "Sub Genre") {
                 genreTarget    = subGenre;
@@ -817,15 +809,12 @@ id: root
                 // Special labels are always based on the main genre.
                 if (lower === "application") return "More Applications";
                 if (lower === "emulator") return "More Emulators";
-                // Derive the title from genreCollection.matchMode so it updates
-                // automatically when filterDebounce rebuilds the list after a
-                // settings change (matchMode is a reactive QML property).
-                var mode = genreCollection.matchMode; // "main" | "sub" | "full"
-                if (mode === "sub") {
+                var modeStr = settings.MoreByGenreDisplay || "Main Genre";
+                if (modeStr === "Sub Genre") {
                     var displayGenre = sepM ? sepM[2].trim() : mainGenre;
                     return "More " + displayGenre + " Games";
                 }
-                if (mode === "full") return "More " + g + " Games";
+                if (modeStr === "Full") return "More " + g + " Games";
                 return "More " + mainGenre + " Games";
             }
             search: genreCollection
