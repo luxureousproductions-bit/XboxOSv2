@@ -54,7 +54,6 @@ id: root
             HideLogo:                      api.memory.has("Hide logo when thumbnail video plays") ? api.memory.get("Hide logo when thumbnail video plays") : "No",
             HideButtonHelp:                api.memory.has("Hide button help") ? api.memory.get("Hide button help") : "No",
             ColorLayout:                   api.memory.has("Color Layout") ? api.memory.get("Color Layout") : "Dark Green",
-			ColorBackground:               api.memory.has("Color Background") ? api.memory.get("Color Background") : "Black",
             MouseHover:                    api.memory.has("Enable mouse hover") ? api.memory.get("Enable mouse hover") : "No",
             AlwaysShowTitles:              api.memory.has("Always show titles") ? api.memory.get("Always show titles") : "No",
             AnimateHighlight:              api.memory.has("Animate highlight") ? api.memory.get("Animate highlight") : "No",
@@ -220,38 +219,6 @@ id: root
             var text = 		        "#ebebeb";
 			var gradientstart = 	"#001f1f1f";
 			var gradientend = 		"#FF000000";
-			if (settings.ColorBackground === "Black") {
-				background = 	"#000000";
-				gradientstart = "#001f1f1f";
-				gradientend = 	"#FF000000";
-			}
-            else if (settings.ColorBackground === "White") {
-				background = 	"#ebebeb";
-				gradientstart = "#00ebebeb";
-				gradientend = 	"#FFebebeb";
-                text         = 	"#101010";
-			}
-			else if (settings.ColorBackground === "Gray") {
-				background = 	"#1f1f1f";
-				gradientstart = "#001f1f1f";
-				gradientend = 	"#FF1F1F1F";
-			}
-			else if (settings.ColorBackground === "Blue") {
-				background = 	"#1d253d";
-				gradientstart = "#001d253d";
-				gradientend = 	"#FF1d253d";
-			}
-		    else if (settings.ColorBackground === "Green") {
-				background = 	"#054b16";
-				gradientstart = "#00054b16";
-				gradientend = 	"#00054b16";
-			}
-		    else if (settings.ColorBackground === "Red") {
-				background = 	"#520000";
-				gradientstart = "#00520000";
-				gradientend = 	"#FF520000";
-			}
-
 		    var accent = "#288928";
 			if (settings.ColorLayout === "Dark Green") {
 				accent = "#288928";
@@ -740,4 +707,3 @@ id: root
     }
     
 }
-

@@ -63,10 +63,6 @@ id: root
             settingName: "Color Layout"
             setting: "Dark Green,Light Green,Turquoise,Dark Red,Light Red,Dark Pink,Light Pink,Dark Blue,Light Blue,Orange,Yellow,Magenta,Purple,Dark Gray,Light Gray,Steel,Stone,Dark Brown,Light Brown"
         }
-		ListElement {
-		settingName: "Color Background"
-		setting: "Black,Gray,Blue,Green,Red"
-        }
     }
 
     property var generalPage: {
@@ -405,7 +401,7 @@ id: root
                     text: modelData.pageName
                     color: theme.text
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(22)
+                    font.pixelSize: vpx(24)
                     font.bold: true
                     verticalAlignment: Text.AlignVCenter
                     opacity: selected ? 1 : 0.2
@@ -531,7 +527,7 @@ id: root
                     text: settingName + ": "
                     color: theme.text
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(20)
+                    font.pixelSize: vpx(22)
                     verticalAlignment: Text.AlignVCenter
                     opacity: selected ? 1 : 0.2
 
@@ -548,7 +544,7 @@ id: root
                     text: settingList[savedIndex]
                     color: theme.text
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(20)
+                    font.pixelSize: vpx(22)
                     verticalAlignment: Text.AlignVCenter
                     opacity: selected ? 1 : 0.2
 
@@ -566,7 +562,7 @@ id: root
                     text: settingName + ":"
                     color: theme.text
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(20)
+                    font.pixelSize: vpx(22)
                     verticalAlignment: Text.AlignVCenter
                     opacity: selected ? 1 : 0.2
 
@@ -607,7 +603,7 @@ id: root
                         text: api.memory.has(settingName) ? api.memory.get(settingName) : ""
                         color: theme.text
                         font.family: subtitleFont.name
-                        font.pixelSize: vpx(16)
+                        font.pixelSize: vpx(18)
                         clip: true
                         selectionColor: theme.accent
                         selectedTextColor: theme.text
@@ -658,7 +654,7 @@ id: root
                     text: itemNote
                     color: theme.text
                     font.family: bodyFont.name
-                    font.pixelSize: vpx(13)
+                    font.pixelSize: vpx(15)
                     font.italic: true
                     opacity: selected ? 0.6 : 0.15
 
