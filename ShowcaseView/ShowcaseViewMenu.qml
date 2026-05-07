@@ -142,7 +142,6 @@ id: root
         api.memory.set("Showcase randoGenre2", genre2);
         listLastPlayed.refresh();
         listRecommended.refresh();
-        api.memory.set("Showcase recommendedIndices", JSON.stringify(listRecommended.randomIndices));
         currentHelpbarModel = gridviewHelpModel;
     }
 
@@ -165,31 +164,19 @@ id: root
             randoGenre  = api.memory.get("Showcase randoGenre")  || "";
             randoGenre2 = api.memory.get("Showcase randoGenre2") || "";
         } else {
-            // Capture the initial binding values before any api.memory.set() call,
-            // then immediately break the bindings so random showcase selections stay
-            // stable until the user explicitly presses Refresh.
-            var initPub    = randoPub;
-            var initDev    = randoDev;
-            var initGenre  = randoGenre;
-            var initGenre2 = randoGenre2;
-            // Imperative assignment breaks the reactive binding for each property.
-            randoPub    = initPub;
-            randoDev    = initDev;
-            randoGenre  = initGenre;
-            randoGenre2 = initGenre2;
-            // Fresh startup — persist to memory so values survive a game launch.
-            api.memory.set("Showcase randoPub",    initPub);
-            api.memory.set("Showcase randoDev",    initDev);
-            api.memory.set("Showcase randoGenre",  initGenre);
-            api.memory.set("Showcase randoGenre2", initGenre2);
+            // Fresh startup — persist the property-initializer values so they
+            // survive a game launch and can be restored on the way back
+            api.memory.set("Showcase randoPub",    randoPub);
+            api.memory.set("Showcase randoDev",    randoDev);
+            api.memory.set("Showcase randoGenre",  randoGenre);
+            api.memory.set("Showcase randoGenre2", randoGenre2);
         }
-        if (api.memory.has("Showcase recommendedIndices")) {
-            try {
-                listRecommended.randomIndices = JSON.parse(api.memory.get("Showcase recommendedIndices"));
-            } catch (e) {
-                listRecommended.randomIndices = {};
-            }
-        }
+        // Seed the recommended list so it is populated on first display with
+        // omitApplication / omitEmulator already in effect. This was previously
+        // handled by ListRecommended.Component.onCompleted which was removed as
+        // part of the load-time optimizations (GameView has a filterDebounce
+        // replacement; the showcase does not, so we seed it here instead).
+        listRecommended.refresh();
     }
     
     anchors.fill: parent
