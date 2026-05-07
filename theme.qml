@@ -89,8 +89,8 @@ id: root
             CarouselCartridge:             api.memory.has("Cartridge") ? api.memory.get("Cartridge") : "Yes",
             CarouselMiximage:              api.memory.has("Miximage") ? api.memory.get("Miximage") : "Yes",
             CarouselWheel:                 api.memory.has("Logo") ? api.memory.get("Logo") : "Yes",
-            OmitApplicationFromShowcase:   api.memory.has("Omit genre: Application from Showcase") ? api.memory.get("Omit genre: Application from Showcase") : "Yes",
-            OmitEmulatorFromShowcase:      api.memory.has("Omit genre: Emulator from Showcase") ? api.memory.get("Omit genre: Emulator from Showcase") : "Yes",
+            OmitApplicationFromShowcase:   api.memory.has("Omit genre: Application from Showcase") ? api.memory.get("Omit genre: Application from Showcase") : "No",
+            OmitEmulatorFromShowcase:      api.memory.has("Omit genre: Emulator from Showcase") ? api.memory.get("Omit genre: Emulator from Showcase") : "No",
             MoreByGenreDisplay:            api.memory.has("More by Genre Display") ? api.memory.get("More by Genre Display") : "Full",
             AllowRandomVideoAudio:         api.memory.has("Play random video audio") ? api.memory.get("Play random video audio") : "No"
             
