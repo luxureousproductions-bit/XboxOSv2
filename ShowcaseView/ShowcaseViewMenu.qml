@@ -114,54 +114,32 @@ id: root
         return collection;
     }
 
-    property string randoPub: ""
-    property string randoDev: ""
-    property string randoGenre: ""
-    property string randoGenre2: ""
-
-    function pickRandomShowcaseValues() {
-        var omitApp = settings.OmitApplicationFromShowcase === "Yes";
-        var omitEmu = settings.OmitEmulatorFromShowcase === "Yes";
-        var genres = Utils.uniqueGenreValues(omitApp, omitEmu);
-        var genre = Utils.returnRandom(genres) || "";
-        var filtered = genres.filter(function(g) { return g !== genre; });
-        var pick = filtered.length > 0 ? filtered : genres;
-
-        return {
-            pub: Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || "",
-            dev: Utils.returnRandom(Utils.uniqueValuesArray('developer')) || "",
-            genre: genre,
-            genre2: Utils.returnRandom(pick) || ""
-        };
-    }
-
-    function applyRandomShowcaseValues(values) {
-        randoPub = values.pub || "";
-        randoDev = values.dev || "";
-        randoGenre = values.genre || "";
-        randoGenre2 = values.genre2 || "";
-    }
-
-    function persistRandomShowcaseValues() {
-        api.memory.set("Showcase randoPub", randoPub);
-        api.memory.set("Showcase randoDev", randoDev);
-        api.memory.set("Showcase randoGenre", randoGenre);
-        api.memory.set("Showcase randoGenre2", randoGenre2);
-    }
-
-    function refreshShowcaseLists() {
-        listPublisher.refresh();
-        listDeveloper.refresh();
-        listGenre.refresh();
-        listGenre2.refresh();
-        listLastPlayed.refresh();
-        listRecommended.refresh();
-    }
+    // Pegasus populates api.allGames fully before any QML runs, so these
+    // property initializers evaluate once at component creation with the
+    // complete game library available — no timer or debounce needed.
+    property string randoPub:    Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || ''
+    property string randoDev:    Utils.returnRandom(Utils.uniqueValuesArray('developer')) || ''
+    property string randoGenre:  Utils.returnRandom(Utils.uniqueGenreValues()) || ''
+    property string randoGenre2: Utils.returnRandom(Utils.uniqueGenreValues()) || ''
 
     function refreshLists() {
-        applyRandomShowcaseValues(pickRandomShowcaseValues());
-        persistRandomShowcaseValues();
-        refreshShowcaseLists();
+        var omitEmu = settings.OmitEmulatorFromShowcase === "Yes";
+        var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || '';
+        var dev = Utils.returnRandom(Utils.uniqueValuesArray('developer')) || '';
+        var genres = Utils.uniqueGenreValues(omitEmu);
+        var genre = Utils.returnRandom(genres) || '';
+        var filtered = genres.filter(function(g) { return g !== genre; });
+        var pick = filtered.length > 0 ? filtered : genres;
+        var genre2 = Utils.returnRandom(pick) || '';
+        randoPub = pub;
+        randoDev = dev;
+        randoGenre = genre;
+        randoGenre2 = genre2;
+        api.memory.set("Showcase randoPub", pub);
+        api.memory.set("Showcase randoDev", dev);
+        api.memory.set("Showcase randoGenre", genre);
+        api.memory.set("Showcase randoGenre2", genre2);
+        listRecommended.refresh();
         currentHelpbarModel = gridviewHelpModel;
     }
 
@@ -184,10 +162,13 @@ id: root
             randoGenre  = api.memory.get("Showcase randoGenre")  || "";
             randoGenre2 = api.memory.get("Showcase randoGenre2") || "";
         } else {
-            applyRandomShowcaseValues(pickRandomShowcaseValues());
-            persistRandomShowcaseValues();
+            // Fresh startup — persist the property-initializer values so they
+            // survive a game launch and can be restored on the way back
+            api.memory.set("Showcase randoPub",    randoPub);
+            api.memory.set("Showcase randoDev",    randoDev);
+            api.memory.set("Showcase randoGenre",  randoGenre);
+            api.memory.set("Showcase randoGenre2", randoGenre2);
         }
-        refreshShowcaseLists();
     }
     
     anchors.fill: parent
