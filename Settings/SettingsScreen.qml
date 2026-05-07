@@ -76,12 +76,12 @@ id: root
         id: advancedSettingsModel
         ListElement {
             settingName: "Omit genre: Application from Showcase"
-            setting: "Yes,No"
+            setting: "No,Yes"
             note: "(Refresh List Required)"
         }
         ListElement {
             settingName: "Omit genre: Emulator from Showcase"
-            setting: "Yes,No"
+            setting: "No,Yes"
             note: "(Refresh List Required)"
         }
         ListElement {
