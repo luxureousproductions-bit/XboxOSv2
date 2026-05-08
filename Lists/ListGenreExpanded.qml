@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import QtQuick 2.0
+import QtQuick 2.15
 
 // --- BEGIN: More by Genre – Option B: JS array ---
 // Replaces the SortFilterProxyModel + ExpressionFilter approach with a single
@@ -76,13 +76,11 @@ id: root
                     matched = entryLower === target;
                 } else if (mode === "sub") {
                     var sepM = entryLower.match(/^(.*?)\s*[\/,]\s*(.+)$/);
-                    var entrySub = sepM ? sepM[2] : entryLower;
-                    matched = entrySub === target;
+                    matched = sepM ? (sepM[2] === target) : (entryLower === target);
                 } else {
-                    // "main" (default)
-                    var sepM = entryLower.match(/^(.*?)\s*[\/,]\s*(.+)$/);
-                    var entryMain = sepM ? sepM[1] : entryLower;
-                    matched = entryMain === target;
+                    var sep = entryLower.search(/\s*[\/,]\s*/);
+                    var main = sep !== -1 ? entryLower.substring(0, sep).trim() : entryLower;
+                    matched = main === target;
                 }
                 if (matched) {
                     result.push(g);
