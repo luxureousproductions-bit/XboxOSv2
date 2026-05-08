@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import QtQuick 2.15
+import QtQuick 2.0
 import SortFilterProxyModel 0.2
 
 Item {
@@ -27,30 +27,13 @@ id: root
     property bool omitApplication: true
     property bool omitEmulator: true
 
-    function refresh() {
-        genreFilter.enabled = false;
-        genreGenreFilter.enabled = false;
-        genreGenreFilter.enabled = true;
-        genreFilter.enabled = true;
-    }
-
-    onGenreChanged:           refresh()
-    onOmitApplicationChanged: refresh()
-    onOmitEmulatorChanged:    refresh()
-
     SortFilterProxyModel {
     id: genreGames
 
         sourceModel: api.allGames
         filters: [
-            RegExpFilter {
-                id: genreFilter
-                roleName: "genre"
-                pattern: genre
-                caseSensitivity: Qt.CaseInsensitive
-            },
+            RegExpFilter { roleName: "genre"; pattern: genre; caseSensitivity: Qt.CaseInsensitive },
             ExpressionFilter {
-                id: genreGenreFilter
                 expression: {
                     var genres = model.genreList;
                     for (var i = 0; i < genres.length; i++) {

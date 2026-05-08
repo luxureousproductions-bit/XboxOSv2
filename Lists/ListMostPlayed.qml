@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import QtQuick 2.15
+import QtQuick 2.0
 import SortFilterProxyModel 0.2
 
 Item {
@@ -27,21 +27,12 @@ id: root
     property bool omitApplication: true
     property bool omitEmulator: true
 
-    function refresh() {
-        mostPlayedFilter.enabled = false;
-        mostPlayedFilter.enabled = true;
-    }
-
-    onOmitApplicationChanged: refresh()
-    onOmitEmulatorChanged:    refresh()
-
     SortFilterProxyModel {
     id: mostPlayedGames
 
         sourceModel: api.allGames
         sorters: RoleSorter { roleName: "playCount"; sortOrder: Qt.DescendingOrder }
         filters: ExpressionFilter {
-            id: mostPlayedFilter
             expression: {
                 var genres = model.genreList;
                 for (var i = 0; i < genres.length; i++) {
