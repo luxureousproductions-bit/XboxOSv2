@@ -17,7 +17,7 @@
 <img width="1920" height="1080" alt="Screenshot_20260506-211404" src="https://github.com/user-attachments/assets/2c317626-1681-4dae-91ab-faf65d16dd21" />
 <img width="1920" height="1080" alt="Screenshot_20260506-211424" src="https://github.com/user-attachments/assets/4d53c807-5c38-42ca-9726-d3e89ea705c5" />
 
-- Dont know what to play? Hit the Random button to get a random shuffle of game videos. You can launch directly into a game you like or go to the game details lage to learn more
+- Dont know what to play? Hit the Random button to get a random shuffle of game videos. You can launch directly into a game you like or go to the game details page to learn more
 <img width="1920" height="1080" alt="Screenshot_20260506-211551" src="https://github.com/user-attachments/assets/283320cd-db37-4433-8e9d-d4c3814e6200" />
 
 
