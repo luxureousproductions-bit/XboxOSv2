@@ -2,7 +2,7 @@
 // Handles all API communication with retroachievements.org and owns the
 // ListModels consumed by AchievementsView and GameAchievementsView.
 
-import QtQuick 2.0
+import QtQuick 2.15
 
 Item {
 id: root

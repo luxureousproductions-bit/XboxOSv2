@@ -7,7 +7,7 @@
 //                 GameAchievementsView returns directly to GameView.
 //   • Not found – shows the reason and two buttons: "View Overview" / "Go Back".
 
-import QtQuick 2.0
+import QtQuick 2.15
 import "../Global"
 
 FocusScope {
@@ -133,7 +133,7 @@ id: root
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text:  currentGame ? currentGame.collections.get(0).name : ""
+                text:  currentGame ? currentGame.collections.get(0).shortName : ""
                 color: theme.text
                 font.family:    bodyFont.name
                 font.pixelSize: vpx(14)

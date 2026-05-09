@@ -14,10 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import QtQuick 2.0
-import QtQuick.Layouts 1.11
+import QtQuick 2.15
+import QtQuick.Layouts 1.15
 import SortFilterProxyModel 0.2
-import QtMultimedia 5.9
+import QtMultimedia 5.15
 import "RetroAchievements"
 import "VerticalList"
 import "GridView"
@@ -54,7 +54,6 @@ id: root
             HideLogo:                      api.memory.has("Hide logo when thumbnail video plays") ? api.memory.get("Hide logo when thumbnail video plays") : "No",
             HideButtonHelp:                api.memory.has("Hide button help") ? api.memory.get("Hide button help") : "No",
             ColorLayout:                   api.memory.has("Color Layout") ? api.memory.get("Color Layout") : "Dark Green",
-			ColorBackground:               api.memory.has("Color Background") ? api.memory.get("Color Background") : "Black",
             MouseHover:                    api.memory.has("Enable mouse hover") ? api.memory.get("Enable mouse hover") : "No",
             AlwaysShowTitles:              api.memory.has("Always show titles") ? api.memory.get("Always show titles") : "No",
             AnimateHighlight:              api.memory.has("Animate highlight") ? api.memory.get("Animate highlight") : "No",
@@ -90,8 +89,8 @@ id: root
             CarouselCartridge:             api.memory.has("Cartridge") ? api.memory.get("Cartridge") : "Yes",
             CarouselMiximage:              api.memory.has("Miximage") ? api.memory.get("Miximage") : "Yes",
             CarouselWheel:                 api.memory.has("Logo") ? api.memory.get("Logo") : "Yes",
-            OmitApplicationFromShowcase:   api.memory.has("Omit genre: Application from Showcase") ? api.memory.get("Omit genre: Application from Showcase") : "Yes",
-            OmitEmulatorFromShowcase:      api.memory.has("Omit genre: Emulator from Showcase") ? api.memory.get("Omit genre: Emulator from Showcase") : "Yes",
+            OmitApplicationFromShowcase:   api.memory.has("Omit genre: Application from Showcase") ? api.memory.get("Omit genre: Application from Showcase") : "No",
+            OmitEmulatorFromShowcase:      api.memory.has("Omit genre: Emulator from Showcase") ? api.memory.get("Omit genre: Emulator from Showcase") : "No",
             MoreByGenreDisplay:            api.memory.has("More by Genre Display") ? api.memory.get("More by Genre Display") : "Full",
             AllowRandomVideoAudio:         api.memory.has("Play random video audio") ? api.memory.get("Play random video audio") : "No"
             
@@ -220,38 +219,6 @@ id: root
             var text = 		        "#ebebeb";
 			var gradientstart = 	"#001f1f1f";
 			var gradientend = 		"#FF000000";
-			if (settings.ColorBackground === "Black") {
-				background = 	"#000000";
-				gradientstart = "#001f1f1f";
-				gradientend = 	"#FF000000";
-			}
-            else if (settings.ColorBackground === "White") {
-				background = 	"#ebebeb";
-				gradientstart = "#00ebebeb";
-				gradientend = 	"#FFebebeb";
-                text         = 	"#101010";
-			}
-			else if (settings.ColorBackground === "Gray") {
-				background = 	"#1f1f1f";
-				gradientstart = "#001f1f1f";
-				gradientend = 	"#FF1F1F1F";
-			}
-			else if (settings.ColorBackground === "Blue") {
-				background = 	"#1d253d";
-				gradientstart = "#001d253d";
-				gradientend = 	"#FF1d253d";
-			}
-		    else if (settings.ColorBackground === "Green") {
-				background = 	"#054b16";
-				gradientstart = "#00054b16";
-				gradientend = 	"#00054b16";
-			}
-		    else if (settings.ColorBackground === "Red") {
-				background = 	"#520000";
-				gradientstart = "#00520000";
-				gradientend = 	"#FF520000";
-			}
-
 		    var accent = "#288928";
 			if (settings.ColorLayout === "Dark Green") {
 				accent = "#288928";
@@ -311,6 +278,24 @@ id: root
 			}
             else if (settings.ColorLayout === "Light Brown") {
 				accent = "#7e715c";
+			}
+            else if (settings.ColorLayout === "Cyan") {
+				accent = "#19c6d1";
+			}
+            else if (settings.ColorLayout === "Crimson") {
+				accent = "#c6283c";
+			}
+            else if (settings.ColorLayout === "Lime") {
+				accent = "#86c440";
+			}
+            else if (settings.ColorLayout === "Gold") {
+				accent = "#c8961a";
+			}
+            else if (settings.ColorLayout === "Violet") {
+				accent = "#7d4bc4";
+			}
+            else if (settings.ColorLayout === "Teal") {
+				accent = "#3f8f86";
 			}
 			return {
 				main:           background,
@@ -740,4 +725,3 @@ id: root
     }
     
 }
-

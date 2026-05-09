@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import QtQuick 2.0
-import QtQuick.Layouts 1.11
+import QtQuick 2.15
+import QtQuick.Layouts 1.15
 
 FocusScope {
 id: root
@@ -61,11 +61,7 @@ id: root
         }
         ListElement {
             settingName: "Color Layout"
-            setting: "Dark Green,Light Green,Turquoise,Dark Red,Light Red,Dark Pink,Light Pink,Dark Blue,Light Blue,Orange,Yellow,Magenta,Purple,Dark Gray,Light Gray,Steel,Stone,Dark Brown,Light Brown"
-        }
-		ListElement {
-		settingName: "Color Background"
-		setting: "Black,Gray,Blue,Green,Red"
+            setting: "Dark Green,Light Green,Turquoise,Dark Red,Light Red,Dark Pink,Light Pink,Dark Blue,Light Blue,Orange,Yellow,Magenta,Purple,Dark Gray,Light Gray,Steel,Stone,Dark Brown,Light Brown,Cyan,Crimson,Lime,Gold,Violet,Teal"
         }
     }
 
@@ -80,13 +76,13 @@ id: root
         id: advancedSettingsModel
         ListElement {
             settingName: "Omit genre: Application from Showcase"
-            setting: "Yes,No"
-            note: "(Reload all games required)"
+            setting: "No,Yes"
+            note: "(Reload Required)"
         }
         ListElement {
             settingName: "Omit genre: Emulator from Showcase"
-            setting: "Yes,No"
-            note: "(Reload all games required)"
+            setting: "No,Yes"
+            note: "(Reload Required)"
         }
         ListElement {
             settingName: "Wide - Ratio"
@@ -332,6 +328,7 @@ id: root
     property var settingsArr: [generalPage, showcasePage, gridPage, gamePage, mediaCarouselPage, advancedPage, raPage]
 
     property real itemheight: vpx(50)
+    property color settingsTextColor: theme.accent
 
     Rectangle {
     id: header
@@ -358,7 +355,7 @@ id: root
                 bottom: parent.bottom
             }
             
-            color: theme.text
+            color: settingsTextColor
             font.family: titleFont.name
             font.pixelSize: vpx(30)
             font.bold: true
@@ -403,9 +400,9 @@ id: root
                 id: oageNameText
                 
                     text: modelData.pageName
-                    color: theme.text
+                    color: settingsTextColor
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(22)
+                    font.pixelSize: vpx(24)
                     font.bold: true
                     verticalAlignment: Text.AlignVCenter
                     opacity: selected ? 1 : 0.2
@@ -529,9 +526,9 @@ id: root
 
                     visible: !isTextInput
                     text: settingName + ": "
-                    color: theme.text
+                    color: settingsTextColor
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(20)
+                    font.pixelSize: vpx(22)
                     verticalAlignment: Text.AlignVCenter
                     opacity: selected ? 1 : 0.2
 
@@ -546,9 +543,9 @@ id: root
 
                     visible: !isTextInput
                     text: settingList[savedIndex]
-                    color: theme.text
+                    color: settingsTextColor
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(20)
+                    font.pixelSize: vpx(22)
                     verticalAlignment: Text.AlignVCenter
                     opacity: selected ? 1 : 0.2
 
@@ -564,9 +561,9 @@ id: root
 
                     visible: isTextInput
                     text: settingName + ":"
-                    color: theme.text
+                    color: settingsTextColor
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(20)
+                    font.pixelSize: vpx(22)
                     verticalAlignment: Text.AlignVCenter
                     opacity: selected ? 1 : 0.2
 
@@ -605,12 +602,12 @@ id: root
                         anchors { fill: parent; margins: vpx(8) }
                         // Seed initial text from persistent storage
                         text: api.memory.has(settingName) ? api.memory.get(settingName) : ""
-                        color: theme.text
+                        color: settingsTextColor
                         font.family: subtitleFont.name
-                        font.pixelSize: vpx(16)
+                        font.pixelSize: vpx(18)
                         clip: true
                         selectionColor: theme.accent
-                        selectedTextColor: theme.text
+                        selectedTextColor: settingsTextColor
                         opacity: settingRow.selected ? 1 : 0.2
                         verticalAlignment: Text.AlignVCenter
 
@@ -656,9 +653,9 @@ id: root
 
                     visible: itemNote !== ""
                     text: itemNote
-                    color: theme.text
+                    color: settingsTextColor
                     font.family: bodyFont.name
-                    font.pixelSize: vpx(13)
+                    font.pixelSize: vpx(15)
                     font.italic: true
                     opacity: selected ? 0.6 : 0.15
 

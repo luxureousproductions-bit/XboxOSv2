@@ -14,17 +14,27 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import QtQuick 2.0
-import QtGraphicalEffects 1.0
+import QtQuick 2.15
+import QtGraphicalEffects 1.15
 
 Item {
 id: root
+
+    function mapLayoutImage(layoutName) {
+        if (layoutName === "Cyan") return "Turquoise";
+        if (layoutName === "Crimson") return "Dark Red";
+        if (layoutName === "Lime") return "Light Green";
+        if (layoutName === "Gold") return "Yellow";
+        if (layoutName === "Violet") return "Purple";
+        if (layoutName === "Teal") return "Stone";
+        return layoutName;
+    }
 
     Image {
     id: border
 
         anchors.fill: parent
-        source: "../assets/images/" + settings.ColorLayout + ".png"
+        source: "../assets/images/" + mapLayoutImage(settings.ColorLayout) + ".png"
 		asynchronous: true
         visible: false
         

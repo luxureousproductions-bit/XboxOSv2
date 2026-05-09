@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import QtQuick 2.0
-import QtGraphicalEffects 1.0
-import QtMultimedia 5.9
+import QtQuick 2.15
+import QtGraphicalEffects 1.15
+import QtMultimedia 5.15
 
 Item {
 id: root
@@ -27,6 +27,15 @@ id: root
     property string mediaItem: ""
     property bool selected
     property bool isVideo: mediaItem.includes(".mp4") || mediaItem.includes(".webm")
+    function mapLayoutImage(layoutName) {
+        if (layoutName === "Cyan") return "Turquoise";
+        if (layoutName === "Crimson") return "Dark Red";
+        if (layoutName === "Lime") return "Light Green";
+        if (layoutName === "Gold") return "Yellow";
+        if (layoutName === "Violet") return "Purple";
+        if (layoutName === "Teal") return "Stone";
+        return layoutName;
+    }
 
     scale: selected ? 1.05 : 1
     Behavior on scale { NumberAnimation { duration: 100 } }
@@ -49,7 +58,7 @@ id: root
     id: border
 
         anchors.fill: parent
-        source: "../assets/images/" + settings.ColorLayout + ".png"
+        source: "../assets/images/" + mapLayoutImage(settings.ColorLayout) + ".png"
         visible: selected
         asynchronous: true
 
@@ -116,7 +125,7 @@ id: root
         id: iconFill
 
             anchors.fill: parent
-            source: "../assets/images/" + settings.ColorLayout + ".png"
+            source: "../assets/images/" + mapLayoutImage(settings.ColorLayout) + ".png"
             fillMode: Image.PreserveAspectCrop
             visible: false
             asynchronous: true
