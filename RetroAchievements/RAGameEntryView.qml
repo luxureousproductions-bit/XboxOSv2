@@ -133,7 +133,7 @@ id: root
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text:  currentGame ? currentGame.collections.get(0).name : ""
+                text:  currentGame ? currentGame.collections.get(0).shortname : ""
                 color: theme.text
                 font.family:    bodyFont.name
                 font.pixelSize: vpx(14)
