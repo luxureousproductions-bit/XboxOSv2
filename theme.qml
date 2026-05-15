@@ -375,18 +375,24 @@ id: root
 
     function gameDetails(game) {
         sfxAccept.play();
-        // As long as there is a state history, save the last game
-        if (lastState.length != 0)
-            lastGame.push(currentGame);
-
-        // Push the new game
-        if (game !== null)
-            currentGame = game;
-
-        // Save the state before pushing the new one
-        lastState.push(state);
-        root.state = "gameviewscreen";
+        if (state === "gameviewscreen") {
+            // Already in GameView — swap the game without touching the stack.
+            // This means Back will return to wherever the user came from
+            // (platform list, Showcase, etc.) no matter how many "More by"
+            // games they browse through.
+            if (game !== null)
+                currentGame = game;
+        } else {
+            // Entering GameView from outside — push as normal so Back works.
+            if (lastState.length !== 0)
+                lastGame.push(currentGame);
+            if (game !== null)
+                currentGame = game;
+            lastState.push(state);
+            root.state = "gameviewscreen";
+        }
     }
+
 
     function settingsScreen() {
         sfxAccept.play();
@@ -394,26 +400,45 @@ id: root
         root.state = "settingsscreen";
     }
 
+    // ── RA screen cluster ────────────────────────────────────────────────
+    // achievementsscreen, gameachievementsscreen, and raentryscreen form a
+    // self-contained cluster.  Navigation *within* the cluster swaps the
+    // current state instead of pushing, so a single Back press always
+    // returns to wherever the user came from (e.g. GameView or Showcase).
+    // Only the very first entry into the cluster from outside pushes lastState.
+
+    readonly property var raScreenSet: [
+        "achievementsscreen",
+        "gameachievementsscreen",
+        "raentryscreen"
+    ]
+
+    function isRaScreen(s) {
+        return raScreenSet.indexOf(s) !== -1;
+    }
+
     function achievementsScreen() {
         sfxAccept.play();
-        lastState.push(state);
+        if (!isRaScreen(state))
+            lastState.push(state);
         root.state = "achievementsscreen";
     }
 
     function gameAchievementsScreen() {
-        lastState.push(state);
+        if (!isRaScreen(state))
+            lastState.push(state);
         root.state = "gameachievementsscreen";
     }
 
-    // Navigate to GameAchievementsView without pushing "raentryscreen" onto
-    // lastState.  Called by RAGameEntryView when a game is found so that pressing
-    // Back in GameAchievementsView returns directly to GameView.
+    // Called by RAGameEntryView on a successful lookup — replaces the entry
+    // screen itself so Back skips straight back to the caller (GameView).
     function gameAchievementsScreenFromEntry() {
         root.state = "gameachievementsscreen";
     }
 
     function raEntryScreen() {
-        lastState.push(state);
+        if (!isRaScreen(state))
+            lastState.push(state);
         root.state = "raentryscreen";
     }
 
