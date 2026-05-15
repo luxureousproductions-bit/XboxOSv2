@@ -640,10 +640,11 @@ id: root
 
     ListModel {
     id: localHelpModel
-        ListElement { name: "Back";     button: "cancel"  }
-        ListElement { name: "Refresh";  button: "details" }
-        ListElement { name: "Overview"; button: "filters" }
-        ListElement { name: "Sort";     button: "y"       }
+        ListElement { name: "Back";     button: "cancel"   }
+        ListElement { name: "Refresh";  button: "details"  }
+        ListElement { name: "Filter";   button: "prevPage" }
+        ListElement { name: "Filter";   button: "nextPage" }
+        ListElement { name: "Sort";     button: "filters"  }
     }
 
     // ── Key handling ─────────────────────────────────────────────────────
@@ -671,6 +672,7 @@ id: root
         currentIndex = 0;
     }
 
+    // Up/Down — scroll achievement list
     Keys.onUpPressed: {
         event.accepted = true;
         sfxNav.play();
@@ -682,40 +684,57 @@ id: root
         if (currentIndex < root.displayList.length - 1) currentIndex++;
     }
 
+    // D-pad Left/Right — cycle filter tabs
+    Keys.onLeftPressed: {
+        event.accepted = true;
+        sfxNav.play();
+        cycleFilterBack();
+        currentIndex = 0;
+    }
+    Keys.onRightPressed: {
+        event.accepted = true;
+        sfxNav.play();
+        cycleFilterForward();
+        currentIndex = 0;
+    }
+
     Keys.onPressed: {
-        // Cancel → back
+        // B — back to games list
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
             previousScreen();
         }
-        // Filters (L2/ZL) → open RA overview
+        // LB — cycle filter backward
+        if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {
+            event.accepted = true;
+            sfxNav.play();
+            cycleFilterBack();
+            currentIndex = 0;
+        }
+        // RB — cycle filter forward
+        if (api.keys.isNextPage(event) && !event.isAutoRepeat) {
+            event.accepted = true;
+            sfxNav.play();
+            cycleFilterForward();
+            currentIndex = 0;
+        }
+        // Y / Filters — cycle sort mode
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            achievementsScreen();
+            sfxNav.play();
+            cycleSort();
+            currentIndex = 0;
         }
-        // Details (select/back) → refresh
+        // X / Details — refresh current game
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
             if (cheevosData.currentGameDetails.Title !== "")
                 cheevosData.loadGameAchievements(cheevosData.currentGameID);
         }
-        // L1 — cycle filter backward
-        if (event.key === Qt.Key_PageUp && !event.isAutoRepeat) {
+        // A — back to RA overview
+        if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxNav.play();
-            cycleFilterBack();
-        }
-        // R1 — cycle filter forward
-        if (event.key === Qt.Key_PageDown && !event.isAutoRepeat) {
-            event.accepted = true;
-            sfxNav.play();
-            cycleFilterForward();
-        }
-        // Y button — cycle sort mode
-        if (event.key === Qt.Key_Y || event.key === 1048579) {
-            event.accepted = true;
-            sfxNav.play();
-            cycleSort();
+            achievementsScreen();
         }
     }
 }
