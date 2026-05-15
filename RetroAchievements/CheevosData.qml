@@ -47,6 +47,10 @@ id: root
     property bool   lookupInProgress: false
     property string lookupStatusMsg:  ""
 
+    // Guard so loadUserProfile fires only once per session, even when
+    // entering RA from GameView before Overview has ever been opened.
+    property bool profileLoaded: false
+
     // ── Pegasus shortName → RA console ID ────────────────────────────────
     readonly property var consoleMappings: ({
         // Nintendo handhelds
@@ -242,6 +246,7 @@ id: root
     // ── API calls ────────────────────────────────────────────────────────
 
     function loadUserProfile() {
+        profileLoaded = true;
         raRequest(
             "GetUserSummary",
             "u=" + encodeURIComponent(raUserName) + "&g=0&a=0",
@@ -444,6 +449,12 @@ id: root
             pendingGameID   = 0;
             return;
         }
+
+        // Profile not yet loaded (user entered RA via GameView, bypassing Overview).
+        // Fire it now so points/rank/avatar are ready by the time achievements load.
+        if (!profileLoaded)
+            loadUserProfile();
+
 
         var consoleID = consoleMappings[shortName.toLowerCase()] || 0;
 
