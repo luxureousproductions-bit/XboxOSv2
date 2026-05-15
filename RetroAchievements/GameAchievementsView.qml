@@ -640,11 +640,10 @@ id: root
 
     ListModel {
     id: localHelpModel
-        ListElement { name: "Back";     button: "cancel"   }
-        ListElement { name: "Refresh";  button: "details"  }
-        ListElement { name: "Filter";   button: "prevPage" }
-        ListElement { name: "Filter";   button: "nextPage" }
-        ListElement { name: "Sort";     button: "filters"  }
+        ListElement { name: "Overview";  button: "accept"  }
+        ListElement { name: "Refresh";   button: "details" }
+        ListElement { name: "Sort";      button: "filters" }
+        ListElement { name: "Back";      button: "cancel"  }
     }
 
     // ── Key handling ─────────────────────────────────────────────────────
