@@ -109,12 +109,10 @@ Row {
         font.bold: true
 
         // Direct binding — re-evaluates instantly whenever ClockFormat changes
-        text: Qt.formatTime(new Date(),
-                            settings.ClockFormat === "24hr" ? "HH:mm" : "h:mm AP")
+        text: Qt.formatTime(new Date(), "h:mm AP")
 
         function refresh() {
-            text = Qt.formatTime(new Date(),
-                                 settings.ClockFormat === "24hr" ? "HH:mm" : "h:mm AP");
+            text = Qt.formatTime(new Date(), "h:mm AP");
         }
     }
 
