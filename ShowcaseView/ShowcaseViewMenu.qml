@@ -391,6 +391,7 @@ id: root
        Text {
         id: sysTime
 
+            visible: settings.ShowClock !== "No"
             // Direct binding — updates instantly when Show Clock setting changes
             text: Qt.formatTime(new Date(), "h:mm AP")
 
@@ -430,8 +431,8 @@ id: root
                 right: sysTime.left; rightMargin: vpx(10)
                 top: parent.top; topMargin: vpx(12)
             }
-            // Hide when no battery is present (batteryPercent is NaN on desktop/no-battery systems)
-            visible: batteryAvailable
+            // Hide when no battery is present or setting is disabled
+            visible: settings.ShowBattery !== "No" && batteryAvailable
 
             // Lightning bolt shown while charging
             Text {
@@ -464,6 +465,7 @@ id: root
 
             width: vpx(26)
             height: vpx(20)
+            visible: settings.ShowWifi !== "No"
             anchors {
                 right: batteryDisplay.left; rightMargin: vpx(8)
                 top: parent.top; topMargin: vpx(14)
