@@ -391,13 +391,11 @@ id: root
        Text {
         id: sysTime
 
-            // Direct binding — updates instantly when ClockFormat setting changes
-            text: Qt.formatTime(new Date(),
-                                settings.ClockFormat === "24hr" ? "HH:mm" : "h:mm AP")
+            // Direct binding — updates instantly when Show Clock setting changes
+            text: Qt.formatTime(new Date(), "h:mm AP")
 
             function set() {
-                sysTime.text = Qt.formatTime(new Date(),
-                                             settings.ClockFormat === "24hr" ? "HH:mm" : "h:mm AP");
+                sysTime.text = Qt.formatTime(new Date(), "h:mm AP");
             }
 
             Timer {
