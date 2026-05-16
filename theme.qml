@@ -95,8 +95,7 @@ id: root
             AllowRandomVideoAudio:         api.memory.has("Play random video audio") ? api.memory.get("Play random video audio") : "No",
             ShowWifi:                      api.memory.has("Show WiFi Indicator")     ? api.memory.get("Show WiFi Indicator")     : "Yes",
             ShowBattery:                   api.memory.has("Show Battery Percentage") ? api.memory.get("Show Battery Percentage") : "Yes",
-            ShowClock:                     api.memory.has("Show Clock")              ? api.memory.get("Show Clock")              : "Yes",
-            ClockFormat:                   api.memory.has("Clock Format")            ? api.memory.get("Clock Format")            : "12hr"
+            ShowClock:                     api.memory.has("Show Clock")              ? api.memory.get("Show Clock")              : "Yes"
         }
     }
 
