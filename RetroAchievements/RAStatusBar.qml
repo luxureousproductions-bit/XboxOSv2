@@ -108,11 +108,14 @@ Row {
         font.pixelSize: vpx(22)
         font.bold: true
 
+        // Direct binding — re-evaluates instantly whenever ClockFormat changes
+        text: Qt.formatTime(new Date(),
+                            settings.ClockFormat === "24hr" ? "HH:mm" : "h:mm AP")
+
         function refresh() {
-            var fmt = (settings.ClockFormat === "24hr") ? "HH:mm" : "h:mm AP";
-            clockText.text = Qt.formatTime(new Date(), fmt);
+            text = Qt.formatTime(new Date(),
+                                 settings.ClockFormat === "24hr" ? "HH:mm" : "h:mm AP");
         }
-        Component.onCompleted: refresh()
     }
 
     Timer {
