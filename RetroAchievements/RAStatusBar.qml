@@ -1,8 +1,7 @@
 // XboxOSv2 – RAStatusBar.qml
-// Shared status bar: clock + battery + (optional) wifi indicator.
-// Drop this anywhere in an Item/FocusScope with a known right anchor.
-// Usage:
-//   RAStatusBar { anchors { right: parent.right; verticalCenter: parent.verticalCenter } }
+// Shared status bar: clock + battery + wifi indicator.
+// All three are individually toggled by Settings → General.
+// Clock respects the "Clock Format" setting (12hr / 24hr).
 
 import QtQuick 2.15
 
@@ -11,15 +10,17 @@ Row {
 
     spacing: vpx(14)
 
-    // ── Optional wifi dot (set showWifi: true to enable) ─────────────────
+    // showWifi controls whether the wifi connectivity check runs at all.
+    // Even when true, the indicator is hidden if the setting is "No".
     property bool showWifi: false
     property bool _online:  false
 
+    // ── Wifi connectivity check ───────────────────────────────────────────
     Timer {
         id: wifiTimer
-        interval:        30000
-        repeat:          true
-        running:         root.showWifi
+        interval:         30000
+        repeat:           true
+        running:          root.showWifi
         triggeredOnStart: root.showWifi
         onTriggered: {
             var xhr = new XMLHttpRequest();
@@ -34,27 +35,28 @@ Row {
         }
     }
 
+    // ── Wifi indicator ────────────────────────────────────────────────────
     Canvas {
         id: wifiCanvas
         width:  vpx(26)
         height: vpx(20)
-        visible: root.showWifi
+        visible: root.showWifi && (settings.ShowWifi !== "No")
         anchors.verticalCenter: parent.verticalCenter
 
         onPaint: {
-            var ctx      = getContext("2d");
+            var ctx    = getContext("2d");
             ctx.reset();
-            var cx    = width / 2;
-            var cy    = height - vpx(1);
+            var cx     = width / 2;
+            var cy     = height - vpx(1);
             var outerR = cy - vpx(2);
-            var sa    = Math.PI * 1.25;
-            var ea    = Math.PI * 1.75;
-            var alpha = root._online ? 0.9 : 0.3;
-            ctx.strokeStyle  = "white";
-            ctx.lineCap      = "round";
-            ctx.globalAlpha  = alpha;
-            ctx.lineWidth    = vpx(2);
-            ctx.beginPath(); ctx.arc(cx, cy, outerR,       sa, ea, false); ctx.stroke();
+            var sa     = Math.PI * 1.25;
+            var ea     = Math.PI * 1.75;
+            var alpha  = root._online ? 0.9 : 0.3;
+            ctx.strokeStyle = "white";
+            ctx.lineCap     = "round";
+            ctx.globalAlpha = alpha;
+            ctx.lineWidth   = vpx(2);
+            ctx.beginPath(); ctx.arc(cx, cy, outerR,        sa, ea, false); ctx.stroke();
             ctx.beginPath(); ctx.arc(cx, cy, outerR * 0.64, sa, ea, false); ctx.stroke();
             ctx.beginPath(); ctx.arc(cx, cy, outerR * 0.31, sa, ea, false); ctx.stroke();
             ctx.fillStyle = "white";
@@ -71,7 +73,9 @@ Row {
     Row {
         spacing: vpx(4)
         anchors.verticalCenter: parent.verticalCenter
-        visible: !isNaN(api.device.batteryPercent) && api.device.batteryPercent >= 0
+        visible: settings.ShowBattery !== "No"
+                 && !isNaN(api.device.batteryPercent)
+                 && api.device.batteryPercent >= 0
 
         Text {
             text: "⚡"
@@ -93,16 +97,23 @@ Row {
         }
     }
 
-    // ── Clock (one timer, shared) ─────────────────────────────────────────
+    // ── Clock ─────────────────────────────────────────────────────────────
     Text {
         id: clockText
-        function refresh() { clockText.text = Qt.formatTime(new Date(), "h:mm AP") }
+
+        visible: settings.ShowClock !== "No"
+        anchors.verticalCenter: parent.verticalCenter
         color: theme.text
         font.family: subtitleFont.name
         font.pixelSize: vpx(22)
         font.bold: true
-        anchors.verticalCenter: parent.verticalCenter
-        Component.onCompleted: refresh()
+
+        // Direct binding — re-evaluates instantly whenever ClockFormat changes
+        text: Qt.formatTime(new Date(), "h:mm AP")
+
+        function refresh() {
+            text = Qt.formatTime(new Date(), "h:mm AP");
+        }
     }
 
     Timer {

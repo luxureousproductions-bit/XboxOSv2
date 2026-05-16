@@ -92,10 +92,13 @@ id: root
             OmitApplicationFromShowcase:   api.memory.has("Omit genre: Application from Showcase") ? api.memory.get("Omit genre: Application from Showcase") : "No",
             OmitEmulatorFromShowcase:      api.memory.has("Omit genre: Emulator from Showcase") ? api.memory.get("Omit genre: Emulator from Showcase") : "No",
             MoreByGenreDisplay:            api.memory.has("More by Genre Display") ? api.memory.get("More by Genre Display") : "Full",
-            AllowRandomVideoAudio:         api.memory.has("Play random video audio") ? api.memory.get("Play random video audio") : "No"
-            
+            AllowRandomVideoAudio:         api.memory.has("Play random video audio") ? api.memory.get("Play random video audio") : "No",
+            ShowWifi:                      api.memory.has("Show WiFi Indicator")     ? api.memory.get("Show WiFi Indicator")     : "Yes",
+            ShowBattery:                   api.memory.has("Show Battery Percentage") ? api.memory.get("Show Battery Percentage") : "Yes",
+            ShowClock:                     api.memory.has("Show Clock")              ? api.memory.get("Show Clock")              : "Yes"
         }
     }
+
 
     // Collections
     property int currentCollectionIndex: 0
@@ -214,101 +217,106 @@ id: root
     }
 
     // Theme settings
-	    property var theme: {
-			var background = 		"#000000";
-            var text = 		        "#ebebeb";
-			var gradientstart = 	"#001f1f1f";
-			var gradientend = 		"#FF000000";
-		    var accent = "#288928";
-			if (settings.ColorLayout === "Dark Green") {
-				accent = "#288928";
-			} else if (settings.ColorLayout === "Light Green") {
-				accent = "#65b032";
-			} 
-            else if (settings.ColorLayout === "Turquoise") {
-				accent = "#288e80";
-			}
-            else if (settings.ColorLayout === "Dark Red") {
-				accent = "#ab283b";
-			}
-            else if (settings.ColorLayout === "Light Red") {
-				accent = "#e52939";
-			}
-            else if (settings.ColorLayout === "Dark Pink") {
-				accent = "#c52884";
-			}
-            else if (settings.ColorLayout === "Light Pink") {
-				accent = "#ee6694";
-			}
-            else if (settings.ColorLayout === "Dark Blue") {
-				accent = "#30519c";
-			}
-            else if (settings.ColorLayout === "Light Blue") {
-				accent = "#288dcf";
-			}
-            else if (settings.ColorLayout === "Orange") {
-				accent = "#ed5b28";
-			}
-            else if (settings.ColorLayout === "Yellow") {
-				accent = "#ed9728";
-			}
-            else if (settings.ColorLayout === "Magenta") {
-				accent = "#b857c6";
-			}
-            else if (settings.ColorLayout === "Purple") {
-				accent = "#825fb1";
-			}
-            else if (settings.ColorLayout === "Dark Gray") {
-				accent = "#5e5c5d";
-			}
-            else if (settings.ColorLayout === "Light Gray") {
-				accent = "#818181";
-			}
-            else if (settings.ColorLayout === "Dark Gray") {
-				accent = "#5e5c5d";
-			}
-            else if (settings.ColorLayout === "Steel") {
-				accent = "#768294";
-			}
-            else if (settings.ColorLayout === "Stone") {
-				accent = "#658780";
-			}
-            else if (settings.ColorLayout === "Dark Brown") {
-				accent = "#806044";
-			}
-            else if (settings.ColorLayout === "Light Brown") {
-				accent = "#7e715c";
-			}
-            else if (settings.ColorLayout === "Cyan") {
-				accent = "#19c6d1";
-			}
-            else if (settings.ColorLayout === "Crimson") {
-				accent = "#c6283c";
-			}
-            else if (settings.ColorLayout === "Lime") {
-				accent = "#86c440";
-			}
-            else if (settings.ColorLayout === "Gold") {
-				accent = "#c8961a";
-			}
-            else if (settings.ColorLayout === "Violet") {
-				accent = "#7d4bc4";
-			}
-            else if (settings.ColorLayout === "Teal") {
-				accent = "#3f8f86";
-			}
-			return {
-				main:           background,
-				secondary:      "#303030",
-				accent:         accent,
-				highlight:      accent,
-				text:           text,
-				button:         accent,
-				gradientstart:  gradientstart,
-				gradientend:    gradientend
-			};
-		
+    property var theme: {
+        var background    = "#000000";
+        var text          = "#ebebeb";
+        var gradientstart = "#001f1f1f";
+        var gradientend   = "#FF000000";
+        var accent        = "#288928";   // default: Dark Green
+
+        // ── Full color palette ───────────────────────────────────────────
+        switch (settings.ColorLayout) {
+            // Greens
+            case "Dark Green":    accent = "#288928"; break;
+            case "Light Green":   accent = "#65b032"; break;
+            case "Lime":          accent = "#86c440"; break;
+            case "Mint":          accent = "#3eb489"; break;
+            case "Sage":          accent = "#7d9e7a"; break;
+            case "Forest Green":  accent = "#2d6a2d"; break;
+            case "Olive":         accent = "#6b7a2a"; break;
+            // Teals / Cyans
+            case "Turquoise":     accent = "#288e80"; break;
+            case "Teal":          accent = "#3f8f86"; break;
+            case "Dark Teal":     accent = "#1a5f5a"; break;
+            case "Cyan":          accent = "#19c6d1"; break;
+            case "Arctic":        accent = "#5bc8d4"; break;
+            case "Seafoam":       accent = "#3cb4a0"; break;
+            // Blues
+            case "Dark Blue":     accent = "#30519c"; break;
+            case "Light Blue":    accent = "#288dcf"; break;
+            case "Navy Blue":     accent = "#1a2f6e"; break;
+            case "Royal Blue":    accent = "#2952c4"; break;
+            case "Sky Blue":      accent = "#4ab0e0"; break;
+            case "Ice Blue":      accent = "#7ac4df"; break;
+            case "Cobalt":        accent = "#0047ab"; break;
+            case "Sapphire":      accent = "#1a4fa0"; break;
+            // Reds
+            case "Dark Red":      accent = "#ab283b"; break;
+            case "Light Red":     accent = "#e52939"; break;
+            case "Crimson":       accent = "#c6283c"; break;
+            case "Burgundy":      accent = "#7a1c2e"; break;
+            case "Maroon":        accent = "#7c2020"; break;
+            case "Brick Red":     accent = "#b53a2f"; break;
+            case "Ruby":          accent = "#c0192c"; break;
+            // Pinks
+            case "Dark Pink":     accent = "#c52884"; break;
+            case "Light Pink":    accent = "#ee6694"; break;
+            case "Hot Pink":      accent = "#e0287a"; break;
+            case "Rose":          accent = "#c2466e"; break;
+            case "Coral":         accent = "#e8583a"; break;
+            case "Salmon":        accent = "#e07060"; break;
+            // Purples
+            case "Magenta":       accent = "#b857c6"; break;
+            case "Purple":        accent = "#825fb1"; break;
+            case "Dark Purple":   accent = "#5a2d82"; break;
+            case "Violet":        accent = "#7d4bc4"; break;
+            case "Lavender":      accent = "#9b7fd4"; break;
+            case "Indigo":        accent = "#4b3a9a"; break;
+            // Oranges / Yellows
+            case "Orange":        accent = "#ed5b28"; break;
+            case "Dark Orange":   accent = "#c44a18"; break;
+            case "Amber":         accent = "#e09820"; break;
+            case "Yellow":        accent = "#ed9728"; break;
+            case "Gold":          accent = "#c8961a"; break;
+            case "Dark Gold":     accent = "#a07010"; break;
+            case "Bronze":        accent = "#a0722a"; break;
+            // Browns
+            case "Dark Brown":    accent = "#806044"; break;
+            case "Light Brown":   accent = "#7e715c"; break;
+            case "Copper":        accent = "#b5602a"; break;
+            case "Rust":          accent = "#b04020"; break;
+            case "Sienna":        accent = "#a0522d"; break;
+            case "Tan":           accent = "#c8a878"; break;
+            // Grays / Neutrals
+            case "Dark Gray":     accent = "#5e5c5d"; break;
+            case "Mid Gray":      accent = "#6e6e6e"; break;
+            case "Light Gray":    accent = "#818181"; break;
+            case "Silver":        accent = "#a8a8a8"; break;
+            case "Steel":         accent = "#768294"; break;
+            case "Slate":         accent = "#5a6478"; break;
+            case "Stone":         accent = "#658780"; break;
+            case "Charcoal":      accent = "#454545"; break;
+            case "Gunmetal":      accent = "#4a5060"; break;
+            // Gems / Specials
+            case "Emerald":       accent = "#1a7a4a"; break;
+            case "Jade":          accent = "#2a8a5a"; break;
+            case "Onyx":          accent = "#353535"; break;
+            case "White":         accent = "#e8e8e8"; break;
+            default:              accent = "#288928"; break;
+        }
+
+        return {
+            main:          background,
+            secondary:     "#303030",
+            accent:        accent,
+            highlight:     accent,
+            text:          text,
+            button:        accent,
+            gradientstart: gradientstart,
+            gradientend:   gradientend
         };
+    }
+
     
 
     property real globalMargin: vpx(30)
@@ -375,24 +383,18 @@ id: root
 
     function gameDetails(game) {
         sfxAccept.play();
-        if (state === "gameviewscreen") {
-            // Already in GameView — swap the game without touching the stack.
-            // This means Back will return to wherever the user came from
-            // (platform list, Showcase, etc.) no matter how many "More by"
-            // games they browse through.
-            if (game !== null)
-                currentGame = game;
-        } else {
-            // Entering GameView from outside — push as normal so Back works.
-            if (lastState.length !== 0)
-                lastGame.push(currentGame);
-            if (game !== null)
-                currentGame = game;
-            lastState.push(state);
-            root.state = "gameviewscreen";
-        }
-    }
+        // As long as there is a state history, save the last game
+        if (lastState.length != 0)
+            lastGame.push(currentGame);
 
+        // Push the new game
+        if (game !== null)
+            currentGame = game;
+
+        // Save the state before pushing the new one
+        lastState.push(state);
+        root.state = "gameviewscreen";
+    }
 
     function settingsScreen() {
         sfxAccept.play();
@@ -400,45 +402,26 @@ id: root
         root.state = "settingsscreen";
     }
 
-    // ── RA screen cluster ────────────────────────────────────────────────
-    // achievementsscreen, gameachievementsscreen, and raentryscreen form a
-    // self-contained cluster.  Navigation *within* the cluster swaps the
-    // current state instead of pushing, so a single Back press always
-    // returns to wherever the user came from (e.g. GameView or Showcase).
-    // Only the very first entry into the cluster from outside pushes lastState.
-
-    readonly property var raScreenSet: [
-        "achievementsscreen",
-        "gameachievementsscreen",
-        "raentryscreen"
-    ]
-
-    function isRaScreen(s) {
-        return raScreenSet.indexOf(s) !== -1;
-    }
-
     function achievementsScreen() {
         sfxAccept.play();
-        if (!isRaScreen(state))
-            lastState.push(state);
+        lastState.push(state);
         root.state = "achievementsscreen";
     }
 
     function gameAchievementsScreen() {
-        if (!isRaScreen(state))
-            lastState.push(state);
+        lastState.push(state);
         root.state = "gameachievementsscreen";
     }
 
-    // Called by RAGameEntryView on a successful lookup — replaces the entry
-    // screen itself so Back skips straight back to the caller (GameView).
+    // Navigate to GameAchievementsView without pushing "raentryscreen" onto
+    // lastState.  Called by RAGameEntryView when a game is found so that pressing
+    // Back in GameAchievementsView returns directly to GameView.
     function gameAchievementsScreenFromEntry() {
         root.state = "gameachievementsscreen";
     }
 
     function raEntryScreen() {
-        if (!isRaScreen(state))
-            lastState.push(state);
+        lastState.push(state);
         root.state = "raentryscreen";
     }
 

@@ -61,7 +61,7 @@ id: root
         }
         ListElement {
             settingName: "Color Layout"
-            setting: "Dark Green,Light Green,Turquoise,Dark Red,Light Red,Dark Pink,Light Pink,Dark Blue,Light Blue,Orange,Yellow,Magenta,Purple,Dark Gray,Light Gray,Steel,Stone,Dark Brown,Light Brown,Cyan,Crimson,Lime,Gold,Violet,Teal"
+            setting: "Dark Green,Light Green,Turquoise,Dark Red,Light Red,Dark Pink,Light Pink,Dark Blue,Light Blue,Navy Blue,Royal Blue,Sky Blue,Ice Blue,Cobalt,Orange,Dark Orange,Amber,Yellow,Gold,Dark Gold,Bronze,Magenta,Hot Pink,Rose,Coral,Salmon,Purple,Dark Purple,Violet,Lavender,Indigo,Maroon,Crimson,Burgundy,Brick Red,Lime,Mint,Sage,Forest Green,Olive,Dark Gray,Mid Gray,Light Gray,Silver,Steel,Slate,Stone,Charcoal,Gunmetal,Tan,Dark Brown,Light Brown,Copper,Rust,Sienna,Cyan,Teal,Dark Teal,Arctic,Seafoam,Ruby,Sapphire,Emerald,Jade,Onyx,White"
         }
     }
 
@@ -83,6 +83,18 @@ id: root
             settingName: "Omit genre: Emulator from Showcase"
             setting: "No,Yes"
             note: "(Reload Required)"
+        }
+        ListElement {
+            settingName: "Show WiFi Indicator"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Show Battery Percentage"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Show Clock"
+            setting: "Yes,No"
         }
         ListElement {
             settingName: "Wide - Ratio"
