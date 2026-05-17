@@ -92,7 +92,7 @@ id: root
             OmitApplicationFromShowcase:   api.memory.has("Omit genre: Application from Showcase") ? api.memory.get("Omit genre: Application from Showcase") : "No",
             OmitEmulatorFromShowcase:      api.memory.has("Omit genre: Emulator from Showcase") ? api.memory.get("Omit genre: Emulator from Showcase") : "No",
             MoreByGenreDisplay:            api.memory.has("More by Genre Display") ? api.memory.get("More by Genre Display") : "Full",
-            AllowRandomVideoAudio:         api.memory.has("Play random video audio") ? api.memory.get("Play random video audio") : "No",
+            AllowDiscoverVideoAudio:         api.memory.has("Play discover video audio") ? api.memory.get("Play discover video audio") : "No",
             ShowWifi:                      api.memory.has("Show WiFi Indicator")     ? api.memory.get("Show WiFi Indicator")     : "Yes",
             ShowBattery:                   api.memory.has("Show Battery Percentage") ? api.memory.get("Show Battery Percentage") : "Yes",
             ShowClock:                     api.memory.has("Show Clock")              ? api.memory.get("Show Clock")              : "Yes"
@@ -353,7 +353,7 @@ id: root
             name: "raentryscreen";
         },
         State {
-            name: "randomscreen";
+            name: "discoverscreen";
         }
     ]
 
@@ -425,16 +425,16 @@ id: root
         root.state = "raentryscreen";
     }
 
-    function randomScreen() {
+    function discoverScreen() {
         sfxAccept.play();
         lastState.push(state);
-        root.state = "randomscreen";
+        root.state = "discoverscreen";
     }
 
-    // Navigate to game details without pushing "randomscreen" onto lastState.
-    // Called by RandomView so that pressing Back in Game Details returns to
-    // Showcase (or wherever the user came from) rather than back to Random.
-    function gameDetailsFromRandom(game) {
+    // Navigate to game details without pushing "discoverscreen" onto lastState.
+    // Called by DiscoverView so that pressing Back in Game Details returns to
+    // Showcase (or wherever the user came from) rather than back to Discover.
+    function gameDetailsFromDiscover(game) {
         sfxAccept.play();
         if (lastState.length != 0)
             lastGame.push(currentGame);
@@ -443,9 +443,9 @@ id: root
         root.state = "gameviewscreen";
     }
 
-    // Launch a game from RandomView without pushing "randomscreen" onto
-    // lastState so that returning from the game skips the Random screen.
-    function launchGameFromRandom(game) {
+    // Launch a game from DiscoverView without pushing "discoverscreen" onto
+    // lastState so that returning from the game skips the Discover screen.
+    function launchGameFromDiscover(game) {
         if (game !== null) {
             sfxAccept.play();
             root.state = "launchgamescreen";
@@ -675,22 +675,22 @@ id: root
     }
 
     Loader {
-    id: randomviewloader
+    id: discoverviewloader
 
-        focus: (root.state === "randomscreen")
+        focus: (root.state === "discoverscreen")
         active: opacity !== 0
         opacity: focus ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
-        sourceComponent: randomview
+        sourceComponent: discoverview
         asynchronous: true
     }
 
     Component {
-    id: randomview
+    id: discoverview
 
-        RandomView { focus: true }
+        DiscoverView { focus: true }
     }
 
     

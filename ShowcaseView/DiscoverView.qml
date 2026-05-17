@@ -29,7 +29,7 @@ id: root
 
     onShowInfoChanged: {
         if (showInfo)
-            currentHelpbarModel = randomHelpModel;
+            currentHelpbarModel = discoverHelpModel;
         else
             currentHelpbarModel = null;
     }
@@ -50,8 +50,8 @@ id: root
         gameList = withVideos;
     }
 
-    // Pick a random game different from the current one
-    function randomJump() {
+    // Pick a discover game different from the current one
+    function discoverJump() {
         if (gameList.length === 0) return;
         sfxNav.play();
         if (gameList.length === 1) return;
@@ -64,7 +64,7 @@ id: root
 
     Component.onCompleted: {
         buildList();
-        // Start on a random game
+        // Start on a discover game
         if (gameList.length > 0)
             currentIndex = Math.floor(Math.random() * gameList.length);
     }
@@ -82,16 +82,16 @@ id: root
         anchors.fill: parent
         source: currentGame ? currentGame.assets.video : ""
         fillMode: VideoOutput.PreserveAspectFit
-        muted: settings.AllowRandomVideoAudio !== "Yes"
+        muted: settings.AllowDiscoverVideoAudio !== "Yes"
         autoPlay: true
 
         // Restart playback whenever the source changes
         onSourceChanged: play()
 
-        // Auto-advance to the next random game when the video finishes
+        // Auto-advance to the next discover game when the video finishes
         onStatusChanged: {
             if (status === MediaPlayer.EndOfMedia)
-                randomJump();
+                discoverJump();
         }
     }
 
@@ -185,7 +185,7 @@ id: root
     Text {
         visible: gameList.length === 0
         anchors.centerIn: parent
-        text: "No game videos found.\nAdd videos to your game library to use Random mode."
+        text: "No game videos found.\nAdd videos to your game library to use Discover mode."
         color: theme.text
         opacity: 0.7
         font.family: subtitleFont.name
@@ -197,7 +197,7 @@ id: root
 
     // Helpbar: A Launch | X Hide | Y Game Details | B Back  (RightToLeft → B rightmost, A leftmost)
     ListModel {
-    id: randomHelpModel
+    id: discoverHelpModel
 
         ListElement { name: "Back";         button: "cancel"  }
         ListElement { name: "Game Details"; button: "filters" }
@@ -207,19 +207,19 @@ id: root
 
     onActiveFocusChanged: {
         if (activeFocus)
-            currentHelpbarModel = randomHelpModel;
+            currentHelpbarModel = discoverHelpModel;
     }
 
-    // Navigation: left/right and LT/RT all jump to a random game
-    Keys.onLeftPressed:  randomJump()
-    Keys.onRightPressed: randomJump()
+    // Navigation: left/right and LT/RT all jump to a discover game
+    Keys.onLeftPressed:  discoverJump()
+    Keys.onRightPressed: discoverJump()
 
     Keys.onPressed: {
         // Accept – launch the game directly
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
             if (currentGame)
-                launchGameFromRandom(currentGame);
+                launchGameFromDiscover(currentGame);
         }
         // Cancel – return to showcase
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
@@ -235,16 +235,16 @@ id: root
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
             if (currentGame)
-                gameDetailsFromRandom(currentGame);
+                gameDetailsFromDiscover(currentGame);
         }
         // LT or RT – random jump
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            randomJump();
+            discoverJump();
         }
         if (api.keys.isNextPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            randomJump();
+            discoverJump();
         }
     }
 }
