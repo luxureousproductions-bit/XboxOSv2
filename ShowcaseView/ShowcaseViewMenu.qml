@@ -994,10 +994,10 @@ id: root
             event.accepted = true;
             refreshLists();
         }
-        // Random mode (B)
+        // Discover mode (B)
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            randomScreen();
+            discoverScreen();
         }
     }
 
@@ -1006,7 +1006,7 @@ id: root
         id: gridviewHelpModel
 
         ListElement {
-            name: "Random"
+            name: "Discover"
             button: "cancel"
         }
         ListElement {
