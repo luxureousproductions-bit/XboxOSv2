@@ -36,7 +36,7 @@ id: root
             setting: "No,Yes"
         }
         ListElement {
-            settingName: "Play random video audio"
+            settingName: "Play discover video audio"
             setting: "No,Yes"
         }
         ListElement {
