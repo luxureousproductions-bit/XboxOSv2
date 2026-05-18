@@ -733,7 +733,7 @@ id: root
         // A — back to RA overview
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            achievementsScreen();
+            achievementsScreenFromGame();
         }
     }
 }

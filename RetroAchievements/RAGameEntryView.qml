@@ -267,7 +267,9 @@ id: root
 
     function activateSelected() {
         if (buttonRow.selectedIndex === 0)
-            achievementsScreen();
+            // raEntryScreen() already pushed the origin state, so use no-push
+            // variant here — B in overview returns to GameView in one press.
+            achievementsScreenFromGame();
         else
             previousScreen();
     }

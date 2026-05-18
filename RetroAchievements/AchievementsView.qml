@@ -460,7 +460,7 @@ id: root
         if (cheevosData.raRecentGames.count === 0) return;
         var gameID = cheevosData.raRecentGames.get(gameList.currentIndex).GameID;
         cheevosData.loadGameAchievements(gameID);
-        gameAchievementsScreen();
+        gameAchievementsScreenFromOverview();
     }
 
     // ── Key handling ─────────────────────────────────────────────────────
