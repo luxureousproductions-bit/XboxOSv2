@@ -785,6 +785,10 @@ id: root
             }
             // Switch to the recommended fallback when publisher/developer list is empty
             search: publisherCollection.games.length > 0 ? publisherCollection : recommendedCollection
+            onActivate: {
+                // Replace the current game without pushing a new gameviewscreen onto lastState
+                currentGame = search.currentGame(activeIndex);
+            }
             onListHighlighted: { sfxNav.play(); content.currentIndex = list1.ObjectModel.index; }
         }
         // --- END: More by Publisher/Developer (More section only) ---
@@ -818,6 +822,10 @@ id: root
                 return "More " + mainGenre + " Games";
             }
             search: genreCollection
+            onActivate: {
+                // Replace the current game without pushing a new gameviewscreen onto lastState
+                currentGame = search.currentGame(activeIndex);
+            }
             onListHighlighted: { sfxNav.play(); content.currentIndex = list2.ObjectModel.index; }
         }
         // --- END: More by Genre (Option B: genre token controlled by setting) ---
