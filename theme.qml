@@ -383,6 +383,16 @@ id: root
 
     function gameDetails(game) {
         sfxAccept.play();
+
+        // If we're already on gameviewscreen (e.g. navigating the "More games"
+        // lists inside GameView), just swap the current game without pushing a
+        // new gameviewscreen onto lastState — that would cause stacking.
+        if (state === "gameviewscreen") {
+            if (game !== null)
+                currentGame = game;
+            return;
+        }
+
         // As long as there is a state history, save the last game
         if (lastState.length != 0)
             lastGame.push(currentGame);
@@ -408,14 +418,29 @@ id: root
         root.state = "achievementsscreen";
     }
 
+    // Navigate to RA overview without pushing onto lastState.
+    // Used when already inside RA (A from game achievements, or "View Overview"
+    // from RAGameEntryView) so B exits RA in one press.
+    function achievementsScreenFromGame() {
+        sfxAccept.play();
+        root.state = "achievementsscreen";
+    }
+
     function gameAchievementsScreen() {
         lastState.push(state);
         root.state = "gameachievementsscreen";
     }
 
-    // Navigate to GameAchievementsView without pushing "raentryscreen" onto
-    // lastState.  Called by RAGameEntryView when a game is found so that pressing
-    // Back in GameAchievementsView returns directly to GameView.
+    // Navigate to game achievements from the RA overview without pushing.
+    // Called by AchievementsView so that B always exits RA in one press
+    // regardless of whether RA was entered from GameView or Showcase.
+    function gameAchievementsScreenFromOverview() {
+        root.state = "gameachievementsscreen";
+    }
+
+    // Navigate to GameAchievementsView without pushing onto lastState.
+    // Called by RAGameEntryView when a game is found so pressing Back
+    // returns directly to wherever RA was entered from.
     function gameAchievementsScreenFromEntry() {
         root.state = "gameachievementsscreen";
     }
