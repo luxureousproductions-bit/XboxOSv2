@@ -73,6 +73,10 @@ id: root
         }
 
         focus: true
+        Keys.onUpPressed: {
+            if (currentIndex != 0) currentIndex--;
+            else header.focusNavButtons();
+        }
         
         anchors {
             top: header.bottom; topMargin: globalMargin
@@ -149,13 +153,6 @@ id: root
     }
 
     // Handle input
-    // Up
-    Keys.onUpPressed: {
-        if (softwarelist.currentIndex != 0)
-            softwarelist.currentIndex--;
-        else
-            header.focusNavButtons();
-    }
     // Down
     Keys.onDownPressed: {
         if (softwarelist.currentIndex != softwarelist.count - 1)
