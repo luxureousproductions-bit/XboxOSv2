@@ -279,6 +279,12 @@ id: root
         }
 
         Rectangle {
+            width: vpx(214); height: vpx(44); radius: vpx(22)
+            color: Qt.rgba(0, 0, 0, 0.45)
+            anchors { top: parent.top; topMargin: vpx(3); horizontalCenter: parent.horizontalCenter }
+            z: 9
+        }
+        Rectangle {
         id: homebutton
 
             width:  vpx(36); height: vpx(36); radius: height / 2
