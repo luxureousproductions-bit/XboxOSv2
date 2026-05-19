@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import QtQuick 2.0
-import QtQuick.Layouts 1.11
+import QtQuick 2.15
+import QtQuick.Layouts 1.15
 import "../Global"
 
 FocusScope {
@@ -34,9 +34,10 @@ id: root
             bottom: parent.bottom
         }
         asynchronous: true
-        source: currentGame && currentGame.assets.screenshots[0] ? currentGame.assets.screenshots[0] : ""
+        source: currentGame ? (settings.ShowcaseArt === "Screenshot" ? (currentGame.assets.screenshots[0] || "") : (currentGame.assets.background || currentGame.assets.screenshots[0] || "")) : ""
+        sourceSize: Qt.size(parent.width, parent.height)
         fillMode: Image.PreserveAspectCrop
-        smooth: true
+        smooth: false
 
         GameInfo {
         id: info
@@ -58,105 +59,8 @@ id: root
             left:   parent.left
             right:  parent.right
         }
-        height: vpx(75)
+        height: vpx(95)
     }
-
-    Item {
-    id: navButtons
-        width: parent.width
-        height: vpx(75)
-        anchors.top: parent.top
-        z: 10
-
-        Rectangle {
-        id: sl_homebutton
-            width: vpx(36); height: vpx(36); radius: height / 2
-            anchors { top: parent.top; topMargin: vpx(20); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(81) }
-            color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.2
-            onFocusChanged: sfxNav.play()
-            Keys.onDownPressed:  softwarelist.focus = true;
-            Keys.onRightPressed: sl_discoverbutton.focus = true;
-            Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; softwarelist.focus = true; }
-            }
-            MouseArea {
-                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
-                onEntered: sl_homebutton.focus = true; onExited: sl_homebutton.focus = false;
-                onClicked: showcaseScreen();
-            }
-        }
-
-        Rectangle {
-        id: sl_discoverbutton
-            width: vpx(36); height: vpx(36); radius: height / 2
-            anchors { top: parent.top; topMargin: vpx(20); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(27) }
-            color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.2
-            onFocusChanged: sfxNav.play()
-            Keys.onDownPressed:  softwarelist.focus = true;
-            Keys.onLeftPressed:  sl_homebutton.focus = true;
-            Keys.onRightPressed: sl_rabutton.focus = true;
-            Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; softwarelist.focus = true; }
-            }
-            MouseArea {
-                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
-                onEntered: sl_discoverbutton.focus = true; onExited: sl_discoverbutton.focus = false;
-                onClicked: discoverScreen();
-            }
-        }
-
-        Rectangle {
-        id: sl_rabutton
-            width: vpx(36); height: vpx(36); radius: height / 2
-            anchors { top: parent.top; topMargin: vpx(20); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(27) }
-            color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.2
-            onFocusChanged: sfxNav.play()
-            Keys.onDownPressed:  softwarelist.focus = true;
-            Keys.onLeftPressed:  sl_discoverbutton.focus = true;
-            Keys.onRightPressed: sl_settingsbutton.focus = true;
-            Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; softwarelist.focus = true; }
-            }
-            MouseArea {
-                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
-                onEntered: sl_rabutton.focus = true; onExited: sl_rabutton.focus = false;
-                onClicked: achievementsScreen();
-            }
-            Text { anchors.centerIn: parent; text: "🏆"; font.pixelSize: vpx(16); opacity: parent.focus ? 1 : 0.7 }
-        }
-
-        Rectangle {
-        id: sl_settingsbutton
-            width: vpx(36); height: vpx(36); radius: height / 2
-            anchors { top: parent.top; topMargin: vpx(20); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(81) }
-            color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.2
-            onFocusChanged: sfxNav.play()
-            Keys.onDownPressed:  softwarelist.focus = true;
-            Keys.onLeftPressed:  sl_rabutton.focus = true;
-            Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; softwarelist.focus = true; }
-            }
-            MouseArea {
-                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
-                onEntered: sl_settingsbutton.focus = true; onExited: sl_settingsbutton.focus = false;
-                onClicked: settingsScreen();
-            }
-            Image {
-                anchors { fill: parent; margins: vpx(8) }
-                source: "../assets/images/settingsicon.svg"; smooth: true; asynchronous: true
-                opacity: parent.focus ? 1 : 0.7
-            }
-        }
-    }
-
     
     // Software list
     ListView {
@@ -250,7 +154,7 @@ id: root
         if (softwarelist.currentIndex != 0)
             softwarelist.currentIndex--;
         else
-            sl_homebutton.focus = true;
+            softwarelist.currentIndex = softwarelist.count - 1
     }
     // Down
     Keys.onDownPressed: {
