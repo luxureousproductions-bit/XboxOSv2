@@ -41,6 +41,7 @@ id: root
     ListGenre       { id: listGenre2;      max: settings.ShowcaseColumns; genre: randoGenre2;    omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
 
     property var featuredCollection: listFavorites
+    property var highlightedGame: null
     property var collection1: getCollection(settings.ShowcaseCollection1, settings.ShowcaseCollection1_Thumbnail)
     property var collection2: getCollection(settings.ShowcaseCollection2, settings.ShowcaseCollection2_Thumbnail)
     property var collection3: getCollection(settings.ShowcaseCollection3, settings.ShowcaseCollection3_Thumbnail)
@@ -172,6 +173,62 @@ id: root
     }
     
     anchors.fill: parent
+
+    // Fanart / screenshot background with crossfade
+    Image {
+    id: bgImage1
+        anchors.fill: parent
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+        smooth: true
+        opacity: 0
+        z: 0
+        Behavior on opacity { PropertyAnimation { duration: 400 } }
+    }
+
+    Image {
+    id: bgImage2
+        anchors.fill: parent
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+        smooth: true
+        opacity: 0
+        z: 0
+        Behavior on opacity { PropertyAnimation { duration: 400 } }
+    }
+
+    // Dim overlay so content stays readable
+    Rectangle {
+        anchors.fill: parent
+        color: "black"
+        opacity: 0.45
+        z: 1
+    }
+
+    property bool bgToggle: false
+    property string bgSource: {
+        if (!highlightedGame) return "";
+        return highlightedGame.assets.background || highlightedGame.assets.screenshots[0] || "";
+    }
+
+    onBgSourceChanged: {
+        if (!bgSource) {
+            bgImage1.opacity = 0;
+            bgImage2.opacity = 0;
+            return;
+        }
+        if (bgToggle) {
+            bgImage1.source = bgSource;
+            bgImage1.opacity = 0.55;
+            bgImage2.opacity = 0;
+        } else {
+            bgImage2.source = bgSource;
+            bgImage2.opacity = 0.55;
+            bgImage1.opacity = 0;
+        }
+        bgToggle = !bgToggle;
+    }
+
 
     Item {
     id: ftueContainer
@@ -614,6 +671,8 @@ id: root
         ListView {
         id: featuredlist
 
+        onCurrentIndexChanged: { if (focus) highlightedGame = featuredCollection ? featuredCollection.currentGame(currentIndex) : null; }
+
             property bool selected: ListView.isCurrentItem
             focus: selected
             width: parent.width
@@ -878,6 +937,7 @@ id: root
             onActivateSelected: storedHomeSecondaryIndex = currentIndex;
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
             onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
 
         HorizontalCollection {
@@ -906,6 +966,7 @@ id: root
             onActivateSelected: storedHomeSecondaryIndex = currentIndex;
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
             onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
 
         HorizontalCollection {
@@ -934,6 +995,7 @@ id: root
             onActivateSelected: storedHomeSecondaryIndex = currentIndex;
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
             onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
 
         HorizontalCollection {
@@ -962,6 +1024,7 @@ id: root
             onActivateSelected: storedHomeSecondaryIndex = currentIndex;
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
             onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
 
         HorizontalCollection {
@@ -990,6 +1053,7 @@ id: root
             onActivateSelected: storedHomeSecondaryIndex = currentIndex;
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
             onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
 
         HorizontalCollection {
@@ -1018,6 +1082,7 @@ id: root
             onActivateSelected: storedHomeSecondaryIndex = currentIndex;
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
             onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
 
     }
