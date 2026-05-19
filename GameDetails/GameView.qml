@@ -601,17 +601,20 @@ id: root
 
         // 4 nav buttons — centered in header
         Rectangle {
-            width: vpx(214); height: vpx(44); radius: vpx(22)
-            color: Qt.rgba(0, 0, 0, 0.45)
-            anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter }
-            z: 9
-        }
-        Rectangle {
         id: gv_homebutton
             width: vpx(32); height: vpx(32); radius: height / 2
             anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(72) }
             color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.2
+            opacity: focus ? 1 : 0.6
+            layer.enabled: true
+            layer.effect: DropShadow {
+                transparentBorder: true
+                horizontalOffset: 0
+                verticalOffset: 0
+                radius: 8
+                samples: 17
+                color: "#cc000000"
+            }
 
             onFocusChanged: if (focus) sfxNav.play();
             Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
@@ -644,7 +647,16 @@ id: root
             width: vpx(32); height: vpx(32); radius: height / 2
             anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(24) }
             color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.2
+            opacity: focus ? 1 : 0.6
+            layer.enabled: true
+            layer.effect: DropShadow {
+                transparentBorder: true
+                horizontalOffset: 0
+                verticalOffset: 0
+                radius: 8
+                samples: 17
+                color: "#cc000000"
+            }
 
             onFocusChanged: if (focus) sfxNav.play();
             Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
@@ -681,7 +693,16 @@ id: root
             width: vpx(32); height: vpx(32); radius: height / 2
             anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(24) }
             color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.2
+            opacity: focus ? 1 : 0.6
+            layer.enabled: true
+            layer.effect: DropShadow {
+                transparentBorder: true
+                horizontalOffset: 0
+                verticalOffset: 0
+                radius: 8
+                samples: 17
+                color: "#cc000000"
+            }
 
             onFocusChanged: if (focus) sfxNav.play();
             Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
@@ -704,7 +725,16 @@ id: root
             width: vpx(32); height: vpx(32); radius: height / 2
             anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(72) }
             color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.2
+            opacity: focus ? 1 : 0.6
+            layer.enabled: true
+            layer.effect: DropShadow {
+                transparentBorder: true
+                horizontalOffset: 0
+                verticalOffset: 0
+                radius: 8
+                samples: 17
+                color: "#cc000000"
+            }
 
             onFocusChanged: if (focus) sfxNav.play();
             Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
