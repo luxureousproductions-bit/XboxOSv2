@@ -25,6 +25,9 @@ id: root
 
     property bool searchActive
     property int filteredCount: currentCollection.games.count
+    signal navButtonDown()   // emitted when Down is pressed on a nav button
+
+    function focusNavButtons() { sl_homebutton.focus = true; }
 
     onFocusChanged: buttonbar.currentIndex = 0;
 
@@ -470,7 +473,7 @@ id: root
                 color:   focus ? theme.accent : "transparent"
                 opacity: focus ? 1 : 0.2
                 onFocusChanged: sfxNav.play()
-                Keys.onDownPressed:  { event.accepted = true; buttonbar.forceActiveFocus(); }
+                Keys.onDownPressed:  { event.accepted = true; root.navButtonDown(); }
                 Keys.onRightPressed: { event.accepted = true; sl_discoverbutton.focus = true; }
                 Keys.onPressed: {
                     if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
@@ -501,7 +504,7 @@ id: root
                 color:   focus ? theme.accent : "transparent"
                 opacity: focus ? 1 : 0.2
                 onFocusChanged: sfxNav.play()
-                Keys.onDownPressed:  { event.accepted = true; buttonbar.forceActiveFocus(); }
+                Keys.onDownPressed:  { event.accepted = true; root.navButtonDown(); }
                 Keys.onLeftPressed:  { event.accepted = true; sl_homebutton.focus = true; }
                 Keys.onRightPressed: { event.accepted = true; sl_rabutton.focus = true; }
                 Keys.onPressed: {
@@ -536,7 +539,7 @@ id: root
                 color:   focus ? theme.accent : "transparent"
                 opacity: focus ? 1 : 0.2
                 onFocusChanged: sfxNav.play()
-                Keys.onDownPressed:  { event.accepted = true; buttonbar.forceActiveFocus(); }
+                Keys.onDownPressed:  { event.accepted = true; root.navButtonDown(); }
                 Keys.onLeftPressed:  { event.accepted = true; sl_discoverbutton.focus = true; }
                 Keys.onRightPressed: { event.accepted = true; sl_settingsbutton.focus = true; }
                 Keys.onPressed: {
@@ -557,7 +560,7 @@ id: root
                 color:   focus ? theme.accent : "transparent"
                 opacity: focus ? 1 : 0.2
                 onFocusChanged: sfxNav.play()
-                Keys.onDownPressed:  { event.accepted = true; buttonbar.forceActiveFocus(); }
+                Keys.onDownPressed:  { event.accepted = true; root.navButtonDown(); }
                 Keys.onLeftPressed:  { event.accepted = true; sl_rabutton.focus = true; }
                 Keys.onPressed: {
                     if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
