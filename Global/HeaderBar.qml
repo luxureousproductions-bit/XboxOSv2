@@ -27,7 +27,7 @@ id: root
     property int filteredCount: currentCollection.games.count
     signal navButtonDown()   // emitted when Down is pressed on a nav button
 
-    function focusNavButtons() { sl_homebutton.focus = true; }
+    function focusNavButtons() { root.forceActiveFocus(); sl_homebutton.focus = true; }
 
     onFocusChanged: buttonbar.currentIndex = 0;
 
@@ -466,18 +466,20 @@ id: root
             spacing: vpx(18)
             anchors { top: parent.top; topMargin: vpx(15); horizontalCenter: parent.horizontalCenter }
             z: 20
-
-            Rectangle {
-                width: vpx(214); height: vpx(44); radius: vpx(22)
-                color: Qt.rgba(0, 0, 0, 0.45)
-                anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter }
-                z: 9
-            }
             Rectangle {
             id: sl_homebutton
                 width: vpx(36); height: vpx(36); radius: height / 2
                 color:   focus ? theme.accent : "transparent"
-                opacity: focus ? 1 : 0.2
+                opacity: focus ? 1 : 0.6
+                layer.enabled: true
+                layer.effect: DropShadow {
+                    transparentBorder: true
+                    horizontalOffset: 0
+                    verticalOffset: 0
+                    radius: 8
+                    samples: 17
+                    color: "#cc000000"
+                }
                 onFocusChanged: sfxNav.play()
                 Keys.onDownPressed:  { event.accepted = true; root.navButtonDown(); }
                 Keys.onRightPressed: { event.accepted = true; sl_discoverbutton.focus = true; }
@@ -508,7 +510,16 @@ id: root
             id: sl_discoverbutton
                 width: vpx(36); height: vpx(36); radius: height / 2
                 color:   focus ? theme.accent : "transparent"
-                opacity: focus ? 1 : 0.2
+                opacity: focus ? 1 : 0.6
+                layer.enabled: true
+                layer.effect: DropShadow {
+                    transparentBorder: true
+                    horizontalOffset: 0
+                    verticalOffset: 0
+                    radius: 8
+                    samples: 17
+                    color: "#cc000000"
+                }
                 onFocusChanged: sfxNav.play()
                 Keys.onDownPressed:  { event.accepted = true; root.navButtonDown(); }
                 Keys.onLeftPressed:  { event.accepted = true; sl_homebutton.focus = true; }
@@ -543,7 +554,16 @@ id: root
             id: sl_rabutton
                 width: vpx(36); height: vpx(36); radius: height / 2
                 color:   focus ? theme.accent : "transparent"
-                opacity: focus ? 1 : 0.2
+                opacity: focus ? 1 : 0.6
+                layer.enabled: true
+                layer.effect: DropShadow {
+                    transparentBorder: true
+                    horizontalOffset: 0
+                    verticalOffset: 0
+                    radius: 8
+                    samples: 17
+                    color: "#cc000000"
+                }
                 onFocusChanged: sfxNav.play()
                 Keys.onDownPressed:  { event.accepted = true; root.navButtonDown(); }
                 Keys.onLeftPressed:  { event.accepted = true; sl_discoverbutton.focus = true; }
@@ -564,7 +584,16 @@ id: root
             id: sl_settingsbutton
                 width: vpx(36); height: vpx(36); radius: height / 2
                 color:   focus ? theme.accent : "transparent"
-                opacity: focus ? 1 : 0.2
+                opacity: focus ? 1 : 0.6
+                layer.enabled: true
+                layer.effect: DropShadow {
+                    transparentBorder: true
+                    horizontalOffset: 0
+                    verticalOffset: 0
+                    radius: 8
+                    samples: 17
+                    color: "#cc000000"
+                }
                 onFocusChanged: sfxNav.play()
                 Keys.onDownPressed:  { event.accepted = true; root.navButtonDown(); }
                 Keys.onLeftPressed:  { event.accepted = true; sl_rabutton.focus = true; }
