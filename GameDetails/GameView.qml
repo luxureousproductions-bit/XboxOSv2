@@ -598,6 +598,126 @@ id: root
             }
         }
         z: 10
+
+        // 4 nav buttons — centered in header
+        Rectangle {
+        id: gv_homebutton
+            width: vpx(32); height: vpx(32); radius: height / 2
+            anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(72) }
+            color:   focus ? theme.accent : "transparent"
+            opacity: focus ? 1 : 0.2
+
+            onFocusChanged: if (focus) sfxNav.play();
+            Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
+            Keys.onRightPressed: gv_discoverbutton.focus = true;
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; content.focus = true; }
+            }
+            MouseArea {
+                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
+                onEntered: gv_homebutton.focus = true; onExited: gv_homebutton.focus = false;
+                onClicked: showcaseScreen();
+            }
+            Canvas {
+                anchors { fill: parent; margins: vpx(6) }
+                onPaint: {
+                    var ctx = getContext("2d"); ctx.reset();
+                    var w = width, h = height;
+                    ctx.fillStyle = "white"; ctx.globalAlpha = gv_homebutton.focus ? 1.0 : 0.85;
+                    ctx.beginPath(); ctx.moveTo(w*0.5, 0); ctx.lineTo(w, h*0.5); ctx.lineTo(0, h*0.5); ctx.closePath(); ctx.fill();
+                    ctx.fillRect(w*0.1, h*0.5, w*0.8, h*0.5);
+                    ctx.clearRect(w*0.37, h*0.68, w*0.26, h*0.32);
+                }
+                Connections { target: gv_homebutton; function onFocusChanged() { parent.requestPaint(); } }
+            }
+        }
+
+        Rectangle {
+        id: gv_discoverbutton
+            width: vpx(32); height: vpx(32); radius: height / 2
+            anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(24) }
+            color:   focus ? theme.accent : "transparent"
+            opacity: focus ? 1 : 0.2
+
+            onFocusChanged: if (focus) sfxNav.play();
+            Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
+            Keys.onLeftPressed:  gv_homebutton.focus = true;
+            Keys.onRightPressed: gv_rabutton.focus = true;
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; content.focus = true; }
+            }
+            MouseArea {
+                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
+                onEntered: gv_discoverbutton.focus = true; onExited: gv_discoverbutton.focus = false;
+                onClicked: discoverScreen();
+            }
+            Canvas {
+                anchors { fill: parent; margins: vpx(5) }
+                onPaint: {
+                    var ctx = getContext("2d"); ctx.reset();
+                    var cx = width/2, cy = height/2, r = Math.min(cx,cy)-1;
+                    ctx.globalAlpha = gv_discoverbutton.focus ? 1.0 : 0.85;
+                    ctx.strokeStyle = "white"; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+                    ctx.fillStyle = "white";
+                    ctx.beginPath(); ctx.moveTo(cx, cy-r*0.65); ctx.lineTo(cx+r*0.30, cy+r*0.10); ctx.lineTo(cx, cy+r*0.20); ctx.lineTo(cx-r*0.30, cy+r*0.10); ctx.closePath(); ctx.fill();
+                    ctx.globalAlpha = 0.35;
+                    ctx.beginPath(); ctx.moveTo(cx, cy+r*0.65); ctx.lineTo(cx-r*0.30, cy-r*0.10); ctx.lineTo(cx, cy-r*0.20); ctx.lineTo(cx+r*0.30, cy-r*0.10); ctx.closePath(); ctx.fill();
+                }
+                Connections { target: gv_discoverbutton; function onFocusChanged() { parent.requestPaint(); } }
+            }
+        }
+
+        Rectangle {
+        id: gv_rabutton
+            width: vpx(32); height: vpx(32); radius: height / 2
+            anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(24) }
+            color:   focus ? theme.accent : "transparent"
+            opacity: focus ? 1 : 0.2
+
+            onFocusChanged: if (focus) sfxNav.play();
+            Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
+            Keys.onLeftPressed:  gv_discoverbutton.focus = true;
+            Keys.onRightPressed: gv_settingsbutton.focus = true;
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; raEntryScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; content.focus = true; }
+            }
+            MouseArea {
+                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
+                onEntered: gv_rabutton.focus = true; onExited: gv_rabutton.focus = false;
+                onClicked: raEntryScreen();
+            }
+            Text { anchors.centerIn: parent; text: "🏆"; font.pixelSize: vpx(15); opacity: parent.focus ? 1 : 0.7 }
+        }
+
+        Rectangle {
+        id: gv_settingsbutton
+            width: vpx(32); height: vpx(32); radius: height / 2
+            anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(72) }
+            color:   focus ? theme.accent : "transparent"
+            opacity: focus ? 1 : 0.2
+
+            onFocusChanged: if (focus) sfxNav.play();
+            Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
+            Keys.onLeftPressed:  gv_rabutton.focus = true;
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; content.focus = true; }
+            }
+            MouseArea {
+                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
+                onEntered: gv_settingsbutton.focus = true; onExited: gv_settingsbutton.focus = false;
+                onClicked: settingsScreen();
+            }
+            Image {
+                anchors { fill: parent; margins: vpx(7) }
+                source: "../assets/images/settingsicon.svg"; smooth: true; asynchronous: true
+                opacity: parent.focus ? 1 : 0.7
+            }
+        }
     }
 
 
@@ -859,7 +979,10 @@ id: root
             }
         }
         keyNavigationWraps: true
-        Keys.onUpPressed: { sfxNav.play(); decrementCurrentIndex() }
+        Keys.onUpPressed: {
+            if (currentIndex > 0) { sfxNav.play(); decrementCurrentIndex(); }
+            else { gv_homebutton.focus = true; }
+        }
         Keys.onDownPressed: { sfxNav.play(); incrementCurrentIndex() }
     }
 
