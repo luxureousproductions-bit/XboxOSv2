@@ -279,51 +279,111 @@ id: root
         }
 
         Rectangle {
-        id: achievementsbutton
+        id: homebutton
 
-            width:  vpx(36)
-            height: vpx(36)
-            anchors {
-                bottom: parent.bottom; bottomMargin: vpx(6)
-                right: settingsbutton.left; rightMargin: vpx(10)
-            }
+            width:  vpx(36); height: vpx(36); radius: height / 2
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(81) }
             color:   focus ? theme.accent : "transparent"
-            radius:  height / 2
             opacity: focus ? 1 : 0.2
 
             onFocusChanged: {
                 sfxNav.play();
-                if (focus)
-                    mainList.currentIndex = -1;
-                else
-                    mainList.currentIndex = 0;
+                mainList.currentIndex = focus ? -1 : 0;
             }
-
-            Keys.onDownPressed: mainList.focus = true;
-            Keys.onRightPressed: settingsbutton.focus = true;
+            Keys.onDownPressed:  mainList.focus = true;
+            Keys.onRightPressed: discoverbutton.focus = true;
             Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) {
-                    event.accepted = true;
-                    achievementsScreen();
-                }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) {
-                    event.accepted = true;
-                    mainList.focus = true;
-                }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; mainList.focus = true; }
             }
             MouseArea {
-                anchors.fill: parent
-                hoverEnabled: settings.MouseHover == "Yes"
-                onEntered: achievementsbutton.focus = true;
-                onExited:  achievementsbutton.focus = false;
+                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
+                onEntered: homebutton.focus = true; onExited: homebutton.focus = false;
+                onClicked: showcaseScreen();
+            }
+            Canvas {
+                anchors { fill: parent; margins: vpx(7) }
+                onPaint: {
+                    var ctx = getContext("2d"); ctx.reset();
+                    var w = width, h = height;
+                    ctx.fillStyle = "white"; ctx.globalAlpha = homebutton.focus ? 1.0 : 0.85;
+                    ctx.beginPath(); ctx.moveTo(w*0.5, 0); ctx.lineTo(w, h*0.5); ctx.lineTo(0, h*0.5); ctx.closePath(); ctx.fill();
+                    ctx.fillRect(w*0.1, h*0.5, w*0.8, h*0.5);
+                    ctx.clearRect(w*0.37, h*0.68, w*0.26, h*0.32);
+                }
+                Connections { target: homebutton; function onFocusChanged() { parent.requestPaint(); } }
+            }
+        }
+
+        Rectangle {
+        id: discoverbutton
+
+            width:  vpx(36); height: vpx(36); radius: height / 2
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(27) }
+            color:   focus ? theme.accent : "transparent"
+            opacity: focus ? 1 : 0.2
+
+            onFocusChanged: {
+                sfxNav.play();
+                mainList.currentIndex = focus ? -1 : 0;
+            }
+            Keys.onDownPressed:  mainList.focus = true;
+            Keys.onLeftPressed:  homebutton.focus = true;
+            Keys.onRightPressed: achievementsbutton.focus = true;
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; mainList.focus = true; }
+            }
+            MouseArea {
+                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
+                onEntered: discoverbutton.focus = true; onExited: discoverbutton.focus = false;
+                onClicked: discoverScreen();
+            }
+            Canvas {
+                anchors { fill: parent; margins: vpx(6) }
+                onPaint: {
+                    var ctx = getContext("2d"); ctx.reset();
+                    var cx = width/2, cy = height/2, r = Math.min(cx,cy)-1;
+                    ctx.globalAlpha = discoverbutton.focus ? 1.0 : 0.85;
+                    ctx.strokeStyle = "white"; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+                    ctx.fillStyle = "white";
+                    ctx.beginPath(); ctx.moveTo(cx, cy-r*0.65); ctx.lineTo(cx+r*0.30, cy+r*0.10); ctx.lineTo(cx, cy+r*0.20); ctx.lineTo(cx-r*0.30, cy+r*0.10); ctx.closePath(); ctx.fill();
+                    ctx.globalAlpha = 0.35;
+                    ctx.beginPath(); ctx.moveTo(cx, cy+r*0.65); ctx.lineTo(cx-r*0.30, cy-r*0.10); ctx.lineTo(cx, cy-r*0.20); ctx.lineTo(cx+r*0.30, cy-r*0.10); ctx.closePath(); ctx.fill();
+                }
+                Connections { target: discoverbutton; function onFocusChanged() { parent.requestPaint(); } }
+            }
+        }
+
+        Rectangle {
+        id: achievementsbutton
+
+            width:  vpx(36); height: vpx(36); radius: height / 2
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(27) }
+            color:   focus ? theme.accent : "transparent"
+            opacity: focus ? 1 : 0.2
+
+            onFocusChanged: {
+                sfxNav.play();
+                mainList.currentIndex = focus ? -1 : 0;
+            }
+            Keys.onDownPressed:  mainList.focus = true;
+            Keys.onLeftPressed:  discoverbutton.focus = true;
+            Keys.onRightPressed: settingsbutton.focus = true;
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; mainList.focus = true; }
+            }
+            MouseArea {
+                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
+                onEntered: achievementsbutton.focus = true; onExited: achievementsbutton.focus = false;
                 onClicked: achievementsScreen();
             }
         }
 
-        // Trophy icon for the achievements button
         Text {
         id: achievementsTrophyIcon
-
             text: "🏆"
             anchors.centerIn: achievementsbutton
             font.pixelSize: vpx(18)
@@ -333,57 +393,33 @@ id: root
         Rectangle {
         id: settingsbutton
 
-            width: vpx(36)
-            height: vpx(36)
-            anchors {
-                bottom: parent.bottom; bottomMargin: vpx(6)
-                right: parent.right; rightMargin: vpx(25)
-            }
-            color: focus ? theme.accent : "transparent"
-            radius: height/2
+            width:  vpx(36); height: vpx(36); radius: height / 2
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(81) }
+            color:   focus ? theme.accent : "transparent"
             opacity: focus ? 1 : 0.2
-            onFocusChanged: {
-                sfxNav.play()
-                if (focus)
-                    mainList.currentIndex = -1;
-                else
-                    mainList.currentIndex = 0;
-            }
 
-            Keys.onDownPressed: mainList.focus = true;
-            Keys.onLeftPressed: {
-                achievementsbutton.focus = true;
+            onFocusChanged: {
+                sfxNav.play();
+                mainList.currentIndex = focus ? -1 : 0;
             }
+            Keys.onDownPressed:  mainList.focus = true;
+            Keys.onLeftPressed:  achievementsbutton.focus = true;
             Keys.onPressed: {
-                // Accept
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) {
-                    event.accepted = true;
-                    settingsScreen();            
-                }
-                // Back
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) {
-                    event.accepted = true;
-                    mainList.focus = true;
-                }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; mainList.focus = true; }
             }
-            // Mouse/touch functionality
             MouseArea {
-                anchors.fill: parent
-                hoverEnabled: settings.MouseHover == "Yes"
-                onEntered: settingsbutton.focus = true;
-                onExited: settingsbutton.focus = false;
+                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
+                onEntered: settingsbutton.focus = true; onExited: settingsbutton.focus = false;
                 onClicked: settingsScreen();
             }
         }
 
         Image {
         id: settingsicon
-
-            width: height
-            height: vpx(24)
+            width: height; height: vpx(24)
             anchors.centerIn: settingsbutton
-            smooth: true
-            asynchronous: true
+            smooth: true; asynchronous: true
             source: "../assets/images/settingsicon.svg"
             opacity: root.focus ? 0.8 : 0.5
         }
