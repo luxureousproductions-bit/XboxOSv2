@@ -468,6 +468,12 @@ id: root
             z: 20
 
             Rectangle {
+                width: vpx(214); height: vpx(44); radius: vpx(22)
+                color: Qt.rgba(0, 0, 0, 0.45)
+                anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter }
+                z: 9
+            }
+            Rectangle {
             id: sl_homebutton
                 width: vpx(36); height: vpx(36); radius: height / 2
                 color:   focus ? theme.accent : "transparent"
