@@ -787,13 +787,15 @@ id: root
             }
             spacing: vpx(10)
             orientation: ListView.Horizontal
-            preferredHighlightBegin: vpx(0)
-            preferredHighlightEnd: parent.width - vpx(10)
-            highlightRangeMode: ListView.StrictlyEnforceRange
-            snapMode: ListView.SnapToItem
+            highlightRangeMode: ListView.NoHighlightRange
+            snapMode: ListView.NoSnap
             highlightMoveDuration: 100
-            keyNavigationWraps: true
+            keyNavigationWraps: false
             
+            onCurrentIndexChanged: {
+                positionViewAtIndex(currentIndex, ListView.Contain)
+            }
+
             property int savedIndex: currentCollectionIndex
             onFocusChanged: {
                 if (focus)
