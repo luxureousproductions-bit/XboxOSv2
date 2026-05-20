@@ -59,7 +59,6 @@ id: root
             right:  parent.right
         }
         height: vpx(75)
-        onNavButtonDown: softwarelist.focus = true;
     }
     
     // Software list
