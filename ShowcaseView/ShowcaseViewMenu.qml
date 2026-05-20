@@ -174,6 +174,19 @@ id: root
     
     anchors.fill: parent
 
+    // Set initial fanart background on first load
+    Timer {
+        interval: 300; running: true; repeat: false
+        onTriggered: {
+            if      (list1.selected && list1.search) highlightedGame = list1.search.currentGame(list1.currentIndex)
+            else if (list2.selected && list2.search) highlightedGame = list2.search.currentGame(list2.currentIndex)
+            else if (list3.selected && list3.search) highlightedGame = list3.search.currentGame(list3.currentIndex)
+            else if (list4.selected && list4.search) highlightedGame = list4.search.currentGame(list4.currentIndex)
+            else if (list5.selected && list5.search) highlightedGame = list5.search.currentGame(list5.currentIndex)
+            else if (list6.selected && list6.search) highlightedGame = list6.search.currentGame(list6.currentIndex)
+        }
+    }
+
     // Fanart / screenshot background with crossfade
     Image {
     id: bgImage1
@@ -207,7 +220,6 @@ id: root
 
     property bool bgToggle: false
     property string bgSource: {
-        if (settings.ShowcaseBackgroundArt !== "Yes") return "";
         if (!highlightedGame) return "";
         return highlightedGame.assets.background || highlightedGame.assets.screenshots[0] || "";
     }
@@ -220,11 +232,11 @@ id: root
         }
         if (bgToggle) {
             bgImage1.source = bgSource;
-            bgImage1.opacity = parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55;
+            bgImage1.opacity = 0.55;
             bgImage2.opacity = 0;
         } else {
             bgImage2.source = bgSource;
-            bgImage2.opacity = parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55;
+            bgImage2.opacity = 0.55;
             bgImage1.opacity = 0;
         }
         bgToggle = !bgToggle;
@@ -669,142 +681,109 @@ id: root
     ObjectModel {
     id: mainModel
 
-        ListView {
-        id: featuredlist
-
-        onCurrentIndexChanged: { if (focus) highlightedGame = featuredCollection ? featuredCollection.currentGame(currentIndex) : null; }
-
-            property bool selected: ListView.isCurrentItem
-            focus: selected
+        // Empty space — background fanart shows through (Xbox dashboard style)
+        Item {
             width: parent.width
             height: vpx(360)
-            spacing: vpx(0)
-            orientation: ListView.Horizontal
-            clip: true
-            preferredHighlightBegin: vpx(0)
-            preferredHighlightEnd: parent.width
-            highlightRangeMode: ListView.StrictlyEnforceRange
-            //highlightMoveDuration: 200
-            highlightMoveVelocity: -1
-            snapMode: ListView.SnapOneItem
-            keyNavigationWraps: true
-            currentIndex: (storedHomePrimaryIndex == 0) ? storedHomeSecondaryIndex : 0
-            Component.onCompleted: positionViewAtIndex(currentIndex, ListView.Visible)
-            
-            model: !ftue ? featuredCollection.games : 0
-            delegate: featuredDelegate
-
-            Component {
-            id: featuredDelegate
-
-                Image {
-                id: background
-
-                    property bool selected: ListView.isCurrentItem && featuredlist.focus
-                    width: featuredlist.width
-                    height: featuredlist.height
-                    source: settings.ShowcaseArt === "Screenshot"
-                            ? (modelData ? modelData.assets.screenshots[0] || "" : "")
-                            : Utils.fanArt(modelData);
-                    sourceSize { width: featuredlist.width; height: featuredlist.height }
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                        
-                    onSelectedChanged: {
-                        if (selected)
-                            logoAnim.start()
-                    }
-
-                    Rectangle {
-                        
-                        anchors.fill: parent
-                        color: "black"
-                        opacity: featuredlist.focus ? 0 : 0.5
-                        Behavior on opacity { PropertyAnimation { duration: 150; easing.type: Easing.OutQuart; easing.amplitude: 2.0; easing.period: 1.5 } }
-                    }
-
-                    Image {
-                    id: specialLogo
-
-                        width: parent.height - vpx(20)
-                        height: width
-                        source: Utils.logo(modelData)
-                        fillMode: Image.PreserveAspectFit
-                        asynchronous: true
-                        sourceSize { width: 256; height: 256 }
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.verticalCenter: parent.verticalCenter
-                        opacity: featuredlist.focus ? 1 : 0.5
-
-                        PropertyAnimation { 
-                        id: logoAnim; 
-                            target: specialLogo; 
-                            properties: "y"; 
-                            from: specialLogo.y-vpx(50); 
-                            duration: 100
-                        }
-                    }
-
-                    // Mouse/touch functionality
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: settings.MouseHover == "Yes"
-                        onEntered: { sfxNav.play(); mainList.currentIndex = 0; }
-                        onClicked: {
-                            if (selected)
-                                gameDetails(modelData);  
-                            else
-                                mainList.currentIndex = 0;
-                        }
-                    }
-                }
-            }
-            
-            Row {
-            id: blips
-
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors { bottom: parent.bottom; bottomMargin: vpx(20) }
-                spacing: vpx(10)
-                Repeater {
-                    model: featuredlist.count
-                    Rectangle {
-                        width: vpx(10)
-                        height: width
-                        color: (featuredlist.currentIndex == index) && featuredlist.focus ? theme.accent : theme.text
-                        radius: width/2
-                        opacity: (featuredlist.currentIndex == index) ? 1 : 0.5
-                    }
-                }
-            }
-
-            // List specific input
-            Keys.onUpPressed: settingsbutton.focus = true;
-            Keys.onLeftPressed: { sfxNav.play(); decrementCurrentIndex() }
-            Keys.onRightPressed: { sfxNav.play(); incrementCurrentIndex() }
-            Keys.onPressed: {
-                // Accept
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) {
-                    event.accepted = true;
-                    storedHomeSecondaryIndex = featuredlist.currentIndex;
-                    if (!ftue)
-                        gameDetails(featuredCollection.currentGame(currentIndex));            
-                }
-            }
         }
-        
+
         // Collections list
-        ListView {
-        id: platformlist
+        // ── Top row: Resume box + system collections ───────────────────────
+        FocusScope {
+        id: topRow
 
             property bool selected: ListView.isCurrentItem
             property int myIndex: ObjectModel.index
+            property bool onResume: true   // start focused on the resume box
             focus: selected
             width: root.width
             height: vpx(100) + globalMargin * 2
+
+            onFocusChanged: { if (focus && platformlist.currentIndex < 0) platformlist.currentIndex = 0; }
+            onSelectedChanged: {
+                if (selected && onResume && resumeBox.resumeGame)
+                    highlightedGame = resumeBox.resumeGame;
+                else if (selected && !onResume && platformlist.currentIndex >= 0)
+                    highlightedGame = null;  // platform row — no game fanart
+            }
+
+            // Resume / last-played hero box (bigger than the system tiles)
+            Rectangle {
+            id: resumeBox
+                property bool active: topRow.focus && topRow.onResume
+                property var resumeGame: listLastPlayed.games.count > 0 ? listLastPlayed.currentGame(0) : null
+                property real tileH: ((root.width - globalMargin*2) / 7) * parseFloat(settings.WideRatio)
+                width:  tileH * 1.5
+                height: width
+                z: 2   // always render above the scrolling system tiles
+                anchors {
+                    left: parent.left; leftMargin: globalMargin
+                    bottom: parent.bottom
+                    bottomMargin: (topRow.height - tileH) / 2
+                }
+                radius: vpx(4)
+                color: active ? theme.accent : theme.secondary
+                scale: active ? 1.05 : 1
+                Behavior on scale { NumberAnimation { duration: 100 } }
+                border.width: vpx(1)
+                border.color: "#19FFFFFF"
+
+                Image {
+                    anchors.fill: parent
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true; smooth: true
+                    source: resumeBox.resumeGame ? (resumeBox.resumeGame.assets.background || resumeBox.resumeGame.assets.screenshots[0] || resumeBox.resumeGame.assets.boxFront || "") : ""
+                    opacity: resumeBox.active ? 1 : 0.5
+                }
+                Rectangle {
+                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                    height: vpx(22); color: "black"; opacity: 0.6
+                    Text {
+                        anchors.centerIn: parent
+                        text: resumeBox.resumeGame ? resumeBox.resumeGame.title : ""
+                        color: "white"; font.family: subtitleFont.name
+                        font.pixelSize: vpx(10); font.bold: true
+                        elide: Text.ElideRight
+                        width: parent.width - vpx(4)
+                        horizontalAlignment: Text.AlignHCenter
+                    }
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: settings.MouseHover == "Yes"
+                    onEntered: { sfxNav.play(); mainList.currentIndex = topRow.ObjectModel.index; topRow.onResume = true; }
+                    onClicked: { if (resumeBox.resumeGame) gameDetails(resumeBox.resumeGame); }
+                }
+            }
+
+            // Row-level key handling for the resume box
+            Keys.onLeftPressed: {
+                if (onResume) {
+                    sfxNav.play();
+                    onResume = false;
+                    platformlist.currentIndex = platformlist.count - 1;
+                }
+            }
+            Keys.onRightPressed: {
+                if (onResume) { sfxNav.play(); onResume = false; platformlist.currentIndex = 0; }
+            }
+            Keys.onPressed: {
+                if (onResume && api.keys.isAccept(event) && !event.isAutoRepeat) {
+                    event.accepted = true;
+                    if (resumeBox.resumeGame) gameDetails(resumeBox.resumeGame);
+                }
+            }
+
+        ListView {
+        id: platformlist
+
+            focus: topRow.focus && !topRow.onResume
+            height: vpx(100) + globalMargin * 2
+            clip: true
             anchors {
-                left: parent.left; leftMargin: globalMargin
+                left: resumeBox.right; leftMargin: vpx(16)
                 right: parent.right; rightMargin: globalMargin
+                verticalCenter: parent.verticalCenter
             }
             spacing: vpx(10)
             orientation: ListView.Horizontal
@@ -882,7 +861,7 @@ id: root
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: settings.MouseHover == "Yes"
-                    onEntered: { sfxNav.play(); mainList.currentIndex = platformlist.ObjectModel.index; platformlist.savedIndex = index; platformlist.currentIndex = index; }
+                    onEntered: { sfxNav.play(); mainList.currentIndex = topRow.ObjectModel.index; topRow.onResume = false; platformlist.currentIndex = index; }
                     onExited: {}
                     onClicked: {
                         if (selected)
@@ -890,7 +869,8 @@ id: root
                             currentCollectionIndex = index;
                             softwareScreen();
                         } else {
-                            mainList.currentIndex = platformlist.ObjectModel.index;
+                            mainList.currentIndex = topRow.ObjectModel.index;
+                            topRow.onResume = false;
                             platformlist.currentIndex = index;
                         }
                         
@@ -899,7 +879,10 @@ id: root
             }
 
             // List specific input
-            Keys.onLeftPressed: { sfxNav.play(); decrementCurrentIndex() }
+            Keys.onLeftPressed: {
+                if (currentIndex === 0) { sfxNav.play(); topRow.onResume = true; }
+                else { sfxNav.play(); decrementCurrentIndex(); }
+            }
             Keys.onRightPressed: { sfxNav.play(); incrementCurrentIndex() }
             Keys.onPressed: {
                 // Accept
@@ -909,6 +892,8 @@ id: root
                     softwareScreen();            
                 }
             }
+
+        }
 
         }
 
@@ -939,6 +924,7 @@ id: root
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
             onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
             onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
+            onSelectedChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
 
         HorizontalCollection {
@@ -968,6 +954,7 @@ id: root
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
             onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
             onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
+            onSelectedChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
 
         HorizontalCollection {
@@ -997,6 +984,7 @@ id: root
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
             onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
             onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
+            onSelectedChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
 
         HorizontalCollection {
@@ -1026,6 +1014,7 @@ id: root
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
             onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
             onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
+            onSelectedChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
 
         HorizontalCollection {
@@ -1055,6 +1044,7 @@ id: root
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
             onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
             onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
+            onSelectedChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
 
         HorizontalCollection {
@@ -1084,9 +1074,11 @@ id: root
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
             onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
             onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
+            onSelectedChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
 
     }
+
 
     ListView {
     id: mainList
