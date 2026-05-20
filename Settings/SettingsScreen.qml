@@ -115,8 +115,17 @@ id: root
 
     ListModel {
     id: showcaseSettingsModel
+
         ListElement {
-            settingName: "Showcase Art"
+            settingName: "Showcase Background Art"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Showcase Background Opacity"
+            setting: "0.55,0.60,0.65,0.70,0.75,0.10,0.15,0.20,0.25,0.30,0.35,0.40,0.45,0.50"
+        }
+                ListElement {
+            settingName: "Showcase Collections Art"
             setting: "Fanart,Screenshot"
         }
         ListElement {
