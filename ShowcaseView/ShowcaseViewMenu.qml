@@ -788,9 +788,9 @@ id: root
             spacing: vpx(10)
             orientation: ListView.Horizontal
             preferredHighlightBegin: vpx(0)
-            preferredHighlightEnd: parent.width - vpx(60)
-            highlightRangeMode: ListView.ApplyRange
-            snapMode: ListView.SnapOneItem
+            preferredHighlightEnd: parent.width - vpx(10)
+            highlightRangeMode: ListView.StrictlyEnforceRange
+            snapMode: ListView.SnapToItem
             highlightMoveDuration: 100
             keyNavigationWraps: true
             
@@ -883,7 +883,10 @@ id: root
                 if (currentIndex === 0) { sfxNav.play(); topRow.onResume = true; }
                 else { sfxNav.play(); decrementCurrentIndex(); }
             }
-            Keys.onRightPressed: { sfxNav.play(); incrementCurrentIndex() }
+            Keys.onRightPressed: {
+                if (currentIndex === count - 1) { sfxNav.play(); topRow.onResume = true; }
+                else { sfxNav.play(); incrementCurrentIndex(); }
+            }
             Keys.onPressed: {
                 // Accept
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) {
@@ -1098,6 +1101,7 @@ id: root
         footer: Item { height: helpMargin }
 
         Keys.onUpPressed: {
+            if (currentIndex <= 1) { homebutton.focus = true; return; }
             sfxNav.play();
             do {
                 decrementCurrentIndex();
