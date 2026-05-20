@@ -187,6 +187,19 @@ id: root
         }
     }
 
+    // User's custom background (background.png) — shows when fanart is OFF
+    Image {
+    id: customBg
+        anchors.fill: parent
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+        smooth: true
+        z: -1
+        source: (settings.CustomBackground === "Yes") ? "../assets/images/backgrounds/background.png" : ""
+        opacity: settings.CustomBackground === "Yes" ? 1 : 0
+        Behavior on opacity { PropertyAnimation { duration: 400 } }
+    }
+
     // Fanart / screenshot background with crossfade
     Image {
     id: bgImage1
@@ -220,6 +233,7 @@ id: root
 
     property bool bgToggle: false
     property string bgSource: {
+        if (settings.ShowcaseBackgroundArt !== "Yes") return "";
         if (!highlightedGame) return "";
         return highlightedGame.assets.background || highlightedGame.assets.screenshots[0] || "";
     }
@@ -232,11 +246,11 @@ id: root
         }
         if (bgToggle) {
             bgImage1.source = bgSource;
-            bgImage1.opacity = 0.55;
+            bgImage1.opacity = parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55;
             bgImage2.opacity = 0;
         } else {
             bgImage2.source = bgSource;
-            bgImage2.opacity = 0.55;
+            bgImage2.opacity = parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55;
             bgImage1.opacity = 0;
         }
         bgToggle = !bgToggle;
