@@ -766,7 +766,7 @@ id: root
                     anchors.fill: parent
                     hoverEnabled: settings.MouseHover == "Yes"
                     onEntered: { sfxNav.play(); mainList.currentIndex = topRow.ObjectModel.index; topRow.onResume = true; }
-                    onClicked: { if (resumeBox.resumeGame) gameDetails(resumeBox.resumeGame); }
+                    onClicked: { if (resumeBox.resumeGame) resumeBox.resumeGame.launch(); }
                 }
             }
 
@@ -784,7 +784,7 @@ id: root
             Keys.onPressed: {
                 if (onResume && api.keys.isAccept(event) && !event.isAutoRepeat) {
                     event.accepted = true;
-                    if (resumeBox.resumeGame) gameDetails(resumeBox.resumeGame);
+                    if (resumeBox.resumeGame) resumeBox.resumeGame.launch();
                 }
             }
 
