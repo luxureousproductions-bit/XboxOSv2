@@ -61,6 +61,7 @@ id: root
             ShowScanlines:                 api.memory.has("Show scanlines") ? api.memory.get("Show scanlines") : "Yes",
             DetailsDefault:                api.memory.has("Default to full details") ? api.memory.get("Default to full details") : "No",
             ShowcaseBackgroundArt:          api.memory.has("Showcase Background Art") ? api.memory.get("Showcase Background Art") : "Yes",
+            CustomBackground:               api.memory.has("Custom Background") ? api.memory.get("Custom Background") : "No",
             ShowcaseBackgroundOpacity:     api.memory.has("Showcase Background Opacity") ? api.memory.get("Showcase Background Opacity") : "0.55",
             ShowcaseArt:                   api.memory.has("Showcase Art") ? api.memory.get("Showcase Art") : "Fanart",
             ShowcaseColumns:               api.memory.has("Number of games showcased") ? api.memory.get("Number of games showcased") : "15",
