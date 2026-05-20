@@ -25,9 +25,11 @@ id: root
 
     property bool searchActive
     property int filteredCount: currentCollection.games.count
-    signal navButtonDown()   // emitted when Down is pressed on a nav button
-
-    function focusNavButtons() { root.forceActiveFocus(); sl_homebutton.focus = true; }
+    function focusNavButtons() {
+        // Nav buttons are items 4-7 in headermodel (home is index 7, rightmost in model = leftmost visually)
+        buttonbar.currentIndex = 7;
+        buttonbar.forceActiveFocus();
+    }
 
     onFocusChanged: buttonbar.currentIndex = 0;
 
@@ -441,6 +443,96 @@ id: root
                     }
                 }
             }
+
+            // ── Nav buttons (home, discover, RA, settings) ──────────────────
+            Item {
+            id: sl_settingsbutton
+                property bool selected: ListView.isCurrentItem && root.focus
+                width: vpx(40); height: searchbar.height
+                Rectangle {
+                    anchors.fill: parent; radius: height/2
+                    color: theme.accent; visible: sl_settingsbutton.selected
+                }
+                Image {
+                    anchors { fill: parent; margins: vpx(10) }
+                    source: "../assets/images/settingsicon.svg"; smooth: true; asynchronous: true
+                    opacity: parent.selected ? 1 : 0.7
+                }
+                Keys.onPressed: {
+                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
+                }
+            }
+
+            Item {
+            id: sl_rabutton
+                property bool selected: ListView.isCurrentItem && root.focus
+                width: vpx(40); height: searchbar.height
+                Rectangle {
+                    anchors.fill: parent; radius: height/2
+                    color: theme.accent; visible: sl_rabutton.selected
+                }
+                Text {
+                    anchors.centerIn: parent; text: "🏆"
+                    font.pixelSize: vpx(18); opacity: parent.selected ? 1 : 0.7
+                }
+                Keys.onPressed: {
+                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
+                }
+            }
+
+            Item {
+            id: sl_discoverbutton
+                property bool selected: ListView.isCurrentItem && root.focus
+                width: vpx(40); height: searchbar.height
+                Rectangle {
+                    anchors.fill: parent; radius: height/2
+                    color: theme.accent; visible: sl_discoverbutton.selected
+                }
+                Canvas {
+                    anchors { fill: parent; margins: vpx(10) }
+                    onPaint: {
+                        var ctx = getContext("2d"); ctx.reset();
+                        var cx = width/2, cy = height/2, r = Math.min(cx,cy)-1;
+                        ctx.globalAlpha = sl_discoverbutton.selected ? 1.0 : 0.7;
+                        ctx.strokeStyle = "white"; ctx.lineWidth = 1.5;
+                        ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+                        ctx.fillStyle = "white";
+                        ctx.beginPath(); ctx.moveTo(cx,cy-r*0.65); ctx.lineTo(cx+r*0.3,cy+r*0.1); ctx.lineTo(cx,cy+r*0.2); ctx.lineTo(cx-r*0.3,cy+r*0.1); ctx.closePath(); ctx.fill();
+                        ctx.globalAlpha=0.35;
+                        ctx.beginPath(); ctx.moveTo(cx,cy+r*0.65); ctx.lineTo(cx-r*0.3,cy-r*0.1); ctx.lineTo(cx,cy-r*0.2); ctx.lineTo(cx+r*0.3,cy-r*0.1); ctx.closePath(); ctx.fill();
+                    }
+                    Connections { target: sl_discoverbutton; onSelectedChanged: parent.requestPaint() }
+                }
+                Keys.onPressed: {
+                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
+                }
+            }
+
+            Item {
+            id: sl_homebutton
+                property bool selected: ListView.isCurrentItem && root.focus
+                width: vpx(40); height: searchbar.height
+                Rectangle {
+                    anchors.fill: parent; radius: height/2
+                    color: theme.accent; visible: sl_homebutton.selected
+                }
+                Canvas {
+                    anchors { fill: parent; margins: vpx(10) }
+                    onPaint: {
+                        var ctx = getContext("2d"); ctx.reset();
+                        var w = width, h = height;
+                        ctx.fillStyle = "white"; ctx.globalAlpha = sl_homebutton.selected ? 1.0 : 0.7;
+                        ctx.beginPath(); ctx.moveTo(w*0.5,0); ctx.lineTo(w,h*0.5); ctx.lineTo(0,h*0.5); ctx.closePath(); ctx.fill();
+                        ctx.fillRect(w*0.1,h*0.5,w*0.8,h*0.5);
+                        ctx.clearRect(w*0.37,h*0.68,w*0.26,h*0.32);
+                    }
+                    Connections { target: sl_homebutton; onSelectedChanged: parent.requestPaint() }
+                }
+                Keys.onPressed: {
+                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
+                }
+            }
+
         }
 
         // Buttons
@@ -457,161 +549,6 @@ id: root
                 left: parent.left; top: parent.top; topMargin: vpx(15)
             }
             
-        }
-
-
-        // 4 nav buttons — centered, same height as filter buttonbar
-        Row {
-        id: navRow
-            spacing: vpx(18)
-            anchors { top: parent.top; topMargin: vpx(15); horizontalCenter: parent.horizontalCenter }
-            z: 20
-            Rectangle {
-            id: sl_homebutton
-                width: vpx(36); height: vpx(36); radius: height / 2
-                color:   focus ? theme.accent : "transparent"
-                opacity: focus ? 1 : 0.6
-                layer.enabled: true
-                layer.effect: DropShadow {
-                    transparentBorder: true
-                    horizontalOffset: 0
-                    verticalOffset: 0
-                    radius: 8
-                    samples: 17
-                    color: "#cc000000"
-                }
-                onFocusChanged: sfxNav.play()
-                Keys.onDownPressed:  { event.accepted = true; root.navButtonDown(); }
-                Keys.onRightPressed: { event.accepted = true; sl_discoverbutton.focus = true; }
-                Keys.onPressed: {
-                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
-                    if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; buttonbar.forceActiveFocus(); }
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    onEntered: sl_homebutton.focus = true; onExited: sl_homebutton.focus = false;
-                    onClicked: showcaseScreen();
-                }
-                Canvas {
-                    anchors { fill: parent; margins: vpx(7) }
-                    onPaint: {
-                        var ctx = getContext("2d"); ctx.reset();
-                        var w = width, h = height;
-                        ctx.fillStyle = "white"; ctx.globalAlpha = sl_homebutton.focus ? 1.0 : 0.85;
-                        ctx.beginPath(); ctx.moveTo(w*0.5, 0); ctx.lineTo(w, h*0.5); ctx.lineTo(0, h*0.5); ctx.closePath(); ctx.fill();
-                        ctx.fillRect(w*0.1, h*0.5, w*0.8, h*0.5);
-                        ctx.clearRect(w*0.37, h*0.68, w*0.26, h*0.32);
-                    }
-                    Connections { target: sl_homebutton; onFocusChanged: parent.requestPaint() }
-                }
-            }
-
-            Rectangle {
-            id: sl_discoverbutton
-                width: vpx(36); height: vpx(36); radius: height / 2
-                color:   focus ? theme.accent : "transparent"
-                opacity: focus ? 1 : 0.6
-                layer.enabled: true
-                layer.effect: DropShadow {
-                    transparentBorder: true
-                    horizontalOffset: 0
-                    verticalOffset: 0
-                    radius: 8
-                    samples: 17
-                    color: "#cc000000"
-                }
-                onFocusChanged: sfxNav.play()
-                Keys.onDownPressed:  { event.accepted = true; root.navButtonDown(); }
-                Keys.onLeftPressed:  { event.accepted = true; sl_homebutton.focus = true; }
-                Keys.onRightPressed: { event.accepted = true; sl_rabutton.focus = true; }
-                Keys.onPressed: {
-                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
-                    if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; buttonbar.forceActiveFocus(); }
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    onEntered: sl_discoverbutton.focus = true; onExited: sl_discoverbutton.focus = false;
-                    onClicked: discoverScreen();
-                }
-                Canvas {
-                    anchors { fill: parent; margins: vpx(6) }
-                    onPaint: {
-                        var ctx = getContext("2d"); ctx.reset();
-                        var cx = width/2, cy = height/2, r = Math.min(cx,cy)-1;
-                        ctx.globalAlpha = sl_discoverbutton.focus ? 1.0 : 0.85;
-                        ctx.strokeStyle = "white"; ctx.lineWidth = 1.5;
-                        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
-                        ctx.fillStyle = "white";
-                        ctx.beginPath(); ctx.moveTo(cx, cy-r*0.65); ctx.lineTo(cx+r*0.30, cy+r*0.10); ctx.lineTo(cx, cy+r*0.20); ctx.lineTo(cx-r*0.30, cy+r*0.10); ctx.closePath(); ctx.fill();
-                        ctx.globalAlpha = 0.35;
-                        ctx.beginPath(); ctx.moveTo(cx, cy+r*0.65); ctx.lineTo(cx-r*0.30, cy-r*0.10); ctx.lineTo(cx, cy-r*0.20); ctx.lineTo(cx+r*0.30, cy-r*0.10); ctx.closePath(); ctx.fill();
-                    }
-                    Connections { target: sl_discoverbutton; onFocusChanged: parent.requestPaint() }
-                }
-            }
-
-            Rectangle {
-            id: sl_rabutton
-                width: vpx(36); height: vpx(36); radius: height / 2
-                color:   focus ? theme.accent : "transparent"
-                opacity: focus ? 1 : 0.6
-                layer.enabled: true
-                layer.effect: DropShadow {
-                    transparentBorder: true
-                    horizontalOffset: 0
-                    verticalOffset: 0
-                    radius: 8
-                    samples: 17
-                    color: "#cc000000"
-                }
-                onFocusChanged: sfxNav.play()
-                Keys.onDownPressed:  { event.accepted = true; root.navButtonDown(); }
-                Keys.onLeftPressed:  { event.accepted = true; sl_discoverbutton.focus = true; }
-                Keys.onRightPressed: { event.accepted = true; sl_settingsbutton.focus = true; }
-                Keys.onPressed: {
-                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
-                    if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; buttonbar.forceActiveFocus(); }
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    onEntered: sl_rabutton.focus = true; onExited: sl_rabutton.focus = false;
-                    onClicked: achievementsScreen();
-                }
-                Text { anchors.centerIn: parent; text: "🏆"; font.pixelSize: vpx(16); opacity: parent.focus ? 1 : 0.7 }
-            }
-
-            Rectangle {
-            id: sl_settingsbutton
-                width: vpx(36); height: vpx(36); radius: height / 2
-                color:   focus ? theme.accent : "transparent"
-                opacity: focus ? 1 : 0.6
-                layer.enabled: true
-                layer.effect: DropShadow {
-                    transparentBorder: true
-                    horizontalOffset: 0
-                    verticalOffset: 0
-                    radius: 8
-                    samples: 17
-                    color: "#cc000000"
-                }
-                onFocusChanged: sfxNav.play()
-                Keys.onDownPressed:  { event.accepted = true; root.navButtonDown(); }
-                Keys.onLeftPressed:  { event.accepted = true; sl_rabutton.focus = true; }
-                Keys.onPressed: {
-                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
-                    if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; buttonbar.forceActiveFocus(); }
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    onEntered: sl_settingsbutton.focus = true; onExited: sl_settingsbutton.focus = false;
-                    onClicked: settingsScreen();
-                }
-                Image {
-                    anchors { fill: parent; margins: vpx(8) }
-                    source: "../assets/images/settingsicon.svg"; smooth: true; asynchronous: true
-                    opacity: parent.focus ? 1 : 0.7
-                }
-            }
         }
 
         // Game count label — displayed on the left side below the collection logo
