@@ -196,7 +196,7 @@ id: root
         smooth: true
         z: -1
         source: (settings.CustomBackground === "Yes") ? "../assets/images/backgrounds/background.png" : ""
-        opacity: settings.CustomBackground === "Yes" ? 1 : 0
+        opacity: (settings.CustomBackground === "Yes" && settings.ShowcaseBackgroundArt !== "Yes") ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: 400 } }
     }
 
@@ -715,10 +715,15 @@ id: root
 
             onFocusChanged: { if (focus && platformlist.currentIndex < 0) platformlist.currentIndex = 0; }
             onSelectedChanged: {
-                if (selected && onResume && resumeBox.resumeGame)
+                if (selected && onResume && resumeBox.resumeGame) {
                     highlightedGame = resumeBox.resumeGame;
-                else if (selected && !onResume && platformlist.currentIndex >= 0)
-                    highlightedGame = null;  // platform row — no game fanart
+                } else if (selected && !onResume && settings.ShowcaseBackgroundArt === "Yes") {
+                    var coll = api.collections.get(platformlist.currentIndex);
+                    if (coll && coll.games.count > 0) {
+                        var randomIdx = Math.floor(Math.random() * coll.games.count);
+                        highlightedGame = coll.games.get(randomIdx);
+                    }
+                }
             }
 
             // Resume / last-played hero box (bigger than the system tiles)
@@ -807,7 +812,15 @@ id: root
             keyNavigationWraps: false
             
             onCurrentIndexChanged: {
-                positionViewAtIndex(currentIndex, ListView.Contain)
+                positionViewAtIndex(currentIndex, ListView.Contain);
+                // Show random fanart from the highlighted system when navigating tiles
+                if (topRow.selected && !topRow.onResume && settings.ShowcaseBackgroundArt === "Yes") {
+                    var coll = api.collections.get(currentIndex);
+                    if (coll && coll.games.count > 0) {
+                        var randomIdx = Math.floor(Math.random() * coll.games.count);
+                        highlightedGame = coll.games.get(randomIdx);
+                    }
+                }
             }
 
             property int savedIndex: currentCollectionIndex
