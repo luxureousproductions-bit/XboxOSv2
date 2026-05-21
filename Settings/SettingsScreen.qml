@@ -519,7 +519,14 @@ id: root
 
                 property bool selected: ListView.isCurrentItem && settingsList.focus
                 property variant settingList: setting.split(',')
-                property int savedIndex: { settingsList.settingsVersion; return api.memory.get(settingName + 'Index') || 0 }
+                property int savedIndex: api.memory.get(settingName + 'Index') || 0
+
+                Connections {
+                    target: settingsList
+                    onSettingsVersionChanged: {
+                        savedIndex = api.memory.get(settingName + 'Index') || 0;
+                    }
+                }
                 property string itemNote: (typeof note !== 'undefined') ? note : ""
 
                 // Text-input rows (RA credentials) skip the cycling logic
