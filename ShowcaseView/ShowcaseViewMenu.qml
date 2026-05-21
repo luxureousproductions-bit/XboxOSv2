@@ -403,7 +403,7 @@ id: root
                     ctx.fillRect(w*0.1, h*0.5, w*0.8, h*0.5);
                     ctx.clearRect(w*0.37, h*0.68, w*0.26, h*0.32);
                 }
-                Connections { target: homebutton; function onFocusChanged() { parent.requestPaint(); } }
+                Connections { target: homebutton; onFocusChanged: parent.requestPaint() }
             }
         }
 
@@ -453,7 +453,7 @@ id: root
                     ctx.globalAlpha = 0.35;
                     ctx.beginPath(); ctx.moveTo(cx, cy+r*0.65); ctx.lineTo(cx-r*0.30, cy-r*0.10); ctx.lineTo(cx, cy-r*0.20); ctx.lineTo(cx+r*0.30, cy-r*0.10); ctx.closePath(); ctx.fill();
                 }
-                Connections { target: discoverbutton; function onFocusChanged() { parent.requestPaint(); } }
+                Connections { target: discoverbutton; onFocusChanged: parent.requestPaint() }
             }
         }
 
@@ -708,8 +708,8 @@ id: root
 
             property bool selected: ListView.isCurrentItem
             property int myIndex: ObjectModel.index
-            property bool onResume: true   // start focused on the resume box
-            onOnResumeChanged: {
+            property bool resumeMode: true   // start focused on the resume box
+            onResumeModeChanged: {
                 if (onResume && resumeBox.resumeGame && settings.ShowcaseBackgroundArt === "Yes")
                     highlightedGame = resumeBox.resumeGame;
             }
@@ -733,7 +733,7 @@ id: root
             // Resume / last-played hero box (bigger than the system tiles)
             Rectangle {
             id: resumeBox
-                property bool active: topRow.focus && topRow.onResume
+                property bool active: topRow.focus && topRow.resumeMode
                 property var resumeGame: listLastPlayed.games.count > 0 ? listLastPlayed.currentGame(0) : null
                 property real tileH: ((root.width - globalMargin*2) / 7) * parseFloat(settings.WideRatio)
                 width:  tileH * 1.5
@@ -774,7 +774,7 @@ id: root
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: settings.MouseHover == "Yes"
-                    onEntered: { sfxNav.play(); mainList.currentIndex = topRow.ObjectModel.index; topRow.onResume = true; }
+                    onEntered: { sfxNav.play(); mainList.currentIndex = topRow.ObjectModel.index; topRow.resumeMode = true; }
                     onClicked: { if (resumeBox.resumeGame) resumeBox.resumeGame.launch(); }
                 }
             }
@@ -800,7 +800,7 @@ id: root
         ListView {
         id: platformlist
 
-            focus: topRow.focus && !topRow.onResume
+            focus: topRow.focus && !topRow.resumeMode
             height: vpx(100) + globalMargin * 2
             clip: true
             anchors {
@@ -818,7 +818,7 @@ id: root
             onCurrentIndexChanged: {
                 positionViewAtIndex(currentIndex, ListView.Contain);
                 // Show random fanart from the highlighted system when navigating tiles
-                if (topRow.selected && !topRow.onResume && settings.ShowcaseBackgroundArt === "Yes") {
+                if (topRow.selected && !topRow.resumeMode && settings.ShowcaseBackgroundArt === "Yes") {
                     var coll = api.collections.get(currentIndex);
                     if (coll && coll.games.count > 0) {
                         var randomIdx = Math.floor(Math.random() * coll.games.count);
@@ -906,7 +906,7 @@ id: root
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: settings.MouseHover == "Yes"
-                    onEntered: { sfxNav.play(); mainList.currentIndex = topRow.ObjectModel.index; topRow.onResume = false; platformlist.currentIndex = index; }
+                    onEntered: { sfxNav.play(); mainList.currentIndex = topRow.ObjectModel.index; topRow.resumeMode = false; platformlist.currentIndex = index; }
                     onExited: {}
                     onClicked: {
                         if (selected)
@@ -915,7 +915,7 @@ id: root
                             softwareScreen();
                         } else {
                             mainList.currentIndex = topRow.ObjectModel.index;
-                            topRow.onResume = false;
+                            topRow.resumeMode = false;
                             platformlist.currentIndex = index;
                         }
                         
@@ -925,11 +925,11 @@ id: root
 
             // List specific input
             Keys.onLeftPressed: {
-                if (currentIndex === 0) { sfxNav.play(); topRow.onResume = true; }
+                if (currentIndex === 0) { sfxNav.play(); topRow.resumeMode = true; }
                 else { sfxNav.play(); decrementCurrentIndex(); }
             }
             Keys.onRightPressed: {
-                if (currentIndex === count - 1) { sfxNav.play(); topRow.onResume = true; }
+                if (currentIndex === count - 1) { sfxNav.play(); topRow.resumeMode = true; }
                 else { sfxNav.play(); incrementCurrentIndex(); }
             }
             Keys.onPressed: {
