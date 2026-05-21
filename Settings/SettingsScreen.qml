@@ -529,7 +529,15 @@ id: root
                     if (isTextInput) return;
                     api.memory.set(settingName + 'Index', savedIndex);
                     api.memory.set(settingName, settingList[savedIndex]);
-
+                    // Mutual exclusion: fanart and custom background can't both be on
+                    if (settingName === "Showcase Background Art" && settingList[savedIndex] === "Yes") {
+                        api.memory.set("Custom Background", "No");
+                        api.memory.set("Custom BackgroundIndex", "0");
+                    }
+                    if (settingName === "Custom Background" && settingList[savedIndex] === "Yes") {
+                        api.memory.set("Showcase Background Art", "No");
+                        api.memory.set("Showcase Background ArtIndex", "1");
+                    }
                 }
 
                 function nextSetting() {
