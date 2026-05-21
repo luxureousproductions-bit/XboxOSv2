@@ -78,7 +78,8 @@ id: root
             ShowcaseCollection5_Thumbnail: api.memory.has("Collection 5 - Thumbnail") ? api.memory.get("Collection 5 - Thumbnail") : "Wide",
             ShowcaseCollection6:           api.memory.has("Collection 6") ? api.memory.get("Collection 6") : "None",
             ShowcaseCollection6_Thumbnail: api.memory.has("Collection 6 - Thumbnail") ? api.memory.get("Collection 6 - Thumbnail") : "Wide",
-            WideRatio:                     api.memory.has("Wide - Ratio") ? api.memory.get("Wide - Ratio") : "0.64",
+            WideRatio:                     api.memory.has("Wide - Ratio") ? api.memory.get("Wide - Ratio") : "0.81",
+            ColorBackground:               api.memory.has("Color Background") ? api.memory.get("Color Background") : "Black",
             TallRatio:                     api.memory.has("Tall - Ratio") ? api.memory.get("Tall - Ratio") : "0.66",
             BoxArtStyle:                   api.memory.has("Box Art") ? api.memory.get("Box Art") : "2D",
             GameCounter:                   api.memory.has("Game Counter") ? api.memory.get("Game Counter") : "Yes",
@@ -306,6 +307,42 @@ id: root
             case "Onyx":          accent = "#353535"; break;
             case "White":         accent = "#e8e8e8"; break;
             default:              accent = "#288928"; break;
+        }
+
+
+        // ── Background color ─────────────────────────────────────────────
+        switch (settings.ColorBackground) {
+            case "Black":         background = "#000000"; break;
+            case "Charcoal":      background = "#1a1a1a"; break;
+            case "Dark Gray":     background = "#222222"; break;
+            case "Mid Gray":      background = "#333333"; break;
+            case "Light Gray":    background = "#555555"; break;
+            case "White":         background = "#f0f0f0"; break;
+            case "Navy Blue":     background = "#0a0e2e"; break;
+            case "Dark Blue":     background = "#0a1a3a"; break;
+            case "Royal Blue":    background = "#0d1f5c"; break;
+            case "Cobalt":        background = "#001433"; break;
+            case "Dark Teal":     background = "#041a18"; break;
+            case "Dark Green":    background = "#041a04"; break;
+            case "Forest Green":  background = "#0a200a"; break;
+            case "Dark Red":      background = "#1a0006"; break;
+            case "Burgundy":      background = "#1c0008"; break;
+            case "Maroon":        background = "#1a0000"; break;
+            case "Dark Purple":   background = "#120012"; break;
+            case "Indigo":        background = "#0a0020"; break;
+            case "Dark Brown":    background = "#1a0e00"; break;
+            case "Dark Orange":   background = "#1a0800"; break;
+            case "Slate":         background = "#1a1e26"; break;
+            case "Gunmetal":      background = "#141c20"; break;
+            case "Steel":         background = "#161e24"; break;
+            case "Stone":         background = "#1c1a16"; break;
+            case "Olive":         background = "#141400"; break;
+            case "Midnight Blue": background = "#050510"; break;
+            case "Deep Purple":   background = "#0e0018"; break;
+            case "Blood Red":     background = "#140000"; break;
+            case "Dark Olive":    background = "#0e0e00"; break;
+            case "Espresso":      background = "#100800"; break;
+            default:              background = "#000000"; break;
         }
 
         return {
