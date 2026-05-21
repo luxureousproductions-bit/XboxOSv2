@@ -710,7 +710,7 @@ id: root
             property int myIndex: ObjectModel.index
             property bool resumeMode: true   // start focused on the resume box
             onResumeModeChanged: {
-                if (onResume && resumeBox.resumeGame && settings.ShowcaseBackgroundArt === "Yes")
+                if (resumeMode && resumeBox.resumeGame && settings.ShowcaseBackgroundArt === "Yes")
                     highlightedGame = resumeBox.resumeGame;
             }
             focus: selected
@@ -719,9 +719,9 @@ id: root
 
             onFocusChanged: { if (focus && platformlist.currentIndex < 0) platformlist.currentIndex = 0; }
             onSelectedChanged: {
-                if (selected && onResume && resumeBox.resumeGame) {
+                if (selected && resumeMode && resumeBox.resumeGame) {
                     highlightedGame = resumeBox.resumeGame;
-                } else if (selected && !onResume && settings.ShowcaseBackgroundArt === "Yes") {
+                } else if (selected && !resumeMode && settings.ShowcaseBackgroundArt === "Yes") {
                     var coll = api.collections.get(platformlist.currentIndex);
                     if (coll && coll.games.count > 0) {
                         var randomIdx = Math.floor(Math.random() * coll.games.count);
@@ -781,17 +781,17 @@ id: root
 
             // Row-level key handling for the resume box
             Keys.onLeftPressed: {
-                if (onResume) {
+                if (resumeMode) {
                     sfxNav.play();
-                    onResume = false;
+                    resumeMode = false;
                     platformlist.currentIndex = platformlist.count - 1;
                 }
             }
             Keys.onRightPressed: {
-                if (onResume) { sfxNav.play(); onResume = false; platformlist.currentIndex = 0; }
+                if (resumeMode) { sfxNav.play(); resumeMode = false; platformlist.currentIndex = 0; }
             }
             Keys.onPressed: {
-                if (onResume && api.keys.isAccept(event) && !event.isAutoRepeat) {
+                if (resumeMode && api.keys.isAccept(event) && !event.isAutoRepeat) {
                     event.accepted = true;
                     if (resumeBox.resumeGame) resumeBox.resumeGame.launch();
                 }
