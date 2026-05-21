@@ -490,6 +490,8 @@ id: root
     ListView {
     id: settingsList
 
+        property int settingsVersion: 0   // increment to force delegate savedIndex refresh
+
         model: settingsArr[pagelist.currentIndex].listmodel
         delegate: settingsDelegate
         
@@ -517,7 +519,7 @@ id: root
 
                 property bool selected: ListView.isCurrentItem && settingsList.focus
                 property variant settingList: setting.split(',')
-                property int savedIndex: api.memory.get(settingName + 'Index') || 0
+                property int savedIndex: { settingsList.settingsVersion; return api.memory.get(settingName + 'Index') || 0 }
                 property string itemNote: (typeof note !== 'undefined') ? note : ""
 
                 // Text-input rows (RA credentials) skip the cycling logic
@@ -533,10 +535,12 @@ id: root
                     if (settingName === "Showcase Background Art" && settingList[savedIndex] === "Yes") {
                         api.memory.set("Custom Background", "No");
                         api.memory.set("Custom BackgroundIndex", "0");
+                        settingsList.settingsVersion++;
                     }
                     if (settingName === "Custom Background" && settingList[savedIndex] === "Yes") {
                         api.memory.set("Showcase Background Art", "No");
                         api.memory.set("Showcase Background ArtIndex", "1");
+                        settingsList.settingsVersion++;
                     }
                 }
 
