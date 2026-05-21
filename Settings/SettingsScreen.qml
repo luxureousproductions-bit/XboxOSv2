@@ -65,7 +65,7 @@ id: root
         }
         ListElement {
             settingName: "Color Background"
-            setting: "Black,Charcoal,Dark Gray,Mid Gray,Light Gray,White,Navy Blue,Dark Blue,Royal Blue,Cobalt,Dark Teal,Dark Green,Forest Green,Dark Red,Burgundy,Maroon,Dark Purple,Indigo,Dark Brown,Dark Orange,Slate,Gunmetal,Steel,Stone,Olive,Midnight Blue,Deep Purple,Blood Red,Dark Olive,Espresso"
+            setting: "Black,Charcoal,Dark Gray,Mid Gray,Navy Blue,Dark Blue,Dark Teal,Dark Green,Forest Green,Dark Red,Burgundy,Dark Purple,Indigo,Dark Brown,Dark Orange,Slate,Midnight Blue,Deep Purple"
         }
     }
 
