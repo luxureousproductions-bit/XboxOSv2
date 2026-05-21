@@ -226,6 +226,80 @@ id: root
         var text          = "#ebebeb";
         var gradientstart = "#001f1f1f";
         var gradientend   = "#FF000000";
+        if (settings.ColorBackground === "Black") {
+            background    = "#000000";
+            gradientstart = "#001f1f1f";
+            gradientend   = "#FF000000";
+        } else if (settings.ColorBackground === "Charcoal") {
+            background    = "#1a1a1a";
+            gradientstart = "#001a1a1a";
+            gradientend   = "#FF1a1a1a";
+        } else if (settings.ColorBackground === "Dark Gray") {
+            background    = "#1f1f1f";
+            gradientstart = "#001f1f1f";
+            gradientend   = "#FF1F1F1F";
+        } else if (settings.ColorBackground === "Mid Gray") {
+            background    = "#2d2d2d";
+            gradientstart = "#002d2d2d";
+            gradientend   = "#FF2d2d2d";
+        } else if (settings.ColorBackground === "Navy Blue") {
+            background    = "#0a0e2e";
+            gradientstart = "#000a0e2e";
+            gradientend   = "#FF0a0e2e";
+        } else if (settings.ColorBackground === "Dark Blue") {
+            background    = "#1d253d";
+            gradientstart = "#001d253d";
+            gradientend   = "#FF1d253d";
+        } else if (settings.ColorBackground === "Dark Teal") {
+            background    = "#041a18";
+            gradientstart = "#00041a18";
+            gradientend   = "#FF041a18";
+        } else if (settings.ColorBackground === "Dark Green") {
+            background    = "#054b16";
+            gradientstart = "#00054b16";
+            gradientend   = "#FF054b16";
+        } else if (settings.ColorBackground === "Forest Green") {
+            background    = "#0a200a";
+            gradientstart = "#000a200a";
+            gradientend   = "#FF0a200a";
+        } else if (settings.ColorBackground === "Dark Red") {
+            background    = "#520000";
+            gradientstart = "#00520000";
+            gradientend   = "#FF520000";
+        } else if (settings.ColorBackground === "Burgundy") {
+            background    = "#1c0008";
+            gradientstart = "#001c0008";
+            gradientend   = "#FF1c0008";
+        } else if (settings.ColorBackground === "Dark Purple") {
+            background    = "#120012";
+            gradientstart = "#00120012";
+            gradientend   = "#FF120012";
+        } else if (settings.ColorBackground === "Indigo") {
+            background    = "#0a0020";
+            gradientstart = "#000a0020";
+            gradientend   = "#FF0a0020";
+        } else if (settings.ColorBackground === "Dark Brown") {
+            background    = "#1a0e00";
+            gradientstart = "#001a0e00";
+            gradientend   = "#FF1a0e00";
+        } else if (settings.ColorBackground === "Dark Orange") {
+            background    = "#1a0800";
+            gradientstart = "#001a0800";
+            gradientend   = "#FF1a0800";
+        } else if (settings.ColorBackground === "Slate") {
+            background    = "#1a1e26";
+            gradientstart = "#001a1e26";
+            gradientend   = "#FF1a1e26";
+        } else if (settings.ColorBackground === "Midnight Blue") {
+            background    = "#050510";
+            gradientstart = "#00050510";
+            gradientend   = "#FF050510";
+        } else if (settings.ColorBackground === "Deep Purple") {
+            background    = "#0e0018";
+            gradientstart = "#000e0018";
+            gradientend   = "#FF0e0018";
+        }
+
         var accent        = "#288928";   // default: Dark Green
 
         // ── Full color palette ───────────────────────────────────────────
@@ -308,43 +382,6 @@ id: root
             case "White":         accent = "#e8e8e8"; break;
             default:              accent = "#288928"; break;
         }
-
-
-        // ── Background color ─────────────────────────────────────────────
-        switch (settings.ColorBackground) {
-            case "Black":         background = "#000000"; break;
-            case "Charcoal":      background = "#1a1a1a"; break;
-            case "Dark Gray":     background = "#222222"; break;
-            case "Mid Gray":      background = "#333333"; break;
-            case "Light Gray":    background = "#555555"; break;
-            case "White":         background = "#f0f0f0"; break;
-            case "Navy Blue":     background = "#0a0e2e"; break;
-            case "Dark Blue":     background = "#0a1a3a"; break;
-            case "Royal Blue":    background = "#0d1f5c"; break;
-            case "Cobalt":        background = "#001433"; break;
-            case "Dark Teal":     background = "#041a18"; break;
-            case "Dark Green":    background = "#041a04"; break;
-            case "Forest Green":  background = "#0a200a"; break;
-            case "Dark Red":      background = "#1a0006"; break;
-            case "Burgundy":      background = "#1c0008"; break;
-            case "Maroon":        background = "#1a0000"; break;
-            case "Dark Purple":   background = "#120012"; break;
-            case "Indigo":        background = "#0a0020"; break;
-            case "Dark Brown":    background = "#1a0e00"; break;
-            case "Dark Orange":   background = "#1a0800"; break;
-            case "Slate":         background = "#1a1e26"; break;
-            case "Gunmetal":      background = "#141c20"; break;
-            case "Steel":         background = "#161e24"; break;
-            case "Stone":         background = "#1c1a16"; break;
-            case "Olive":         background = "#141400"; break;
-            case "Midnight Blue": background = "#050510"; break;
-            case "Deep Purple":   background = "#0e0018"; break;
-            case "Blood Red":     background = "#140000"; break;
-            case "Dark Olive":    background = "#0e0e00"; break;
-            case "Espresso":      background = "#100800"; break;
-            default:              background = "#000000"; break;
-        }
-
         return {
             main:          background,
             secondary:     "#303030",
