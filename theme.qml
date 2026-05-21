@@ -298,6 +298,73 @@ id: root
             background    = "#0e0018";
             gradientstart = "#000e0018";
             gradientend   = "#FF0e0018";
+        } else if (settings.ColorBackground === "Dark Steel") {
+            background    = "#1e2a3a";
+            gradientstart = "#001e2a3a";
+            gradientend   = "#FF1e2a3a";
+        } else if (settings.ColorBackground === "Gray") {
+            background    = "#3a3a3a";
+            gradientstart = "#003a3a3a";
+            gradientend   = "#FF3a3a3a";
+        } else if (settings.ColorBackground === "Cool Gray") {
+            background    = "#4a5060";
+            gradientstart = "#004a5060";
+            gradientend   = "#FF4a5060";
+        } else if (settings.ColorBackground === "Steel Blue") {
+            background    = "#2c4a6e";
+            gradientstart = "#002c4a6e";
+            gradientend   = "#FF2c4a6e";
+        } else if (settings.ColorBackground === "Teal") {
+            background    = "#1a4a4a";
+            gradientstart = "#001a4a4a";
+            gradientend   = "#FF1a4a4a";
+        } else if (settings.ColorBackground === "Forest") {
+            background    = "#1a3a1a";
+            gradientstart = "#001a3a1a";
+            gradientend   = "#FF1a3a1a";
+        } else if (settings.ColorBackground === "Wine") {
+            background    = "#4a1020";
+            gradientstart = "#004a1020";
+            gradientend   = "#FF4a1020";
+        } else if (settings.ColorBackground === "Plum") {
+            background    = "#3a1a3a";
+            gradientstart = "#003a1a3a";
+            gradientend   = "#FF3a1a3a";
+        } else if (settings.ColorBackground === "Light Gray") {
+            background    = "#707070";
+            gradientstart = "#00707070";
+            gradientend   = "#FF707070";
+            text          = "#101010";
+        } else if (settings.ColorBackground === "Silver") {
+            background    = "#909090";
+            gradientstart = "#00909090";
+            gradientend   = "#FF909090";
+            text          = "#101010";
+        } else if (settings.ColorBackground === "Light Blue") {
+            background    = "#4a7aa0";
+            gradientstart = "#004a7aa0";
+            gradientend   = "#FF4a7aa0";
+            text          = "#101010";
+        } else if (settings.ColorBackground === "Sage") {
+            background    = "#6a8a6a";
+            gradientstart = "#006a8a6a";
+            gradientend   = "#FF6a8a6a";
+            text          = "#101010";
+        } else if (settings.ColorBackground === "Tan") {
+            background    = "#8a7a5a";
+            gradientstart = "#008a7a5a";
+            gradientend   = "#FF8a7a5a";
+            text          = "#101010";
+        } else if (settings.ColorBackground === "Rose") {
+            background    = "#a06070";
+            gradientstart = "#00a06070";
+            gradientend   = "#FFa06070";
+            text          = "#101010";
+        } else if (settings.ColorBackground === "White") {
+            background    = "#ebebeb";
+            gradientstart = "#00ebebeb";
+            gradientend   = "#FFebebeb";
+            text          = "#101010";
         }
 
         var accent        = "#288928";   // default: Dark Green
