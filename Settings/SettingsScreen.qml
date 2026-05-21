@@ -659,7 +659,7 @@ id: root
                         // is cleared so Android can run clearFocus() properly.
                         Connections {
                             target: settingRow
-                            function onIsEditingChanged() {
+                            onIsEditingChanged: {
                                 if (settingRow.isEditing) {
                                     raTextInput.forceActiveFocus();
                                     raTextInput.cursorPosition = raTextInput.text.length;
