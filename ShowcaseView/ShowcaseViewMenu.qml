@@ -827,23 +827,19 @@ id: root
                 }
             }
 
-            // Fires when platformlist gains focus (e.g. from hero box → first tile).
-            // currentIndex doesn't change in that case so onCurrentIndexChanged won't fire.
-            onFocusChanged: {
-                if (focus && settings.ShowcaseBackgroundArt === "Yes") {
-                    var coll = api.collections.get(currentIndex);
-                    if (coll && coll.games.count > 0) {
-                        var randomIdx = Math.floor(Math.random() * coll.games.count);
-                        highlightedGame = coll.games.get(randomIdx);
-                    }
-                }
-            }
-
             property int savedIndex: currentCollectionIndex
             onFocusChanged: {
-                if (focus)
+                if (focus) {
                     currentIndex = savedIndex;
-                else {
+                    // Also trigger random fanart when gaining focus from hero box
+                    if (settings.ShowcaseBackgroundArt === "Yes") {
+                        var coll = api.collections.get(currentIndex);
+                        if (coll && coll.games.count > 0) {
+                            var randomIdx = Math.floor(Math.random() * coll.games.count);
+                            highlightedGame = coll.games.get(randomIdx);
+                        }
+                    }
+                } else {
                     savedIndex = currentIndex;
                     currentIndex = -1;
                 }
