@@ -709,6 +709,10 @@ id: root
             property bool selected: ListView.isCurrentItem
             property int myIndex: ObjectModel.index
             property bool onResume: true   // start focused on the resume box
+            onOnResumeChanged: {
+                if (onResume && resumeBox.resumeGame && settings.ShowcaseBackgroundArt === "Yes")
+                    highlightedGame = resumeBox.resumeGame;
+            }
             focus: selected
             width: root.width
             height: vpx(100) + globalMargin * 2
