@@ -713,9 +713,10 @@ id: root
                 if (resumeMode && resumeBox.resumeGame && settings.ShowcaseBackgroundArt === "Yes")
                     highlightedGame = resumeBox.resumeGame;
             }
+            property real tileSz: Math.round((root.width - globalMargin * 2) / 7)
             focus: selected
             width: root.width
-            height: vpx(100) + globalMargin * 2
+            height: tileSz + globalMargin * 2
 
             onFocusChanged: { if (focus && platformlist.currentIndex < 0) platformlist.currentIndex = 0; }
             onSelectedChanged: {
@@ -735,9 +736,8 @@ id: root
             id: resumeBox
                 property bool active: topRow.focus && topRow.resumeMode
                 property var resumeGame: listLastPlayed.games.count > 0 ? listLastPlayed.currentGame(0) : null
-                property real tileW: (root.width - globalMargin*2) / 7
-                width:  tileW
-                height: tileW
+                width:  topRow.tileSz
+                height: topRow.tileSz
                 z: 2   // always render above the scrolling system tiles
                 anchors {
                     left: parent.left; leftMargin: globalMargin
@@ -800,8 +800,8 @@ id: root
         id: platformlist
 
             focus: topRow.focus && !topRow.resumeMode
-            height: Math.round((root.width - globalMargin * 2) / 7) + globalMargin * 2
-            clip: true
+            height: topRow.tileSz + globalMargin * 2
+            clip: false
             anchors {
                 left: resumeBox.right; leftMargin: vpx(16)
                 right: parent.right; rightMargin: globalMargin
@@ -849,8 +849,8 @@ id: root
             model: api.collections//Utils.reorderCollection(api.collections);
             delegate: Rectangle {
                 property bool selected: ListView.isCurrentItem && platformlist.focus
-                width: (root.width - globalMargin * 2) / 7.0
-                height: width   // square — not tied to WideRatio
+                width: topRow.tileSz
+                height: topRow.tileSz   // square — not tied to WideRatio
                 	radius: vpx(4)
                 color: selected ? theme.accent : theme.secondary
                 scale: selected ? 1.15 : 1.0
