@@ -25,11 +25,10 @@ id: root
 
     property bool searchActive
     property int filteredCount: currentCollection.games.count
+    signal navButtonDown()
+
     function focusNavButtons() {
-        // forceActiveFocus triggers onFocusChanged which resets currentIndex to 0.
-        // Qt.callLater defers the index set until after that fires, landing on home button.
-        buttonbar.forceActiveFocus();
-        Qt.callLater(function() { buttonbar.currentIndex = 7; });
+        sl_homebutton.forceActiveFocus();
     }
 
     onFocusChanged: buttonbar.currentIndex = 0;
@@ -445,59 +444,54 @@ id: root
                 }
             }
 
-            // ── Nav buttons (home, discover, RA, settings) ──────────────────
-            Item {
+        }
 
-            // Centering spacer — pushes nav buttons to horizontal center
-            Item {
-                width: Math.max(0,
-                    root.width / 2
-                    - searchbar.width - directionbutton.width - titlebutton.width - filterbutton.width
-                    - vpx(40)   // 4 inter-item spacings (3 within filters + 1 before spacer)
-                    - globalMargin
-                    - vpx(95)   // half of nav group width (4×40 + 3×10 = 190 → half = 95)
-                )
-                height: searchbar.height
-            }
 
-            id: sl_settingsbutton
-                property bool selected: ListView.isCurrentItem && root.focus
+        // ── Centered nav buttons — independent of buttonbar ──────────────
+        Row {
+            id: navRow
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.verticalCenter: buttonbar.verticalCenter
+            spacing: vpx(10)
+
+            Item {
+            id: sl_homebutton
+                property bool selected: activeFocus
                 width: vpx(40); height: searchbar.height
+                KeyNavigation.right: sl_discoverbutton
+                KeyNavigation.left:  sl_settingsbutton
+                Keys.onDownPressed:  { root.navButtonDown() }
+                Keys.onPressed: {
+                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
+                }
                 Rectangle {
                     anchors.fill: parent; radius: height/2
-                    color: theme.accent; visible: sl_settingsbutton.selected
+                    color: theme.accent; visible: sl_homebutton.selected
                 }
-                Image {
+                Canvas {
                     anchors { fill: parent; margins: vpx(10) }
-                    source: "../assets/images/settingsicon.svg"; smooth: true; asynchronous: true
-                    opacity: parent.selected ? 1 : 0.7
-                }
-                Keys.onPressed: {
-                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
-                }
-            }
-
-            Item {
-            id: sl_rabutton
-                property bool selected: ListView.isCurrentItem && root.focus
-                width: vpx(40); height: searchbar.height
-                Rectangle {
-                    anchors.fill: parent; radius: height/2
-                    color: theme.accent; visible: sl_rabutton.selected
-                }
-                Text {
-                    anchors.centerIn: parent; text: "🏆"
-                    font.pixelSize: vpx(18); opacity: parent.selected ? 1 : 0.7
-                }
-                Keys.onPressed: {
-                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
+                    onPaint: {
+                        var ctx = getContext("2d"); ctx.reset();
+                        var w = width, h = height;
+                        ctx.fillStyle = "white"; ctx.globalAlpha = sl_homebutton.selected ? 1.0 : 0.7;
+                        ctx.beginPath(); ctx.moveTo(w*0.5,0); ctx.lineTo(w,h*0.5); ctx.lineTo(0,h*0.5); ctx.closePath(); ctx.fill();
+                        ctx.fillRect(w*0.1,h*0.5,w*0.8,h*0.5);
+                        ctx.clearRect(w*0.37,h*0.68,w*0.26,h*0.32);
+                    }
+                    Connections { target: sl_homebutton; onActiveFocusChanged: parent.requestPaint() }
                 }
             }
 
             Item {
             id: sl_discoverbutton
-                property bool selected: ListView.isCurrentItem && root.focus
+                property bool selected: activeFocus
                 width: vpx(40); height: searchbar.height
+                KeyNavigation.left:  sl_homebutton
+                KeyNavigation.right: sl_rabutton
+                Keys.onDownPressed:  { root.navButtonDown() }
+                Keys.onPressed: {
+                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
+                }
                 Rectangle {
                     anchors.fill: parent; radius: height/2
                     color: theme.accent; visible: sl_discoverbutton.selected
@@ -515,38 +509,50 @@ id: root
                         ctx.globalAlpha=0.35;
                         ctx.beginPath(); ctx.moveTo(cx,cy+r*0.65); ctx.lineTo(cx-r*0.3,cy-r*0.1); ctx.lineTo(cx,cy-r*0.2); ctx.lineTo(cx+r*0.3,cy-r*0.1); ctx.closePath(); ctx.fill();
                     }
-                    Connections { target: sl_discoverbutton; onSelectedChanged: parent.requestPaint() }
-                }
-                Keys.onPressed: {
-                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
+                    Connections { target: sl_discoverbutton; onActiveFocusChanged: parent.requestPaint() }
                 }
             }
 
             Item {
-            id: sl_homebutton
-                property bool selected: ListView.isCurrentItem && root.focus
+            id: sl_rabutton
+                property bool selected: activeFocus
                 width: vpx(40); height: searchbar.height
+                KeyNavigation.left:  sl_discoverbutton
+                KeyNavigation.right: sl_settingsbutton
+                Keys.onDownPressed:  { root.navButtonDown() }
+                Keys.onPressed: {
+                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
+                }
                 Rectangle {
                     anchors.fill: parent; radius: height/2
-                    color: theme.accent; visible: sl_homebutton.selected
+                    color: theme.accent; visible: sl_rabutton.selected
                 }
-                Canvas {
-                    anchors { fill: parent; margins: vpx(10) }
-                    onPaint: {
-                        var ctx = getContext("2d"); ctx.reset();
-                        var w = width, h = height;
-                        ctx.fillStyle = "white"; ctx.globalAlpha = sl_homebutton.selected ? 1.0 : 0.7;
-                        ctx.beginPath(); ctx.moveTo(w*0.5,0); ctx.lineTo(w,h*0.5); ctx.lineTo(0,h*0.5); ctx.closePath(); ctx.fill();
-                        ctx.fillRect(w*0.1,h*0.5,w*0.8,h*0.5);
-                        ctx.clearRect(w*0.37,h*0.68,w*0.26,h*0.32);
-                    }
-                    Connections { target: sl_homebutton; onSelectedChanged: parent.requestPaint() }
-                }
-                Keys.onPressed: {
-                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
+                Text {
+                    anchors.centerIn: parent; text: "🏆"
+                    font.pixelSize: vpx(18); opacity: parent.selected ? 1 : 0.7
                 }
             }
 
+            Item {
+            id: sl_settingsbutton
+                property bool selected: activeFocus
+                width: vpx(40); height: searchbar.height
+                KeyNavigation.left:  sl_rabutton
+                KeyNavigation.right: sl_homebutton
+                Keys.onDownPressed:  { root.navButtonDown() }
+                Keys.onPressed: {
+                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
+                }
+                Rectangle {
+                    anchors.fill: parent; radius: height/2
+                    color: theme.accent; visible: sl_settingsbutton.selected
+                }
+                Image {
+                    anchors { fill: parent; margins: vpx(10) }
+                    source: "../assets/images/settingsicon.svg"; smooth: true; asynchronous: true
+                    opacity: parent.selected ? 1 : 0.7
+                }
+            }
         }
 
         // Buttons
