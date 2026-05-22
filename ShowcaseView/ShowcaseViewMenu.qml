@@ -394,7 +394,7 @@ id: root
                 onClicked: allGamesScreen();
             }
             Image {
-                anchors { fill: parent; margins: vpx(7) }
+                anchors { fill: parent; margins: vpx(2) }
                 source: "../assets/images/gamesandapps.png"
                 fillMode: Image.PreserveAspectFit
                 smooth: true; asynchronous: true
