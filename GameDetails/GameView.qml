@@ -603,7 +603,7 @@ id: root
         Rectangle {
         id: gv_homebutton
             width: vpx(32); height: vpx(32); radius: height / 2
-            anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(72) }
+            anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(48) }
             color:   focus ? theme.accent : "transparent"
             opacity: focus ? 1 : 0.6
             layer.enabled: true
@@ -638,14 +638,14 @@ id: root
                     ctx.fillRect(w*0.1, h*0.5, w*0.8, h*0.5);
                     ctx.clearRect(w*0.37, h*0.68, w*0.26, h*0.32);
                 }
-                Connections { target: gv_homebutton; function onFocusChanged() { parent.requestPaint(); } }
+                Connections { target: gv_homebutton; onFocusChanged: parent.requestPaint() }
             }
         }
 
         Rectangle {
         id: gv_discoverbutton
             width: vpx(32); height: vpx(32); radius: height / 2
-            anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(24) }
+            anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(0) }
             color:   focus ? theme.accent : "transparent"
             opacity: focus ? 1 : 0.6
             layer.enabled: true
@@ -661,7 +661,7 @@ id: root
             onFocusChanged: if (focus) sfxNav.play();
             Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
             Keys.onLeftPressed:  gv_homebutton.focus = true;
-            Keys.onRightPressed: gv_rabutton.focus = true;
+            Keys.onRightPressed: gv_settingsbutton.focus = true;
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; content.focus = true; }
@@ -684,14 +684,15 @@ id: root
                     ctx.globalAlpha = 0.35;
                     ctx.beginPath(); ctx.moveTo(cx, cy+r*0.65); ctx.lineTo(cx-r*0.30, cy-r*0.10); ctx.lineTo(cx, cy-r*0.20); ctx.lineTo(cx+r*0.30, cy-r*0.10); ctx.closePath(); ctx.fill();
                 }
-                Connections { target: gv_discoverbutton; function onFocusChanged() { parent.requestPaint(); } }
+                Connections { target: gv_discoverbutton; onFocusChanged: parent.requestPaint() }
             }
         }
 
+
         Rectangle {
-        id: gv_rabutton
+        id: gv_settingsbutton
             width: vpx(32); height: vpx(32); radius: height / 2
-            anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(24) }
+            anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(48) }
             color:   focus ? theme.accent : "transparent"
             opacity: focus ? 1 : 0.6
             layer.enabled: true
@@ -707,38 +708,6 @@ id: root
             onFocusChanged: if (focus) sfxNav.play();
             Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
             Keys.onLeftPressed:  gv_discoverbutton.focus = true;
-            Keys.onRightPressed: gv_settingsbutton.focus = true;
-            Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; raEntryScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; content.focus = true; }
-            }
-            MouseArea {
-                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
-                onEntered: gv_rabutton.focus = true; onExited: gv_rabutton.focus = false;
-                onClicked: raEntryScreen();
-            }
-            Text { anchors.centerIn: parent; text: "🏆"; font.pixelSize: vpx(15); opacity: parent.focus ? 1 : 0.7 }
-        }
-
-        Rectangle {
-        id: gv_settingsbutton
-            width: vpx(32); height: vpx(32); radius: height / 2
-            anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(72) }
-            color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.6
-            layer.enabled: true
-            layer.effect: DropShadow {
-                transparentBorder: true
-                horizontalOffset: 0
-                verticalOffset: 0
-                radius: 8
-                samples: 17
-                color: "#cc000000"
-            }
-
-            onFocusChanged: if (focus) sfxNav.play();
-            Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
-            Keys.onLeftPressed:  gv_rabutton.focus = true;
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; content.focus = true; }
