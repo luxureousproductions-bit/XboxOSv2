@@ -16,7 +16,56 @@ id: root
         max: api.allGames.count
     }
 
-    // ── Right panel: box art + logo + game info ───────────────────────────
+    // ── Art selection: respects settings.BoxArtStyle (2D / 3D / Miximage) ─
+    function steamAppID(gameData) {
+        var str = (gameData.assets.boxFront || "").split("header");
+        return str[0];
+    }
+    function steamBoxArt(gameData) {
+        return steamAppID(gameData) + '/library_600x900_2x.jpg';
+    }
+    function is3dPath(path) {
+        if (!path) return false;
+        var p = path.toLowerCase();
+        return p.includes("box3d") || p.includes("box_3d") || p.includes("3dbox");
+    }
+    function artSource(data) {
+        if (!data) return "";
+        var style = settings.BoxArtStyle || "2D";
+        // Mix image
+        if (style === "Miximage") {
+            if (data.assets.miximage) return data.assets.miximage;
+            if (data.assets.mix_image) return data.assets.mix_image;
+        }
+        var list = data.assets.boxFrontList;
+        if (style === "3D") {
+            if (list) {
+                for (var i = 0; i < list.length; i++)
+                    if (is3dPath(list[i])) return list[i];
+                for (var k = 0; k < list.length; k++)
+                    if (!is3dPath(list[k])) return list[k];
+            }
+        } else {
+            // 2D — prefer non-3D entry
+            if (list) {
+                for (var j = 0; j < list.length; j++)
+                    if (!is3dPath(list[j])) return list[j];
+            }
+        }
+        // Fallbacks
+        if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg"))
+            return steamBoxArt(data);
+        if (data.assets.boxFront)  return data.assets.boxFront;
+        if (data.assets.boxBack)   return data.assets.boxBack;
+        if (data.assets.poster)    return data.assets.poster;
+        if (data.assets.banner)    return data.assets.banner;
+        if (data.assets.tile)      return data.assets.tile;
+        if (data.assets.cartridge) return data.assets.cartridge;
+        if (data.assets.miximage)  return data.assets.miximage;
+        return "";
+    }
+
+    // ── Right panel: box art + game info ─────────────────────────────────
     Item {
     id: rightPanel
 
@@ -27,7 +76,7 @@ id: root
             bottom: parent.bottom
         }
 
-        // Box art
+        // Box art — fills top half of right panel
         Image {
         id: boxArt
 
@@ -38,29 +87,12 @@ id: root
                 bottom: parent.verticalCenter
             }
             asynchronous: true
-            source: currentGame ? (currentGame.assets.boxFront || "") : ""
+            source: currentGame ? artSource(currentGame) : ""
             fillMode: Image.PreserveAspectFit
             smooth: true
         }
 
-        // Game logo — overlaid at bottom of box art area
-        Image {
-        id: gameLogo
-
-            anchors {
-                bottom: boxArt.bottom; bottomMargin: vpx(8)
-                left: parent.left; leftMargin: globalMargin
-                right: parent.right; rightMargin: globalMargin
-            }
-            height: vpx(60)
-            asynchronous: true
-            source: currentGame ? (currentGame.assets.logo || "") : ""
-            fillMode: Image.PreserveAspectFit
-            smooth: true
-            visible: source !== ""
-        }
-
-        // Game info (title, meta, description)
+        // Game info (title, meta, description) — lower half
         GameInfo {
         id: info
 
@@ -222,7 +254,7 @@ id: root
     }
 
     Keys.onPressed: {
-        // A — open game details
+        // A — view game details
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
             gameDetails(currentGame);
@@ -232,8 +264,8 @@ id: root
             event.accepted = true;
             previousScreen();
         }
-        // X — filter (favorites toggle)
-        if (api.keys.isFilters(event) && !event.isAutoRepeat) {
+        // X — filter favorites (isDetails = X button on Xbox layout)
+        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
             toggleFavs();
         }
@@ -242,7 +274,7 @@ id: root
     ListModel {
         id: allGamesHelpModel
         ListElement { name: "Back";         button: "cancel" }
-        ListElement { name: "Filter";       button: "filters" }
+        ListElement { name: "Filter";       button: "details" }
         ListElement { name: "View details"; button: "accept" }
     }
 
