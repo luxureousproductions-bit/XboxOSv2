@@ -30,16 +30,29 @@ id: root
     function focusNavButtons() {
         goingToNavButtons = true;
         buttonbar.forceActiveFocus();
+        navIndexTimer.start();
+    }
+
+    // Forces currentIndex = 8 while goingToNavButtons is true,
+    // overriding any other assignment (including onFocusChanged resets)
+    Binding {
+        target: buttonbar
+        property: "currentIndex"
+        value: 8
+        when: root.goingToNavButtons
+    }
+
+    // Clears the flag after focus events have settled
+    Timer {
+        id: navIndexTimer
+        interval: 100
+        repeat: false
+        onTriggered: root.goingToNavButtons = false
     }
 
     onFocusChanged: {
-        if (focus) {
-            if (goingToNavButtons) {
-                buttonbar.currentIndex = 8;
-                goingToNavButtons = false;
-            } else {
-                buttonbar.currentIndex = 0;
-            }
+        if (focus && !root.goingToNavButtons) {
+            buttonbar.currentIndex = 0;
         }
     }
 
