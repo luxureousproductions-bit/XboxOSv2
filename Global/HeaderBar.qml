@@ -25,12 +25,23 @@ id: root
 
     property bool searchActive
     property int filteredCount: currentCollection.games.count
+    property bool goingToNavButtons: false
+
     function focusNavButtons() {
+        goingToNavButtons = true;
         buttonbar.forceActiveFocus();
-        Qt.callLater(function() { buttonbar.currentIndex = 8; });
     }
 
-    onFocusChanged: buttonbar.currentIndex = 0;
+    onFocusChanged: {
+        if (focus) {
+            if (goingToNavButtons) {
+                buttonbar.currentIndex = 8;
+                goingToNavButtons = false;
+            } else {
+                buttonbar.currentIndex = 0;
+            }
+        }
+    }
 
     function toggleSearch() {
         if (searchActive) {
