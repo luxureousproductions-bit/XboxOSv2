@@ -76,14 +76,6 @@ id: root
             if (currentIndex != 0) currentIndex--;
             else header.focusNavButtons();
         }
-        Connections {
-            target: header
-            onNavButtonDown: { softwarelist.focus = true; }
-        }
-        Connections {
-            target: header
-            onNavButtonDown: { softwarelist.focus = true; }
-        }
         
         anchors {
             top: header.bottom; topMargin: globalMargin
