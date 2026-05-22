@@ -556,6 +556,7 @@ id: root
                 left: parent.left; top: parent.top; topMargin: vpx(15)
             }
 
+            Component.onCompleted: currentIndex = 8
 
         }
 
