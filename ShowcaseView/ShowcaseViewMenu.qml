@@ -735,18 +735,17 @@ id: root
             id: resumeBox
                 property bool active: topRow.focus && topRow.resumeMode
                 property var resumeGame: listLastPlayed.games.count > 0 ? listLastPlayed.currentGame(0) : null
-                property real tileH: ((root.width - globalMargin*2) / 7) * parseFloat(settings.WideRatio)
-                width:  tileH * 1.5
-                height: width
+                property real tileW: (root.width - globalMargin*2) / 7
+                width:  tileW
+                height: tileW
                 z: 2   // always render above the scrolling system tiles
                 anchors {
                     left: parent.left; leftMargin: globalMargin
-                    bottom: parent.bottom
-                    bottomMargin: (topRow.height - tileH) / 2
+                    verticalCenter: parent.verticalCenter
                 }
                 radius: vpx(4)
                 color: active ? theme.accent : theme.secondary
-                scale: active ? 1.05 : 1
+                scale: active ? 1.15 : 1.0
                 Behavior on scale { NumberAnimation { duration: 100 } }
                 border.width: vpx(1)
                 border.color: "#19FFFFFF"
@@ -801,7 +800,7 @@ id: root
         id: platformlist
 
             focus: topRow.focus && !topRow.resumeMode
-            height: vpx(100) + globalMargin * 2
+            height: Math.round((root.width - globalMargin * 2) / 7) + globalMargin * 2
             clip: true
             anchors {
                 left: resumeBox.right; leftMargin: vpx(16)
@@ -851,10 +850,10 @@ id: root
             delegate: Rectangle {
                 property bool selected: ListView.isCurrentItem && platformlist.focus
                 width: (root.width - globalMargin * 2) / 7.0
-                height: width * settings.WideRatio
-				radius: vpx(4)
+                height: width   // square — not tied to WideRatio
+                	radius: vpx(4)
                 color: selected ? theme.accent : theme.secondary
-                scale: selected ? 1.05 : 1
+                scale: selected ? 1.15 : 1.0
                 Behavior on scale { NumberAnimation { duration: 100 } }
                 border.width: vpx(1)
                 border.color: "#19FFFFFF"
@@ -868,7 +867,7 @@ id: root
                     anchors.centerIn: parent
                     anchors.margins: vpx(15)
                     source: "../assets/images/logospng/" + Utils.processPlatformName(modelData.shortName) + ".png"
-                    sourceSize { width: 256; height: 128 }
+                    sourceSize { width: 256; height: 256 }
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                     smooth: true
