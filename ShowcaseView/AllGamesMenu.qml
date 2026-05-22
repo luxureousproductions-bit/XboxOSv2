@@ -3,6 +3,7 @@ import QtQuick 2.0
 import QtQuick.Layouts 1.11
 import "../Global"
 import "../Lists"
+import SortFilterProxyModel 0.2
 
 FocusScope {
 id: root
@@ -16,14 +17,26 @@ id: root
         max: api.allGames.count
     }
 
-    // ── Art selection: respects settings.BoxArtStyle (2D / 3D / Miximage) ─
-    function steamAppID(gameData) {
-        var str = (gameData.assets.boxFront || "").split("header");
-        return str[0];
+    property bool showFavsOnly: false
+
+    // Second proxy layer adds favorites filter on top of listAllGames
+    SortFilterProxyModel {
+    id: displayModel
+        sourceModel: listAllGames.games
+        filters: ExpressionFilter {
+            id: favFilter
+            enabled: showFavsOnly
+            expression: model.favorite === true
+        }
     }
-    function steamBoxArt(gameData) {
-        return steamAppID(gameData) + '/library_600x900_2x.jpg';
+
+    // Get the actual game object through both proxy layers
+    function getCurrentGame(displayIndex) {
+        var sourceIndex = displayModel.mapToSource(displayIndex);
+        return listAllGames.currentGame(sourceIndex);
     }
+
+    // ── Art selection: mirrors Game Details tab settings ─────────────────
     function is3dPath(path) {
         if (!path) return false;
         var p = path.toLowerCase();
@@ -31,35 +44,29 @@ id: root
     }
     function artSource(data) {
         if (!data) return "";
-        var style = settings.BoxArtStyle || "2D";
-        // Mix image
-        if (style === "Miximage") {
-            if (data.assets.miximage) return data.assets.miximage;
-            if (data.assets.mix_image) return data.assets.mix_image;
-        }
         var list = data.assets.boxFrontList;
-        if (style === "3D") {
-            if (list) {
-                for (var i = 0; i < list.length; i++)
-                    if (is3dPath(list[i])) return list[i];
-                for (var k = 0; k < list.length; k++)
-                    if (!is3dPath(list[k])) return list[k];
-            }
-        } else {
-            // 2D — prefer non-3D entry
+
+        // Priority matches Game Details tab order: Miximage > 3D Box > 2D Box
+        if (settings.CarouselMiximage === "Yes") {
+            if (data.assets.miximage)   return data.assets.miximage;
+            if (data.assets.mix_image)  return data.assets.mix_image;
+        }
+        if (settings.Carousel3DBox === "Yes" && list) {
+            for (var i = 0; i < list.length; i++)
+                if (is3dPath(list[i])) return list[i];
+        }
+        if (settings.Carousel2DBox === "Yes") {
             if (list) {
                 for (var j = 0; j < list.length; j++)
                     if (!is3dPath(list[j])) return list[j];
             }
+            if (data.assets.boxFront) return data.assets.boxFront;
         }
-        // Fallbacks
-        if (data.assets.boxFront && data.assets.boxFront.includes("/header.jpg"))
-            return steamBoxArt(data);
+        // Fallback: use whatever boxFront exists
         if (data.assets.boxFront)  return data.assets.boxFront;
         if (data.assets.boxBack)   return data.assets.boxBack;
         if (data.assets.poster)    return data.assets.poster;
         if (data.assets.banner)    return data.assets.banner;
-        if (data.assets.tile)      return data.assets.tile;
         if (data.assets.cartridge) return data.assets.cartridge;
         if (data.assets.miximage)  return data.assets.miximage;
         return "";
@@ -147,7 +154,7 @@ id: root
                 left: parent.left; leftMargin: globalMargin
                 bottom: parent.bottom; bottomMargin: vpx(6)
             }
-            text: listAllGames.max + " games"
+            text: showFavsOnly ? (displayModel.count + " favorites") : (listAllGames.max + " games")
             color: theme.text
             opacity: 0.7
             font.family: subtitleFont.name
@@ -181,11 +188,11 @@ id: root
         highlightMoveDuration: 100
         clip: true
 
-        model: listAllGames.games
+        model: displayModel
 
         onCurrentIndexChanged: {
             if (currentIndex >= 0)
-                currentGame = listAllGames.currentGame(currentIndex);
+                currentGame = getCurrentGame(currentIndex);
         }
 
         delegate: Component {
@@ -264,10 +271,11 @@ id: root
             event.accepted = true;
             previousScreen();
         }
-        // X — filter favorites (isDetails = X button on Xbox layout)
+        // X — toggle favorites filter locally
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            toggleFavs();
+            showFavsOnly = !showFavsOnly;
+            gamelist.currentIndex = 0;
         }
     }
 
