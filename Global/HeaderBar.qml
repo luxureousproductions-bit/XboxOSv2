@@ -29,6 +29,7 @@ id: root
 
     function focusNavButtons() {
         goingToNavButtons = true;
+        buttonbar.currentIndex = -1;   // ensures restore-to-0 fires onCurrentIndexChanged
         buttonbar.forceActiveFocus();
     }
 
@@ -451,6 +452,7 @@ id: root
 
             // ── Centering spacer: positions nav group at screen center ───────
             Item {
+                anchors.verticalCenter: parent.verticalCenter
                 width: Math.max(0,
                     root.width / 2
                     - searchbar.width - directionbutton.width
@@ -463,6 +465,7 @@ id: root
             Item {
             id: sl_settingsbutton
                 property bool selected: ListView.isCurrentItem && root.focus
+                anchors.verticalCenter: parent.verticalCenter
                 width: vpx(40); height: searchbar.height
                 Rectangle {
                     anchors.fill: parent; radius: height/2
@@ -481,6 +484,7 @@ id: root
             Item {
             id: sl_rabutton
                 property bool selected: ListView.isCurrentItem && root.focus
+                anchors.verticalCenter: parent.verticalCenter
                 width: vpx(40); height: searchbar.height
                 Rectangle {
                     anchors.fill: parent; radius: height/2
@@ -498,6 +502,7 @@ id: root
             Item {
             id: sl_discoverbutton
                 property bool selected: ListView.isCurrentItem && root.focus
+                anchors.verticalCenter: parent.verticalCenter
                 width: vpx(40); height: searchbar.height
                 Rectangle {
                     anchors.fill: parent; radius: height/2
@@ -526,6 +531,7 @@ id: root
             Item {
             id: sl_homebutton
                 property bool selected: ListView.isCurrentItem && root.focus
+                anchors.verticalCenter: parent.verticalCenter
                 width: vpx(40); height: searchbar.height
                 Rectangle {
                     anchors.fill: parent; radius: height/2
