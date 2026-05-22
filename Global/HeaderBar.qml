@@ -30,28 +30,10 @@ id: root
     function focusNavButtons() {
         goingToNavButtons = true;
         buttonbar.forceActiveFocus();
-        navIndexTimer.start();
-    }
-
-    // Forces currentIndex = 8 while goingToNavButtons is true,
-    // overriding any other assignment (including onFocusChanged resets)
-    Binding {
-        target: buttonbar
-        property: "currentIndex"
-        value: 8
-        when: root.goingToNavButtons
-    }
-
-    // Clears the flag after focus events have settled
-    Timer {
-        id: navIndexTimer
-        interval: 100
-        repeat: false
-        onTriggered: root.goingToNavButtons = false
     }
 
     onFocusChanged: {
-        if (focus && !root.goingToNavButtons) {
+        if (focus && !goingToNavButtons) {
             buttonbar.currentIndex = 0;
         }
     }
@@ -581,7 +563,17 @@ id: root
                 right: parent.right; rightMargin: globalMargin
                 left: parent.left; top: parent.top; topMargin: vpx(15)
             }
-            
+
+            onActiveFocusChanged: {
+                if (activeFocus) {
+                    if (root.goingToNavButtons) {
+                        currentIndex = 8;
+                        root.goingToNavButtons = false;
+                    } else {
+                        currentIndex = 0;
+                    }
+                }
+            }
         }
 
         // Game count label — displayed on the left side below the collection logo
