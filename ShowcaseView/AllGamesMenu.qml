@@ -16,9 +16,9 @@ id: root
         max: api.allGames.count
     }
 
-    // Screenshot / game art panel (right side)
-    Image {
-    id: screenshot
+    // ── Right panel: box art + logo + game info ───────────────────────────
+    Item {
+    id: rightPanel
 
         anchors {
             top: header.bottom
@@ -26,21 +26,50 @@ id: root
             right: parent.right
             bottom: parent.bottom
         }
-        asynchronous: true
-        source: currentGame && currentGame.assets.screenshots[0]
-                ? currentGame.assets.screenshots[0] : ""
-        fillMode: Image.PreserveAspectCrop
-        smooth: true
 
+        // Box art
+        Image {
+        id: boxArt
+
+            anchors {
+                top: parent.top; topMargin: globalMargin
+                left: parent.left; leftMargin: globalMargin
+                right: parent.right; rightMargin: globalMargin
+                bottom: parent.verticalCenter
+            }
+            asynchronous: true
+            source: currentGame ? (currentGame.assets.boxFront || "") : ""
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+        }
+
+        // Game logo — overlaid at bottom of box art area
+        Image {
+        id: gameLogo
+
+            anchors {
+                bottom: boxArt.bottom; bottomMargin: vpx(8)
+                left: parent.left; leftMargin: globalMargin
+                right: parent.right; rightMargin: globalMargin
+            }
+            height: vpx(60)
+            asynchronous: true
+            source: currentGame ? (currentGame.assets.logo || "") : ""
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            visible: source !== ""
+        }
+
+        // Game info (title, meta, description)
         GameInfo {
         id: info
 
             anchors {
+                top: parent.verticalCenter; topMargin: globalMargin
                 left: parent.left; leftMargin: globalMargin
                 right: parent.right; rightMargin: globalMargin
                 bottom: parent.bottom; bottomMargin: globalMargin + helpMargin
             }
-            height: vpx(230)
         }
     }
 
@@ -164,7 +193,7 @@ id: root
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
-                        if (selected) launchGame();
+                        if (selected) gameDetails(currentGame);
                         else gamelist.currentIndex = index;
                     }
                 }
@@ -193,24 +222,27 @@ id: root
     }
 
     Keys.onPressed: {
+        // A — open game details
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            launchGame();
+            gameDetails(currentGame);
         }
+        // B — go back
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
             previousScreen();
         }
-        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
+        // X — filter (favorites toggle)
+        if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            toggleSort();
+            toggleFavs();
         }
     }
 
     ListModel {
         id: allGamesHelpModel
         ListElement { name: "Back";         button: "cancel" }
-        ListElement { name: "Order";        button: "details" }
+        ListElement { name: "Filter";       button: "filters" }
         ListElement { name: "View details"; button: "accept" }
     }
 
