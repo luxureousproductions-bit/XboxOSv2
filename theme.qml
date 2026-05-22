@@ -498,6 +498,9 @@ id: root
         },
         State {
             name: "discoverscreen";
+        },
+        State {
+            name: "allgamesscreen";
         }
     ]
 
@@ -523,6 +526,12 @@ id: root
         sfxAccept.play();
         lastState.push(state);
         root.state = "showcasescreen";
+    }
+
+    function allGamesScreen() {
+        sfxAccept.play();
+        lastState.push(state);
+        root.state = "allgamesscreen";
     }
 
     function gameDetails(game) {
@@ -673,6 +682,19 @@ id: root
         sourceComponent: showcaseview
     }
 
+    Loader {
+    id: allgamesloader
+
+        focus: (root.state === "allgamesscreen")
+        active: opacity !== 0
+        opacity: focus ? 1 : 0
+        Behavior on opacity { PropertyAnimation { duration: transitionTime } }
+
+        anchors.fill: parent
+        sourceComponent: allgamesview
+        asynchronous: true
+    }
+
     Loader  {
     id: gridviewloader
 
@@ -802,6 +824,12 @@ id: root
     id: listview
 
         SoftwareListMenu { focus: true }
+    }
+
+    Component {
+    id: allgamesview
+
+        AllGamesMenu { focus: true }
     }
 
     Component {
