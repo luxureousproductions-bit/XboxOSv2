@@ -28,7 +28,8 @@ id: root
     signal navButtonDown()
 
     function focusNavButtons() {
-        sl_homebutton.forceActiveFocus();
+        navBar.forceActiveFocus();
+        Qt.callLater(function() { navBar.currentIndex = 0; });
     }
 
     onFocusChanged: buttonbar.currentIndex = 0;
@@ -447,20 +448,16 @@ id: root
         }
 
 
-        // ── Centered nav buttons — independent of buttonbar ──────────────
-        Row {
-            id: navRow
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.verticalCenter: buttonbar.verticalCenter
-            spacing: vpx(10)
+
+        // ── Nav buttons model ────────────────────────────────────────────
+        ObjectModel {
+        id: navModel
 
             Item {
             id: sl_homebutton
-                property bool selected: activeFocus
+                property bool selected: ListView.isCurrentItem && navBar.activeFocus
                 width: vpx(40); height: searchbar.height
-                KeyNavigation.right: sl_discoverbutton
-                KeyNavigation.left:  sl_settingsbutton
-                Keys.onDownPressed:  { root.navButtonDown() }
+                Keys.onDownPressed: root.navButtonDown()
                 Keys.onPressed: {
                     if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
                 }
@@ -478,17 +475,15 @@ id: root
                         ctx.fillRect(w*0.1,h*0.5,w*0.8,h*0.5);
                         ctx.clearRect(w*0.37,h*0.68,w*0.26,h*0.32);
                     }
-                    Connections { target: sl_homebutton; onActiveFocusChanged: parent.requestPaint() }
+                    Connections { target: sl_homebutton; onSelectedChanged: parent.requestPaint() }
                 }
             }
 
             Item {
             id: sl_discoverbutton
-                property bool selected: activeFocus
+                property bool selected: ListView.isCurrentItem && navBar.activeFocus
                 width: vpx(40); height: searchbar.height
-                KeyNavigation.left:  sl_homebutton
-                KeyNavigation.right: sl_rabutton
-                Keys.onDownPressed:  { root.navButtonDown() }
+                Keys.onDownPressed: root.navButtonDown()
                 Keys.onPressed: {
                     if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
                 }
@@ -509,17 +504,15 @@ id: root
                         ctx.globalAlpha=0.35;
                         ctx.beginPath(); ctx.moveTo(cx,cy+r*0.65); ctx.lineTo(cx-r*0.3,cy-r*0.1); ctx.lineTo(cx,cy-r*0.2); ctx.lineTo(cx+r*0.3,cy-r*0.1); ctx.closePath(); ctx.fill();
                     }
-                    Connections { target: sl_discoverbutton; onActiveFocusChanged: parent.requestPaint() }
+                    Connections { target: sl_discoverbutton; onSelectedChanged: parent.requestPaint() }
                 }
             }
 
             Item {
             id: sl_rabutton
-                property bool selected: activeFocus
+                property bool selected: ListView.isCurrentItem && navBar.activeFocus
                 width: vpx(40); height: searchbar.height
-                KeyNavigation.left:  sl_discoverbutton
-                KeyNavigation.right: sl_settingsbutton
-                Keys.onDownPressed:  { root.navButtonDown() }
+                Keys.onDownPressed: root.navButtonDown()
                 Keys.onPressed: {
                     if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
                 }
@@ -535,11 +528,9 @@ id: root
 
             Item {
             id: sl_settingsbutton
-                property bool selected: activeFocus
+                property bool selected: ListView.isCurrentItem && navBar.activeFocus
                 width: vpx(40); height: searchbar.height
-                KeyNavigation.left:  sl_rabutton
-                KeyNavigation.right: sl_homebutton
-                Keys.onDownPressed:  { root.navButtonDown() }
+                Keys.onDownPressed: root.navButtonDown()
                 Keys.onPressed: {
                     if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
                 }
@@ -553,6 +544,22 @@ id: root
                     opacity: parent.selected ? 1 : 0.7
                 }
             }
+        }
+
+        // ── Centered nav ListView — independent of buttonbar ─────────────
+        ListView {
+        id: navBar
+            width: vpx(190)    // 4 buttons × 40 + 3 gaps × 10
+            height: searchbar.height
+            anchors {
+                horizontalCenter: parent.horizontalCenter
+                top: parent.top; topMargin: vpx(15)
+            }
+            model: navModel
+            spacing: vpx(10)
+            orientation: ListView.Horizontal
+            interactive: false
+            Keys.onDownPressed: root.navButtonDown()
         }
 
         // Buttons
