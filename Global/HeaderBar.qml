@@ -26,9 +26,10 @@ id: root
     property bool searchActive
     property int filteredCount: currentCollection.games.count
     function focusNavButtons() {
-        // Nav buttons are items 4-7 in headermodel (home is index 7, rightmost in model = leftmost visually)
-        buttonbar.currentIndex = 7;
+        // forceActiveFocus triggers onFocusChanged which resets currentIndex to 0.
+        // Qt.callLater defers the index set until after that fires, landing on home button.
         buttonbar.forceActiveFocus();
+        Qt.callLater(function() { buttonbar.currentIndex = 7; });
     }
 
     onFocusChanged: buttonbar.currentIndex = 0;
@@ -446,6 +447,19 @@ id: root
 
             // ── Nav buttons (home, discover, RA, settings) ──────────────────
             Item {
+
+            // Centering spacer — pushes nav buttons to horizontal center
+            Item {
+                width: Math.max(0,
+                    root.width / 2
+                    - searchbar.width - directionbutton.width - titlebutton.width - filterbutton.width
+                    - vpx(40)   // 4 inter-item spacings (3 within filters + 1 before spacer)
+                    - globalMargin
+                    - vpx(95)   // half of nav group width (4×40 + 3×10 = 190 → half = 95)
+                )
+                height: searchbar.height
+            }
+
             id: sl_settingsbutton
                 property bool selected: ListView.isCurrentItem && root.focus
                 width: vpx(40); height: searchbar.height
