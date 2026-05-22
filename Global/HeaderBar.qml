@@ -564,14 +564,12 @@ id: root
                 left: parent.left; top: parent.top; topMargin: vpx(15)
             }
 
-            onActiveFocusChanged: {
-                if (activeFocus) {
-                    if (root.goingToNavButtons) {
-                        currentIndex = 8;
-                        root.goingToNavButtons = false;
-                    } else {
-                        currentIndex = 0;
-                    }
+            // Intercept the ListView's automatic restore to index 0 (search)
+            // This fires AFTER the ListView restores its state — so we catch it here
+            onCurrentIndexChanged: {
+                if (currentIndex === 0 && root.goingToNavButtons) {
+                    currentIndex = 8;
+                    root.goingToNavButtons = false;
                 }
             }
         }
