@@ -1,279 +1,97 @@
-// AllGamesMenu.qml — All games across all collections in one list
-import QtQuick 2.0
+// AllGamesMenu.qml — All games across all collections, platform-page style
+import QtQuick 2.15
 import QtQuick.Layouts 1.11
 import "../Global"
 import "../Lists"
-import SortFilterProxyModel 0.2
+import "../utils.js" as Utils
 
 FocusScope {
 id: root
 
     property real itemheight: vpx(50)
-    property int skipnum: 10
+    property int  skipnum: 10
 
-    // ── Data source ───────────────────────────────────────────────────────
+    // All-games data source
     ListAllGames {
     id: listAllGames
         max: api.allGames.count
     }
 
-    // ── Filter / sort state ───────────────────────────────────────────────
-    property bool  sortAscending: true
-    property bool  showFavsOnly:  false
-    property int   genreIndex:    0
-    property var   genreList:     []
-    property string currentGenre: "All"
-
     Component.onCompleted: {
-        var genres = {};
-        for (var i = 0; i < api.allGames.count; i++) {
-            var g = api.allGames.get(i).genre;
-            if (g) {
-                g.split(",").forEach(function(part) {
-                    var t = part.trim();
-                    if (t) genres[t] = true;
-                });
-            }
-        }
-        var arr = Object.keys(genres).sort();
-        arr.unshift("All");
-        genreList = arr;
+        currentCustomCollection = listAllGames.collection;
+        currentHelpbarModel = allGamesHelpModel;
     }
 
-    // ── Display model: sort + genre filter + favorites ────────────────────
-    SortFilterProxyModel {
-    id: displayModel
-        sourceModel: listAllGames.games
-
-        sorters: RoleSorter {
-            roleName: "title"
-            sortOrder: sortAscending ? Qt.AscendingOrder : Qt.DescendingOrder
-        }
-
-        filters: [
-            ExpressionFilter {
-                enabled: showFavsOnly
-                expression: model.favorite === true
-            },
-            ExpressionFilter {
-                enabled: currentGenre !== "All" && currentGenre !== ""
-                expression: model.genre.toLowerCase().includes(currentGenre.toLowerCase())
-            }
-        ]
-    }
-
-    function getCurrentGame(displayIndex) {
-        var sourceIndex = displayModel.mapToSource(displayIndex);
-        return listAllGames.currentGame(sourceIndex);
-    }
-
-    // ── Art selection: mirrors Game Details carousel settings ─────────────
-    function is3dPath(path) {
-        if (!path) return false;
-        var p = path.toLowerCase();
-        // Cover common scraper naming conventions for 3D box art
-        return p.includes("box3d") || p.includes("box_3d") || p.includes("3dbox") ||
-               p.includes("3d_box") || p.includes("-3d.") || p.includes("_3d.") ||
-               p.includes("/3d/") || p.includes("\\3d\\");
-    }
-
-    function artSource(data) {
-        if (!data) return "";
-        var list = data.assets.boxFrontList;
-
-        // Miximage
-        if (settings.CarouselMiximage === "Yes") {
-            if (data.assets.miximage)  return data.assets.miximage;
-            if (data.assets.mix_image) return data.assets.mix_image;
-        }
-
-        // 3D box art
-        if (settings.Carousel3DBox === "Yes" && list) {
-            for (var i = 0; i < list.length; i++)
-                if (is3dPath(list[i])) return list[i];
-            // No 3D file detected — if 2D is also enabled fall through,
-            // otherwise use first entry as best guess
-            if (settings.Carousel2DBox !== "Yes" && list.length > 0)
-                return list[list.length > 1 ? 1 : 0]; // prefer last entry (often 3D)
-        }
-
-        // 2D box art
-        if (settings.Carousel2DBox === "Yes") {
-            if (list) {
-                for (var j = 0; j < list.length; j++)
-                    if (!is3dPath(list[j])) return list[j];
-            }
-            if (data.assets.boxFront) return data.assets.boxFront;
-        }
-
-        // Last resort: show something rather than blank
-        if (data.assets.boxFront)  return data.assets.boxFront;
-        if (data.assets.boxBack)   return data.assets.boxBack;
-        if (data.assets.poster)    return data.assets.poster;
-        if (data.assets.banner)    return data.assets.banner;
-        if (data.assets.cartridge) return data.assets.cartridge;
-        if (data.assets.miximage)  return data.assets.miximage;
-        return "";
-    }
-
-    // ── Letter jump helper ────────────────────────────────────────────────
-    function jumpToNextLetter() {
-        if (gamelist.count === 0) return;
-        var current = gamelist.currentIndex;
-        var currentTitle = displayModel.count > current
-            ? displayModel.get(current).title || "" : "";
-        var currentLetter = currentTitle.charAt(0).toUpperCase();
-
-        // Find first game starting with a letter after the current one
-        for (var i = current + 1; i < gamelist.count; i++) {
-            var t = displayModel.get(i).title || "";
-            if (t.charAt(0).toUpperCase() !== currentLetter) {
-                gamelist.currentIndex = i;
-                return;
-            }
-        }
-        // Wrap to beginning
-        gamelist.currentIndex = 0;
-    }
-
-    function jumpToPrevLetter() {
-        if (gamelist.count === 0) return;
-        var current = gamelist.currentIndex;
-        if (current <= 0) { gamelist.currentIndex = gamelist.count - 1; return; }
-        var prevTitle = displayModel.count > (current - 1)
-            ? displayModel.get(current - 1).title || "" : "";
-        var prevLetter = prevTitle.charAt(0).toUpperCase();
-
-        // Find the start of the previous letter group
-        for (var i = current - 2; i >= 0; i--) {
-            var t = displayModel.get(i).title || "";
-            if (t.charAt(0).toUpperCase() !== prevLetter) {
-                gamelist.currentIndex = i + 1;
-                return;
-            }
-        }
-        gamelist.currentIndex = 0;
-    }
-
-    // ── Right panel: box art + game info ──────────────────────────────────
-    Item {
-    id: rightPanel
-
+    // ── Box art (right side) — identical logic to GameView ────────────────
+    Image {
+    id: boxArt
         anchors {
-            top: header.bottom
-            left: gamelist.right
-            right: parent.right
-            bottom: parent.bottom
+            top: header.bottom; topMargin: globalMargin
+            left: softwarelist.right; leftMargin: globalMargin
+            right: parent.right; rightMargin: globalMargin
+            bottom: parent.bottom; bottomMargin: globalMargin + helpMargin
         }
-
-        Image {
-        id: boxArt
-
-            anchors {
-                top: parent.top; topMargin: globalMargin
-                left: parent.left; leftMargin: globalMargin
-                right: parent.right; rightMargin: globalMargin
-                bottom: parent.verticalCenter
-            }
-            asynchronous: true
-            source: currentGame ? artSource(currentGame) : ""
-            fillMode: Image.PreserveAspectFit
-            smooth: true
-        }
-
-        GameInfo {
-        id: info
-
-            anchors {
-                top: parent.verticalCenter; topMargin: globalMargin
-                left: parent.left; leftMargin: globalMargin
-                right: parent.right; rightMargin: globalMargin
-                bottom: parent.bottom; bottomMargin: globalMargin + helpMargin
-            }
-        }
+        asynchronous: true
+        source: currentGame ? Utils.boxArt(currentGame, settings.BoxArtStyle) : ""
+        fillMode: Image.PreserveAspectFit
+        smooth: true
     }
 
-    // ── Header ────────────────────────────────────────────────────────────
-    Item {
+    // ── Header (same as platform page) ────────────────────────────────────
+    HeaderBar {
     id: header
-
         anchors { top: parent.top; left: parent.left; right: parent.right }
         height: vpx(75)
+        filteredCount: listAllGames.games.count
+    }
 
-        Rectangle {
-            anchors.fill: parent
-            color: theme.main
-            opacity: 0.92
-        }
+    // Library icon overlay — replaces the platform logo on the left
+    Item {
+        anchors { left: parent.left; top: parent.top }
+        width: vpx(310); height: vpx(75)
+        z: 10
+
+        Rectangle { anchors.fill: parent; color: theme.main }
 
         Image {
-            id: libraryIcon
+        id: libIcon
             source: "../assets/images/gamesandapps.png"
             anchors { left: parent.left; leftMargin: globalMargin; verticalCenter: parent.verticalCenter }
             height: vpx(40); width: vpx(40)
-            fillMode: Image.PreserveAspectFit
-            smooth: true; asynchronous: true
+            fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
         }
-
         Text {
-            anchors { left: libraryIcon.right; leftMargin: vpx(12); verticalCenter: parent.verticalCenter }
+            anchors { left: libIcon.right; leftMargin: vpx(10); verticalCenter: parent.verticalCenter }
             text: "My Games & Apps"
-            color: theme.text
-            font.family: titleFont.name
-            font.pixelSize: vpx(24)
-            font.bold: true
+            color: theme.text; font.family: titleFont.name; font.pixelSize: vpx(22); font.bold: true
         }
-
-        // Filter status row
-        Row {
-            anchors { right: parent.right; rightMargin: globalMargin; verticalCenter: parent.verticalCenter }
-            spacing: vpx(12)
-
-            Text {
-                text: sortAscending ? "↑ A→Z" : "↓ Z→A"
-                color: theme.accent
-                font.family: subtitleFont.name
-                font.pixelSize: vpx(16)
-                font.bold: true
-            }
-
-            Text {
-                visible: currentGenre !== "All"
-                text: currentGenre
-                color: theme.accent
-                font.family: subtitleFont.name
-                font.pixelSize: vpx(16)
-                font.bold: true
-            }
-
-            Text {
-                visible: showFavsOnly
-                text: "★ Favorites"
-                color: theme.accent
-                font.family: subtitleFont.name
-                font.pixelSize: vpx(16)
-                font.bold: true
-            }
-        }
-
         Text {
             anchors { left: parent.left; leftMargin: globalMargin; bottom: parent.bottom; bottomMargin: vpx(6) }
-            text: displayModel.count + (displayModel.count !== listAllGames.max ? " / " + listAllGames.max : "") + " games"
-            color: theme.text
-            opacity: 0.7
-            font.family: subtitleFont.name
-            font.pixelSize: vpx(14)
+            text: listAllGames.games.count + " games"
+            color: theme.text; opacity: 0.7; font.family: subtitleFont.name; font.pixelSize: vpx(14)
         }
     }
 
     // ── Game list ─────────────────────────────────────────────────────────
     ListView {
-    id: gamelist
+    id: softwarelist
+
+        currentIndex: currentGameIndex
+        onCurrentIndexChanged: {
+            if (currentIndex !== -1) {
+                currentGameIndex = currentIndex;
+                currentGame = listAllGames.currentGame(currentIndex);
+            }
+        }
 
         focus: true
-
         Keys.onUpPressed: {
-            if (currentIndex > 0) currentIndex--;
+            if (currentIndex !== 0) currentIndex--;
+            else header.focusNavButtons();
+        }
+        Connections {
+            target: header
+            onNavButtonDown: { softwarelist.focus = true; }
         }
 
         anchors {
@@ -282,22 +100,15 @@ id: root
             left: parent.left
         }
         width: vpx(400)
-
         spacing: vpx(0)
         orientation: ListView.Vertical
-
-        preferredHighlightBegin: gamelist.height / 2 - itemheight
-        preferredHighlightEnd: gamelist.height / 2
+        preferredHighlightBegin: softwarelist.height / 2 - itemheight
+        preferredHighlightEnd:   softwarelist.height / 2
         highlightRangeMode: ListView.ApplyRange
         highlightMoveDuration: 100
         clip: true
 
-        model: displayModel
-
-        onCurrentIndexChanged: {
-            if (currentIndex >= 0)
-                currentGame = getCurrentGame(currentIndex);
-        }
+        model: currentCustomCollection.games
 
         delegate: Component {
             Item {
@@ -317,7 +128,6 @@ id: root
                     color: theme.accent
                     visible: selected
                 }
-
                 Text {
                     text: modelData.title
                     height: parent.height
@@ -333,12 +143,11 @@ id: root
                     verticalAlignment: Text.AlignVCenter
                     opacity: selected ? 1 : 0.35
                 }
-
                 MouseArea {
                     anchors.fill: parent
                     onClicked: {
                         if (selected) gameDetails(currentGame);
-                        else gamelist.currentIndex = index;
+                        else softwarelist.currentIndex = index;
                     }
                 }
             }
@@ -347,70 +156,62 @@ id: root
 
     // ── Input ─────────────────────────────────────────────────────────────
     Keys.onDownPressed: {
-        if (gamelist.currentIndex < gamelist.count - 1)
-            gamelist.currentIndex++;
+        if (softwarelist.currentIndex !== softwarelist.count - 1)
+            softwarelist.currentIndex++;
         else
-            gamelist.currentIndex = 0;
+            softwarelist.currentIndex = 0;
     }
     Keys.onLeftPressed: {
-        if (gamelist.currentIndex > skipnum)
-            gamelist.currentIndex -= skipnum;
+        if (softwarelist.currentIndex > skipnum)
+            softwarelist.currentIndex -= skipnum;
         else
-            gamelist.currentIndex = 0;
+            softwarelist.currentIndex = 0;
     }
     Keys.onRightPressed: {
-        if (gamelist.currentIndex < gamelist.count - skipnum)
-            gamelist.currentIndex += skipnum;
+        if (softwarelist.currentIndex < softwarelist.count - skipnum)
+            softwarelist.currentIndex += skipnum;
         else
-            gamelist.currentIndex = gamelist.count - 1;
+            softwarelist.currentIndex = softwarelist.count - 1;
     }
 
     Keys.onPressed: {
-        // A — view game details
+        // A — view details
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            gameDetails(currentGame);
+            if (softwarelist.focus) gameDetails(currentGame);
+            else { currentGameIndex = 0; softwarelist.focus = true; }
         }
         // B — back
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            previousScreen();
+            if (softwarelist.focus) previousScreen();
+            else { currentGameIndex = 0; softwarelist.focus = true; }
         }
-        // X — cycle genre filter
+        // X — filters (same function as platform page's filter)
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (genreList.length > 0) {
-                genreIndex = (genreIndex + 1) % genreList.length;
-                currentGenre = genreList[genreIndex];
-                showFavsOnly = false;
-                gamelist.currentIndex = 0;
-            }
+            toggleFavs();
         }
         // Y — settings
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
             settingsScreen();
         }
-        // L1 — toggle sort direction
-        if (api.keys.isPageUp(event) && !event.isAutoRepeat) {
-            event.accepted = true;
-            sortAscending = !sortAscending;
-            gamelist.currentIndex = 0;
-        }
-        // R1 — jump to next letter group
-        if (api.keys.isPageDown(event) && !event.isAutoRepeat) {
-            event.accepted = true;
-            jumpToNextLetter();
-        }
     }
 
+    // ── Helpbar: A View details, X Filters, Y Settings, B Back ────────────
     ListModel {
         id: allGamesHelpModel
-        ListElement { name: "Back";         button: "cancel"  }
-        ListElement { name: "Genre";        button: "details" }
-        ListElement { name: "Settings";     button: "filters" }
         ListElement { name: "View details"; button: "accept"  }
+        ListElement { name: "Filters";      button: "details" }
+        ListElement { name: "Settings";     button: "filters" }
+        ListElement { name: "Back";         button: "cancel"  }
     }
 
-    onFocusChanged: { if (focus) currentHelpbarModel = allGamesHelpModel; }
+    onFocusChanged: {
+        if (focus) {
+            currentCustomCollection = listAllGames.collection;
+            currentHelpbarModel = allGamesHelpModel;
+        }
+    }
 }
