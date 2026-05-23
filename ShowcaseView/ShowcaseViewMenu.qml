@@ -385,25 +385,20 @@ id: root
             Keys.onDownPressed:  mainList.focus = true;
             Keys.onRightPressed: discoverbutton.focus = true;
             Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; allGamesScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; mainList.focus = true; }
             }
             MouseArea {
                 anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
                 onEntered: homebutton.focus = true; onExited: homebutton.focus = false;
-                onClicked: showcaseScreen();
+                onClicked: allGamesScreen();
             }
-            Canvas {
-                anchors { fill: parent; margins: vpx(7) }
-                onPaint: {
-                    var ctx = getContext("2d"); ctx.reset();
-                    var w = width, h = height;
-                    ctx.fillStyle = "white"; ctx.globalAlpha = homebutton.focus ? 1.0 : 0.85;
-                    ctx.beginPath(); ctx.moveTo(w*0.5, 0); ctx.lineTo(w, h*0.5); ctx.lineTo(0, h*0.5); ctx.closePath(); ctx.fill();
-                    ctx.fillRect(w*0.1, h*0.5, w*0.8, h*0.5);
-                    ctx.clearRect(w*0.37, h*0.68, w*0.26, h*0.32);
-                }
-                Connections { target: homebutton; onFocusChanged: parent.requestPaint() }
+            Image {
+                anchors { fill: parent; margins: vpx(2) }
+                source: "../assets/images/gamesandapps.png"
+                fillMode: Image.PreserveAspectFit
+                smooth: true; asynchronous: true
+                opacity: homebutton.focus ? 1.0 : 0.85
             }
         }
 
@@ -815,11 +810,20 @@ id: root
             keyNavigationWraps: false
             
             onCurrentIndexChanged: {
-                positionViewAtIndex(currentIndex, ListView.Contain);
-                // Snap contentX to a tile boundary so tiles never appear half-cut
-                // next to the hero box
+                // Align the list to whole-tile boundaries so the leftmost tile is
+                // never half-cut into the hero box, while keeping the current tile
+                // fully visible (so the rightmost tile isn't cut off either)
                 var unit = topRow.tileSz + spacing;
-                if (unit > 0) contentX = Math.round(contentX / unit) * unit;
+                if (unit > 0) {
+                    var visibleCount = Math.max(1, Math.floor((width + spacing) / unit));
+                    var firstVisible = Math.round(contentX / unit);
+                    if (currentIndex < firstVisible)
+                        firstVisible = currentIndex;
+                    else if (currentIndex > firstVisible + visibleCount - 1)
+                        firstVisible = currentIndex - visibleCount + 1;
+                    firstVisible = Math.max(0, firstVisible);
+                    contentX = firstVisible * unit;
+                }
                 // Show random fanart from the highlighted system when navigating tiles
                 if (topRow.selected && !topRow.resumeMode && settings.ShowcaseBackgroundArt === "Yes") {
                     var coll = api.collections.get(currentIndex);
