@@ -30,20 +30,21 @@ id: root
     function activateSearch() { searchActive = true; }
     function closeSearch() {
         if (!searchActive) return;
-        Qt.inputMethod.hide();        // hide while the TextInput still exists
-        filterPanel.forceActiveFocus(); // move focus off the TextInput
-        searchActive = false;          // now destroy the native input
+        if (searchLoader.item) searchLoader.item.focus = false; // drop TextInput focus
+        Qt.inputMethod.hide();          // hide while the TextInput still exists
+        filterPanel.forceActiveFocus();
+        searchActive = false;           // destroy the native input view
     }
 
-    // If the system dismisses the keyboard (e.g. hardware/controller back),
-    // close the search cleanly so no orphaned native input box remains
-    Connections {
-        target: Qt.inputMethod
-        onVisibleChanged: {
-            if (!Qt.inputMethod.visible && searchActive) {
-                filterPanel.forceActiveFocus();
-                searchActive = false;
-            }
+    // Reliable watcher: when the soft keyboard becomes hidden for ANY reason
+    // (controller B mapped to Android BACK, system gesture, etc.) tear down
+    // the search so no orphaned native input box is left on screen.
+    property bool imeVisible: Qt.inputMethod.visible
+    onImeVisibleChanged: {
+        if (!imeVisible && searchActive) {
+            if (searchLoader.item) searchLoader.item.focus = false;
+            filterPanel.forceActiveFocus();
+            searchActive = false;
         }
     }
 
@@ -115,11 +116,8 @@ id: root
     Component.onCompleted: {
         currentHelpbarModel     = allGamesHelpModel;
         currentCustomCollection = listAllGames.collection;
-        // Populate the box art + metadata immediately (before any scroll)
-        if (displayModel.count > 0) {
-            currentGameIndex = 0;
-            currentGame = getCurrentGame(0);
-        }
+        currentGameIndex = 0;
+        if (displayModel.count > 0) currentGame = getCurrentGame(0);
     }
 
     // Vertical accent line dividing the text list from the game details
@@ -365,6 +363,14 @@ id: root
                 currentGame = getCurrentGame(currentIndex);
             }
         }
+        // The proxy model populates asynchronously; when it first fills,
+        // set the box art / metadata for the current row immediately
+        onCountChanged: {
+            if (count > 0) {
+                if (currentIndex < 0) currentIndex = 0;
+                currentGame = getCurrentGame(currentIndex < 0 ? 0 : currentIndex);
+            }
+        }
 
         Keys.onUpPressed: {
             event.accepted = true;
@@ -493,8 +499,12 @@ id: root
                                 text: nameFilter
                                 selectionColor: theme.accent
                                 selectedTextColor: "white"
+                                inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
                                 onTextEdited: { nameFilter = text; gamelist.currentIndex = 0; }
-                                onActiveFocusChanged: { if (!activeFocus) Qt.inputMethod.hide(); }
+                                onActiveFocusChanged: {
+                                    if (!activeFocus) Qt.inputMethod.hide();
+                                    else Qt.inputMethod.show();
+                                }
                                 Keys.onReturnPressed: { event.accepted = true; closeSearch(); }
                                 Keys.onEnterPressed:  { event.accepted = true; closeSearch(); }
                                 Keys.onPressed: {
