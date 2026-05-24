@@ -77,21 +77,93 @@ id: root
     Component.onCompleted: {
         currentHelpbarModel     = allGamesHelpModel;
         currentCustomCollection = listAllGames.collection;
+        // Populate the box art + metadata immediately (before any scroll)
+        if (displayModel.count > 0) {
+            currentGameIndex = 0;
+            currentGame = getCurrentGame(0);
+        }
     }
 
-    // ── Box art (right side) — identical logic to GameView ────────────────
+    // ── Box art (top of right side) — identical logic to GameView ─────────
     Image {
     id: boxArt
         anchors {
             top: header.bottom; topMargin: globalMargin
             left: gamelist.right; leftMargin: globalMargin
             right: parent.right; rightMargin: globalMargin
-            bottom: parent.bottom; bottomMargin: globalMargin + helpMargin
+            bottom: metaPanel.top; bottomMargin: vpx(14)
         }
         asynchronous: true
         source: currentGame ? Utils.boxArt(currentGame, settings.BoxArtStyle) : ""
         fillMode: Image.PreserveAspectFit
         smooth: true
+    }
+
+    // ── Metadata panel (bottom of right side) ─────────────────────────────
+    Item {
+    id: metaPanel
+        anchors {
+            left: gamelist.right; leftMargin: globalMargin
+            right: parent.right; rightMargin: globalMargin
+            bottom: parent.bottom; bottomMargin: globalMargin + helpMargin
+        }
+        height: vpx(150)
+        visible: currentGame ? true : false
+
+        // Accent line above the metadata
+        Rectangle {
+            anchors { top: parent.top; left: parent.left; right: parent.right }
+            height: vpx(2); color: theme.accent
+        }
+
+        Row {
+            anchors { top: parent.top; topMargin: vpx(16); left: parent.left; right: parent.right; bottom: parent.bottom }
+            spacing: vpx(30)
+
+            // Left column
+            Column {
+                width: (parent.width - vpx(30)) / 2
+                spacing: vpx(11)
+
+                Column {
+                    width: parent.width; spacing: vpx(1)
+                    Text { text: "Publisher"; color: theme.accent; font.family: subtitleFont.name; font.pixelSize: vpx(13); font.bold: true }
+                    Text { width: parent.width; text: currentGame && currentGame.publisher ? currentGame.publisher : "—"; color: theme.text; font.family: subtitleFont.name; font.pixelSize: vpx(17); elide: Text.ElideRight }
+                }
+                Column {
+                    width: parent.width; spacing: vpx(1)
+                    Text { text: "Developer"; color: theme.accent; font.family: subtitleFont.name; font.pixelSize: vpx(13); font.bold: true }
+                    Text { width: parent.width; text: currentGame && currentGame.developer ? currentGame.developer : "—"; color: theme.text; font.family: subtitleFont.name; font.pixelSize: vpx(17); elide: Text.ElideRight }
+                }
+                Column {
+                    width: parent.width; spacing: vpx(1)
+                    Text { text: "Released"; color: theme.accent; font.family: subtitleFont.name; font.pixelSize: vpx(13); font.bold: true }
+                    Text { width: parent.width; text: currentGame && currentGame.releaseYear > 0 ? currentGame.releaseYear : "—"; color: theme.text; font.family: subtitleFont.name; font.pixelSize: vpx(17); elide: Text.ElideRight }
+                }
+            }
+
+            // Right column
+            Column {
+                width: (parent.width - vpx(30)) / 2
+                spacing: vpx(11)
+
+                Column {
+                    width: parent.width; spacing: vpx(1)
+                    Text { text: "Genre"; color: theme.accent; font.family: subtitleFont.name; font.pixelSize: vpx(13); font.bold: true }
+                    Text { width: parent.width; text: currentGame && currentGame.genre ? currentGame.genre : "—"; color: theme.text; font.family: subtitleFont.name; font.pixelSize: vpx(17); elide: Text.ElideRight }
+                }
+                Column {
+                    width: parent.width; spacing: vpx(1)
+                    Text { text: "Players"; color: theme.accent; font.family: subtitleFont.name; font.pixelSize: vpx(13); font.bold: true }
+                    Text { width: parent.width; text: currentGame && currentGame.players > 0 ? currentGame.players + "P" : "—"; color: theme.text; font.family: subtitleFont.name; font.pixelSize: vpx(17); elide: Text.ElideRight }
+                }
+                Column {
+                    width: parent.width; spacing: vpx(1)
+                    Text { text: "Rating"; color: theme.accent; font.family: subtitleFont.name; font.pixelSize: vpx(13); font.bold: true }
+                    Text { width: parent.width; text: currentGame && currentGame.rating > 0 ? Math.round(currentGame.rating * 100) + "%" : "—"; color: theme.text; font.family: subtitleFont.name; font.pixelSize: vpx(17); elide: Text.ElideRight }
+                }
+            }
+        }
     }
 
     // ── Custom header (library icon + nav buttons) ────────────────────────
@@ -101,6 +173,12 @@ id: root
         height: vpx(75)
 
         Rectangle { anchors.fill: parent; color: theme.main }
+
+        // Accent line under the header
+        Rectangle {
+            anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
+            height: vpx(2); color: theme.accent
+        }
 
         Image {
         id: libIcon
@@ -133,10 +211,25 @@ id: root
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; gamelist.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: showcaseScreen(); }
-            Image {
-                anchors { fill: parent; margins: vpx(2) }
-                source: "../assets/images/gamesandapps.png"
-                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+            Canvas {
+                anchors { fill: parent; margins: vpx(7) }
+                onPaint: {
+                    var ctx = getContext("2d"); ctx.reset();
+                    var w = width, h = height;
+                    ctx.fillStyle = "white";
+                    ctx.globalAlpha = homebutton.focus ? 1.0 : 0.85;
+                    // roof
+                    ctx.beginPath();
+                    ctx.moveTo(w*0.5, h*0.05);
+                    ctx.lineTo(w*0.95, h*0.5);
+                    ctx.lineTo(w*0.05, h*0.5);
+                    ctx.closePath(); ctx.fill();
+                    // body
+                    ctx.fillRect(w*0.18, h*0.5, w*0.64, h*0.42);
+                    // door cutout
+                    ctx.clearRect(w*0.42, h*0.62, w*0.16, h*0.30);
+                }
+                Connections { target: homebutton; onFocusChanged: parent.requestPaint() }
             }
         }
 
@@ -462,10 +555,10 @@ id: root
     // ── Helpbar: A View details, X Filters, Y Settings, B Back ────────────
     ListModel {
         id: allGamesHelpModel
-        ListElement { name: "View details"; button: "accept"  }
-        ListElement { name: "Filters";      button: "details" }
-        ListElement { name: "Settings";     button: "filters" }
         ListElement { name: "Back";         button: "cancel"  }
+        ListElement { name: "Settings";     button: "filters" }
+        ListElement { name: "Filters";      button: "details" }
+        ListElement { name: "View details"; button: "accept"  }
     }
 
     onFocusChanged: {
