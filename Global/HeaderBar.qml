@@ -26,9 +26,12 @@ id: root
     property bool searchActive
     property int filteredCount: currentCollection.games.count
     function focusNavButtons() {
-        buttonbar.currentIndex = 8;
-        root.forceActiveFocus();
+        // Nav buttons are items 4-7 in headermodel (home is index 7, rightmost in model = leftmost visually)
+        buttonbar.currentIndex = 7;
+        buttonbar.forceActiveFocus();
     }
+
+    onFocusChanged: buttonbar.currentIndex = 0;
 
     function toggleSearch() {
         if (searchActive) {
@@ -36,11 +39,24 @@ id: root
             // still exists and has focus. Calling it after changing searchActive
             // destroys (or defocuses) the native EditText first, leaving Android's
             // IME attached to a dead view — which causes the persistent blue box.
+            if (searchLoader.item) searchLoader.item.focus = false;
             Qt.inputMethod.hide();
-            searchActive = false;
             buttonbar.forceActiveFocus();
+            searchActive = false;
         } else {
             searchActive = true;
+        }
+    }
+
+    // Reliable watcher: when the soft keyboard becomes hidden for ANY reason
+    // (controller B mapped to Android BACK, system gesture, etc.) tear down the
+    // search so no orphaned native input box remains on screen.
+    property bool imeVisible: Qt.inputMethod.visible
+    onImeVisibleChanged: {
+        if (!imeVisible && searchActive) {
+            if (searchLoader.item) searchLoader.item.focus = false;
+            buttonbar.forceActiveFocus();
+            searchActive = false;
         }
     }
 
@@ -188,6 +204,11 @@ id: root
                             text: searchTerm
                             selectionColor: theme.accent
                             selectedTextColor: theme.text
+                            inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+                            onActiveFocusChanged: {
+                                if (!activeFocus) Qt.inputMethod.hide();
+                                else Qt.inputMethod.show();
+                            }
                             onTextEdited: {
                                 searchTerm = text
                             }
@@ -441,17 +462,7 @@ id: root
                 }
             }
 
-            // ── Centering spacer: positions nav group at screen center ───────
-            Item {
-                width: Math.max(0,
-                    root.width / 2
-                    - searchbar.width - directionbutton.width
-                    - titlebutton.width - filterbutton.width
-                    - vpx(175)
-                )
-                height: searchbar.height
-            }
-
+            // ── Nav buttons (home, discover, RA, settings) ──────────────────
             Item {
             id: sl_settingsbutton
                 property bool selected: ListView.isCurrentItem && root.focus
@@ -555,9 +566,7 @@ id: root
                 right: parent.right; rightMargin: globalMargin
                 left: parent.left; top: parent.top; topMargin: vpx(15)
             }
-
-            Component.onCompleted: currentIndex = 8
-
+            
         }
 
         // Game count label — displayed on the left side below the collection logo
