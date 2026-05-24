@@ -29,9 +29,22 @@ id: root
 
     function activateSearch() { searchActive = true; }
     function closeSearch() {
-        Qt.inputMethod.hide();
-        searchActive = false;
-        filterPanel.forceActiveFocus();
+        if (!searchActive) return;
+        Qt.inputMethod.hide();        // hide while the TextInput still exists
+        filterPanel.forceActiveFocus(); // move focus off the TextInput
+        searchActive = false;          // now destroy the native input
+    }
+
+    // If the system dismisses the keyboard (e.g. hardware/controller back),
+    // close the search cleanly so no orphaned native input box remains
+    Connections {
+        target: Qt.inputMethod
+        onVisibleChanged: {
+            if (!Qt.inputMethod.visible && searchActive) {
+                filterPanel.forceActiveFocus();
+                searchActive = false;
+            }
+        }
     }
 
     property var sortFields: [
@@ -74,6 +87,31 @@ id: root
         return listAllGames.currentGame(displayModel.mapToSource(idx));
     }
 
+    // Jump to the first game of the next / previous letter group
+    function jumpToNextLetter() {
+        if (gamelist.count === 0) return;
+        var cur = gamelist.currentIndex;
+        var curE = cur >= 0 ? displayModel.get(cur) : null;
+        var curLtr = curE ? (curE.title || "").charAt(0).toUpperCase() : "";
+        for (var i = cur + 1; i < gamelist.count; i++) {
+            var e = displayModel.get(i);
+            if (e && (e.title || "").charAt(0).toUpperCase() !== curLtr) { gamelist.currentIndex = i; return; }
+        }
+        gamelist.currentIndex = 0;
+    }
+    function jumpToPrevLetter() {
+        if (gamelist.count === 0) return;
+        var cur = gamelist.currentIndex;
+        if (cur <= 0) { gamelist.currentIndex = gamelist.count - 1; return; }
+        var prevE = displayModel.get(cur - 1);
+        var prevLtr = prevE ? (prevE.title || "").charAt(0).toUpperCase() : "";
+        for (var i = cur - 2; i >= 0; i--) {
+            var e = displayModel.get(i);
+            if (e && (e.title || "").charAt(0).toUpperCase() !== prevLtr) { gamelist.currentIndex = i + 1; return; }
+        }
+        gamelist.currentIndex = 0;
+    }
+
     Component.onCompleted: {
         currentHelpbarModel     = allGamesHelpModel;
         currentCustomCollection = listAllGames.collection;
@@ -82,6 +120,18 @@ id: root
             currentGameIndex = 0;
             currentGame = getCurrentGame(0);
         }
+    }
+
+    // Vertical accent line dividing the text list from the game details
+    Rectangle {
+    id: vDivider
+        anchors {
+            left: gamelist.right; leftMargin: globalMargin / 2
+            top: header.bottom; topMargin: globalMargin
+            bottom: parent.bottom; bottomMargin: globalMargin + helpMargin
+        }
+        width: vpx(2)
+        color: theme.accent
     }
 
     // ── Box art (top of right side) — identical logic to GameView ─────────
@@ -444,6 +494,7 @@ id: root
                                 selectionColor: theme.accent
                                 selectedTextColor: "white"
                                 onTextEdited: { nameFilter = text; gamelist.currentIndex = 0; }
+                                onActiveFocusChanged: { if (!activeFocus) Qt.inputMethod.hide(); }
                                 Keys.onReturnPressed: { event.accepted = true; closeSearch(); }
                                 Keys.onEnterPressed:  { event.accepted = true; closeSearch(); }
                                 Keys.onPressed: {
@@ -549,6 +600,16 @@ id: root
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
             if (!filterOpen && gamelist.focus) settingsScreen();
+        }
+        // LT — previous letter group
+        if (api.keys.isPageUp(event) && !event.isAutoRepeat) {
+            event.accepted = true;
+            if (!filterOpen && gamelist.focus) jumpToPrevLetter();
+        }
+        // RT — next letter group
+        if (api.keys.isPageDown(event) && !event.isAutoRepeat) {
+            event.accepted = true;
+            if (!filterOpen && gamelist.focus) jumpToNextLetter();
         }
     }
 
