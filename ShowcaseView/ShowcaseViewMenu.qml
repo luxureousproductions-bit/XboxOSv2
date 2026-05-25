@@ -42,6 +42,17 @@ id: root
 
     property var featuredCollection: listFavorites
     property var highlightedGame: null
+
+    // Mirrors ItemBorder.mapLayoutImage so the hero box frame matches the game tiles
+    function heroBorderImage(layoutName) {
+        if (layoutName === "Cyan")    return "Turquoise";
+        if (layoutName === "Crimson") return "Dark Red";
+        if (layoutName === "Lime")    return "Light Green";
+        if (layoutName === "Gold")    return "Yellow";
+        if (layoutName === "Violet")  return "Purple";
+        if (layoutName === "Teal")    return "Stone";
+        return layoutName;
+    }
     property var collection1: getCollection(settings.ShowcaseCollection1, settings.ShowcaseCollection1_Thumbnail)
     property var collection2: getCollection(settings.ShowcaseCollection2, settings.ShowcaseCollection2_Thumbnail)
     property var collection3: getCollection(settings.ShowcaseCollection3, settings.ShowcaseCollection3_Thumbnail)
@@ -765,6 +776,49 @@ id: root
                         horizontalAlignment: Text.AlignHCenter
                     }
                 }
+                // Color-layout highlight frame — matches the game tiles' ItemBorder
+                Loader {
+                    anchors.fill: parent
+                    z: 3
+                    active: resumeBox.active
+                    asynchronous: true
+                    sourceComponent: Component {
+                        Item {
+                            Image {
+                            id: hbBorderImg
+                                anchors.fill: parent
+                                source: "../assets/images/" + root.heroBorderImage(settings.ColorLayout) + ".png"
+                                visible: false
+                                asynchronous: true
+                            }
+                            BorderImage {
+                            id: hbBorderMask
+                                anchors.fill: parent
+                                source: "../assets/images/borderimage.gif"
+                                border { left: vpx(5); right: vpx(5); top: vpx(5); bottom: vpx(5) }
+                                smooth: false
+                                visible: false
+                                asynchronous: true
+                            }
+                            OpacityMask {
+                                anchors.fill: parent
+                                source: hbBorderImg
+                                maskSource: hbBorderMask
+                                visible: hbBorderImg.status === Image.Ready
+                            }
+                            // Fallback accent frame if the layout PNG is missing
+                            Rectangle {
+                                anchors.fill: parent
+                                color: "transparent"
+                                radius: vpx(4)
+                                border.color: theme.accent
+                                border.width: vpx(3)
+                                visible: hbBorderImg.status !== Image.Ready
+                            }
+                        }
+                    }
+                }
+
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: settings.MouseHover == "Yes"
@@ -1147,6 +1201,10 @@ id: root
         
         cacheBuffer: 1000
         footer: Item { height: helpMargin }
+
+        // When landing on the top row (hero box / system tiles), scroll the
+        // whole page to the very top so the fanart area above is fully shown
+        onCurrentIndexChanged: { if (currentIndex <= 1) positionViewAtBeginning(); }
 
         Keys.onUpPressed: {
             if (currentIndex <= 1) { homebutton.focus = true; return; }
