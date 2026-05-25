@@ -129,6 +129,13 @@ id: root
     property var orderBy: Qt.AscendingOrder
     property string searchTerm: ""
     property string searchMode: "Title"
+    property string genreFilter: ""   // grid genre filter ("" = All)
+    // Turn a selected genre into a regex matching it as a whole comma-token
+    function genreToPattern(g) {
+        if (g === "" || g === "All") return "";
+        var esc = g.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        return "(^|,\\s*)" + esc + "(\\s*,|$)";
+    }
     property bool steam: currentCollection.name === "Steam"
     function steamExists() {
         for (i = 0; i < api.collections.count; i++) {
@@ -513,6 +520,7 @@ id: root
         lastState.push(state);
         searchTerm = "";
         searchMode = "Title";
+        genreFilter = "";
         switch(settings.PlatformView) {
             case "Grid":
                 root.state = "softwaregridscreen";
