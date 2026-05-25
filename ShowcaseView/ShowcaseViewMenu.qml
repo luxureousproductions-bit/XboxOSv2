@@ -43,14 +43,8 @@ id: root
     property var featuredCollection: listFavorites
     property var highlightedGame: null
 
-    // Mirrors ItemBorder.mapLayoutImage so the hero box frame matches the game tiles
+    // Every Color Layout now has its own PNG, so use it directly (matches game tiles)
     function heroBorderImage(layoutName) {
-        if (layoutName === "Cyan")    return "Turquoise";
-        if (layoutName === "Crimson") return "Dark Red";
-        if (layoutName === "Lime")    return "Light Green";
-        if (layoutName === "Gold")    return "Yellow";
-        if (layoutName === "Violet")  return "Purple";
-        if (layoutName === "Teal")    return "Stone";
         return layoutName;
     }
     property var collection1: getCollection(settings.ShowcaseCollection1, settings.ShowcaseCollection1_Thumbnail)
