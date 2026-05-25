@@ -360,6 +360,79 @@ id: root
     property real itemheight: vpx(50)
     property color settingsTextColor: theme.accent
 
+    // ── On-screen keyboard for text fields (RA credentials) ───────────────
+    // Fully controller-driven. NO native Android TextInput/IME (no blue box).
+    property bool   kbOpen:          false
+    property string editText:        ""
+    property string editSettingName: ""
+    property bool   editMasked:      false
+    property bool   kbShift:         false
+    property bool   kbSpecial:       false
+    property int    keyIndex:        0
+    property int    keyCols:         10
+    property int    memRevision:     0   // bump to refresh displayed values
+
+    property var kbLower: [
+        "1","2","3","4","5","6","7","8","9","0",
+        "q","w","e","r","t","y","u","i","o","p",
+        "a","s","d","f","g","h","j","k","l","@",
+        "z","x","c","v","b","n","m",".","_","-",
+        "SHIFT","áé","SPACE","DEL","CLR","PASTE","OK"
+    ]
+    property var kbUpper: [
+        "!","@","#","$","%","^","&","*","(",")",
+        "Q","W","E","R","T","Y","U","I","O","P",
+        "A","S","D","F","G","H","J","K","L","+",
+        "Z","X","C","V","B","N","M","?","/","=",
+        "SHIFT","áé","SPACE","DEL","CLR","PASTE","OK"
+    ]
+    property var kbSpec: [
+        "à","á","â","ã","ä","å","æ","ç","è","é",
+        "ê","ë","ì","í","î","ï","ñ","ò","ó","ô",
+        "õ","ö","ø","ù","ú","û","ü","ý","ÿ","ß",
+        "~","`","|","\\","<",">","{","}","[","]",
+        "SHIFT","ABC","SPACE","DEL","CLR","PASTE","OK"
+    ]
+    property var keyboardKeys: kbSpecial ? kbSpec : (kbShift ? kbUpper : kbLower)
+
+    function openEditor(name, masked) {
+        editSettingName = name;
+        editMasked = masked;
+        editText = api.memory.has(name) ? api.memory.get(name) : "";
+        kbShift = false; kbSpecial = false; keyIndex = 0; kbOpen = true;
+        kbOverlay.forceActiveFocus();
+    }
+    function pressKey(k) {
+        if (k === "SHIFT")      kbShift = !kbShift;
+        else if (k === "áé")    kbSpecial = true;
+        else if (k === "ABC")   kbSpecial = false;
+        else if (k === "SPACE") editText += " ";
+        else if (k === "DEL")   editText = editText.slice(0, -1);
+        else if (k === "CLR")   editText = "";
+        else if (k === "PASTE") pasteFromClipboard();
+        else if (k === "OK") {
+            api.memory.set(editSettingName, editText);
+            memRevision++;
+            kbOpen = false;
+            settingsList.forceActiveFocus();
+        } else {
+            editText += k;
+        }
+    }
+    // Paste from the system clipboard via a hidden, never-focused TextEdit
+    // (no focus = no Android IME = no blue box)
+    function pasteFromClipboard() {
+        clipboardHelper.text = "";
+        clipboardHelper.selectAll();
+        clipboardHelper.paste();
+        editText += clipboardHelper.text;
+        clipboardHelper.text = "";
+    }
+    function closeEditor() {
+        kbOpen = false;
+        settingsList.forceActiveFocus();
+    }
+
     Rectangle {
     id: header
 
@@ -624,7 +697,8 @@ id: root
                     }
                 }
 
-                // Container that looks plain when reading, bordered when editing
+                // Read-only value display — editing happens in the on-screen
+                // keyboard overlay (no native TextInput here)
                 Rectangle {
                 id: textInputContainer
 
@@ -633,67 +707,31 @@ id: root
                         right: parent.right; rightMargin: vpx(25)
                         top: parent.top
                     }
-                    y: (itemheight - height) / 2   // vertically center within the label row
+                    y: (itemheight - height) / 2
                     width:  vpx(280)
                     height: vpx(34)
-                    color:  isEditing ? theme.secondary : "transparent"
-                    border.width: isEditing ? vpx(1) : 0
+                    color: "transparent"
+                    border.width: settingRow.selected ? vpx(1) : 0
                     border.color: theme.accent
                     radius: vpx(4)
 
-                    // Always-present TextInput — the native Android EditText always
-                    // exists in the view hierarchy. When editing ends, focus is
-                    // transferred to settingsList (forceActiveFocus) *before*
-                    // isEditing is cleared, so Android calls clearFocus() on the
-                    // EditText cleanly — no orphaned blue-box highlight.
-                    TextInput {
-                    id: raTextInput
-
+                    Text {
                         anchors { fill: parent; margins: vpx(8) }
-                        // Seed initial text from persistent storage
-                        text: api.memory.has(settingName) ? api.memory.get(settingName) : ""
+                        property string storedVal: {
+                            var _r = root.memRevision;   // refresh after edits
+                            return api.memory.has(settingName) ? api.memory.get(settingName) : "";
+                        }
+                        text: storedVal === ""
+                              ? "(press A to set)"
+                              : ((typeof masked !== 'undefined' && masked)
+                                 ? Array(storedVal.length + 1).join("\u25CF")
+                                 : storedVal)
                         color: settingsTextColor
                         font.family: subtitleFont.name
                         font.pixelSize: vpx(18)
-                        clip: true
-                        selectionColor: theme.accent
-                        selectedTextColor: settingsTextColor
                         opacity: settingRow.selected ? 1 : 0.2
                         verticalAlignment: Text.AlignVCenter
-
-                        // Only accept key events / show cursor when editing
-                        readOnly: !settingRow.isEditing
-                        // Show masked dots at rest (if masked field); plain text while editing
-                        echoMode: (typeof masked !== 'undefined' && masked && !settingRow.isEditing)
-                                  ? TextInput.Password : TextInput.Normal
-
-                        // Take focus when editing starts; release it before isEditing
-                        // is cleared so Android can run clearFocus() properly.
-                        Connections {
-                            target: settingRow
-                            onIsEditingChanged: {
-                                if (settingRow.isEditing) {
-                                    raTextInput.forceActiveFocus();
-                                    raTextInput.cursorPosition = raTextInput.text.length;
-                                }
-                            }
-                        }
-
-                        Keys.onPressed: {
-                            if (api.keys.isCancel(event) && !event.isAutoRepeat) {
-                                event.accepted = true;
-                                text = settingRow.originalText;
-                                Qt.inputMethod.hide();
-                                settingsList.forceActiveFocus();
-                                settingRow.isEditing = false;
-                            }
-                        }
-                        Keys.onReturnPressed: {
-                            api.memory.set(settingName, text);
-                            Qt.inputMethod.hide();
-                            settingsList.forceActiveFocus();
-                            settingRow.isEditing = false;
-                        }
+                        elide: Text.ElideRight
                     }
                 }
 
@@ -740,9 +778,7 @@ id: root
                         event.accepted = true;
                         if (isTextInput) {
                             // Capture current saved value before opening editor
-                            originalText = api.memory.has(settingName) ? api.memory.get(settingName) : "";
-                            isEditing = true;
-                            // Focus and cursor position handled by raTextInput.onIsEditingChanged
+                            root.openEditor(settingName, (typeof masked !== 'undefined' && masked));
                         } else {
                             sfxToggle.play();
                             nextSetting();
@@ -765,9 +801,7 @@ id: root
                     onClicked: {
                         if (selected) {
                             if (isTextInput) {
-                                originalText = api.memory.has(settingName) ? api.memory.get(settingName) : "";
-                                isEditing = true;
-                                // Focus and cursor position handled by raTextInput.onIsEditingChanged
+                                root.openEditor(settingName, (typeof masked !== 'undefined' && masked));
                             } else {
                                 sfxToggle.play();
                                 nextSetting();
@@ -784,6 +818,103 @@ id: root
 
         Keys.onUpPressed: { sfxNav.play(); decrementCurrentIndex() }
         Keys.onDownPressed: { sfxNav.play(); incrementCurrentIndex() }
+    }
+
+    // ── On-screen keyboard overlay ────────────────────────────────────────
+    Rectangle {
+    id: kbOverlay
+        visible: kbOpen; z: 100
+        anchors.fill: parent
+        color: Qt.rgba(0, 0, 0, 0.82)
+
+        MouseArea { anchors.fill: parent; onClicked: closeEditor(); }
+
+        // Hidden helper used only for clipboard paste() — never focused
+        TextEdit {
+        id: clipboardHelper
+            visible: false
+            width: 0; height: 0
+            activeFocusOnPress: false
+        }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: vpx(560)
+            height: kbTitle.height + vpx(46) + kbGrid.height + vpx(96)
+            radius: vpx(10)
+            color: Qt.rgba(0.10, 0.10, 0.10, 0.98)
+            border.color: theme.accent; border.width: 2
+
+            Text {
+            id: kbTitle
+                text: "Enter " + editSettingName
+                color: theme.text
+                font.family: titleFont.name; font.pixelSize: vpx(24); font.bold: true
+                anchors { top: parent.top; topMargin: vpx(18); left: parent.left; leftMargin: vpx(24) }
+            }
+
+            Rectangle {
+            id: kbField
+                anchors { top: kbTitle.bottom; topMargin: vpx(12); left: parent.left; right: parent.right; leftMargin: vpx(24); rightMargin: vpx(24) }
+                height: vpx(46); radius: vpx(6)
+                color: Qt.rgba(1,1,1,0.10)
+                border.color: theme.accent; border.width: vpx(1)
+                Text {
+                    anchors { left: parent.left; leftMargin: vpx(14); right: parent.right; rightMargin: vpx(14); verticalCenter: parent.verticalCenter }
+                    text: editText === "" ? "Type\u2026"
+                          : (editMasked ? Array(editText.length + 1).join("\u25CF") : editText)
+                    color: editText === "" ? Qt.rgba(1,1,1,0.4) : theme.text
+                    font.family: subtitleFont.name; font.pixelSize: vpx(20)
+                    elide: Text.ElideRight
+                }
+            }
+
+            Grid {
+            id: kbGrid
+                anchors { top: kbField.bottom; topMargin: vpx(14); horizontalCenter: parent.horizontalCenter }
+                columns: keyCols
+                spacing: vpx(5)
+
+                Repeater {
+                    model: keyboardKeys
+                    Rectangle {
+                        width: vpx(48); height: vpx(42); radius: vpx(4)
+                        property bool sel: keyIndex === index
+                        property bool shiftOn: (modelData === "SHIFT" && kbShift)
+                        color: sel ? theme.accent
+                               : (shiftOn ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.45)
+                                          : Qt.rgba(1,1,1,0.08))
+                        Text {
+                            anchors.centerIn: parent
+                            text: modelData === "SPACE" ? "\u2423"
+                                  : (modelData === "DEL" ? "\u232B"
+                                  : (modelData === "SHIFT" ? "\u21E7" : modelData))
+                            color: sel ? "white" : theme.text
+                            font.family: subtitleFont.name
+                            font.pixelSize: (modelData.length > 1 && modelData !== "SHIFT" && modelData !== "SPACE" && modelData !== "DEL") ? vpx(11) : vpx(18)
+                            font.bold: sel
+                        }
+                        MouseArea { anchors.fill: parent; onClicked: { keyIndex = index; pressKey(modelData); } }
+                    }
+                }
+            }
+
+            Text {
+                anchors { bottom: parent.bottom; bottomMargin: vpx(14); horizontalCenter: parent.horizontalCenter }
+                text: "\u25B2\u25BC\u25C0\u25B6 keys    A type    \u21E7 Shift    áé Accents    B cancel"
+                color: theme.text; opacity: 0.4
+                font.family: subtitleFont.name; font.pixelSize: vpx(13)
+            }
+        }
+
+        Keys.onUpPressed:    { if (keyIndex >= keyCols) keyIndex -= keyCols; }
+        Keys.onDownPressed:  { var ni = keyIndex + keyCols; if (ni < keyboardKeys.length) keyIndex = ni; else keyIndex = keyboardKeys.length - 1; }
+        Keys.onLeftPressed:  { if ((keyIndex % keyCols) !== 0) keyIndex--; }
+        Keys.onRightPressed: { if ((keyIndex % keyCols) !== (keyCols - 1) && keyIndex < keyboardKeys.length - 1) keyIndex++; }
+        Keys.onPressed: {
+            if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; pressKey(keyboardKeys[keyIndex]); }
+            if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; closeEditor(); }
+        }
     }
 
     // Helpbar buttons
