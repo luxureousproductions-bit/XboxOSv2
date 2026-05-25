@@ -20,59 +20,8 @@ import QtGraphicalEffects 1.15
 Item {
 id: root
 
+    // Every Color Layout now has its own PNG, so use it directly.
     function mapLayoutImage(layoutName) {
-        // Original remaps
-        if (layoutName === "Cyan")     return "Turquoise";
-        if (layoutName === "Crimson")  return "Dark Red";
-        if (layoutName === "Lime")     return "Light Green";
-        if (layoutName === "Gold")     return "Yellow";
-        if (layoutName === "Violet")   return "Purple";
-        if (layoutName === "Teal")     return "Stone";
-        // Greens → nearest existing green
-        if (layoutName === "Olive")        return "Forest Green";
-        if (layoutName === "Emerald")      return "Dark Green";
-        if (layoutName === "Jade")         return "Mint";
-        // Teals / Cyans → Turquoise
-        if (layoutName === "Dark Teal")    return "Turquoise";
-        if (layoutName === "Arctic")       return "Turquoise";
-        if (layoutName === "Seafoam")      return "Turquoise";
-        // Blues → nearest existing blue
-        if (layoutName === "Royal Blue")   return "Dark Blue";
-        if (layoutName === "Sky Blue")     return "Light Blue";
-        if (layoutName === "Ice Blue")     return "Light Blue";
-        if (layoutName === "Cobalt")       return "Navy Blue";
-        if (layoutName === "Sapphire")     return "Navy Blue";
-        // Reds / Pinks
-        if (layoutName === "Maroon")       return "Burgundy";
-        if (layoutName === "Brick Red")    return "Dark Red";
-        if (layoutName === "Ruby")         return "Dark Red";
-        if (layoutName === "Dark Pink")    return "Magenta";
-        if (layoutName === "Light Pink")   return "Magenta";
-        if (layoutName === "Hot Pink")     return "Magenta";
-        if (layoutName === "Rose")         return "Magenta";
-        if (layoutName === "Coral")        return "Orange";
-        if (layoutName === "Salmon")       return "Orange";
-        // Purples
-        if (layoutName === "Dark Purple")  return "Purple";
-        if (layoutName === "Lavender")     return "Purple";
-        if (layoutName === "Indigo")       return "Purple";
-        // Oranges / Yellows
-        if (layoutName === "Amber")        return "Yellow";
-        if (layoutName === "Dark Gold")    return "Yellow";
-        if (layoutName === "Bronze")       return "Dark Orange";
-        // Browns
-        if (layoutName === "Light Brown")  return "Dark Brown";
-        if (layoutName === "Copper")       return "Dark Brown";
-        if (layoutName === "Rust")         return "Dark Brown";
-        if (layoutName === "Sienna")       return "Dark Brown";
-        if (layoutName === "Tan")          return "Dark Brown";
-        // Grays / Neutrals
-        if (layoutName === "Mid Gray")     return "Dark Gray";
-        if (layoutName === "Steel")        return "Slate";
-        if (layoutName === "Gunmetal")     return "Slate";
-        if (layoutName === "Stone")        return "Stone";
-        if (layoutName === "Onyx")         return "Dark Gray";
-        if (layoutName === "White")        return "Silver";
         return layoutName;
     }
 
@@ -119,15 +68,13 @@ id: root
         visible: selected && border.status === Image.Ready
     }
 
-    // Fallback: programmatic accent border shown when PNG doesn't exist
+    // Fallback accent frame if a layout PNG is ever missing
     Rectangle {
-        anchors.fill: parent
+        anchors.fill: border
         color: "transparent"
-        border.width: vpx(3)
         border.color: theme.accent
-        opacity: (selected && border.status !== Image.Ready) ? 0.9 : 0
-        Behavior on opacity { NumberAnimation { duration: 100 } }
-        visible: opacity > 0
+        border.width: vpx(3)
+        visible: selected && border.status !== Image.Ready
     }
 
     Rectangle {
