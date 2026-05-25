@@ -33,6 +33,7 @@ id: root
             ValueFilter { roleName: "favorite"; value: true; enabled: showFavs },
             RegExpFilter { roleName: "title"; pattern: searchTerm; caseSensitivity: Qt.CaseInsensitive; enabled: searchTerm != "" && searchMode === "Title" },
             RegExpFilter { roleName: "genre"; pattern: searchTerm; caseSensitivity: Qt.CaseInsensitive; enabled: searchTerm != "" && searchMode === "Genre" },
+            RegExpFilter { roleName: "genre"; pattern: genreToPattern(genreFilter); caseSensitivity: Qt.CaseInsensitive; enabled: genreFilter !== "" },
             IndexFilter { maximumIndex: max - 1; enabled: max }
         ]
         sorters: [
