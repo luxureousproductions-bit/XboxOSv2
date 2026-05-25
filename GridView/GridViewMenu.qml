@@ -23,8 +23,6 @@ import "../utils.js" as Utils
 
 FocusScope {
 id: root
-    // While not necessary to do it here, this means we don't need to change it in both
-    // touch and gamepad functions each time
     function gameActivated() {
         storedCollectionGameIndex = gamegrid.currentIndex
         gameDetails(list.currentGame(gamegrid.currentIndex));
@@ -33,6 +31,49 @@ id: root
     property var sortedGames;
     property bool isLeftTriggerPressed: false;
     property bool isRightTriggerPressed: false;
+
+    // ── Sorting & Filters overlay state ───────────────────────────────────
+    // Drives the GLOBAL searchTerm / sortByIndex / orderBy / showFavs that the
+    // proxy inside ListCollectionGames already filters & sorts on — so the
+    // grid itself stays untouched. Fully controller-driven, no native IME.
+    property bool filterOpen:   false
+    property bool searchActive: false
+    property int  filterRow:    0
+    property var  sortFields: [
+        { label: "Title",       idx: 0 },
+        { label: "Last Played", idx: 1 },
+        { label: "Most Played", idx: 2 },
+        { label: "Rating",      idx: 3 }
+    ]
+    property var keyboardKeys: [
+        "A","B","C","D","E","F","G","H","I","J",
+        "K","L","M","N","O","P","Q","R","S","T",
+        "U","V","W","X","Y","Z","0","1","2","3",
+        "4","5","6","7","8","9","SPACE","DEL","CLR","OK"
+    ]
+    property int keyCols:  10
+    property int keyIndex: 0
+
+    function activateSearch() { searchMode = "Title"; keyIndex = 0; searchActive = true; }
+    function pressKey(k) {
+        if (k === "SPACE")    searchTerm += " ";
+        else if (k === "DEL") searchTerm = searchTerm.slice(0, -1);
+        else if (k === "CLR") searchTerm = "";
+        else if (k === "OK")  searchActive = false;
+        else                  searchTerm += k;
+        gamegrid.currentIndex = 0;
+        sortedGames = null;
+    }
+    function selectSort(idx) {
+        if (sortByIndex === idx) {
+            orderBy = (orderBy === Qt.AscendingOrder) ? Qt.DescendingOrder : Qt.AscendingOrder;
+        } else {
+            sortByIndex = idx;
+            orderBy = (idx === 0) ? Qt.AscendingOrder : Qt.DescendingOrder;
+        }
+        gamegrid.currentIndex = 0;
+        sortedGames = null;
+    }
 
     function nextChar(c, modifier) {
         const firstAlpha = 97;
@@ -178,28 +219,145 @@ id: root
         }
     }
 
-    Rectangle {
+    // ── Custom header (collection name + centered nav buttons) ────────────
+    Item {
     id: header
-
-        anchors {
-            top:    parent.top
-            left:   parent.left
-            right:  parent.right
-        }
-        height: vpx(95)
-        color: theme.main
+        anchors { top: parent.top; left: parent.left; right: parent.right }
+        height: vpx(75)
         z: 5
 
-        HeaderBar {
-        id: headercontainer
+        Rectangle { anchors.fill: parent; color: theme.main }
 
-            anchors.fill: parent
-            filteredCount: list.games.count
+        // Platform logo (top-left); falls back to the collection name if missing
+        Image {
+        id: platformlogo
+            anchors { top: parent.top; topMargin: vpx(8); left: parent.left; leftMargin: globalMargin }
+            height: vpx(50)
+            fillMode: Image.PreserveAspectFit
+            source: list.collection ? "../assets/images/logospng/" + Utils.processPlatformName(list.collection.shortName) + ".png" : ""
+            smooth: true
+            asynchronous: false
+            cache: true
+            visible: status === Image.Ready
+            MouseArea { anchors.fill: parent; onClicked: previousScreen(); }
         }
-        Keys.onDownPressed: {
-            sfxNav.play();
-            gamegrid.focus = true;
-            gamegrid.currentIndex = 0;
+        Text {
+        id: platformtitle
+            anchors { top: parent.top; topMargin: vpx(8); left: parent.left; leftMargin: globalMargin; right: homebutton.left; rightMargin: vpx(20) }
+            height: vpx(50)
+            text: list.collection ? list.collection.name : ""
+            color: theme.text; font.family: titleFont.name; font.pixelSize: vpx(30); font.bold: true
+            verticalAlignment: Text.AlignVCenter
+            elide: Text.ElideRight
+            visible: platformlogo.status !== Image.Ready
+            MouseArea { anchors.fill: parent; onClicked: previousScreen(); }
+        }
+        Text {
+            anchors { left: parent.left; leftMargin: globalMargin; top: platformlogo.bottom; topMargin: vpx(2) }
+            text: list.games.count + " games"
+            color: theme.text; opacity: 0.7; font.family: subtitleFont.name; font.pixelSize: vpx(17)
+            visible: settings.GameCounter !== "No"
+        }
+
+        // Nav buttons (home / discover / achievements / settings)
+        Rectangle {
+        id: homebutton
+            width: vpx(36); height: vpx(36); radius: height/2
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(81) }
+            color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
+            Keys.onDownPressed:  { gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            Keys.onRightPressed: discoverbutton.focus = true;
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            }
+            MouseArea { anchors.fill: parent; onClicked: showcaseScreen(); }
+            Canvas {
+                anchors { fill: parent; margins: vpx(7) }
+                onPaint: {
+                    var ctx = getContext("2d"); ctx.reset();
+                    var w = width, h = height;
+                    ctx.fillStyle = "white";
+                    ctx.globalAlpha = homebutton.focus ? 1.0 : 0.85;
+                    ctx.beginPath();
+                    ctx.moveTo(w*0.5, h*0.05);
+                    ctx.lineTo(w*0.95, h*0.5);
+                    ctx.lineTo(w*0.05, h*0.5);
+                    ctx.closePath(); ctx.fill();
+                    ctx.fillRect(w*0.18, h*0.5, w*0.64, h*0.42);
+                    ctx.clearRect(w*0.42, h*0.62, w*0.16, h*0.30);
+                }
+                Connections { target: homebutton; onFocusChanged: parent.requestPaint() }
+            }
+        }
+
+        Rectangle {
+        id: discoverbutton
+            width: vpx(36); height: vpx(36); radius: height/2
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(27) }
+            color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
+            Keys.onDownPressed:  { gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            Keys.onLeftPressed:  homebutton.focus = true;
+            Keys.onRightPressed: achievementsbutton.focus = true;
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            }
+            MouseArea { anchors.fill: parent; onClicked: discoverScreen(); }
+            Canvas {
+                anchors { fill: parent; margins: vpx(6) }
+                onPaint: {
+                    var ctx = getContext("2d"); ctx.reset();
+                    var cx = width/2, cy = height/2, r = Math.min(cx,cy)-1;
+                    ctx.globalAlpha = discoverbutton.focus ? 1.0 : 0.85;
+                    ctx.strokeStyle = "white"; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+                    ctx.fillStyle = "white";
+                    ctx.beginPath(); ctx.moveTo(cx, cy-r*0.65); ctx.lineTo(cx+r*0.30, cy+r*0.10); ctx.lineTo(cx, cy+r*0.20); ctx.lineTo(cx-r*0.30, cy+r*0.10); ctx.closePath(); ctx.fill();
+                    ctx.globalAlpha = 0.35;
+                    ctx.beginPath(); ctx.moveTo(cx, cy+r*0.65); ctx.lineTo(cx-r*0.30, cy-r*0.10); ctx.lineTo(cx, cy-r*0.20); ctx.lineTo(cx+r*0.30, cy-r*0.10); ctx.closePath(); ctx.fill();
+                }
+                Connections { target: discoverbutton; onFocusChanged: parent.requestPaint() }
+            }
+        }
+
+        Rectangle {
+        id: achievementsbutton
+            width: vpx(36); height: vpx(36); radius: height/2
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(27) }
+            color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
+            Keys.onDownPressed:  { gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            Keys.onLeftPressed:  discoverbutton.focus = true;
+            Keys.onRightPressed: settingsbutton.focus = true;
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            }
+            MouseArea { anchors.fill: parent; onClicked: achievementsScreen(); }
+            Text {
+                anchors.centerIn: parent
+                text: "🏆"; font.pixelSize: vpx(18)
+                opacity: achievementsbutton.focus ? 1 : 0.7
+            }
+        }
+
+        Rectangle {
+        id: settingsbutton
+            width: vpx(36); height: vpx(36); radius: height/2
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(81) }
+            color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
+            Keys.onDownPressed: { gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            Keys.onLeftPressed: achievementsbutton.focus = true;
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            }
+            MouseArea { anchors.fill: parent; onClicked: settingsScreen(); }
+            Image {
+                anchors { fill: parent; margins: vpx(10) }
+                source: "../assets/images/settingsicon.svg"
+                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+            }
         }
     }
 
@@ -216,7 +374,6 @@ id: root
         GridView {
         id: gamegrid
 
-            // Figuring out the aspect ratio for box art
             property real cellHeightRatio: fakebox.paintedHeight / fakebox.paintedWidth
             property real savedCellHeight: {
                 if (settings.GridThumbnail == "Tall") {
@@ -266,7 +423,7 @@ id: root
 
                     width:      GridView.view.cellWidth
                     height:     GridView.view.cellHeight - titleMargin
-                    
+
                     onActivate: {
                         if (selected)
                             gameActivated();
@@ -289,7 +446,7 @@ id: root
 
                     width:      GridView.view.cellWidth
                     height:     GridView.view.cellHeight - titleMargin
-                    
+
                     onActivated: {
                         if (selected)
                             gameActivated();
@@ -314,11 +471,10 @@ id: root
                 }
             }
 
-            // Manually set the navigation this way so audio can play without performance hits
             Keys.onUpPressed: {
                 sfxNav.play();
                 if (currentIndex < numColumns) {
-                    headercontainer.focus = true;
+                    homebutton.focus = true;
                     gamegrid.currentIndex = -1;
                 } else {
                     moveCurrentIndexUp();
@@ -331,14 +487,196 @@ id: root
 
     }
 
+    // ── Sorting & Filters overlay (same keyboard filters as All Games) ────
+    Rectangle {
+    id: filterPanel
+        visible: filterOpen; z: 30
+        anchors.fill: parent
+        color: Qt.rgba(0, 0, 0, 0.78)
+
+        MouseArea { anchors.fill: parent; onClicked: { searchActive = false; filterOpen = false; gamegrid.focus = true; } }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: vpx(500)
+            height: titleTxt.height + fieldCol.height + vpx(60)
+            radius: vpx(10)
+            color: Qt.rgba(0.10, 0.10, 0.10, 0.98)
+            border.color: theme.accent; border.width: 2
+
+            Text {
+            id: titleTxt
+                text: "Sorting & Filters"
+                color: theme.text
+                font.family: titleFont.name; font.pixelSize: vpx(24); font.bold: true
+                anchors { top: parent.top; topMargin: vpx(18); left: parent.left; leftMargin: vpx(24) }
+            }
+
+            Column {
+            id: fieldCol
+                anchors { top: titleTxt.bottom; topMargin: vpx(14); left: parent.left; right: parent.right; leftMargin: vpx(16); rightMargin: vpx(16) }
+                spacing: vpx(6)
+
+                // Name row — shows the current search text
+                Rectangle {
+                    width: parent.width; height: vpx(52); radius: vpx(6)
+                    property bool onRow: filterRow === 0 || searchActive
+                    color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+
+                    Text {
+                        anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                        text: "\uD83D\uDD0D"; font.pixelSize: vpx(15); width: vpx(22)
+                        color: theme.text; opacity: onRow ? 1 : 0.6
+                    }
+                    Text {
+                        anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                        text: searchActive
+                              ? (searchTerm === "" ? "Type a name\u2026" : searchTerm)
+                              : (searchTerm === "" ? "Name: (no filter)" : "Name: " + searchTerm)
+                        color: onRow ? theme.accent : theme.text
+                        opacity: onRow ? 1 : 0.85
+                        elide: Text.ElideRight
+                        font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: onRow
+                    }
+                    MouseArea { anchors.fill: parent; onClicked: { filterRow = 0; activateSearch(); } }
+                }
+
+                // Sort fields + favorites (shown when the keyboard is NOT open)
+                Column {
+                    visible: !searchActive
+                    width: parent.width
+                    spacing: vpx(6)
+
+                    Repeater {
+                        model: sortFields
+                        Rectangle {
+                            width: parent.width; height: vpx(46); radius: vpx(6)
+                            property bool active: sortByIndex === modelData.idx
+                            property bool onRow:  filterRow === index + 1
+                            color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+
+                            Text {
+                                anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                                text: active ? (orderBy === Qt.AscendingOrder ? "\u25B2" : "\u25BC") : "  "
+                                color: theme.accent; font.pixelSize: vpx(16); font.bold: true
+                                width: vpx(22)
+                            }
+                            Text {
+                                anchors { left: parent.left; leftMargin: vpx(46); verticalCenter: parent.verticalCenter }
+                                text: modelData.label
+                                color: active ? theme.accent : theme.text
+                                opacity: active ? 1 : 0.85
+                                font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: active
+                            }
+                            MouseArea { anchors.fill: parent; onClicked: { filterRow = index + 1; selectSort(modelData.idx); } }
+                        }
+                    }
+
+                    // Favorites-only toggle
+                    Rectangle {
+                        width: parent.width; height: vpx(46); radius: vpx(6)
+                        property bool onRow: filterRow === sortFields.length + 1
+                        color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+
+                        Text {
+                            anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                            text: showFavs ? "\u2713" : "  "
+                            color: theme.accent; font.pixelSize: vpx(16); font.bold: true
+                            width: vpx(22)
+                        }
+                        Text {
+                            anchors { left: parent.left; leftMargin: vpx(46); verticalCenter: parent.verticalCenter }
+                            text: "Favorites only"
+                            color: showFavs ? theme.accent : theme.text
+                            opacity: showFavs ? 1 : 0.85
+                            font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: showFavs
+                        }
+                        MouseArea { anchors.fill: parent; onClicked: { filterRow = sortFields.length + 1; showFavs = !showFavs; gamegrid.currentIndex = 0; sortedGames = null; } }
+                    }
+                }
+
+                // On-screen keyboard (shown when searching)
+                Grid {
+                    visible: searchActive
+                    columns: keyCols
+                    spacing: vpx(4)
+                    width: parent.width
+
+                    Repeater {
+                        model: keyboardKeys
+                        Rectangle {
+                            width: (fieldCol.width - (keyCols - 1) * vpx(4)) / keyCols
+                            height: vpx(42); radius: vpx(4)
+                            property bool sel: keyIndex === index
+                            property bool wide: (modelData === "CLR" || modelData === "OK")
+                            color: sel ? theme.accent : Qt.rgba(1,1,1,0.08)
+                            Text {
+                                anchors.centerIn: parent
+                                text: modelData === "SPACE" ? "\u2423" : (modelData === "DEL" ? "\u232B" : modelData)
+                                color: sel ? "white" : theme.text
+                                font.family: subtitleFont.name
+                                font.pixelSize: wide ? vpx(12) : vpx(17)
+                                font.bold: sel
+                            }
+                            MouseArea { anchors.fill: parent; onClicked: { keyIndex = index; pressKey(modelData); } }
+                        }
+                    }
+                }
+            }
+
+            Text {
+                anchors { bottom: parent.bottom; bottomMargin: vpx(14); horizontalCenter: parent.horizontalCenter }
+                text: searchActive ? "\u25B2\u25BC\u25C0\u25B6 keys    A type    B done"
+                                   : "\u25B2\u25BC navigate    A select    B close"
+                color: theme.text; opacity: 0.4
+                font.family: subtitleFont.name; font.pixelSize: vpx(13)
+            }
+        }
+
+        Keys.onUpPressed: {
+            if (searchActive) { if (keyIndex >= keyCols) keyIndex -= keyCols; }
+            else if (filterRow > 0) filterRow--;
+        }
+        Keys.onDownPressed: {
+            if (searchActive) { if (keyIndex < keyboardKeys.length - keyCols) keyIndex += keyCols; }
+            else if (filterRow < sortFields.length + 1) filterRow++;
+        }
+        Keys.onLeftPressed: {
+            if (searchActive && (keyIndex % keyCols) !== 0) keyIndex--;
+        }
+        Keys.onRightPressed: {
+            if (searchActive && (keyIndex % keyCols) !== (keyCols - 1) && keyIndex < keyboardKeys.length - 1) keyIndex++;
+        }
+        Keys.onPressed: {
+            if (searchActive) {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; pressKey(keyboardKeys[keyIndex]); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; searchActive = false; }
+                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; searchActive = false; }
+                return;
+            }
+            if (api.keys.isAccept(event) && !event.isAutoRepeat) {
+                event.accepted = true;
+                if (filterRow === 0) activateSearch();
+                else if (filterRow <= sortFields.length) selectSort(sortFields[filterRow - 1].idx);
+                else { showFavs = !showFavs; gamegrid.currentIndex = 0; sortedGames = null; }
+            }
+            if (api.keys.isCancel(event) && !event.isAutoRepeat) {
+                event.accepted = true; filterOpen = false; gamegrid.focus = true;
+            }
+            if (api.keys.isDetails(event) && !event.isAutoRepeat) {
+                event.accepted = true; filterOpen = false; gamegrid.focus = true;
+            }
+        }
+    }
+
     Keys.onReleased: {
+        if (filterOpen) return;
         // Scroll Down
         if (api.keys.isPageDown(event) && !event.isAutoRepeat) {
             event.accepted = true;
             isRightTriggerPressed = false;
             return;
         }
-
         // Scroll Up
         if (api.keys.isPageUp(event) && !event.isAutoRepeat) {
             event.accepted = true;
@@ -348,6 +686,8 @@ id: root
     }
 
     Keys.onPressed: {
+        if (filterOpen) return;
+
         // Accept
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
@@ -371,29 +711,31 @@ id: root
             return;
         }
 
-        // Filters
+        // Filters (X) — open the Sorting & Filters overlay
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxToggle.play();
-            cycleSort();
+            filterRow = (sortByIndex >= 0 && sortByIndex < sortFields.length) ? sortByIndex + 1 : 0;
+            searchActive = false;
+            filterOpen = true;
+            filterPanel.forceActiveFocus();
             return;
         }
 
-        // Settings
+        // Settings (Y)
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
             settingsScreen();
             return;
         }
 
-        // Scroll Down
+        // Scroll Down (RT) — next letter
         if (api.keys.isPageDown(event) && !event.isAutoRepeat) {
             event.accepted = true;
             isRightTriggerPressed = navigateToNextLetter(+1) ? true : isRightTriggerPressed;
             return;
         }
 
-        // Scroll Up
+        // Scroll Up (LT) — previous letter
         if (api.keys.isPageUp(event) && !event.isAutoRepeat) {
             event.accepted = true;
             isLeftTriggerPressed = navigateToNextLetter(-1) ? true : isLeftTriggerPressed;
@@ -410,8 +752,6 @@ id: root
 
             gamegrid.currentIndex = 0;
             sfxToggle.play();
-
-            // Reset our cached sorted games
             sortedGames = null;
             return;
         }
@@ -426,33 +766,19 @@ id: root
 
             gamegrid.currentIndex = 0;
             sfxToggle.play();
-
-            // Reset our cached sorted games
             sortedGames = null;
             return;
         }
     }
 
-    // Helpbar buttons
+    // ── Helpbar: A View details, X Filters, Y Settings, B Back ────────────
     ListModel {
         id: gridviewHelpModel
 
-        ListElement {
-            name: "Back"
-            button: "cancel"
-        }
-        ListElement {
-            name: "Settings"
-            button: "filters"
-        }
-        ListElement {
-            name: "Filters"
-            button: "details"
-        }
-        ListElement {
-            name: "View details"
-            button: "accept"
-        }
+        ListElement { name: "Back";         button: "cancel"  }
+        ListElement { name: "Settings";     button: "filters" }
+        ListElement { name: "Filters";      button: "details" }
+        ListElement { name: "View details"; button: "accept"  }
     }
 
     onFocusChanged: {
