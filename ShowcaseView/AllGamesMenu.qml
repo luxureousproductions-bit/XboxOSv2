@@ -24,28 +24,28 @@ id: root
     property int    sortDir:     Qt.AscendingOrder
     property bool   filterOpen:  false
     property int    filterRow:   0
-    property string nameFilter:  ""
-    property bool   searchActive: false
+    property string nameFilter:   ""
+    property bool   searchActive: false   // on-screen keyboard open
 
-    function activateSearch() { searchActive = true; }
-    function closeSearch() {
-        if (!searchActive) return;
-        if (searchLoader.item) searchLoader.item.focus = false; // drop TextInput focus
-        Qt.inputMethod.hide();          // hide while the TextInput still exists
-        filterPanel.forceActiveFocus();
-        searchActive = false;           // destroy the native input view
-    }
+    // On-screen keyboard — fully controller-driven, NO native Android IME
+    // (this is what eliminates the stuck blue input box entirely)
+    property var keyboardKeys: [
+        "A","B","C","D","E","F","G","H","I","J",
+        "K","L","M","N","O","P","Q","R","S","T",
+        "U","V","W","X","Y","Z","0","1","2","3",
+        "4","5","6","7","8","9","SPACE","DEL","CLR","OK"
+    ]
+    property int keyCols:  10
+    property int keyIndex: 0
 
-    // Reliable watcher: when the soft keyboard becomes hidden for ANY reason
-    // (controller B mapped to Android BACK, system gesture, etc.) tear down
-    // the search so no orphaned native input box is left on screen.
-    property bool imeVisible: Qt.inputMethod.visible
-    onImeVisibleChanged: {
-        if (!imeVisible && searchActive) {
-            if (searchLoader.item) searchLoader.item.focus = false;
-            filterPanel.forceActiveFocus();
-            searchActive = false;
-        }
+    function activateSearch() { keyIndex = 0; searchActive = true; }
+    function pressKey(k) {
+        if (k === "SPACE")    nameFilter += " ";
+        else if (k === "DEL") nameFilter = nameFilter.slice(0, -1);
+        else if (k === "CLR") nameFilter = "";
+        else if (k === "OK")  searchActive = false;
+        else                  nameFilter += k;
+        gamelist.currentIndex = 0;
     }
 
     property var sortFields: [
@@ -440,11 +440,11 @@ id: root
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, 0.78)
 
-        MouseArea { anchors.fill: parent; onClicked: { if (searchActive) Qt.inputMethod.hide(); searchActive = false; filterOpen = false; gamelist.focus = true; } }
+        MouseArea { anchors.fill: parent; onClicked: { searchActive = false; filterOpen = false; gamelist.focus = true; } }
 
         Rectangle {
             anchors.centerIn: parent
-            width: vpx(460)
+            width: vpx(500)
             height: titleTxt.height + fieldCol.height + vpx(60)
             radius: vpx(10)
             color: Qt.rgba(0.10, 0.10, 0.10, 0.98)
@@ -461,99 +461,123 @@ id: root
             Column {
             id: fieldCol
                 anchors { top: titleTxt.bottom; topMargin: vpx(14); left: parent.left; right: parent.right; leftMargin: vpx(16); rightMargin: vpx(16) }
-                spacing: vpx(4)
+                spacing: vpx(6)
 
-                // Name search row (row 0)
+                // Name row — shows the current search text
                 Rectangle {
                     width: parent.width; height: vpx(52); radius: vpx(6)
-                    property bool onRow: filterRow === 0
+                    property bool onRow: filterRow === 0 || searchActive
                     color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
 
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
-                        text: "🔍"; font.pixelSize: vpx(15); width: vpx(22)
+                        text: "\uD83D\uDD0D"; font.pixelSize: vpx(15); width: vpx(22)
                         color: theme.text; opacity: onRow ? 1 : 0.6
                     }
                     Text {
-                        visible: !searchActive
                         anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
-                        text: nameFilter === "" ? "Name: (no filter)" : "Name: " + nameFilter
+                        text: searchActive
+                              ? (nameFilter === "" ? "Type a name\u2026" : nameFilter)
+                              : (nameFilter === "" ? "Name: (no filter)" : "Name: " + nameFilter)
                         color: onRow ? theme.accent : theme.text
                         opacity: onRow ? 1 : 0.85
                         elide: Text.ElideRight
                         font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: onRow
                     }
-                    // Native TextInput, only alive while actively typing (Android-safe)
-                    Loader {
-                    id: searchLoader
-                        active: searchActive
-                        asynchronous: false
-                        anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); top: parent.top; bottom: parent.bottom }
-                        onLoaded: { if (item) { item.forceActiveFocus(); item.selectAll(); } }
-                        sourceComponent: Component {
-                            TextInput {
-                                verticalAlignment: Text.AlignVCenter
-                                color: theme.accent
-                                font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: true
-                                clip: true
-                                text: nameFilter
-                                selectionColor: theme.accent
-                                selectedTextColor: "white"
-                                inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
-                                onTextEdited: { nameFilter = text; gamelist.currentIndex = 0; }
-                                onActiveFocusChanged: {
-                                    if (!activeFocus) Qt.inputMethod.hide();
-                                    else Qt.inputMethod.show();
-                                }
-                                Keys.onReturnPressed: { event.accepted = true; closeSearch(); }
-                                Keys.onEnterPressed:  { event.accepted = true; closeSearch(); }
-                                Keys.onPressed: {
-                                    if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; closeSearch(); }
-                                }
-                            }
-                        }
-                    }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 0; activateSearch(); } }
                 }
 
-                Repeater {
-                    model: sortFields
-                    Rectangle {
-                        width: parent.width; height: vpx(52); radius: vpx(6)
-                        property bool active: sortField === modelData.key
-                        property bool onRow:  filterRow === index + 1
-                        color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+                // Sort fields (shown when the keyboard is NOT open)
+                Column {
+                    visible: !searchActive
+                    width: parent.width
+                    spacing: vpx(6)
 
-                        Text {
-                            anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
-                            text: active ? (sortDir === Qt.AscendingOrder ? "▲" : "▼") : "  "
-                            color: theme.accent; font.pixelSize: vpx(16); font.bold: true
-                            width: vpx(22)
+                    Repeater {
+                        model: sortFields
+                        Rectangle {
+                            width: parent.width; height: vpx(48); radius: vpx(6)
+                            property bool active: sortField === modelData.key
+                            property bool onRow:  filterRow === index + 1
+                            color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+
+                            Text {
+                                anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                                text: active ? (sortDir === Qt.AscendingOrder ? "\u25B2" : "\u25BC") : "  "
+                                color: theme.accent; font.pixelSize: vpx(16); font.bold: true
+                                width: vpx(22)
+                            }
+                            Text {
+                                anchors { left: parent.left; leftMargin: vpx(46); verticalCenter: parent.verticalCenter }
+                                text: modelData.label
+                                color: active ? theme.accent : theme.text
+                                opacity: active ? 1 : 0.85
+                                font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: active
+                            }
+                            MouseArea { anchors.fill: parent; onClicked: { filterRow = index + 1; selectSort(modelData.key); } }
                         }
-                        Text {
-                            anchors { left: parent.left; leftMargin: vpx(46); verticalCenter: parent.verticalCenter }
-                            text: modelData.label
-                            color: active ? theme.accent : theme.text
-                            opacity: active ? 1 : 0.85
-                            font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: active
+                    }
+                }
+
+                // On-screen keyboard (shown when searching)
+                Grid {
+                    visible: searchActive
+                    columns: keyCols
+                    spacing: vpx(4)
+                    width: parent.width
+
+                    Repeater {
+                        model: keyboardKeys
+                        Rectangle {
+                            width: (fieldCol.width - (keyCols - 1) * vpx(4)) / keyCols
+                            height: vpx(42); radius: vpx(4)
+                            property bool sel: keyIndex === index
+                            property bool wide: (modelData === "CLR" || modelData === "OK")
+                            color: sel ? theme.accent : Qt.rgba(1,1,1,0.08)
+                            Text {
+                                anchors.centerIn: parent
+                                text: modelData === "SPACE" ? "\u2423" : (modelData === "DEL" ? "\u232B" : modelData)
+                                color: sel ? "white" : theme.text
+                                font.family: subtitleFont.name
+                                font.pixelSize: wide ? vpx(12) : vpx(17)
+                                font.bold: sel
+                            }
+                            MouseArea { anchors.fill: parent; onClicked: { keyIndex = index; pressKey(modelData); } }
                         }
-                        MouseArea { anchors.fill: parent; onClicked: { filterRow = index + 1; selectSort(modelData.key); } }
                     }
                 }
             }
 
             Text {
                 anchors { bottom: parent.bottom; bottomMargin: vpx(14); horizontalCenter: parent.horizontalCenter }
-                text: "▲▼ navigate    A toggle/select    B close"
+                text: searchActive ? "\u25B2\u25BC\u25C0\u25B6 keys    A type    B done"
+                                   : "\u25B2\u25BC navigate    A select    B close"
                 color: theme.text; opacity: 0.4
                 font.family: subtitleFont.name; font.pixelSize: vpx(13)
             }
         }
 
-        Keys.onUpPressed:   { if (!searchActive && filterRow > 0) filterRow--; }
-        Keys.onDownPressed: { if (!searchActive && filterRow < sortFields.length) filterRow++; }
+        Keys.onUpPressed: {
+            if (searchActive) { if (keyIndex >= keyCols) keyIndex -= keyCols; }
+            else if (filterRow > 0) filterRow--;
+        }
+        Keys.onDownPressed: {
+            if (searchActive) { if (keyIndex < keyboardKeys.length - keyCols) keyIndex += keyCols; }
+            else if (filterRow < sortFields.length) filterRow++;
+        }
+        Keys.onLeftPressed: {
+            if (searchActive && (keyIndex % keyCols) !== 0) keyIndex--;
+        }
+        Keys.onRightPressed: {
+            if (searchActive && (keyIndex % keyCols) !== (keyCols - 1) && keyIndex < keyboardKeys.length - 1) keyIndex++;
+        }
         Keys.onPressed: {
-            if (searchActive) return;
+            if (searchActive) {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; pressKey(keyboardKeys[keyIndex]); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; searchActive = false; }
+                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; searchActive = false; }
+                return;
+            }
             if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                 event.accepted = true;
                 if (filterRow === 0) activateSearch();
