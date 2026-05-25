@@ -33,6 +33,22 @@ id: root
     property var    genreOptions:     []   // ["All", ...] built lazily & cached
     property int    genrePickerIndex: 0
 
+    // ── Game preview art — screenshot backdrop + logo + 3D box (2D fallback)
+    // Independent of the Box Art (GameView) setting.
+    property string artScreenshot: {
+        if (!currentGame) return "";
+        var ss = currentGame.assets.screenshotList;
+        if (ss && ss.length) return ss[0];
+        return Utils.fanArt(currentGame) || "";
+    }
+    property string artLogo: currentGame ? (Utils.logo(currentGame) || currentGame.assets.logo || "") : ""
+    property string artBoxSource: {
+        if (!currentGame) return "";
+        var three = Utils.get3dBoxArt(currentGame);
+        if (three) return three;                       // 3D box
+        return currentGame.assets.boxFront || "";      // 2D fallback
+    }
+
     // On-screen keyboard — fully controller-driven, NO native Android IME
     // (this is what eliminates the stuck blue input box entirely)
     property bool kbSpecial: false
@@ -194,8 +210,8 @@ id: root
         color: theme.accent
     }
 
-    // ── Box art (top of right side) — identical logic to GameView ─────────
-    Image {
+    // ── Game preview (top of right side): screenshot + logo + 3D/2D box ───
+    Item {
     id: boxArt
         anchors {
             top: header.bottom; topMargin: globalMargin
@@ -203,10 +219,64 @@ id: root
             right: parent.right; rightMargin: globalMargin
             bottom: metaPanel.top; bottomMargin: vpx(14)
         }
-        asynchronous: true
-        source: currentGame ? Utils.boxArt(currentGame, settings.BoxArtStyle) : ""
-        fillMode: Image.PreserveAspectFit
-        smooth: true
+        clip: true
+
+        // Screenshot backdrop (fills the area)
+        Image {
+        id: artScreenshotImg
+            anchors.fill: parent
+            asynchronous: true
+            source: artScreenshot
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            visible: status === Image.Ready
+        }
+        // Fallback backdrop when there's no screenshot
+        Rectangle {
+            anchors.fill: parent
+            visible: !artScreenshotImg.visible
+            color: Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.10)
+        }
+        // Gentle top/bottom darkening so the logo and box read clearly
+        Rectangle {
+            anchors.fill: parent
+            visible: artScreenshotImg.visible
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.45) }
+                GradientStop { position: 0.35; color: Qt.rgba(0, 0, 0, 0.10) }
+                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.50) }
+            }
+        }
+
+        // Game logo (top)
+        Image {
+        id: artLogoImg
+            anchors { top: parent.top; topMargin: vpx(14); right: parent.right; rightMargin: vpx(14) }
+            width:  parent.width * 0.52
+            height: parent.height * 0.26
+            asynchronous: true
+            source: artLogo
+            fillMode: Image.PreserveAspectFit
+            horizontalAlignment: Image.AlignRight
+            verticalAlignment: Image.AlignTop
+            smooth: true
+            visible: status === Image.Ready
+        }
+
+        // 3D box art (2D fallback) — bottom-left
+        Image {
+        id: artBoxImg
+            anchors { left: parent.left; leftMargin: vpx(12); bottom: parent.bottom; bottomMargin: vpx(12) }
+            width:  parent.width * 0.52
+            height: parent.height * 0.64
+            asynchronous: true
+            source: artBoxSource
+            fillMode: Image.PreserveAspectFit
+            horizontalAlignment: Image.AlignLeft
+            verticalAlignment: Image.AlignBottom
+            smooth: true
+            visible: status === Image.Ready
+        }
     }
 
     // ── Metadata panel (bottom of right side) ─────────────────────────────
