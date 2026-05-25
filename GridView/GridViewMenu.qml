@@ -45,17 +45,29 @@ id: root
         { label: "Most Played", idx: 2 },
         { label: "Rating",      idx: 3 }
     ]
-    property var keyboardKeys: [
+    property bool kbSpecial: false
+    property var kbMain: [
         "A","B","C","D","E","F","G","H","I","J",
         "K","L","M","N","O","P","Q","R","S","T",
-        "U","V","W","X","Y","Z","0","1","2","3",
-        "4","5","6","7","8","9","SPACE","DEL","CLR","OK"
+        "U","V","W","X","Y","Z","-","'",".",":",
+        "0","1","2","3","4","5","6","7","8","9",
+        "áé","SPACE","DEL","CLR","OK"
     ]
+    property var kbSpec: [
+        "À","Á","Â","Ã","Ä","Å","Æ","Ç","È","É",
+        "Ê","Ë","Ì","Í","Î","Ï","Ñ","Ò","Ó","Ô",
+        "Õ","Ö","Ø","Ù","Ú","Û","Ü","Ý","ß","°",
+        "&","!","?","@","#","%","+","=",",",";",
+        "ABC","SPACE","DEL","CLR","OK"
+    ]
+    property var keyboardKeys: kbSpecial ? kbSpec : kbMain
     property int keyCols:  10
     property int keyIndex: 0
 
-    function activateSearch() { searchMode = "Title"; keyIndex = 0; searchActive = true; }
+    function activateSearch() { searchMode = "Title"; keyIndex = 0; kbSpecial = false; searchActive = true; }
     function pressKey(k) {
+        if (k === "áé")  { kbSpecial = true;  return; }
+        if (k === "ABC") { kbSpecial = false; return; }
         if (k === "SPACE")    searchTerm += " ";
         else if (k === "DEL") searchTerm = searchTerm.slice(0, -1);
         else if (k === "CLR") searchTerm = "";
@@ -608,7 +620,7 @@ id: root
                             width: (fieldCol.width - (keyCols - 1) * vpx(4)) / keyCols
                             height: vpx(42); radius: vpx(4)
                             property bool sel: keyIndex === index
-                            property bool wide: (modelData === "CLR" || modelData === "OK")
+                            property bool wide: modelData.length > 1 && modelData !== "SPACE" && modelData !== "DEL"
                             color: sel ? theme.accent : Qt.rgba(1,1,1,0.08)
                             Text {
                                 anchors.centerIn: parent
@@ -638,7 +650,7 @@ id: root
             else if (filterRow > 0) filterRow--;
         }
         Keys.onDownPressed: {
-            if (searchActive) { if (keyIndex < keyboardKeys.length - keyCols) keyIndex += keyCols; }
+            if (searchActive) { var ni = keyIndex + keyCols; if (ni < keyboardKeys.length) keyIndex = ni; else keyIndex = keyboardKeys.length - 1; }
             else if (filterRow < sortFields.length + 1) filterRow++;
         }
         Keys.onLeftPressed: {
