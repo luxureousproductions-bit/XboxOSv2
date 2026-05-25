@@ -39,6 +39,9 @@ id: root
     property bool filterOpen:   false
     property bool searchActive: false
     property int  filterRow:    0
+    property bool genrePickerOpen:  false
+    property var  genreOptions:     []
+    property int  genrePickerIndex: 0
     property var  sortFields: [
         { label: "Title",       idx: 0 },
         { label: "Last Played", idx: 1 },
@@ -85,6 +88,39 @@ id: root
         }
         gamegrid.currentIndex = 0;
         sortedGames = null;
+    }
+
+    // genreToPattern() is global (theme.qml). Genres are collected from the
+    // full (unfiltered) collection and rebuilt each time the picker opens.
+    function buildGenreOptions() {
+        var set = {};
+        var src = list.collection.games;
+        var n = src.count;
+        for (var i = 0; i < n; i++) {
+            var g = src.get(i);
+            if (!g || !g.genre) continue;
+            var parts = g.genre.split(",");
+            for (var j = 0; j < parts.length; j++) {
+                var t = parts[j].trim();
+                if (t.length) set[t] = true;
+            }
+        }
+        var arr = Object.keys(set).sort(function(a,b){ return a.toLowerCase().localeCompare(b.toLowerCase()); });
+        arr.unshift("All");
+        genreOptions = arr;
+    }
+    function openGenrePicker() {
+        buildGenreOptions();
+        var want = (genreFilter === "") ? "All" : genreFilter;
+        var idx = genreOptions.indexOf(want);
+        genrePickerIndex = idx >= 0 ? idx : 0;
+        genrePickerOpen = true;
+    }
+    function selectGenre(g) {
+        genreFilter = (g === "All") ? "" : g;
+        gamegrid.currentIndex = 0;
+        sortedGames = null;
+        genrePickerOpen = false;
     }
 
     function nextChar(c, modifier) {
@@ -518,7 +554,7 @@ id: root
 
             Text {
             id: titleTxt
-                text: "Sorting & Filters"
+                text: "Filters"
                 color: theme.text
                 font.family: titleFont.name; font.pixelSize: vpx(24); font.bold: true
                 anchors { top: parent.top; topMargin: vpx(18); left: parent.left; leftMargin: vpx(24) }
@@ -531,6 +567,7 @@ id: root
 
                 // Name row — shows the current search text
                 Rectangle {
+                    visible: !genrePickerOpen
                     width: parent.width; height: vpx(52); radius: vpx(6)
                     property bool onRow: filterRow === 0 || searchActive
                     color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
@@ -553,9 +590,69 @@ id: root
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 0; activateSearch(); } }
                 }
 
-                // Sort fields + favorites (shown when the keyboard is NOT open)
+                // Genre row — opens the genre picker
+                Rectangle {
+                    visible: !searchActive && !genrePickerOpen
+                    width: parent.width; height: vpx(52); radius: vpx(6)
+                    property bool onRow: filterRow === 1
+                    color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+
+                    Text {
+                        anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                        text: "\u2630"; font.pixelSize: vpx(15); width: vpx(22)
+                        color: theme.text; opacity: onRow ? 1 : 0.6
+                    }
+                    Text {
+                        anchors { left: parent.left; leftMargin: vpx(46); right: gvArrow.left; rightMargin: vpx(8); verticalCenter: parent.verticalCenter }
+                        text: genreFilter === "" ? "Genre: All" : "Genre: " + genreFilter
+                        color: onRow ? theme.accent : theme.text
+                        opacity: onRow ? 1 : 0.85
+                        elide: Text.ElideRight
+                        font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: onRow
+                    }
+                    Text {
+                        id: gvArrow
+                        anchors { right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                        text: "\u25B8"; color: onRow ? theme.accent : theme.text
+                        opacity: onRow ? 1 : 0.6; font.pixelSize: vpx(18)
+                    }
+                    MouseArea { anchors.fill: parent; onClicked: { filterRow = 1; openGenrePicker(); } }
+                }
+
+                // Genre picker (scrollable list of available genres)
+                ListView {
+                    visible: genrePickerOpen
+                    width: parent.width
+                    height: vpx(300)
+                    clip: true
+                    model: genreOptions
+                    currentIndex: genrePickerIndex
+                    onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
+                    delegate: Rectangle {
+                        width: ListView.view.width; height: vpx(42); radius: vpx(4)
+                        property bool onRow: index === genrePickerIndex
+                        property bool isSel: modelData === (genreFilter === "" ? "All" : genreFilter)
+                        color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+                        Text {
+                            anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                            text: isSel ? "\u2713" : "  "
+                            color: theme.accent; font.pixelSize: vpx(15); font.bold: true; width: vpx(22)
+                        }
+                        Text {
+                            anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                            text: modelData
+                            color: (onRow || isSel) ? theme.accent : theme.text
+                            opacity: onRow ? 1 : 0.85
+                            elide: Text.ElideRight
+                            font.family: subtitleFont.name; font.pixelSize: vpx(19); font.bold: onRow || isSel
+                        }
+                        MouseArea { anchors.fill: parent; onClicked: { genrePickerIndex = index; selectGenre(modelData); } }
+                    }
+                }
+
+                // Sort fields + favorites (shown when neither keyboard nor genre picker is open)
                 Column {
-                    visible: !searchActive
+                    visible: !searchActive && !genrePickerOpen
                     width: parent.width
                     spacing: vpx(6)
 
@@ -564,7 +661,7 @@ id: root
                         Rectangle {
                             width: parent.width; height: vpx(46); radius: vpx(6)
                             property bool active: sortByIndex === modelData.idx
-                            property bool onRow:  filterRow === index + 1
+                            property bool onRow:  filterRow === index + 2
                             color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
 
                             Text {
@@ -580,14 +677,14 @@ id: root
                                 opacity: active ? 1 : 0.85
                                 font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: active
                             }
-                            MouseArea { anchors.fill: parent; onClicked: { filterRow = index + 1; selectSort(modelData.idx); } }
+                            MouseArea { anchors.fill: parent; onClicked: { filterRow = index + 2; selectSort(modelData.idx); } }
                         }
                     }
 
                     // Favorites-only toggle
                     Rectangle {
                         width: parent.width; height: vpx(46); radius: vpx(6)
-                        property bool onRow: filterRow === sortFields.length + 1
+                        property bool onRow: filterRow === sortFields.length + 2
                         color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
 
                         Text {
@@ -603,7 +700,7 @@ id: root
                             opacity: showFavs ? 1 : 0.85
                             font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: showFavs
                         }
-                        MouseArea { anchors.fill: parent; onClicked: { filterRow = sortFields.length + 1; showFavs = !showFavs; gamegrid.currentIndex = 0; sortedGames = null; } }
+                        MouseArea { anchors.fill: parent; onClicked: { filterRow = sortFields.length + 2; showFavs = !showFavs; gamegrid.currentIndex = 0; sortedGames = null; } }
                     }
                 }
 
@@ -638,8 +735,9 @@ id: root
 
             Text {
                 anchors { bottom: parent.bottom; bottomMargin: vpx(14); horizontalCenter: parent.horizontalCenter }
-                text: searchActive ? "\u25B2\u25BC\u25C0\u25B6 keys    A type    B done"
-                                   : "\u25B2\u25BC navigate    A select    B close"
+                text: searchActive    ? "\u25B2\u25BC\u25C0\u25B6 keys    A type    B done"
+                     : genrePickerOpen ? "\u25B2\u25BC navigate    A choose genre    B back"
+                                       : "\u25B2\u25BC navigate    A select    B close"
                 color: theme.text; opacity: 0.4
                 font.family: subtitleFont.name; font.pixelSize: vpx(13)
             }
@@ -647,11 +745,13 @@ id: root
 
         Keys.onUpPressed: {
             if (searchActive) { if (keyIndex >= keyCols) keyIndex -= keyCols; }
+            else if (genrePickerOpen) { if (genrePickerIndex > 0) genrePickerIndex--; }
             else if (filterRow > 0) filterRow--;
         }
         Keys.onDownPressed: {
             if (searchActive) { var ni = keyIndex + keyCols; if (ni < keyboardKeys.length) keyIndex = ni; else keyIndex = keyboardKeys.length - 1; }
-            else if (filterRow < sortFields.length + 1) filterRow++;
+            else if (genrePickerOpen) { if (genrePickerIndex < genreOptions.length - 1) genrePickerIndex++; }
+            else if (filterRow < sortFields.length + 2) filterRow++;
         }
         Keys.onLeftPressed: {
             if (searchActive && (keyIndex % keyCols) !== 0) keyIndex--;
@@ -666,10 +766,17 @@ id: root
                 if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; searchActive = false; }
                 return;
             }
+            if (genrePickerOpen) {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; selectGenre(genreOptions[genrePickerIndex]); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; genrePickerOpen = false; }
+                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; genrePickerOpen = false; }
+                return;
+            }
             if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                 event.accepted = true;
                 if (filterRow === 0) activateSearch();
-                else if (filterRow <= sortFields.length) selectSort(sortFields[filterRow - 1].idx);
+                else if (filterRow === 1) openGenrePicker();
+                else if (filterRow <= sortFields.length + 1) selectSort(sortFields[filterRow - 2].idx);
                 else { showFavs = !showFavs; gamegrid.currentIndex = 0; sortedGames = null; }
             }
             if (api.keys.isCancel(event) && !event.isAutoRepeat) {
@@ -726,8 +833,9 @@ id: root
         // Filters (X) — open the Sorting & Filters overlay
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            filterRow = (sortByIndex >= 0 && sortByIndex < sortFields.length) ? sortByIndex + 1 : 0;
+            filterRow = (sortByIndex >= 0 && sortByIndex < sortFields.length) ? sortByIndex + 2 : 0;
             searchActive = false;
+            genrePickerOpen = false;
             filterOpen = true;
             filterPanel.forceActiveFocus();
             return;
