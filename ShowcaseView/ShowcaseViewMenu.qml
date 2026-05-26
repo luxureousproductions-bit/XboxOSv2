@@ -542,6 +542,40 @@ id: root
             source: "../assets/images/settingsicon.svg"
             opacity: root.focus ? 0.8 : 0.5
         }
+
+        // ── Nav button labels — shown only for the highlighted button ─────
+        Text {
+            text: "All Games"
+            anchors { top: homebutton.bottom; topMargin: vpx(3); horizontalCenter: homebutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: homebutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+        Text {
+            text: "Discover"
+            anchors { top: discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: discoverbutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: discoverbutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+        Text {
+            text: "RetroAchievements"
+            anchors { top: achievementsbutton.bottom; topMargin: vpx(3); horizontalCenter: achievementsbutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: achievementsbutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+        Text {
+            text: "Settings"
+            anchors { top: settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: settingsbutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: settingsbutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
 		
        Text {
         id: sysTime
@@ -1196,9 +1230,25 @@ id: root
         cacheBuffer: 1000
         footer: Item { height: helpMargin }
 
-        // When landing on the top row (hero box / system tiles), scroll the
-        // whole page to the very top so the fanart area above is fully shown
-        onCurrentIndexChanged: { if (currentIndex <= 1) positionViewAtBeginning(); }
+        // When landing on the top row (hero box / system tiles), glide the
+        // whole page smoothly to the very top. positionViewAtBeginning() sets
+        // contentY in C++ (instant, bypasses Behaviors), so instead we animate
+        // contentY explicitly and disable the highlight range while it runs so
+        // the ListView's own positioning can't override the animation.
+        NumberAnimation {
+            id: glideTop
+            target: mainList; property: "contentY"; to: mainList.originY
+            duration: 360; easing.type: Easing.OutCubic
+        }
+        onCurrentIndexChanged: {
+            if (currentIndex <= 1) {
+                highlightRangeMode = ListView.NoHighlightRange;
+                glideTop.restart();
+            } else {
+                glideTop.stop();
+                highlightRangeMode = ListView.ApplyRange;
+            }
+        }
 
         Keys.onUpPressed: {
             if (currentIndex <= 1) { homebutton.focus = true; return; }
