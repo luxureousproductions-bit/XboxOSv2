@@ -747,7 +747,13 @@ id: root
                 if (resumeMode && resumeBox.resumeGame && settings.ShowcaseBackgroundArt === "Yes")
                     highlightedGame = resumeBox.resumeGame;
             }
-            property real tileSz: Math.round((root.width - globalMargin * 2) / 7)
+            // Hero box / system tile size. NOT tied to any collection row.
+            // NOTE: the divisor is inverse — HIGHER value = SMALLER tiles.
+            // 6.0 == exact "Square" collection size; bumped to 6.3 to trim it
+            // down a hair so it visually matches the square row. Raise this for
+            // smaller tiles, lower it for bigger.
+            property real tileDivisor: 6.3
+            property real tileSz: (root.width - globalMargin * 2) / tileDivisor
             focus: selected
             width: root.width
             height: tileSz + globalMargin * 2
@@ -930,7 +936,7 @@ id: root
                     anchors.centerIn: parent
                     anchors.margins: vpx(15)
                     source: "../assets/images/logospng/" + Utils.processPlatformName(modelData.shortName) + ".png"
-                    sourceSize { width: 256; height: 256 }
+                    sourceSize { width: 512; height: 512 }
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                     smooth: true
@@ -1232,6 +1238,14 @@ id: root
         }
         Keys.onDownPressed: {
             sfxNav.play();
+            // Leaving the top zone (index >= 1): restore ApplyRange BEFORE the
+            // index changes, otherwise the list's internal repositioning runs
+            // while still in NoHighlightRange and never scrolls down. (At index
+            // 0 we leave it alone so landing on the first row stays glued to top.)
+            if (currentIndex >= 1) {
+                glideTop.stop();
+                highlightRangeMode = ListView.ApplyRange;
+            }
             do {
                 incrementCurrentIndex();
             } while (!currentItem.enabled);
