@@ -723,6 +723,32 @@ id: root
                 opacity: parent.focus ? 1 : 0.7
             }
         }
+
+        // Nav button labels — shown only when the button is highlighted
+        Text {
+            text: "Home"
+            anchors { top: gv_homebutton.bottom; topMargin: vpx(3); horizontalCenter: gv_homebutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: titleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: gv_homebutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+        Text {
+            text: "Discover"
+            anchors { top: gv_discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: gv_discoverbutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: titleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: gv_discoverbutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+        Text {
+            text: "Settings"
+            anchors { top: gv_settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: gv_settingsbutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: titleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: gv_settingsbutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
     }
 
 
