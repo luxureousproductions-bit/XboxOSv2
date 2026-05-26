@@ -795,13 +795,12 @@ id: root
                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                     height: vpx(22); color: "black"; opacity: 0.6
                     Text {
-                        anchors.centerIn: parent
+                        anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
                         text: resumeBox.resumeGame ? resumeBox.resumeGame.title : ""
                         color: "white"; font.family: subtitleFont.name
                         font.pixelSize: vpx(10); font.bold: true
                         elide: Text.ElideRight
-                        width: parent.width - vpx(4)
-                        horizontalAlignment: Text.AlignHCenter
+                        horizontalAlignment: Text.AlignLeft
                     }
                 }
                 // Color-layout highlight frame — matches the game tiles' ItemBorder
@@ -811,38 +810,12 @@ id: root
                     active: resumeBox.active
                     asynchronous: true
                     sourceComponent: Component {
-                        Item {
-                            Image {
-                            id: hbBorderImg
-                                anchors.fill: parent
-                                source: "../assets/images/" + root.heroBorderImage(settings.ColorLayout) + ".png"
-                                visible: false
-                                asynchronous: true
-                            }
-                            BorderImage {
-                            id: hbBorderMask
-                                anchors.fill: parent
-                                source: "../assets/images/borderimage.gif"
-                                border { left: vpx(5); right: vpx(5); top: vpx(5); bottom: vpx(5) }
-                                smooth: false
-                                visible: false
-                                asynchronous: true
-                            }
-                            OpacityMask {
-                                anchors.fill: parent
-                                source: hbBorderImg
-                                maskSource: hbBorderMask
-                                visible: hbBorderImg.status === Image.Ready
-                            }
-                            // Fallback accent frame if the layout PNG is missing
-                            Rectangle {
-                                anchors.fill: parent
-                                color: "transparent"
-                                radius: vpx(4)
-                                border.color: theme.accent
-                                border.width: vpx(3)
-                                visible: hbBorderImg.status !== Image.Ready
-                            }
+                        Rectangle {
+                            anchors.fill: parent
+                            color: "transparent"
+                            radius: vpx(6)
+                            border.color: theme.accent
+                            border.width: vpx(5)
                         }
                     }
                 }
