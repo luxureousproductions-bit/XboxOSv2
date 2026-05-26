@@ -16,6 +16,7 @@
 
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
+import QtGraphicalEffects 1.15
 import "../Lists"
 
 FocusScope {
@@ -46,6 +47,17 @@ id: root
         color: theme.text
         opacity: root.focus ? 1 : 0.2
         anchors { left: parent.left; leftMargin: vpx(10) }
+
+        // Shadow so the title stays legible over bright fanart
+        layer.enabled: true
+        layer.effect: DropShadow {
+            transparentBorder: true
+            horizontalOffset: 0
+            verticalOffset: vpx(1)
+            radius: 7
+            samples: 15
+            color: Qt.rgba(0, 0, 0, 0.9)
+        }
     }
 
     ListView {
