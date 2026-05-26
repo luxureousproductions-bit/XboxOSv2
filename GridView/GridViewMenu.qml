@@ -407,6 +407,40 @@ id: root
                 fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
             }
         }
+
+        // Nav button labels — shown only when the button is highlighted
+        Text {
+            text: "Home"
+            anchors { top: homebutton.bottom; topMargin: vpx(3); horizontalCenter: homebutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: homebutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+        Text {
+            text: "Discover"
+            anchors { top: discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: discoverbutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: discoverbutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+        Text {
+            text: "RetroAchievements"
+            anchors { top: achievementsbutton.bottom; topMargin: vpx(3); horizontalCenter: achievementsbutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: achievementsbutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+        Text {
+            text: "Settings"
+            anchors { top: settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: settingsbutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: settingsbutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
     }
 
     Item {
