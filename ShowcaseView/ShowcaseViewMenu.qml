@@ -818,8 +818,11 @@ id: root
             }
 
             property int savedIndex: currentCollectionIndex + 1   // strip index (hero = 0)
+            // True briefly while the strip is being activated, so tile animations don't pile on top of the contentY glide
+            property bool isArriving: false
             onFocusChanged: {
                 if (focus) {
+                    isArriving = true;
                     currentIndex = savedIndex;
                     if (settings.ShowcaseBackgroundArt === "Yes") {
                         if (currentIndex <= 0) {
@@ -832,6 +835,8 @@ id: root
                             }
                         }
                     }
+                    // Re-enable animations on the next event-loop tick (after this frame's bindings settle)
+                    Qt.callLater(function() { isArriving = false; });
                 } else {
                     savedIndex = currentIndex;
                     currentIndex = -1;
@@ -869,11 +874,17 @@ id: root
                 // Grow from the bottom-center so the bottom edge stays put; top + sides expand outward
                 transformOrigin: Item.Bottom
                 scale: selected ? 1.20 : 1.0
-                Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                Behavior on scale {
+                    enabled: !platformlist.isArriving
+                    NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+                }
                 // Animated horizontal shift so neighbors slide out of the way of the selected tile
                 transform: Translate {
                     x: navShift
-                    Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                    Behavior on x {
+                        enabled: !platformlist.isArriving
+                        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+                    }
                 }
                 // Selected always renders above its neighbors so the border can't be clipped behind them
                 z: selected ? 1 : 0
@@ -1235,6 +1246,12 @@ id: root
         Keys.onUpPressed: {
             if (currentIndex <= 1) { homebutton.focus = true; return; }
             sfxNav.play();
+            // Leaving a collection to land on the strip: pre-switch to NoHighlightRange
+            // BEFORE the index changes so ApplyRange doesn't snap contentY first,
+            // letting the glide own the whole transition. (Mirrors the down handler.)
+            if (currentIndex === 2) {
+                highlightRangeMode = ListView.NoHighlightRange;
+            }
             do {
                 decrementCurrentIndex();
             } while (!currentItem.enabled);
