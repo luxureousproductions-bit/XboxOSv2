@@ -878,7 +878,30 @@ id: root
                     }
                 }
 
-                // ── PLATFORM (index >= 1): logo ──
+                // ── PLATFORM (index >= 1): system background + logo ──
+
+                // System background art — place files in assets/images/systembackground/
+                // named to match the system logo (e.g. "snes.png", "nintendo switch.jpg").
+                // Tries .png → .jpg → .jpeg → .webp in order; stops at first match.
+                Image {
+                id: sysBg
+                    property string basePath: (!isHero && coll)
+                        ? "../assets/images/systembackground/" + Utils.processPlatformName(coll.shortName) : ""
+                    property var exts: [".png", ".jpg", ".jpeg", ".webp"]
+                    property int extIdx: 0
+                    onBasePathChanged: extIdx = 0      // reset when tile recycles to a new system
+                    onStatusChanged: {
+                        if (status === Image.Error && extIdx < exts.length - 1)
+                            extIdx = extIdx + 1;       // try next extension
+                    }
+                    visible: !isHero && status === Image.Ready
+                    anchors.fill: parent
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true; smooth: true
+                    source: basePath !== "" ? basePath + exts[extIdx] : ""
+                    opacity: selected ? 0.9 : 0.6
+                }
+
                 Image {
                 id: collectionlogo
                     visible: !isHero
@@ -909,10 +932,11 @@ id: root
                     verticalAlignment: Text.AlignVCenter
                 }
 
-                // Accent frame on the hero when selected (platforms use accent bg)
+                // Accent frame: hero when selected; platform when selected AND system background loaded
+                // (platforms without a background keep the current accent-fill look instead)
                 Rectangle {
                     anchors.fill: parent
-                    visible: isHero && selected
+                    visible: selected && (isHero || sysBg.status === Image.Ready)
                     color: "transparent"
                     radius: vpx(6)
                     border.color: theme.accent
