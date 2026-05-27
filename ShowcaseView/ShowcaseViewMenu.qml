@@ -818,11 +818,8 @@ id: root
             }
 
             property int savedIndex: currentCollectionIndex + 1   // strip index (hero = 0)
-            // True briefly while the strip is being activated, so tile animations don't pile on top of the contentY glide
-            property bool isArriving: false
             onFocusChanged: {
                 if (focus) {
-                    isArriving = true;
                     currentIndex = savedIndex;
                     if (settings.ShowcaseBackgroundArt === "Yes") {
                         if (currentIndex <= 0) {
@@ -835,8 +832,6 @@ id: root
                             }
                         }
                     }
-                    // Re-enable animations on the next event-loop tick (after this frame's bindings settle)
-                    Qt.callLater(function() { isArriving = false; });
                 } else {
                     savedIndex = currentIndex;
                     currentIndex = -1;
@@ -854,37 +849,22 @@ id: root
                 // Xbox-style: tiles to either side of the selected one slide a bit to make room
                 property real navShift: {
                     if (platformlist.currentIndex < 0 || index === platformlist.currentIndex) return 0;
-                    var room = topRow.tileSz * 0.10;   // half of the 20% growth
+                    var room = topRow.tileSz * 0.125;   // half of the 25% growth
                     return (index < platformlist.currentIndex) ? -room : room;
                 }
                 width: topRow.tileSz
                 height: topRow.tileSz
                 radius: vpx(6)
                 color: selected ? theme.accent : theme.secondary
-                // Clip all child content (image, logo, frame) to the rounded shape so the corners don't poke past the border
-                layer.enabled: true
-                layer.smooth: true
-                layer.effect: OpacityMask {
-                    maskSource: Rectangle {
-                        width: tile.width
-                        height: tile.height
-                        radius: tile.radius
-                    }
-                }
+                Behavior on color { ColorAnimation { duration: 180; easing.type: Easing.OutCubic } }
                 // Grow from the bottom-center so the bottom edge stays put; top + sides expand outward
                 transformOrigin: Item.Bottom
-                scale: selected ? 1.20 : 1.0
-                Behavior on scale {
-                    enabled: !platformlist.isArriving
-                    NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
-                }
+                scale: selected ? 1.25 : 1.0
+                Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                 // Animated horizontal shift so neighbors slide out of the way of the selected tile
                 transform: Translate {
                     x: navShift
-                    Behavior on x {
-                        enabled: !platformlist.isArriving
-                        NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
-                    }
+                    Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                 }
                 // Selected always renders above its neighbors so the border can't be clipped behind them
                 z: selected ? 1 : 0
@@ -894,17 +874,30 @@ id: root
 
                 // ── HERO (index 0): resume / last-played screenshot + title ──
                 Image {
+                    id: heroBg
                     visible: isHero
                     anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true; smooth: true
                     source: platformlist.resumeGame ? (platformlist.resumeGame.assets.background || platformlist.resumeGame.assets.screenshots[0] || platformlist.resumeGame.assets.boxFront || "") : ""
                     opacity: selected ? 1 : 0.5
+                    // Rounded-corner clip just on the image, so we don't pay layer cost on the whole delegate
+                    layer.enabled: isHero
+                    layer.smooth: true
+                    layer.effect: OpacityMask {
+                        maskSource: Rectangle {
+                            width: heroBg.width
+                            height: heroBg.height
+                            radius: tile.radius
+                        }
+                    }
                 }
                 Rectangle {
                     visible: isHero
-                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                    // Small horizontal margins so the title bar's bottom corners don't poke past the rounded curve
+                    anchors { left: parent.left; leftMargin: vpx(6); right: parent.right; rightMargin: vpx(6); bottom: parent.bottom; bottomMargin: vpx(2) }
                     height: vpx(22); color: "black"; opacity: 0.6
+                    radius: vpx(3)
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
                         text: platformlist.resumeGame ? platformlist.resumeGame.title : ""
@@ -937,6 +930,16 @@ id: root
                     asynchronous: true; smooth: true
                     source: basePath !== "" ? basePath + exts[extIdx] : ""
                     opacity: selected ? 0.9 : 0.6
+                    // Rounded-corner clip just on the image
+                    layer.enabled: !isHero
+                    layer.smooth: true
+                    layer.effect: OpacityMask {
+                        maskSource: Rectangle {
+                            width: sysBg.width
+                            height: sysBg.height
+                            radius: tile.radius
+                        }
+                    }
                 }
 
                 Image {
@@ -982,15 +985,18 @@ id: root
 
                 // Animated highlight — flashes the frame white when the AnimateHighlight setting is on
                 Rectangle {
+                    id: highlightPulse
                     anchors.fill: parent
                     visible: selected && settings.AnimateHighlight === "Yes"
                     color: "transparent"
                     radius: vpx(6)
                     border.color: "#ffffff"
                     border.width: vpx(5)
+                    opacity: 0   // start invisible so it can't pop in at peak brightness
                     SequentialAnimation on opacity {
-                        running: true
+                        running: highlightPulse.visible
                         loops: Animation.Infinite
+                        PropertyAction { target: highlightPulse; property: "opacity"; value: 0 }
                         NumberAnimation { to: 1; duration: 200 }
                         NumberAnimation { to: 0; duration: 500 }
                         PauseAnimation  { duration: 200 }
@@ -1248,7 +1254,7 @@ id: root
         NumberAnimation {
             id: glideTop
             target: mainList; property: "contentY"; to: mainList.originY
-            duration: 360; easing.type: Easing.OutCubic
+            duration: 220; easing.type: Easing.OutCubic
         }
         onCurrentIndexChanged: {
             if (currentIndex <= 1) {
