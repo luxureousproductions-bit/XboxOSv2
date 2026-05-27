@@ -980,6 +980,23 @@ id: root
                     border.width: vpx(5)
                 }
 
+                // Animated highlight — flashes the frame white when the AnimateHighlight setting is on
+                Rectangle {
+                    anchors.fill: parent
+                    visible: selected && settings.AnimateHighlight === "Yes"
+                    color: "transparent"
+                    radius: vpx(6)
+                    border.color: "#ffffff"
+                    border.width: vpx(5)
+                    SequentialAnimation on opacity {
+                        running: true
+                        loops: Animation.Infinite
+                        NumberAnimation { to: 1; duration: 200 }
+                        NumberAnimation { to: 0; duration: 500 }
+                        PauseAnimation  { duration: 200 }
+                    }
+                }
+
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: settings.MouseHover == "Yes"
