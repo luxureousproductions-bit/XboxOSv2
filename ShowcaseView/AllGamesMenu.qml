@@ -48,6 +48,16 @@ id: root
         if (three) return three;                       // 3D box
         return currentGame.assets.boxFront || "";      // 2D fallback
     }
+    // SNES & N64 boxes are oversized — scale just those two down a bit
+    property real boxScale: {
+        if (!currentGame || currentGame.collections.count === 0) return 1.0;
+        var c = currentGame.collections.get(0);
+        var s = ((c.shortName ? c.shortName : "") + " " + (c.name ? c.name : "")).toLowerCase();
+        if (s.indexOf("snes") >= 0 || s.indexOf("super nintendo") >= 0
+            || s.indexOf("n64") >= 0 || s.indexOf("nintendo 64") >= 0)
+            return 0.72;
+        return 1.0;
+    }
 
     // On-screen keyboard — fully controller-driven, NO native Android IME
     // (this is what eliminates the stuck blue input box entirely)
@@ -267,8 +277,8 @@ id: root
         Image {
         id: artBoxImg
             anchors { left: parent.left; leftMargin: vpx(12); bottom: parent.bottom; bottomMargin: vpx(12) }
-            width:  parent.width * 0.52
-            height: parent.height * 0.64
+            width:  parent.width * 0.52 * boxScale
+            height: parent.height * 0.64 * boxScale
             asynchronous: true
             source: artBoxSource
             fillMode: Image.PreserveAspectFit
@@ -846,10 +856,10 @@ id: root
     }
 
     Keys.onPressed: {
-        // A — view details
+        // A — launch the game directly
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus) gameDetails(currentGame);
+            if (!filterOpen && gamelist.focus && currentGame) currentGame.launch();
         }
         // B — back
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
@@ -868,10 +878,10 @@ id: root
                 filterPanel.forceActiveFocus();
             }
         }
-        // Y — settings
+        // Y — game details page
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus) settingsScreen();
+            if (!filterOpen && gamelist.focus) gameDetails(currentGame);
         }
         // LT — previous letter group
         if (api.keys.isPageUp(event) && !event.isAutoRepeat) {
@@ -885,13 +895,13 @@ id: root
         }
     }
 
-    // ── Helpbar: A View details, X Filters, Y Settings, B Back ────────────
+    // ── Helpbar: A Launch, X Filters, Y Game Details, B Back ──────────────
     ListModel {
         id: allGamesHelpModel
         ListElement { name: "Back";         button: "cancel"  }
-        ListElement { name: "Settings";     button: "filters" }
+        ListElement { name: "Game Details"; button: "filters" }
         ListElement { name: "Filters";      button: "details" }
-        ListElement { name: "View details"; button: "accept"  }
+        ListElement { name: "Launch";       button: "accept"  }
     }
 
     onFocusChanged: {
