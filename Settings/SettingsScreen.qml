@@ -141,6 +141,19 @@ id: root
             settingName: "Number of games showcased"
             setting: "15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,1,2,3,4,5,6,7,8,9,10,11,12,13,14"
         }
+
+    }
+
+    property var showcasePage: {
+        return {
+            pageName: "Home page",
+            listmodel: showcaseSettingsModel
+        }
+    }
+
+    ListModel {
+    id: collectionsSettingsModel
+
         ListElement {
             settingName: "Collection 1"
             setting: "Recently Played,Most Played,Recommended,Top by Publisher,Top by Developer,Top by Genre,Top by Genre 2,None,Favorites"
@@ -192,10 +205,10 @@ id: root
 
     }
 
-    property var showcasePage: {
+    property var collectionsPage: {
         return {
-            pageName: "Home page",
-            listmodel: showcaseSettingsModel
+            pageName: "Collections",
+            listmodel: collectionsSettingsModel
         }
     }
 
@@ -355,7 +368,7 @@ id: root
         }
     }
 
-    property var settingsArr: [generalPage, showcasePage, gridPage, gamePage, mediaCarouselPage, advancedPage, raPage]
+    property var settingsArr: [generalPage, showcasePage, collectionsPage, gridPage, gamePage, mediaCarouselPage, advancedPage, raPage]
 
     property real itemheight: vpx(50)
     property color settingsTextColor: theme.accent
