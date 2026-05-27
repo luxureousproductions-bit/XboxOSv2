@@ -752,7 +752,7 @@ id: root
             // 6.0 == exact "Square" collection size; bumped to 6.3 to trim it
             // down a hair so it visually matches the square row. Raise this for
             // smaller tiles, lower it for bigger.
-            property real tileDivisor: 6.3
+            property real tileDivisor: 6.35
             property real tileSz: (root.width - globalMargin * 2) / tileDivisor
             focus: selected
             width: root.width
