@@ -842,15 +842,41 @@ id: root
 
             model: api.collections.count + 1   // index 0 = hero, 1.. = platforms
             delegate: Rectangle {
+                id: tile
                 property bool isHero: index === 0
                 property var  coll: isHero ? null : api.collections.get(index - 1)
                 property bool selected: ListView.isCurrentItem && platformlist.focus
+                // Xbox-style: tiles to either side of the selected one slide a bit to make room
+                property real navShift: {
+                    if (platformlist.currentIndex < 0 || index === platformlist.currentIndex) return 0;
+                    var room = topRow.tileSz * 0.10;   // half of the 20% growth
+                    return (index < platformlist.currentIndex) ? -room : room;
+                }
                 width: topRow.tileSz
                 height: topRow.tileSz
-                radius: vpx(4)
+                radius: vpx(6)
                 color: selected ? theme.accent : theme.secondary
-                scale: selected ? 1.15 : 1.0
-                Behavior on scale { NumberAnimation { duration: 100 } }
+                // Clip all child content (image, logo, frame) to the rounded shape so the corners don't poke past the border
+                layer.enabled: true
+                layer.smooth: true
+                layer.effect: OpacityMask {
+                    maskSource: Rectangle {
+                        width: tile.width
+                        height: tile.height
+                        radius: tile.radius
+                    }
+                }
+                // Grow from the bottom-center so the bottom edge stays put; top + sides expand outward
+                transformOrigin: Item.Bottom
+                scale: selected ? 1.20 : 1.0
+                Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                // Animated horizontal shift so neighbors slide out of the way of the selected tile
+                transform: Translate {
+                    x: navShift
+                    Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                }
+                // Selected always renders above its neighbors so the border can't be clipped behind them
+                z: selected ? 1 : 0
                 border.width: vpx(1)
                 border.color: "#19FFFFFF"
                 anchors.verticalCenter: parent.verticalCenter
