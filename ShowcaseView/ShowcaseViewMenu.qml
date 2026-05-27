@@ -859,7 +859,7 @@ id: root
                 Behavior on color { ColorAnimation { duration: 180; easing.type: Easing.OutCubic } }
                 // Grow from the bottom-center so the bottom edge stays put; top + sides expand outward
                 transformOrigin: Item.Bottom
-                scale: selected ? 1.35 : 1.0
+                scale: selected ? 1.25 : 1.0
                 Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                 // Animated horizontal shift so neighbors slide out of the way of the selected tile
                 transform: Translate {
