@@ -387,7 +387,7 @@ id: root
                 sfxNav.play();
                 mainList.currentIndex = focus ? -1 : 0;
             }
-            Keys.onDownPressed:  mainList.focus = true;
+            Keys.onDownPressed:  { mainList.forceActiveFocus(); mainList.currentIndex = 1; }
             Keys.onRightPressed: discoverbutton.focus = true;
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; allGamesScreen(); }
@@ -428,7 +428,7 @@ id: root
                 sfxNav.play();
                 mainList.currentIndex = focus ? -1 : 0;
             }
-            Keys.onDownPressed:  mainList.focus = true;
+            Keys.onDownPressed:  { mainList.forceActiveFocus(); mainList.currentIndex = 1; }
             Keys.onLeftPressed:  homebutton.focus = true;
             Keys.onRightPressed: achievementsbutton.focus = true;
             Keys.onPressed: {
@@ -478,7 +478,7 @@ id: root
                 sfxNav.play();
                 mainList.currentIndex = focus ? -1 : 0;
             }
-            Keys.onDownPressed:  mainList.focus = true;
+            Keys.onDownPressed:  { mainList.forceActiveFocus(); mainList.currentIndex = 1; }
             Keys.onLeftPressed:  discoverbutton.focus = true;
             Keys.onRightPressed: settingsbutton.focus = true;
             Keys.onPressed: {
@@ -521,7 +521,7 @@ id: root
                 sfxNav.play();
                 mainList.currentIndex = focus ? -1 : 0;
             }
-            Keys.onDownPressed:  mainList.focus = true;
+            Keys.onDownPressed:  { mainList.forceActiveFocus(); mainList.currentIndex = 1; }
             Keys.onLeftPressed:  achievementsbutton.focus = true;
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
@@ -742,11 +742,6 @@ id: root
 
             property bool selected: ListView.isCurrentItem
             property int myIndex: ObjectModel.index
-            property bool resumeMode: true   // start focused on the resume box
-            onResumeModeChanged: {
-                if (resumeMode && resumeBox.resumeGame && settings.ShowcaseBackgroundArt === "Yes")
-                    highlightedGame = resumeBox.resumeGame;
-            }
             // Hero box / system tile size. NOT tied to any collection row.
             // NOTE: the divisor is inverse — HIGHER value = SMALLER tiles.
             // 6.0 == exact "Square" collection size; bumped to 6.3 to trim it
@@ -758,108 +753,30 @@ id: root
             width: root.width
             height: tileSz + globalMargin * 2
 
-            onFocusChanged: { if (focus && platformlist.currentIndex < 0) platformlist.currentIndex = 0; }
+            onFocusChanged: { if (focus && platformlist.currentIndex < 0) platformlist.currentIndex = platformlist.savedIndex; }
             onSelectedChanged: {
-                if (selected && resumeMode && resumeBox.resumeGame) {
-                    highlightedGame = resumeBox.resumeGame;
-                } else if (selected && !resumeMode && settings.ShowcaseBackgroundArt === "Yes") {
-                    var coll = api.collections.get(platformlist.currentIndex);
-                    if (coll && coll.games.count > 0) {
-                        var randomIdx = Math.floor(Math.random() * coll.games.count);
-                        highlightedGame = coll.games.get(randomIdx);
-                    }
-                }
-            }
-
-            // Resume / last-played hero box (bigger than the system tiles)
-            Rectangle {
-            id: resumeBox
-                property bool active: topRow.focus && topRow.resumeMode
-                property var resumeGame: listLastPlayed.games.count > 0 ? listLastPlayed.currentGame(0) : null
-                width:  topRow.tileSz
-                height: topRow.tileSz
-                z: 2   // always render above the scrolling system tiles
-                anchors {
-                    left: parent.left; leftMargin: globalMargin
-                    verticalCenter: parent.verticalCenter
-                }
-                radius: vpx(4)
-                color: active ? theme.accent : theme.secondary
-                scale: active ? 1.15 : 1.0
-                Behavior on scale { NumberAnimation { duration: 100 } }
-                border.width: vpx(1)
-                border.color: "#19FFFFFF"
-
-                Image {
-                    anchors.fill: parent
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true; smooth: true
-                    source: resumeBox.resumeGame ? (resumeBox.resumeGame.assets.background || resumeBox.resumeGame.assets.screenshots[0] || resumeBox.resumeGame.assets.boxFront || "") : ""
-                    opacity: resumeBox.active ? 1 : 0.5
-                }
-                Rectangle {
-                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                    height: vpx(22); color: "black"; opacity: 0.6
-                    Text {
-                        anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
-                        text: resumeBox.resumeGame ? resumeBox.resumeGame.title : ""
-                        color: "white"; font.family: subtitleFont.name
-                        font.pixelSize: vpx(10); font.bold: true
-                        elide: Text.ElideRight
-                        horizontalAlignment: Text.AlignLeft
-                    }
-                }
-                // Color-layout highlight frame — matches the game tiles' ItemBorder
-                Loader {
-                    anchors.fill: parent
-                    z: 3
-                    active: resumeBox.active
-                    asynchronous: true
-                    sourceComponent: Component {
-                        Rectangle {
-                            anchors.fill: parent
-                            color: "transparent"
-                            radius: vpx(6)
-                            border.color: theme.accent
-                            border.width: vpx(5)
+                if (selected && settings.ShowcaseBackgroundArt === "Yes") {
+                    if (platformlist.currentIndex <= 0) {
+                        if (platformlist.resumeGame) highlightedGame = platformlist.resumeGame;
+                    } else {
+                        var coll = api.collections.get(platformlist.currentIndex - 1);
+                        if (coll && coll.games.count > 0) {
+                            var randomIdx = Math.floor(Math.random() * coll.games.count);
+                            highlightedGame = coll.games.get(randomIdx);
                         }
                     }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    hoverEnabled: settings.MouseHover == "Yes"
-                    onEntered: { sfxNav.play(); mainList.currentIndex = topRow.ObjectModel.index; topRow.resumeMode = true; }
-                    onClicked: { if (resumeBox.resumeGame) resumeBox.resumeGame.launch(); }
-                }
-            }
-
-            // Row-level key handling for the resume box
-            Keys.onLeftPressed: {
-                if (resumeMode) {
-                    sfxNav.play();
-                    resumeMode = false;
-                    platformlist.currentIndex = platformlist.count - 1;
-                }
-            }
-            Keys.onRightPressed: {
-                if (resumeMode) { sfxNav.play(); resumeMode = false; platformlist.currentIndex = 0; }
-            }
-            Keys.onPressed: {
-                if (resumeMode && api.keys.isAccept(event) && !event.isAutoRepeat) {
-                    event.accepted = true;
-                    if (resumeBox.resumeGame) resumeBox.resumeGame.launch();
                 }
             }
 
         ListView {
         id: platformlist
 
-            focus: topRow.focus && !topRow.resumeMode
+            focus: topRow.focus
+            property var resumeGame: listLastPlayed.games.count > 0 ? listLastPlayed.currentGame(0) : null
             height: topRow.tileSz + globalMargin * 2
             clip: false
             anchors {
-                left: resumeBox.right; leftMargin: vpx(16)
+                left: parent.left; leftMargin: globalMargin
                 right: parent.right; rightMargin: globalMargin
                 verticalCenter: parent.verticalCenter
             }
@@ -871,6 +788,7 @@ id: root
             keyNavigationWraps: false
             
             onCurrentIndexChanged: {
+                if (currentIndex < 0) return;   // deselected (focus moved away) — leave the scroll position alone
                 // Align the list to whole-tile boundaries so the leftmost tile is
                 // never half-cut into the hero box, while keeping the current tile
                 // fully visible (so the rightmost tile isn't cut off either)
@@ -885,26 +803,33 @@ id: root
                     firstVisible = Math.max(0, firstVisible);
                     contentX = firstVisible * unit;
                 }
-                // Show random fanart from the highlighted system when navigating tiles
-                if (topRow.selected && !topRow.resumeMode && settings.ShowcaseBackgroundArt === "Yes") {
-                    var coll = api.collections.get(currentIndex);
-                    if (coll && coll.games.count > 0) {
-                        var randomIdx = Math.floor(Math.random() * coll.games.count);
-                        highlightedGame = coll.games.get(randomIdx);
+                // Update background fanart for the highlighted strip item
+                if (topRow.selected && settings.ShowcaseBackgroundArt === "Yes") {
+                    if (currentIndex <= 0) {
+                        if (resumeGame) highlightedGame = resumeGame;
+                    } else {
+                        var coll = api.collections.get(currentIndex - 1);
+                        if (coll && coll.games.count > 0) {
+                            var randomIdx = Math.floor(Math.random() * coll.games.count);
+                            highlightedGame = coll.games.get(randomIdx);
+                        }
                     }
                 }
             }
 
-            property int savedIndex: currentCollectionIndex
+            property int savedIndex: currentCollectionIndex + 1   // strip index (hero = 0)
             onFocusChanged: {
                 if (focus) {
                     currentIndex = savedIndex;
-                    // Also trigger random fanart when gaining focus from hero box
                     if (settings.ShowcaseBackgroundArt === "Yes") {
-                        var coll = api.collections.get(currentIndex);
-                        if (coll && coll.games.count > 0) {
-                            var randomIdx = Math.floor(Math.random() * coll.games.count);
-                            highlightedGame = coll.games.get(randomIdx);
+                        if (currentIndex <= 0) {
+                            if (resumeGame) highlightedGame = resumeGame;
+                        } else {
+                            var coll = api.collections.get(currentIndex - 1);
+                            if (coll && coll.games.count > 0) {
+                                var randomIdx = Math.floor(Math.random() * coll.games.count);
+                                highlightedGame = coll.games.get(randomIdx);
+                            }
                         }
                     }
                 } else {
@@ -915,93 +840,121 @@ id: root
 
             Component.onCompleted: positionViewAtIndex(savedIndex, ListView.End)
 
-            model: api.collections//Utils.reorderCollection(api.collections);
+            model: api.collections.count + 1   // index 0 = hero, 1.. = platforms
             delegate: Rectangle {
+                property bool isHero: index === 0
+                property var  coll: isHero ? null : api.collections.get(index - 1)
                 property bool selected: ListView.isCurrentItem && platformlist.focus
                 width: topRow.tileSz
-                height: topRow.tileSz   // square — not tied to WideRatio
-                	radius: vpx(4)
+                height: topRow.tileSz
+                radius: vpx(4)
                 color: selected ? theme.accent : theme.secondary
                 scale: selected ? 1.15 : 1.0
                 Behavior on scale { NumberAnimation { duration: 100 } }
                 border.width: vpx(1)
                 border.color: "#19FFFFFF"
-
                 anchors.verticalCenter: parent.verticalCenter
 
+                // ── HERO (index 0): resume / last-played screenshot + title ──
+                Image {
+                    visible: isHero
+                    anchors.fill: parent
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true; smooth: true
+                    source: platformlist.resumeGame ? (platformlist.resumeGame.assets.background || platformlist.resumeGame.assets.screenshots[0] || platformlist.resumeGame.assets.boxFront || "") : ""
+                    opacity: selected ? 1 : 0.5
+                }
+                Rectangle {
+                    visible: isHero
+                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                    height: vpx(22); color: "black"; opacity: 0.6
+                    Text {
+                        anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
+                        text: platformlist.resumeGame ? platformlist.resumeGame.title : ""
+                        color: "white"; font.family: subtitleFont.name
+                        font.pixelSize: vpx(10); font.bold: true
+                        elide: Text.ElideRight
+                        horizontalAlignment: Text.AlignLeft
+                    }
+                }
+
+                // ── PLATFORM (index >= 1): logo ──
                 Image {
                 id: collectionlogo
-
+                    visible: !isHero
                     anchors.fill: parent
-                    anchors.centerIn: parent
                     anchors.margins: vpx(15)
-                    source: "../assets/images/logospng/" + Utils.processPlatformName(modelData.shortName) + ".png"
+                    source: (!isHero && coll) ? "../assets/images/logospng/" + Utils.processPlatformName(coll.shortName) + ".png" : ""
                     sourceSize { width: 512; height: 512 }
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                     smooth: true
                     opacity: selected ? 1 : 0.2
-                    scale: selected ? 1.00 : 1
-                    Behavior on scale { NumberAnimation { duration: 100 } }
                 }
-
                 Text {
                 id: platformname
-
-                    text: modelData.name
+                    visible: !isHero && collectionlogo.status == Image.Error
+                    text: coll ? coll.name : ""
                     anchors { fill: parent; margins: vpx(10) }
                     color: theme.text
                     opacity: selected ? 1 : 0.2
-                    Behavior on opacity { NumberAnimation { duration: 100 } }
                     font.pixelSize: vpx(18)
                     font.family: subtitleFont.name
                     font.bold: true
                     style: Text.Outline; styleColor: theme.main
-                    visible: collectionlogo.status == Image.Error
-                    anchors.centerIn: parent
                     elide: Text.ElideRight
                     wrapMode: Text.WordWrap
                     lineHeight: 0.8
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
-                
-                // Mouse/touch functionality
+
+                // Accent frame on the hero when selected (platforms use accent bg)
+                Rectangle {
+                    anchors.fill: parent
+                    visible: isHero && selected
+                    color: "transparent"
+                    radius: vpx(6)
+                    border.color: theme.accent
+                    border.width: vpx(5)
+                }
+
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: settings.MouseHover == "Yes"
-                    onEntered: { sfxNav.play(); mainList.currentIndex = topRow.ObjectModel.index; topRow.resumeMode = false; platformlist.currentIndex = index; }
-                    onExited: {}
+                    onEntered: { sfxNav.play(); mainList.currentIndex = topRow.ObjectModel.index; platformlist.currentIndex = index; }
                     onClicked: {
-                        if (selected)
-                        {
-                            currentCollectionIndex = index;
-                            softwareScreen();
+                        if (selected) {
+                            if (isHero) { if (platformlist.resumeGame) platformlist.resumeGame.launch(); }
+                            else { currentCollectionIndex = index - 1; softwareScreen(); }
                         } else {
                             mainList.currentIndex = topRow.ObjectModel.index;
-                            topRow.resumeMode = false;
                             platformlist.currentIndex = index;
                         }
-                        
                     }
                 }
             }
 
             // List specific input
             Keys.onLeftPressed: {
-                if (currentIndex === 0) { sfxNav.play(); topRow.resumeMode = true; }
-                else { sfxNav.play(); decrementCurrentIndex(); }
+                sfxNav.play();
+                if (currentIndex > 0) decrementCurrentIndex();
+                else currentIndex = count - 1;   // hero -> last tile
             }
             Keys.onRightPressed: {
-                if (currentIndex === count - 1) { sfxNav.play(); topRow.resumeMode = true; }
-                else { sfxNav.play(); incrementCurrentIndex(); }
+                sfxNav.play();
+                if (currentIndex < count - 1) incrementCurrentIndex();
+                else currentIndex = 0;            // last tile -> hero
             }
             Keys.onPressed: {
-                // Accept
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                     event.accepted = true;
-                    currentCollectionIndex = platformlist.currentIndex;
-                    softwareScreen();            
+                    if (currentIndex <= 0) {
+                        if (resumeGame) resumeGame.launch();
+                    } else {
+                        currentCollectionIndex = currentIndex - 1;
+                        softwareScreen();
+                    }
                 }
             }
 
