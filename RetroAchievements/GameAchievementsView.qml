@@ -701,6 +701,7 @@ id: root
         // B — back to games list
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
+            sfxBack.play();
             previousScreen();
         }
         // LB — cycle filter backward
@@ -720,19 +721,21 @@ id: root
         // Y / Filters — cycle sort mode
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxNav.play();
+            sfxToggle.play();
             cycleSort();
             currentIndex = 0;
         }
         // X / Details — refresh current game
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
+            sfxAccept.play();
             if (cheevosData.currentGameDetails.Title !== "")
                 cheevosData.loadGameAchievements(cheevosData.currentGameID);
         }
         // A — back to RA overview
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
+            sfxAccept.play();
             achievementsScreenFromGame();
         }
     }

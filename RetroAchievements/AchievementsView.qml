@@ -195,6 +195,13 @@ id: root
         clip:         true
         cacheBuffer:  vpx(300)   // pre-render ~3 off-screen rows for smooth Android scrolling
 
+        // Nav sound fires on ANY index change (keyboard up/down, mouse hover/click).
+        // The focused ListView consumes Up/Down internally, so the root Keys handlers
+        // never see them — hooking the index change is the reliable place for the sound.
+        property bool navReady: false
+        Component.onCompleted: navReady = true
+        onCurrentIndexChanged: if (navReady) sfxNav.play()
+
         highlightMoveDuration: 100
         preferredHighlightBegin: vpx(96)
         preferredHighlightEnd:   height - vpx(96)
@@ -393,10 +400,10 @@ id: root
             MouseArea {
                 anchors.fill: parent
                 hoverEnabled: settings.MouseHover === "Yes"
-                onEntered: { sfxNav.play(); gameList.currentIndex = index; }
+                onEntered: { gameList.currentIndex = index; }
                 onClicked: {
                     if (isSelected) openSelectedGame();
-                    else { sfxNav.play(); gameList.currentIndex = index; }
+                    else { gameList.currentIndex = index; }
                 }
             }
         }
@@ -466,12 +473,10 @@ id: root
     // ── Key handling ─────────────────────────────────────────────────────
     Keys.onUpPressed: {
         event.accepted = true;
-        sfxNav.play();
         if (gameList.currentIndex > 0) gameList.currentIndex--;
     }
     Keys.onDownPressed: {
         event.accepted = true;
-        sfxNav.play();
         if (gameList.currentIndex < cheevosData.raRecentGames.count - 1)
             gameList.currentIndex++;
     }
@@ -483,10 +488,12 @@ id: root
         }
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
+            sfxBack.play();
             previousScreen();
         }
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
+            sfxAccept.play();
             initialized = false;
             cheevosData.refreshAll();
         }
