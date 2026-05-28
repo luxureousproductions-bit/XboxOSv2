@@ -873,39 +873,44 @@ id: root
                 anchors.verticalCenter: parent.verticalCenter
 
                 // ── HERO (index 0): resume / last-played screenshot + title ──
-                Image {
-                    id: heroBg
+                // heroBg + title bar share a single OpacityMask so the bar's BOTTOM
+                // corners follow the rounded tile edge while its TOP corners stay square.
+                Item {
+                    id: heroClipper
                     visible: isHero
                     anchors.fill: parent
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true; smooth: true
-                    source: platformlist.resumeGame ? (platformlist.resumeGame.assets.background || platformlist.resumeGame.assets.screenshots[0] || platformlist.resumeGame.assets.boxFront || "") : ""
-                    opacity: selected ? 1 : 0.5
-                    // Rounded-corner clip just on the image, so we don't pay layer cost on the whole delegate
                     layer.enabled: isHero
                     layer.smooth: true
                     layer.effect: OpacityMask {
                         maskSource: Rectangle {
-                            width: heroBg.width
-                            height: heroBg.height
+                            width: heroClipper.width
+                            height: heroClipper.height
                             radius: tile.radius
                         }
                     }
-                }
-                Rectangle {
-                    visible: isHero
-                    // Full-width bar across the bottom of the hero tile
-                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                    height: vpx(22); color: "black"; opacity: 0.6
-                    // Radius matches the tile so the bottom corners curve cleanly with the rounded tile edge
-                    radius: tile.radius
-                    Text {
-                        anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
-                        text: platformlist.resumeGame ? platformlist.resumeGame.title : ""
-                        color: "white"; font.family: subtitleFont.name
-                        font.pixelSize: vpx(10); font.bold: true
-                        elide: Text.ElideRight
-                        horizontalAlignment: Text.AlignLeft
+
+                    Image {
+                        id: heroBg
+                        anchors.fill: parent
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true; smooth: true
+                        source: platformlist.resumeGame ? (platformlist.resumeGame.assets.background || platformlist.resumeGame.assets.screenshots[0] || platformlist.resumeGame.assets.boxFront || "") : ""
+                        opacity: selected ? 1 : 0.5
+                    }
+
+                    Rectangle {
+                        // Full-width bar across the bottom. No radius — the parent OpacityMask
+                        // clips the bottom corners to match tile.radius automatically.
+                        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                        height: vpx(28); color: "black"; opacity: 0.6
+                        Text {
+                            anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
+                            text: platformlist.resumeGame ? platformlist.resumeGame.title : ""
+                            color: "white"; font.family: subtitleFont.name
+                            font.pixelSize: vpx(11); font.bold: true
+                            elide: Text.ElideRight
+                            horizontalAlignment: Text.AlignLeft
+                        }
                     }
                 }
 
