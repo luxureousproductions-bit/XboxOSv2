@@ -894,15 +894,16 @@ id: root
                 }
                 Rectangle {
                     visible: isHero
-                    // Small horizontal margins so the title bar's bottom corners don't poke past the rounded curve
-                    anchors { left: parent.left; leftMargin: vpx(6); right: parent.right; rightMargin: vpx(6); bottom: parent.bottom; bottomMargin: vpx(2) }
-                    height: vpx(40); color: "black"; opacity: 0.65
-                    radius: vpx(5)
+                    // Full-width bar across the bottom of the hero tile
+                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                    height: vpx(22); color: "black"; opacity: 0.6
+                    // Radius matches the tile so the bottom corners curve cleanly with the rounded tile edge
+                    radius: tile.radius
                     Text {
-                        anchors { left: parent.left; leftMargin: vpx(12); right: parent.right; rightMargin: vpx(10); verticalCenter: parent.verticalCenter }
+                        anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
                         text: platformlist.resumeGame ? platformlist.resumeGame.title : ""
                         color: "white"; font.family: subtitleFont.name
-                        font.pixelSize: vpx(18); font.bold: true
+                        font.pixelSize: vpx(10); font.bold: true
                         elide: Text.ElideRight
                         horizontalAlignment: Text.AlignLeft
                     }
