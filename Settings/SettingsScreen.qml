@@ -920,13 +920,13 @@ id: root
             }
         }
 
-        Keys.onUpPressed:    { if (keyIndex >= keyCols) keyIndex -= keyCols; }
-        Keys.onDownPressed:  { var ni = keyIndex + keyCols; if (ni < keyboardKeys.length) keyIndex = ni; else keyIndex = keyboardKeys.length - 1; }
-        Keys.onLeftPressed:  { if ((keyIndex % keyCols) !== 0) keyIndex--; }
-        Keys.onRightPressed: { if ((keyIndex % keyCols) !== (keyCols - 1) && keyIndex < keyboardKeys.length - 1) keyIndex++; }
+        Keys.onUpPressed:    { sfxNav.play(); if (keyIndex >= keyCols) keyIndex -= keyCols; }
+        Keys.onDownPressed:  { sfxNav.play(); var ni = keyIndex + keyCols; if (ni < keyboardKeys.length) keyIndex = ni; else keyIndex = keyboardKeys.length - 1; }
+        Keys.onLeftPressed:  { sfxNav.play(); if ((keyIndex % keyCols) !== 0) keyIndex--; }
+        Keys.onRightPressed: { sfxNav.play(); if ((keyIndex % keyCols) !== (keyCols - 1) && keyIndex < keyboardKeys.length - 1) keyIndex++; }
         Keys.onPressed: {
-            if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; pressKey(keyboardKeys[keyIndex]); }
-            if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; closeEditor(); }
+            if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); pressKey(keyboardKeys[keyIndex]); }
+            if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); closeEditor(); }
         }
     }
 
