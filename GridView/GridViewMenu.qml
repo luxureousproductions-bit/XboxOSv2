@@ -216,6 +216,9 @@ id: root
         }
 
         gamegrid.focus = true;
+        // stop() first so rapid letter-jumping always restarts the sound (Qt SoundEffect
+        // otherwise drops a play() that arrives while the previous one is still playing).
+        sfxToggle.stop();
         sfxToggle.play();
 
         return true;
@@ -907,13 +910,16 @@ id: root
         // Next collection
         if (api.keys.isNextPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
+            // Play the sfx BEFORE the heavy model rebuild below, and stop() first so
+            // rapid cycling always restarts the sound instead of dropping the retrigger.
+            sfxToggle.stop();
+            sfxToggle.play();
             if (currentCollectionIndex < api.collections.count-1)
                 currentCollectionIndex++;
             else
                 currentCollectionIndex = 0;
 
             gamegrid.currentIndex = 0;
-            sfxToggle.play();
             sortedGames = null;
             return;
         }
@@ -921,13 +927,14 @@ id: root
         // Previous collection
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
+            sfxToggle.stop();
+            sfxToggle.play();
             if (currentCollectionIndex > 0)
                 currentCollectionIndex--;
             else
                 currentCollectionIndex = api.collections.count-1;
 
             gamegrid.currentIndex = 0;
-            sfxToggle.play();
             sortedGames = null;
             return;
         }
