@@ -896,13 +896,13 @@ id: root
                     visible: isHero
                     // Small horizontal margins so the title bar's bottom corners don't poke past the rounded curve
                     anchors { left: parent.left; leftMargin: vpx(6); right: parent.right; rightMargin: vpx(6); bottom: parent.bottom; bottomMargin: vpx(2) }
-                    height: vpx(22); color: "black"; opacity: 0.6
-                    radius: vpx(3)
+                    height: vpx(30); color: "black"; opacity: 0.6
+                    radius: vpx(4)
                     Text {
-                        anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
+                        anchors { left: parent.left; leftMargin: vpx(10); right: parent.right; rightMargin: vpx(8); verticalCenter: parent.verticalCenter }
                         text: platformlist.resumeGame ? platformlist.resumeGame.title : ""
                         color: "white"; font.family: subtitleFont.name
-                        font.pixelSize: vpx(10); font.bold: true
+                        font.pixelSize: vpx(14); font.bold: true
                         elide: Text.ElideRight
                         horizontalAlignment: Text.AlignLeft
                     }
