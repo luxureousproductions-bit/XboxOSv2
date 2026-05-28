@@ -701,7 +701,6 @@ id: root
         // B — back to games list
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxBack.play();
             previousScreen();
         }
         // LB — cycle filter backward
@@ -735,7 +734,6 @@ id: root
         // A — back to RA overview
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxAccept.play();
             achievementsScreenFromGame();
         }
     }

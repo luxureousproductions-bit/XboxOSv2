@@ -488,7 +488,6 @@ id: root
         }
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxBack.play();
             previousScreen();
         }
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
