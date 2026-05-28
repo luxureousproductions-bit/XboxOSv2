@@ -384,10 +384,10 @@ id: root
             }
 
             onFocusChanged: {
-                if (focus) sfxNav.play();
+                if (focus) playNav();
                 mainList.currentIndex = focus ? -1 : 0;
             }
-            Keys.onDownPressed:  { sfxNav.play(); mainList.forceActiveFocus(); mainList.currentIndex = 1; }
+            Keys.onDownPressed:  { playNav(); mainList.forceActiveFocus(); mainList.currentIndex = 1; }
             Keys.onRightPressed: discoverbutton.focus = true;
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; allGamesScreen(); }
@@ -425,10 +425,10 @@ id: root
             }
 
             onFocusChanged: {
-                if (focus) sfxNav.play();
+                if (focus) playNav();
                 mainList.currentIndex = focus ? -1 : 0;
             }
-            Keys.onDownPressed:  { sfxNav.play(); mainList.forceActiveFocus(); mainList.currentIndex = 1; }
+            Keys.onDownPressed:  { playNav(); mainList.forceActiveFocus(); mainList.currentIndex = 1; }
             Keys.onLeftPressed:  homebutton.focus = true;
             Keys.onRightPressed: achievementsbutton.focus = true;
             Keys.onPressed: {
@@ -475,10 +475,10 @@ id: root
             }
 
             onFocusChanged: {
-                if (focus) sfxNav.play();
+                if (focus) playNav();
                 mainList.currentIndex = focus ? -1 : 0;
             }
-            Keys.onDownPressed:  { sfxNav.play(); mainList.forceActiveFocus(); mainList.currentIndex = 1; }
+            Keys.onDownPressed:  { playNav(); mainList.forceActiveFocus(); mainList.currentIndex = 1; }
             Keys.onLeftPressed:  discoverbutton.focus = true;
             Keys.onRightPressed: settingsbutton.focus = true;
             Keys.onPressed: {
@@ -518,10 +518,10 @@ id: root
             }
 
             onFocusChanged: {
-                if (focus) sfxNav.play();
+                if (focus) playNav();
                 mainList.currentIndex = focus ? -1 : 0;
             }
-            Keys.onDownPressed:  { sfxNav.play(); mainList.forceActiveFocus(); mainList.currentIndex = 1; }
+            Keys.onDownPressed:  { playNav(); mainList.forceActiveFocus(); mainList.currentIndex = 1; }
             Keys.onLeftPressed:  achievementsbutton.focus = true;
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
@@ -1014,10 +1014,10 @@ id: root
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: settings.MouseHover == "Yes"
-                    onEntered: { sfxNav.play(); mainList.currentIndex = topRow.ObjectModel.index; platformlist.currentIndex = index; }
+                    onEntered: { playNav(); mainList.currentIndex = topRow.ObjectModel.index; platformlist.currentIndex = index; }
                     onClicked: {
                         if (selected) {
-                            if (isHero) { if (platformlist.resumeGame) platformlist.resumeGame.launch(); }
+                            if (isHero) { if (platformlist.resumeGame) { sfxAccept.play(); platformlist.resumeGame.launch(); } }
                             else { currentCollectionIndex = index - 1; softwareScreen(); }
                         } else {
                             mainList.currentIndex = topRow.ObjectModel.index;
@@ -1029,12 +1029,12 @@ id: root
 
             // List specific input
             Keys.onLeftPressed: {
-                sfxNav.play();
+                playNav();
                 if (currentIndex > 0) decrementCurrentIndex();
                 else currentIndex = count - 1;   // hero -> last tile
             }
             Keys.onRightPressed: {
-                sfxNav.play();
+                playNav();
                 if (currentIndex < count - 1) incrementCurrentIndex();
                 else currentIndex = 0;            // last tile -> hero
             }
@@ -1042,7 +1042,7 @@ id: root
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                     event.accepted = true;
                     if (currentIndex <= 0) {
-                        if (resumeGame) resumeGame.launch();
+                        if (resumeGame) { sfxAccept.play(); resumeGame.launch(); }
                     } else {
                         currentCollectionIndex = currentIndex - 1;
                         softwareScreen();
@@ -1079,7 +1079,7 @@ id: root
 
             onActivateSelected: storedHomeSecondaryIndex = currentIndex;
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
-            onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onListHighlighted: { playNav(); mainList.currentIndex = currentList.ObjectModel.index; }
             onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
             onSelectedChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
@@ -1109,7 +1109,7 @@ id: root
 
             onActivateSelected: storedHomeSecondaryIndex = currentIndex;
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
-            onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onListHighlighted: { playNav(); mainList.currentIndex = currentList.ObjectModel.index; }
             onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
             onSelectedChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
@@ -1139,7 +1139,7 @@ id: root
 
             onActivateSelected: storedHomeSecondaryIndex = currentIndex;
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
-            onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onListHighlighted: { playNav(); mainList.currentIndex = currentList.ObjectModel.index; }
             onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
             onSelectedChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
@@ -1169,7 +1169,7 @@ id: root
 
             onActivateSelected: storedHomeSecondaryIndex = currentIndex;
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
-            onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onListHighlighted: { playNav(); mainList.currentIndex = currentList.ObjectModel.index; }
             onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
             onSelectedChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
@@ -1199,7 +1199,7 @@ id: root
 
             onActivateSelected: storedHomeSecondaryIndex = currentIndex;
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
-            onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onListHighlighted: { playNav(); mainList.currentIndex = currentList.ObjectModel.index; }
             onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
             onSelectedChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
@@ -1229,7 +1229,7 @@ id: root
 
             onActivateSelected: storedHomeSecondaryIndex = currentIndex;
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
-            onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onListHighlighted: { playNav(); mainList.currentIndex = currentList.ObjectModel.index; }
             onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
             onSelectedChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
@@ -1276,7 +1276,7 @@ id: root
 
         Keys.onUpPressed: {
             if (currentIndex <= 1) { homebutton.focus = true; return; }
-            sfxNav.play();
+            playNav();
             // Leaving a collection to land on the strip: pre-switch to NoHighlightRange
             // BEFORE the index changes so ApplyRange doesn't snap contentY first,
             // letting the glide own the whole transition. (Mirrors the down handler.)
@@ -1288,7 +1288,7 @@ id: root
             } while (!currentItem.enabled);
         }
         Keys.onDownPressed: {
-            sfxNav.play();
+            playNav();
             // Leaving the top zone (index >= 1): restore ApplyRange BEFORE the
             // index changes, otherwise the list's internal repositioning runs
             // while still in NoHighlightRange and never scrolls down. (At index
