@@ -554,6 +554,26 @@ id: root
             if (currentIndex !== 0) currentIndex--;
             else homebutton.focus = true;
         }
+        // Down/Left/Right handled here (not at root) because a focused vertical
+        // ListView consumes Down internally before the root handler can fire —
+        // which is why the nav sound was intermittent. accepted=true stops the
+        // built-in navigation from double-moving.
+        Keys.onDownPressed: {
+            event.accepted = true;
+            sfxNav.play();
+            if (currentIndex !== count - 1) currentIndex++;
+            else currentIndex = 0;
+        }
+        Keys.onLeftPressed: {
+            event.accepted = true;
+            sfxNav.play();
+            currentIndex = Math.max(0, currentIndex - skipnum);
+        }
+        Keys.onRightPressed: {
+            event.accepted = true;
+            sfxNav.play();
+            currentIndex = Math.min(count - 1, currentIndex + skipnum);
+        }
 
         anchors {
             top: header.bottom; topMargin: globalMargin
@@ -845,25 +865,8 @@ id: root
     }
 
     // ── Input ─────────────────────────────────────────────────────────────
-    Keys.onDownPressed: {
-        if (!filterOpen && gamelist.focus) {
-            sfxNav.play();
-            if (gamelist.currentIndex !== gamelist.count - 1) gamelist.currentIndex++;
-            else gamelist.currentIndex = 0;
-        }
-    }
-    Keys.onLeftPressed: {
-        if (!filterOpen && gamelist.focus) {
-            sfxNav.play();
-            gamelist.currentIndex = Math.max(0, gamelist.currentIndex - skipnum);
-        }
-    }
-    Keys.onRightPressed: {
-        if (!filterOpen && gamelist.focus) {
-            sfxNav.play();
-            gamelist.currentIndex = Math.min(gamelist.count - 1, gamelist.currentIndex + skipnum);
-        }
-    }
+    // Down/Left/Right live on the gamelist ListView itself (see above); handling
+    // them at root is unreliable because the focused ListView consumes Down first.
 
     Keys.onPressed: {
         // A — launch the game directly
