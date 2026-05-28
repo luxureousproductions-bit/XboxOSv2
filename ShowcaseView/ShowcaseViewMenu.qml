@@ -384,10 +384,10 @@ id: root
             }
 
             onFocusChanged: {
-                sfxNav.play();
+                if (focus) sfxNav.play();
                 mainList.currentIndex = focus ? -1 : 0;
             }
-            Keys.onDownPressed:  { mainList.forceActiveFocus(); mainList.currentIndex = 1; }
+            Keys.onDownPressed:  { sfxNav.play(); mainList.forceActiveFocus(); mainList.currentIndex = 1; }
             Keys.onRightPressed: discoverbutton.focus = true;
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; allGamesScreen(); }
@@ -425,10 +425,10 @@ id: root
             }
 
             onFocusChanged: {
-                sfxNav.play();
+                if (focus) sfxNav.play();
                 mainList.currentIndex = focus ? -1 : 0;
             }
-            Keys.onDownPressed:  { mainList.forceActiveFocus(); mainList.currentIndex = 1; }
+            Keys.onDownPressed:  { sfxNav.play(); mainList.forceActiveFocus(); mainList.currentIndex = 1; }
             Keys.onLeftPressed:  homebutton.focus = true;
             Keys.onRightPressed: achievementsbutton.focus = true;
             Keys.onPressed: {
@@ -475,10 +475,10 @@ id: root
             }
 
             onFocusChanged: {
-                sfxNav.play();
+                if (focus) sfxNav.play();
                 mainList.currentIndex = focus ? -1 : 0;
             }
-            Keys.onDownPressed:  { mainList.forceActiveFocus(); mainList.currentIndex = 1; }
+            Keys.onDownPressed:  { sfxNav.play(); mainList.forceActiveFocus(); mainList.currentIndex = 1; }
             Keys.onLeftPressed:  discoverbutton.focus = true;
             Keys.onRightPressed: settingsbutton.focus = true;
             Keys.onPressed: {
@@ -518,10 +518,10 @@ id: root
             }
 
             onFocusChanged: {
-                sfxNav.play();
+                if (focus) sfxNav.play();
                 mainList.currentIndex = focus ? -1 : 0;
             }
-            Keys.onDownPressed:  { mainList.forceActiveFocus(); mainList.currentIndex = 1; }
+            Keys.onDownPressed:  { sfxNav.play(); mainList.forceActiveFocus(); mainList.currentIndex = 1; }
             Keys.onLeftPressed:  achievementsbutton.focus = true;
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }

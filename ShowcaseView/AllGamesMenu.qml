@@ -397,7 +397,7 @@ id: root
             Keys.onDownPressed:  { sfxNav.play(); gamelist.focus = true; }
             Keys.onRightPressed: { sfxNav.play(); discoverbutton.focus = true; }
             Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); showcaseScreen(); }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamelist.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: showcaseScreen(); }
@@ -432,7 +432,7 @@ id: root
             Keys.onLeftPressed:  { sfxNav.play(); homebutton.focus = true; }
             Keys.onRightPressed: { sfxNav.play(); achievementsbutton.focus = true; }
             Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); discoverScreen(); }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamelist.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: discoverScreen(); }
@@ -462,7 +462,7 @@ id: root
             Keys.onLeftPressed:  { sfxNav.play(); discoverbutton.focus = true; }
             Keys.onRightPressed: { sfxNav.play(); settingsbutton.focus = true; }
             Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); achievementsScreen(); }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamelist.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: achievementsScreen(); }
@@ -481,7 +481,7 @@ id: root
             Keys.onDownPressed: { sfxNav.play(); gamelist.focus = true; }
             Keys.onLeftPressed: { sfxNav.play(); achievementsbutton.focus = true; }
             Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); settingsScreen(); }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamelist.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: settingsScreen(); }
@@ -877,7 +877,7 @@ id: root
         // B — back
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus) { sfxBack.play(); previousScreen(); }
+            if (!filterOpen && gamelist.focus) { previousScreen(); }
         }
         // X — open Sorting & Filters
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
@@ -895,7 +895,7 @@ id: root
         // Y — game details page
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus) { sfxAccept.play(); gameDetails(currentGame); }
+            if (!filterOpen && gamelist.focus) { gameDetails(currentGame); }
         }
         // LT — previous letter group
         if (api.keys.isPageUp(event) && !event.isAutoRepeat) {
