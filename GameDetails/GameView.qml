@@ -616,7 +616,7 @@ id: root
                 color: "#cc000000"
             }
 
-            onFocusChanged: if (focus) sfxNav.play();
+            onFocusChanged: if (focus) playNav();
             Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
             Keys.onRightPressed: gv_discoverbutton.focus = true;
             Keys.onPressed: {
@@ -658,7 +658,7 @@ id: root
                 color: "#cc000000"
             }
 
-            onFocusChanged: if (focus) sfxNav.play();
+            onFocusChanged: if (focus) playNav();
             Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
             Keys.onLeftPressed:  gv_homebutton.focus = true;
             Keys.onRightPressed: gv_settingsbutton.focus = true;
@@ -705,7 +705,7 @@ id: root
                 color: "#cc000000"
             }
 
-            onFocusChanged: if (focus) sfxNav.play();
+            onFocusChanged: if (focus) playNav();
             Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
             Keys.onLeftPressed:  gv_discoverbutton.focus = true;
             Keys.onPressed: {
@@ -771,10 +771,9 @@ id: root
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated: 
                 if (selected) {
-                    sfxAccept.play();
                     launchGame(game);
                 } else {
-                    sfxNav.play();
+                    playNav();
                     menu.currentIndex = ObjectModel.index;
                 }
         }
@@ -793,7 +792,7 @@ id: root
                     sfxAccept.play();
                     raEntryScreen();
                 } else {
-                    sfxNav.play();
+                    playNav();
                     menu.currentIndex = ObjectModel.index;
                 }
         }
@@ -810,7 +809,7 @@ id: root
                     sfxToggle.play();
                     showDetails();
                 } else {
-                    sfxNav.play();
+                    playNav();
                     menu.currentIndex = ObjectModel.index;
                 }
         }
@@ -829,7 +828,7 @@ id: root
                     sfxToggle.play();
                     game.favorite = !game.favorite;
                 } else {
-                    sfxNav.play();
+                    playNav();
                     menu.currentIndex = ObjectModel.index;
                 }
         }
@@ -846,7 +845,7 @@ id: root
                 if (selected) 
                     previousScreen();
                 else {
-                    sfxNav.play(); 
+                    playNav(); 
                     menu.currentIndex = ObjectModel.index;
                 }
         }
@@ -868,8 +867,8 @@ id: root
             orientation: ListView.Horizontal
             spacing: vpx(10)
             keyNavigationWraps: true
-            Keys.onLeftPressed: { sfxNav.play(); decrementCurrentIndex() }
-            Keys.onRightPressed: { sfxNav.play(); incrementCurrentIndex() }
+            Keys.onLeftPressed: { playNav(); decrementCurrentIndex() }
+            Keys.onRightPressed: { playNav(); incrementCurrentIndex() }
         }
 
         HorizontalCollection {
@@ -888,7 +887,7 @@ id: root
                 mediaItem: modelData
 
                 onHighlighted: {
-                    sfxNav.play(); 
+                    playNav(); 
                     media.currentIndex = index;
                     content.currentIndex = media.ObjectModel.index;
                 }
@@ -898,7 +897,7 @@ id: root
                     showMedia(index);
                 else
                 {
-                    sfxNav.play(); 
+                    playNav(); 
                     media.currentIndex = index;
                     content.currentIndex = media.ObjectModel.index;
                 }
@@ -940,7 +939,7 @@ id: root
                 // Replace the current game without pushing a new gameviewscreen onto lastState
                 currentGame = search.currentGame(activeIndex);
             }
-            onListHighlighted: { sfxNav.play(); content.currentIndex = list1.ObjectModel.index; }
+            onListHighlighted: { playNav(); content.currentIndex = list1.ObjectModel.index; }
         }
         // --- END: More by Publisher/Developer (More section only) ---
 
@@ -977,7 +976,7 @@ id: root
                 // Replace the current game without pushing a new gameviewscreen onto lastState
                 currentGame = search.currentGame(activeIndex);
             }
-            onListHighlighted: { sfxNav.play(); content.currentIndex = list2.ObjectModel.index; }
+            onListHighlighted: { playNav(); content.currentIndex = list2.ObjectModel.index; }
         }
         // --- END: More by Genre (Option B: genre token controlled by setting) ---
         
@@ -1011,10 +1010,10 @@ id: root
         }
         keyNavigationWraps: true
         Keys.onUpPressed: {
-            if (currentIndex > 0) { sfxNav.play(); decrementCurrentIndex(); }
+            if (currentIndex > 0) { playNav(); decrementCurrentIndex(); }
             else { gv_homebutton.focus = true; }
         }
-        Keys.onDownPressed: { sfxNav.play(); incrementCurrentIndex() }
+        Keys.onDownPressed: { playNav(); incrementCurrentIndex() }
     }
 
     MediaView {
