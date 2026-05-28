@@ -707,14 +707,14 @@ id: root
         // LB — cycle filter backward
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxNav.play();
+            sfxToggle.play();
             cycleFilterBack();
             currentIndex = 0;
         }
         // RB — cycle filter forward
         if (api.keys.isNextPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxNav.play();
+            sfxToggle.play();
             cycleFilterForward();
             currentIndex = 0;
         }
