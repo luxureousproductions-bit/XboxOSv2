@@ -316,8 +316,8 @@ id: root
             width: vpx(36); height: vpx(36); radius: height/2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(81) }
             color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
-            Keys.onDownPressed:  { sfxNav.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
-            Keys.onRightPressed: { sfxNav.play(); discoverbutton.focus = true; }
+            Keys.onDownPressed:  { playNav(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            Keys.onRightPressed: { playNav(); discoverbutton.focus = true; }
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
@@ -347,9 +347,9 @@ id: root
             width: vpx(36); height: vpx(36); radius: height/2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(27) }
             color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
-            Keys.onDownPressed:  { sfxNav.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
-            Keys.onLeftPressed:  { sfxNav.play(); homebutton.focus = true; }
-            Keys.onRightPressed: { sfxNav.play(); achievementsbutton.focus = true; }
+            Keys.onDownPressed:  { playNav(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            Keys.onLeftPressed:  { playNav(); homebutton.focus = true; }
+            Keys.onRightPressed: { playNav(); achievementsbutton.focus = true; }
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
@@ -377,9 +377,9 @@ id: root
             width: vpx(36); height: vpx(36); radius: height/2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(27) }
             color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
-            Keys.onDownPressed:  { sfxNav.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
-            Keys.onLeftPressed:  { sfxNav.play(); discoverbutton.focus = true; }
-            Keys.onRightPressed: { sfxNav.play(); settingsbutton.focus = true; }
+            Keys.onDownPressed:  { playNav(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            Keys.onLeftPressed:  { playNav(); discoverbutton.focus = true; }
+            Keys.onRightPressed: { playNav(); settingsbutton.focus = true; }
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
@@ -397,8 +397,8 @@ id: root
             width: vpx(36); height: vpx(36); radius: height/2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(81) }
             color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
-            Keys.onDownPressed: { sfxNav.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
-            Keys.onLeftPressed: { sfxNav.play(); achievementsbutton.focus = true; }
+            Keys.onDownPressed: { playNav(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            Keys.onLeftPressed: { playNav(); achievementsbutton.focus = true; }
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
@@ -557,7 +557,7 @@ id: root
             }
 
             Keys.onUpPressed: {
-                sfxNav.play();
+                playNav();
                 if (currentIndex < numColumns) {
                     homebutton.focus = true;
                     gamegrid.currentIndex = -1;
@@ -565,9 +565,9 @@ id: root
                     moveCurrentIndexUp();
                 }
             }
-            Keys.onDownPressed:     { sfxNav.play(); moveCurrentIndexDown() }
-            Keys.onLeftPressed:     { sfxNav.play(); moveCurrentIndexLeft() }
-            Keys.onRightPressed:    { sfxNav.play(); moveCurrentIndexRight() }
+            Keys.onDownPressed:     { playNav(); moveCurrentIndexDown() }
+            Keys.onLeftPressed:     { playNav(); moveCurrentIndexLeft() }
+            Keys.onRightPressed:    { playNav(); moveCurrentIndexRight() }
         }
 
     }
@@ -781,23 +781,23 @@ id: root
         }
 
         Keys.onUpPressed: {
-            sfxNav.play();
+            playNav();
             if (searchActive) { if (keyIndex >= keyCols) keyIndex -= keyCols; }
             else if (genrePickerOpen) { if (genrePickerIndex > 0) genrePickerIndex--; }
             else if (filterRow > 0) filterRow--;
         }
         Keys.onDownPressed: {
-            sfxNav.play();
+            playNav();
             if (searchActive) { var ni = keyIndex + keyCols; if (ni < keyboardKeys.length) keyIndex = ni; else keyIndex = keyboardKeys.length - 1; }
             else if (genrePickerOpen) { if (genrePickerIndex < genreOptions.length - 1) genrePickerIndex++; }
             else if (filterRow < sortFields.length + 2) filterRow++;
         }
         Keys.onLeftPressed: {
-            sfxNav.play();
+            playNav();
             if (searchActive && (keyIndex % keyCols) !== 0) keyIndex--;
         }
         Keys.onRightPressed: {
-            sfxNav.play();
+            playNav();
             if (searchActive && (keyIndex % keyCols) !== (keyCols - 1) && keyIndex < keyboardKeys.length - 1) keyIndex++;
         }
         Keys.onPressed: {
