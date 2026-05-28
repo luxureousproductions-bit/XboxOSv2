@@ -166,6 +166,11 @@ id: root
     }
 
     // Launch the current game
+    // Robust nav tick: stop() before play() so rapid scrolling always restarts the
+    // sound. Qt's SoundEffect otherwise drops a play() that arrives while the previous
+    // one is still playing, which caused the nav sfx to intermittently cut out.
+    function playNav() { sfxNav.stop(); sfxNav.play(); }
+
     function launchGame(game) {
         if (game !== null) {
             //if (game.collections.get(0).name === "Steam")
@@ -918,13 +923,13 @@ id: root
     SoundEffect {
         id: sfxNav
         source: "assets/sfx/navigation.wav"
-        volume: 1.5
+        volume: 1.0
     }
 
     SoundEffect {
         id: sfxBack
         source: "assets/sfx/back.wav"
-        volume: 1.5
+        volume: 1.0
     }
 
     SoundEffect {
