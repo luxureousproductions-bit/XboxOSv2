@@ -586,8 +586,8 @@ id: root
             MouseArea {
                 anchors.fill: parent
                 hoverEnabled: settings.MouseHover === "Yes"
-                onEntered: { sfxNav.play(); root.currentIndex = index; }
-                onClicked:  { sfxNav.play(); root.currentIndex = index; }
+                onEntered: { playNav(); root.currentIndex = index; }
+                onClicked:  { playNav(); root.currentIndex = index; }
             }
         }
     }
@@ -674,25 +674,25 @@ id: root
     // Up/Down — scroll achievement list
     Keys.onUpPressed: {
         event.accepted = true;
-        sfxNav.play();
+        playNav();
         if (currentIndex > 0) currentIndex--;
     }
     Keys.onDownPressed: {
         event.accepted = true;
-        sfxNav.play();
+        playNav();
         if (currentIndex < root.displayList.length - 1) currentIndex++;
     }
 
     // D-pad Left/Right — cycle filter tabs
     Keys.onLeftPressed: {
         event.accepted = true;
-        sfxNav.play();
+        playNav();
         cycleFilterBack();
         currentIndex = 0;
     }
     Keys.onRightPressed: {
         event.accepted = true;
-        sfxNav.play();
+        playNav();
         cycleFilterForward();
         currentIndex = 0;
     }

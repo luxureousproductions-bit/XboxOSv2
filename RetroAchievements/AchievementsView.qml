@@ -200,7 +200,7 @@ id: root
         // never see them — hooking the index change is the reliable place for the sound.
         property bool navReady: false
         Component.onCompleted: navReady = true
-        onCurrentIndexChanged: if (navReady) sfxNav.play()
+        onCurrentIndexChanged: if (navReady) playNav()
 
         highlightMoveDuration: 100
         preferredHighlightBegin: vpx(96)
