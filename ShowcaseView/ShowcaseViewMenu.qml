@@ -902,12 +902,14 @@ id: root
                         // Full-width bar across the bottom. No radius — the parent OpacityMask
                         // clips the bottom corners to match tile.radius automatically.
                         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                        height: vpx(28); color: "black"; opacity: 0.6
+                        height: vpx(36); color: "black"; opacity: 0.6
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
                             text: platformlist.resumeGame ? platformlist.resumeGame.title : ""
                             color: "white"; font.family: subtitleFont.name
                             font.pixelSize: vpx(11); font.bold: true
+                            wrapMode: Text.WordWrap
+                            maximumLineCount: 2
                             elide: Text.ElideRight
                             horizontalAlignment: Text.AlignLeft
                         }
