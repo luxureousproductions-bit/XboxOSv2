@@ -918,13 +918,13 @@ id: root
     SoundEffect {
         id: sfxNav
         source: "assets/sfx/navigation.wav"
-        volume: 1.0
+        volume: 1.5
     }
 
     SoundEffect {
         id: sfxBack
         source: "assets/sfx/back.wav"
-        volume: 1.0
+        volume: 1.5
     }
 
     SoundEffect {
