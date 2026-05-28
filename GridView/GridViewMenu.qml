@@ -313,11 +313,11 @@ id: root
             width: vpx(36); height: vpx(36); radius: height/2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(81) }
             color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
-            Keys.onDownPressed:  { gamegrid.currentIndex = 0; gamegrid.focus = true; }
-            Keys.onRightPressed: discoverbutton.focus = true;
+            Keys.onDownPressed:  { sfxNav.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            Keys.onRightPressed: { sfxNav.play(); discoverbutton.focus = true; }
             Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; gamegrid.currentIndex = 0; gamegrid.focus = true; }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); showcaseScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: showcaseScreen(); }
             Canvas {
@@ -344,12 +344,12 @@ id: root
             width: vpx(36); height: vpx(36); radius: height/2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(27) }
             color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
-            Keys.onDownPressed:  { gamegrid.currentIndex = 0; gamegrid.focus = true; }
-            Keys.onLeftPressed:  homebutton.focus = true;
-            Keys.onRightPressed: achievementsbutton.focus = true;
+            Keys.onDownPressed:  { sfxNav.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            Keys.onLeftPressed:  { sfxNav.play(); homebutton.focus = true; }
+            Keys.onRightPressed: { sfxNav.play(); achievementsbutton.focus = true; }
             Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; gamegrid.currentIndex = 0; gamegrid.focus = true; }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); discoverScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: discoverScreen(); }
             Canvas {
@@ -374,12 +374,12 @@ id: root
             width: vpx(36); height: vpx(36); radius: height/2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(27) }
             color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
-            Keys.onDownPressed:  { gamegrid.currentIndex = 0; gamegrid.focus = true; }
-            Keys.onLeftPressed:  discoverbutton.focus = true;
-            Keys.onRightPressed: settingsbutton.focus = true;
+            Keys.onDownPressed:  { sfxNav.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            Keys.onLeftPressed:  { sfxNav.play(); discoverbutton.focus = true; }
+            Keys.onRightPressed: { sfxNav.play(); settingsbutton.focus = true; }
             Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; gamegrid.currentIndex = 0; gamegrid.focus = true; }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); achievementsScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: achievementsScreen(); }
             Text {
@@ -394,11 +394,11 @@ id: root
             width: vpx(36); height: vpx(36); radius: height/2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(81) }
             color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
-            Keys.onDownPressed: { gamegrid.currentIndex = 0; gamegrid.focus = true; }
-            Keys.onLeftPressed: achievementsbutton.focus = true;
+            Keys.onDownPressed: { sfxNav.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            Keys.onLeftPressed: { sfxNav.play(); achievementsbutton.focus = true; }
             Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; gamegrid.currentIndex = 0; gamegrid.focus = true; }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); settingsScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: settingsScreen(); }
             Image {
@@ -778,46 +778,50 @@ id: root
         }
 
         Keys.onUpPressed: {
+            sfxNav.play();
             if (searchActive) { if (keyIndex >= keyCols) keyIndex -= keyCols; }
             else if (genrePickerOpen) { if (genrePickerIndex > 0) genrePickerIndex--; }
             else if (filterRow > 0) filterRow--;
         }
         Keys.onDownPressed: {
+            sfxNav.play();
             if (searchActive) { var ni = keyIndex + keyCols; if (ni < keyboardKeys.length) keyIndex = ni; else keyIndex = keyboardKeys.length - 1; }
             else if (genrePickerOpen) { if (genrePickerIndex < genreOptions.length - 1) genrePickerIndex++; }
             else if (filterRow < sortFields.length + 2) filterRow++;
         }
         Keys.onLeftPressed: {
+            sfxNav.play();
             if (searchActive && (keyIndex % keyCols) !== 0) keyIndex--;
         }
         Keys.onRightPressed: {
+            sfxNav.play();
             if (searchActive && (keyIndex % keyCols) !== (keyCols - 1) && keyIndex < keyboardKeys.length - 1) keyIndex++;
         }
         Keys.onPressed: {
             if (searchActive) {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; pressKey(keyboardKeys[keyIndex]); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; searchActive = false; }
-                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; searchActive = false; }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); pressKey(keyboardKeys[keyIndex]); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); searchActive = false; }
+                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); searchActive = false; }
                 return;
             }
             if (genrePickerOpen) {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; selectGenre(genreOptions[genrePickerIndex]); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; genrePickerOpen = false; }
-                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; genrePickerOpen = false; }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); selectGenre(genreOptions[genrePickerIndex]); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); genrePickerOpen = false; }
+                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); genrePickerOpen = false; }
                 return;
             }
             if (api.keys.isAccept(event) && !event.isAutoRepeat) {
-                event.accepted = true;
+                event.accepted = true; sfxAccept.play();
                 if (filterRow === 0) activateSearch();
                 else if (filterRow === 1) openGenrePicker();
                 else if (filterRow <= sortFields.length + 1) selectSort(sortFields[filterRow - 2].idx);
                 else { showFavs = !showFavs; gamegrid.currentIndex = 0; sortedGames = null; }
             }
             if (api.keys.isCancel(event) && !event.isAutoRepeat) {
-                event.accepted = true; filterOpen = false; gamegrid.focus = true;
+                event.accepted = true; sfxBack.play(); filterOpen = false; gamegrid.focus = true;
             }
             if (api.keys.isDetails(event) && !event.isAutoRepeat) {
-                event.accepted = true; filterOpen = false; gamegrid.focus = true;
+                event.accepted = true; sfxAccept.play(); filterOpen = false; gamegrid.focus = true;
             }
         }
     }
@@ -844,6 +848,7 @@ id: root
         // Accept
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
+            sfxAccept.play();
             if (gamegrid.focus) {
                 gameActivated();
             } else {
@@ -856,6 +861,7 @@ id: root
         // Back
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
+            sfxBack.play();
             if (gamegrid.focus) {
                 previousScreen();
             } else {
@@ -867,6 +873,7 @@ id: root
         // Filters (X) — open the Sorting & Filters overlay
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
+            sfxAccept.play();
             filterRow = (sortByIndex >= 0 && sortByIndex < sortFields.length) ? sortByIndex + 2 : 0;
             searchActive = false;
             genrePickerOpen = false;
@@ -878,6 +885,7 @@ id: root
         // Settings (Y)
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
+            sfxAccept.play();
             settingsScreen();
             return;
         }
