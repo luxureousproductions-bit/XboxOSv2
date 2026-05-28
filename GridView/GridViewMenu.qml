@@ -319,7 +319,7 @@ id: root
             Keys.onDownPressed:  { sfxNav.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             Keys.onRightPressed: { sfxNav.play(); discoverbutton.focus = true; }
             Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); showcaseScreen(); }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: showcaseScreen(); }
@@ -351,7 +351,7 @@ id: root
             Keys.onLeftPressed:  { sfxNav.play(); homebutton.focus = true; }
             Keys.onRightPressed: { sfxNav.play(); achievementsbutton.focus = true; }
             Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); discoverScreen(); }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: discoverScreen(); }
@@ -381,7 +381,7 @@ id: root
             Keys.onLeftPressed:  { sfxNav.play(); discoverbutton.focus = true; }
             Keys.onRightPressed: { sfxNav.play(); settingsbutton.focus = true; }
             Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); achievementsScreen(); }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: achievementsScreen(); }
@@ -400,7 +400,7 @@ id: root
             Keys.onDownPressed: { sfxNav.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             Keys.onLeftPressed: { sfxNav.play(); achievementsbutton.focus = true; }
             Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); settingsScreen(); }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: settingsScreen(); }
@@ -851,10 +851,10 @@ id: root
         // Accept
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxAccept.play();
             if (gamegrid.focus) {
-                gameActivated();
+                gameActivated();              // plays sfxAccept via gameDetails()
             } else {
+                sfxAccept.play();             // only the refocus path needs its own sound
                 gamegrid.currentIndex = 0;
                 gamegrid.focus = true;
             }
@@ -864,10 +864,10 @@ id: root
         // Back
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxBack.play();
             if (gamegrid.focus) {
-                previousScreen();
+                previousScreen();             // plays its own sfxBack
             } else {
+                sfxBack.play();               // only the refocus path needs its own sound
                 gamegrid.focus = true;
             }
             return;
@@ -888,7 +888,6 @@ id: root
         // Settings (Y)
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxAccept.play();
             settingsScreen();
             return;
         }
