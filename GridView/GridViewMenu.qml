@@ -913,7 +913,7 @@ id: root
                 currentCollectionIndex = 0;
 
             gamegrid.currentIndex = 0;
-            sfxNav.play();
+            sfxToggle.play();
             sortedGames = null;
             return;
         }
@@ -927,7 +927,7 @@ id: root
                 currentCollectionIndex = api.collections.count-1;
 
             gamegrid.currentIndex = 0;
-            sfxNav.play();
+            sfxToggle.play();
             sortedGames = null;
             return;
         }
