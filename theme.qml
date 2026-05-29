@@ -166,10 +166,14 @@ id: root
     }
 
     // Launch the current game
-    // Robust nav tick: stop() before play() so rapid scrolling always restarts the
-    // sound. Qt's SoundEffect otherwise drops a play() that arrives while the previous
-    // one is still playing, which caused the nav sfx to intermittently cut out.
-    function playNav() { sfxNav.stop(); sfxNav.play(); }
+    // ── Robust SFX helpers ────────────────────────────────────────────────
+    // stop() before play() forces a clean restart on every call, so rapid
+    // retriggers (scrolling, cycling, etc.) never drop a play() the way Qt's
+    // SoundEffect otherwise does when one is already in-flight.
+    function playNav()    { sfxNav.stop();    sfxNav.play(); }
+    function playAccept() { sfxAccept.stop(); sfxAccept.play(); }
+    function playBack()   { sfxBack.stop();   sfxBack.play(); }
+    function playToggle() { sfxToggle.stop(); sfxToggle.play(); }
 
     function launchGame(game) {
         if (game !== null) {
@@ -521,7 +525,7 @@ id: root
 
     // Screen switching functions
     function softwareScreen() {
-        sfxAccept.play();
+        playAccept();
         lastState.push(state);
         searchTerm = "";
         searchMode = "Title";
@@ -536,19 +540,19 @@ id: root
     }
 
     function showcaseScreen() {
-        sfxAccept.play();
+        playAccept();
         lastState.push(state);
         root.state = "showcasescreen";
     }
 
     function allGamesScreen() {
-        sfxAccept.play();
+        playAccept();
         lastState.push(state);
         root.state = "allgamesscreen";
     }
 
     function gameDetails(game) {
-        sfxAccept.play();
+        playAccept();
 
         // If we're already on gameviewscreen (e.g. navigating the "More games"
         // lists inside GameView), just swap the current game without pushing a
@@ -573,13 +577,13 @@ id: root
     }
 
     function settingsScreen() {
-        sfxAccept.play();
+        playAccept();
         lastState.push(state);
         root.state = "settingsscreen";
     }
 
     function achievementsScreen() {
-        sfxAccept.play();
+        playAccept();
         lastState.push(state);
         root.state = "achievementsscreen";
     }
@@ -588,7 +592,7 @@ id: root
     // Used when already inside RA (A from game achievements, or "View Overview"
     // from RAGameEntryView) so B exits RA in one press.
     function achievementsScreenFromGame() {
-        sfxAccept.play();
+        playAccept();
         root.state = "achievementsscreen";
     }
 
@@ -617,7 +621,7 @@ id: root
     }
 
     function discoverScreen() {
-        sfxAccept.play();
+        playAccept();
         lastState.push(state);
         root.state = "discoverscreen";
     }
@@ -626,7 +630,7 @@ id: root
     // Called by DiscoverView so that pressing Back in Game Details returns to
     // Showcase (or wherever the user came from) rather than back to Discover.
     function gameDetailsFromDiscover(game) {
-        sfxAccept.play();
+        playAccept();
         if (lastState.length != 0)
             lastGame.push(currentGame);
         if (game !== null)
@@ -638,7 +642,7 @@ id: root
     // lastState so that returning from the game skips the Discover screen.
     function launchGameFromDiscover(game) {
         if (game !== null) {
-            sfxAccept.play();
+            playAccept();
             root.state = "launchgamescreen";
             saveCurrentState(game);
             game.launch();
@@ -646,13 +650,13 @@ id: root
     }
 
     function launchGameScreen() {
-        sfxAccept.play();
+        playAccept();
         lastState.push(state);
         root.state = "launchgamescreen";
     }
 
     function previousScreen() {
-        sfxBack.play();
+        playBack();
         if (state == lastState[lastState.length-1])
             popLastGame();
 
