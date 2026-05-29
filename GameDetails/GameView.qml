@@ -154,14 +154,14 @@ id: root
 
     // Show/hide the media view
     function showMedia(index) {
-        sfxAccept.play();
+        playAccept();
         mediaScreen.mediaIndex = index;
         mediaScreen.focus = true;
         mediaScreen.opacity = 1;
     }
 
     function closeMedia() {
-        sfxBack.play();
+        playBack();
         mediaScreen.opacity = 0;
         content.focus = true;
         currentHelpbarModel = gameviewHelpModel;
@@ -789,7 +789,7 @@ id: root
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated:
                 if (selected) {
-                    sfxAccept.play();
+                    playAccept();
                     raEntryScreen();
                 } else {
                     playNav();
@@ -806,7 +806,7 @@ id: root
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated: 
                 if (selected) {
-                    sfxToggle.play();
+                    playToggle();
                     showDetails();
                 } else {
                     playNav();
@@ -825,7 +825,7 @@ id: root
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated: 
                 if (selected) {
-                    sfxToggle.play();
+                    playToggle();
                     game.favorite = !game.favorite;
                 } else {
                     playNav();
@@ -1041,7 +1041,7 @@ id: root
         // Toggle Favorite
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxAccept.play();
+            playAccept();
             game.favorite = !game.favorite;
         }
         // Settings
