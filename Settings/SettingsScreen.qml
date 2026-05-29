@@ -123,7 +123,11 @@ id: root
 
         ListElement {
             settingName: "Xbox Logo"
-            setting: "Logo1,Logo2,Logo3,None"
+            setting: "Logo1,Logo2,RetroAchievements,None"
+        }
+        ListElement {
+            settingName: "Logo Color Match"
+            setting: "No,Yes"
         }
         ListElement {
             settingName: "Showcase Background Art"
