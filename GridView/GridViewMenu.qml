@@ -218,8 +218,7 @@ id: root
         gamegrid.focus = true;
         // stop() first so rapid letter-jumping always restarts the sound (Qt SoundEffect
         // otherwise drops a play() that arrives while the previous one is still playing).
-        sfxToggle.stop();
-        sfxToggle.play();
+        playToggle();
 
         return true;
     }
@@ -320,7 +319,7 @@ id: root
             Keys.onRightPressed: { playNav(); discoverbutton.focus = true; }
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: showcaseScreen(); }
             Canvas {
@@ -352,7 +351,7 @@ id: root
             Keys.onRightPressed: { playNav(); achievementsbutton.focus = true; }
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: discoverScreen(); }
             Canvas {
@@ -382,7 +381,7 @@ id: root
             Keys.onRightPressed: { playNav(); settingsbutton.focus = true; }
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: achievementsScreen(); }
             Text {
@@ -401,7 +400,7 @@ id: root
             Keys.onLeftPressed: { playNav(); achievementsbutton.focus = true; }
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: settingsScreen(); }
             Image {
@@ -802,29 +801,29 @@ id: root
         }
         Keys.onPressed: {
             if (searchActive) {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); pressKey(keyboardKeys[keyIndex]); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); searchActive = false; }
-                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); searchActive = false; }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey(keyboardKeys[keyIndex]); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); searchActive = false; }
+                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); searchActive = false; }
                 return;
             }
             if (genrePickerOpen) {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); selectGenre(genreOptions[genrePickerIndex]); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); genrePickerOpen = false; }
-                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); genrePickerOpen = false; }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); selectGenre(genreOptions[genrePickerIndex]); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); genrePickerOpen = false; }
+                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); genrePickerOpen = false; }
                 return;
             }
             if (api.keys.isAccept(event) && !event.isAutoRepeat) {
-                event.accepted = true; sfxAccept.play();
+                event.accepted = true; playAccept();
                 if (filterRow === 0) activateSearch();
                 else if (filterRow === 1) openGenrePicker();
                 else if (filterRow <= sortFields.length + 1) selectSort(sortFields[filterRow - 2].idx);
                 else { showFavs = !showFavs; gamegrid.currentIndex = 0; sortedGames = null; }
             }
             if (api.keys.isCancel(event) && !event.isAutoRepeat) {
-                event.accepted = true; sfxBack.play(); filterOpen = false; gamegrid.focus = true;
+                event.accepted = true; playBack(); filterOpen = false; gamegrid.focus = true;
             }
             if (api.keys.isDetails(event) && !event.isAutoRepeat) {
-                event.accepted = true; sfxAccept.play(); filterOpen = false; gamegrid.focus = true;
+                event.accepted = true; playAccept(); filterOpen = false; gamegrid.focus = true;
             }
         }
     }
@@ -854,7 +853,7 @@ id: root
             if (gamegrid.focus) {
                 gameActivated();              // plays sfxAccept via gameDetails()
             } else {
-                sfxAccept.play();             // only the refocus path needs its own sound
+                playAccept();             // only the refocus path needs its own sound
                 gamegrid.currentIndex = 0;
                 gamegrid.focus = true;
             }
@@ -867,7 +866,7 @@ id: root
             if (gamegrid.focus) {
                 previousScreen();             // plays its own sfxBack
             } else {
-                sfxBack.play();               // only the refocus path needs its own sound
+                playBack();               // only the refocus path needs its own sound
                 gamegrid.focus = true;
             }
             return;
@@ -876,7 +875,7 @@ id: root
         // Filters (X) — open the Sorting & Filters overlay
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxAccept.play();
+            playAccept();
             filterRow = (sortByIndex >= 0 && sortByIndex < sortFields.length) ? sortByIndex + 2 : 0;
             searchActive = false;
             genrePickerOpen = false;
@@ -911,8 +910,7 @@ id: root
             event.accepted = true;
             // Play the sfx BEFORE the heavy model rebuild below, and stop() first so
             // rapid cycling always restarts the sound instead of dropping the retrigger.
-            sfxToggle.stop();
-            sfxToggle.play();
+            playToggle();
             if (currentCollectionIndex < api.collections.count-1)
                 currentCollectionIndex++;
             else
@@ -926,8 +924,7 @@ id: root
         // Previous collection
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxToggle.stop();
-            sfxToggle.play();
+            playToggle();
             if (currentCollectionIndex > 0)
                 currentCollectionIndex--;
             else
