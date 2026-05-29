@@ -257,10 +257,10 @@ id: root
     MouseArea {
         anchors.fill: parent
         hoverEnabled: settings.MouseHover == "Yes"
-        onEntered: { sfxNav.play(); highlighted(); }
+        onEntered: { playNav(); highlighted(); }
         onExited: { unhighlighted(); }
         onClicked: {
-            sfxNav.play();
+            playNav();
             activated();
         }
     }
