@@ -378,6 +378,12 @@ id: root
             gradientstart = "#00a06070";
             gradientend   = "#FFa06070";
             text          = "#101010";
+        } else if (settings.ColorBackground === "Gradient") {
+            // theme.main becomes transparent so the root-level Gradient Image shows through.
+            background    = "transparent";
+            gradientstart = "#00000000";
+            gradientend   = "#A0000000";
+            text          = "#ebebeb";
         } else if (settings.ColorBackground === "White") {
             background    = "#ebebeb";
             gradientstart = "#00ebebeb";
@@ -465,6 +471,8 @@ id: root
             case "Jade":          accent = "#2a8a5a"; break;
             case "Onyx":          accent = "#353535"; break;
             case "White":         accent = "#e8e8e8"; break;
+            // Special: image-based palette using assets/images/colorspng/Gradient.png
+            case "Gradient":      accent = "#c060c0"; break;
             default:              accent = "#288928"; break;
         }
         return {
@@ -688,6 +696,22 @@ id: root
         anchors.fill: parent
         // Image { source: "assets/images/backgrounds/halo.jpg"; fillMode: Image.PreserveAspectFit; anchors.fill: parent;  opacity: 0.3 }
         color: theme.main
+    }
+
+    // ── Background gradient image ─────────────────────────────────────────
+    // Renders behind all screen Loaders (z: -1). Each screen's bg Rectangle has
+    // color: theme.main, which is "transparent" only when Gradient is selected,
+    // so this image shows through. Other ColorBackground choices render normally
+    // as solid colors and this Image is hidden.
+    Image {
+        id: bgGradient
+        anchors.fill: parent
+        source: "assets/images/colorspng/Gradient.png"
+        fillMode: Image.PreserveAspectCrop
+        visible: settings.ColorBackground === "Gradient"
+        asynchronous: true
+        smooth: true
+        z: -1
     }
 
     Loader  {
