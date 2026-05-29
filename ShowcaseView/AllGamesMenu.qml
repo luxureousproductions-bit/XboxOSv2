@@ -398,7 +398,7 @@ id: root
             Keys.onRightPressed: { playNav(); discoverbutton.focus = true; }
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamelist.focus = true; }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamelist.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: showcaseScreen(); }
             Canvas {
@@ -433,7 +433,7 @@ id: root
             Keys.onRightPressed: { playNav(); achievementsbutton.focus = true; }
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamelist.focus = true; }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamelist.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: discoverScreen(); }
             Canvas {
@@ -463,7 +463,7 @@ id: root
             Keys.onRightPressed: { playNav(); settingsbutton.focus = true; }
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamelist.focus = true; }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamelist.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: achievementsScreen(); }
             Text {
@@ -482,7 +482,7 @@ id: root
             Keys.onLeftPressed: { playNav(); achievementsbutton.focus = true; }
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); gamelist.focus = true; }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamelist.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: settingsScreen(); }
             Image {
@@ -838,28 +838,28 @@ id: root
         }
         Keys.onPressed: {
             if (searchActive) {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); pressKey(keyboardKeys[keyIndex]); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); searchActive = false; }
-                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); searchActive = false; }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey(keyboardKeys[keyIndex]); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); searchActive = false; }
+                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); searchActive = false; }
                 return;
             }
             if (genrePickerOpen) {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); selectGenre(genreOptions[genrePickerIndex]); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); genrePickerOpen = false; }
-                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); genrePickerOpen = false; }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); selectGenre(genreOptions[genrePickerIndex]); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); genrePickerOpen = false; }
+                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); genrePickerOpen = false; }
                 return;
             }
             if (api.keys.isAccept(event) && !event.isAutoRepeat) {
-                event.accepted = true; sfxAccept.play();
+                event.accepted = true; playAccept();
                 if (filterRow === 0) activateSearch();
                 else if (filterRow === 1) openGenrePicker();
                 else selectSort(sortFields[filterRow - 2].key);
             }
             if (api.keys.isCancel(event) && !event.isAutoRepeat) {
-                event.accepted = true; sfxBack.play(); filterOpen = false; gamelist.focus = true;
+                event.accepted = true; playBack(); filterOpen = false; gamelist.focus = true;
             }
             if (api.keys.isDetails(event) && !event.isAutoRepeat) {
-                event.accepted = true; sfxAccept.play(); filterOpen = false; gamelist.focus = true;
+                event.accepted = true; playAccept(); filterOpen = false; gamelist.focus = true;
             }
         }
     }
@@ -872,7 +872,7 @@ id: root
         // A — launch the game directly
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus && currentGame) { sfxAccept.play(); currentGame.launch(); }
+            if (!filterOpen && gamelist.focus && currentGame) { playAccept(); currentGame.launch(); }
         }
         // B — back
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
@@ -883,7 +883,7 @@ id: root
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
             if (!filterOpen && gamelist.focus) {
-                sfxAccept.play();
+                playAccept();
                 var fi = sortFields.map(function(f){ return f.key; }).indexOf(sortField);
                 filterRow = fi >= 0 ? fi + 2 : 0;
                 filterOpen = true;
@@ -900,12 +900,12 @@ id: root
         // LT — previous letter group
         if (api.keys.isPageUp(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus) { sfxToggle.play(); jumpToPrevLetter(); }
+            if (!filterOpen && gamelist.focus) { playToggle(); jumpToPrevLetter(); }
         }
         // RT — next letter group
         if (api.keys.isPageDown(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus) { sfxToggle.play(); jumpToNextLetter(); }
+            if (!filterOpen && gamelist.focus) { playToggle(); jumpToNextLetter(); }
         }
     }
 
