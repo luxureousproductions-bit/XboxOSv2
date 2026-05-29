@@ -390,21 +390,21 @@ id: root
         "q","w","e","r","t","y","u","i","o","p",
         "a","s","d","f","g","h","j","k","l","@",
         "z","x","c","v","b","n","m",".","_","-",
-        "SHIFT","áé","SPACE","DEL","CLR","PASTE","OK"
+        "SHIFT","áé","SPACE","DEL","CLR","PASTE","COPY","OK"
     ]
     property var kbUpper: [
         "!","@","#","$","%","^","&","*","(",")",
         "Q","W","E","R","T","Y","U","I","O","P",
         "A","S","D","F","G","H","J","K","L","+",
         "Z","X","C","V","B","N","M","?","/","=",
-        "SHIFT","áé","SPACE","DEL","CLR","PASTE","OK"
+        "SHIFT","áé","SPACE","DEL","CLR","PASTE","COPY","OK"
     ]
     property var kbSpec: [
         "à","á","â","ã","ä","å","æ","ç","è","é",
         "ê","ë","ì","í","î","ï","ñ","ò","ó","ô",
         "õ","ö","ø","ù","ú","û","ü","ý","ÿ","ß",
         "~","`","|","\\","<",">","{","}","[","]",
-        "SHIFT","ABC","SPACE","DEL","CLR","PASTE","OK"
+        "SHIFT","ABC","SPACE","DEL","CLR","PASTE","COPY","OK"
     ]
     property var keyboardKeys: kbSpecial ? kbSpec : (kbShift ? kbUpper : kbLower)
 
@@ -423,6 +423,7 @@ id: root
         else if (k === "DEL")   editText = editText.slice(0, -1);
         else if (k === "CLR")   editText = "";
         else if (k === "PASTE") pasteFromClipboard();
+        else if (k === "COPY")  copyToClipboard();
         else if (k === "OK") {
             api.memory.set(editSettingName, editText);
             memRevision++;
@@ -439,6 +440,16 @@ id: root
         clipboardHelper.selectAll();
         clipboardHelper.paste();
         editText += clipboardHelper.text;
+        clipboardHelper.text = "";
+    }
+    // Copy the entire current editText to the system clipboard via the same hidden
+    // TextEdit. We push editText into it, select-all, then copy() — effectively
+    // "select all + copy" in one button press. No-op if the field is empty.
+    function copyToClipboard() {
+        if (editText === "") return;
+        clipboardHelper.text = editText;
+        clipboardHelper.selectAll();
+        clipboardHelper.copy();
         clipboardHelper.text = "";
     }
     function closeEditor() {
@@ -534,9 +545,9 @@ id: root
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: settings.MouseHover == "Yes"
-                    onEntered: { sfxNav.play(); }
+                    onEntered: { playNav(); }
                     onClicked: {
-                        sfxNav.play();
+                        playNav();
                         pagelist.currentIndex = index;
                         settingsList.focus = true;
                     }
@@ -545,13 +556,13 @@ id: root
             }
         } 
 
-        Keys.onUpPressed: { sfxNav.play(); decrementCurrentIndex() }
-        Keys.onDownPressed: { sfxNav.play(); incrementCurrentIndex() }
+        Keys.onUpPressed: { playNav(); decrementCurrentIndex() }
+        Keys.onDownPressed: { playNav(); incrementCurrentIndex() }
         Keys.onPressed: {
             // Accept
             if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                 event.accepted = true;
-                sfxAccept.play();
+                playAccept();
                 settingsList.focus = true;
             }
             // Back
@@ -779,10 +790,10 @@ id: root
 
                 // ── Input handling ────────────────────────────────────────
                 Keys.onRightPressed: {
-                    if (!isTextInput) { sfxToggle.play(); nextSetting(); saveSetting(); }
+                    if (!isTextInput) { playToggle(); nextSetting(); saveSetting(); }
                 }
                 Keys.onLeftPressed: {
-                    if (!isTextInput) { sfxToggle.play(); prevSetting(); saveSetting(); }
+                    if (!isTextInput) { playToggle(); prevSetting(); saveSetting(); }
                 }
 
                 Keys.onPressed: {
@@ -791,9 +802,10 @@ id: root
                         event.accepted = true;
                         if (isTextInput) {
                             // Capture current saved value before opening editor
+                            playAccept();
                             root.openEditor(settingName, (typeof masked !== 'undefined' && masked));
                         } else {
-                            sfxToggle.play();
+                            playToggle();
                             nextSetting();
                             saveSetting();
                         }
@@ -801,7 +813,7 @@ id: root
                     // Back
                     if (api.keys.isCancel(event) && !event.isAutoRepeat) {
                         event.accepted = true;
-                        sfxBack.play();
+                        playBack();
                         pagelist.focus = true;
                     }
                 }
@@ -810,13 +822,14 @@ id: root
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: settings.MouseHover == "Yes"
-                    onEntered: { sfxNav.play(); }
+                    onEntered: { playNav(); }
                     onClicked: {
                         if (selected) {
                             if (isTextInput) {
+                                playAccept();
                                 root.openEditor(settingName, (typeof masked !== 'undefined' && masked));
                             } else {
-                                sfxToggle.play();
+                                playToggle();
                                 nextSetting();
                                 saveSetting();
                             }
@@ -829,8 +842,8 @@ id: root
             }
         } 
 
-        Keys.onUpPressed: { sfxNav.play(); decrementCurrentIndex() }
-        Keys.onDownPressed: { sfxNav.play(); incrementCurrentIndex() }
+        Keys.onUpPressed: { playNav(); decrementCurrentIndex() }
+        Keys.onDownPressed: { playNav(); incrementCurrentIndex() }
     }
 
     // ── On-screen keyboard overlay ────────────────────────────────────────
@@ -920,13 +933,13 @@ id: root
             }
         }
 
-        Keys.onUpPressed:    { sfxNav.play(); if (keyIndex >= keyCols) keyIndex -= keyCols; }
-        Keys.onDownPressed:  { sfxNav.play(); var ni = keyIndex + keyCols; if (ni < keyboardKeys.length) keyIndex = ni; else keyIndex = keyboardKeys.length - 1; }
-        Keys.onLeftPressed:  { sfxNav.play(); if ((keyIndex % keyCols) !== 0) keyIndex--; }
-        Keys.onRightPressed: { sfxNav.play(); if ((keyIndex % keyCols) !== (keyCols - 1) && keyIndex < keyboardKeys.length - 1) keyIndex++; }
+        Keys.onUpPressed:    { playNav(); if (keyIndex >= keyCols) keyIndex -= keyCols; }
+        Keys.onDownPressed:  { playNav(); var ni = keyIndex + keyCols; if (ni < keyboardKeys.length) keyIndex = ni; else keyIndex = keyboardKeys.length - 1; }
+        Keys.onLeftPressed:  { playNav(); if ((keyIndex % keyCols) !== 0) keyIndex--; }
+        Keys.onRightPressed: { playNav(); if ((keyIndex % keyCols) !== (keyCols - 1) && keyIndex < keyboardKeys.length - 1) keyIndex++; }
         Keys.onPressed: {
-            if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; sfxAccept.play(); pressKey(keyboardKeys[keyIndex]); }
-            if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; sfxBack.play(); closeEditor(); }
+            if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey(keyboardKeys[keyIndex]); }
+            if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); closeEditor(); }
         }
     }
 
