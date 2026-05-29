@@ -706,28 +706,28 @@ id: root
         // LB — cycle filter backward
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxToggle.play();
+            playToggle();
             cycleFilterBack();
             currentIndex = 0;
         }
         // RB — cycle filter forward
         if (api.keys.isNextPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxToggle.play();
+            playToggle();
             cycleFilterForward();
             currentIndex = 0;
         }
         // Y / Filters — cycle sort mode
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxToggle.play();
+            playToggle();
             cycleSort();
             currentIndex = 0;
         }
         // X / Details — refresh current game
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxAccept.play();
+            playAccept();
             if (cheevosData.currentGameDetails.Title !== "")
                 cheevosData.loadGameAchievements(cheevosData.currentGameID);
         }

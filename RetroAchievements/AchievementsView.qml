@@ -483,7 +483,7 @@ id: root
     Keys.onPressed: {
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxAccept.play();
+            playAccept();
             openSelectedGame();
         }
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
@@ -492,7 +492,7 @@ id: root
         }
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxAccept.play();
+            playAccept();
             initialized = false;
             cheevosData.refreshAll();
         }
