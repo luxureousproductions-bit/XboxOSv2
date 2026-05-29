@@ -122,6 +122,10 @@ id: root
     id: showcaseSettingsModel
 
         ListElement {
+            settingName: "Xbox Logo"
+            setting: "Logo1,Logo2,Logo3,None"
+        }
+        ListElement {
             settingName: "Showcase Background Art"
             setting: "Yes,No"
         }
