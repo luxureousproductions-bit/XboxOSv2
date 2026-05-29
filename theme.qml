@@ -174,6 +174,8 @@ id: root
     function playAccept() { sfxAccept.stop(); sfxAccept.play(); }
     function playBack()   { sfxBack.stop();   sfxBack.play(); }
     function playToggle() { sfxToggle.stop(); sfxToggle.play(); }
+    function playTabLeft()  { sfxTabLeft.stop();  sfxTabLeft.play(); }
+    function playTabRight() { sfxTabRight.stop(); sfxTabRight.play(); }
 
     function launchGame(game) {
         if (game !== null) {
@@ -944,6 +946,16 @@ id: root
     SoundEffect {
         id: sfxToggle
         source: "assets/sfx/toggle.wav"
+    }
+
+    SoundEffect {
+        id: sfxTabLeft
+        source: "assets/sfx/tab_left.wav"
+    }
+
+    SoundEffect {
+        id: sfxTabRight
+        source: "assets/sfx/tab_right.wav"
     }
     
 }
