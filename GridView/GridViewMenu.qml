@@ -905,12 +905,12 @@ id: root
             return;
         }
 
-        // Next collection
+        // Next collection (RB)
         if (api.keys.isNextPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            // Play the sfx BEFORE the heavy model rebuild below, and stop() first so
-            // rapid cycling always restarts the sound instead of dropping the retrigger.
-            playToggle();
+            // Play the sfx BEFORE the heavy model rebuild below; the helper does stop()+play()
+            // so rapid cycling always restarts the sound instead of dropping the retrigger.
+            playTabRight();
             if (currentCollectionIndex < api.collections.count-1)
                 currentCollectionIndex++;
             else
@@ -921,10 +921,10 @@ id: root
             return;
         }
 
-        // Previous collection
+        // Previous collection (LB)
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            playToggle();
+            playTabLeft();
             if (currentCollectionIndex > 0)
                 currentCollectionIndex--;
             else
