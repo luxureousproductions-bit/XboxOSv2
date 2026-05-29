@@ -324,7 +324,12 @@ id: root
 
             width: vpx(350)
             anchors { left: parent.left; leftMargin: globalMargin }
-            source: "../assets/images/gameOS-logo.png"
+            // Logo file chosen by Settings > Home page > Xbox Logo. "None" hides it.
+            source: settings.XboxLogo === "None" ? "" :
+                    settings.XboxLogo === "Logo2" ? "../assets/images/Xbox-logo2.png" :
+                    settings.XboxLogo === "Logo3" ? "../assets/images/Xbox-logo3.png" :
+                                                    "../assets/images/Xbox-logo.png"
+            visible: settings.XboxLogo !== "None"
             sourceSize { width: 350; height: 250}
             fillMode: Image.PreserveAspectFit
             smooth: true
@@ -358,13 +363,17 @@ id: root
 
             width: vpx(150)
             anchors { left: parent.left; leftMargin: globalMargin }
-            source: "../assets/images/gameOS-logo.png"
+            // Logo file chosen by Settings > Home page > Xbox Logo. "None" hides it.
+            source: settings.XboxLogo === "None" ? "" :
+                    settings.XboxLogo === "Logo2" ? "../assets/images/Xbox-logo2.png" :
+                    settings.XboxLogo === "Logo3" ? "../assets/images/Xbox-logo3.png" :
+                                                    "../assets/images/Xbox-logo.png"
             sourceSize { width: 150; height: 100}
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true
             anchors.verticalCenter: parent.verticalCenter
-            visible: !ftueContainer.visible
+            visible: !ftueContainer.visible && settings.XboxLogo !== "None"
         }
         Rectangle {
         id: homebutton
