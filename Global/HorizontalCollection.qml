@@ -130,8 +130,8 @@ id: root
             }
         }
 
-        Keys.onLeftPressed: { sfxNav.play(); collectionList.decrementCurrentIndex() }
-        Keys.onRightPressed: { sfxNav.play(); collectionList.incrementCurrentIndex() }
+        Keys.onLeftPressed: { playNav(); collectionList.decrementCurrentIndex() }
+        Keys.onRightPressed: { playNav(); collectionList.incrementCurrentIndex() }
     }
 
 }

@@ -20,41 +20,57 @@ import QtGraphicalEffects 1.15
 Item {
 id: root
 
-    // Border styling (tweak these to taste)
-    property real borderThickness: vpx(4)
-    property real borderRadius:    vpx(6)
-
-    // Every Color Layout now has its own PNG, so use it directly.
     function mapLayoutImage(layoutName) {
+        if (layoutName === "Cyan") return "Turquoise";
+        if (layoutName === "Crimson") return "Dark Red";
+        if (layoutName === "Lime") return "Light Green";
+        if (layoutName === "Gold") return "Yellow";
+        if (layoutName === "Violet") return "Purple";
+        if (layoutName === "Teal") return "Stone";
         return layoutName;
     }
 
-    // Color-layout frame — theme.accent matches the layout PNG colors
-    Rectangle {
+    Image {
     id: border
+
         anchors.fill: parent
-        color: "transparent"
-        radius: borderRadius
-        border.color: theme.accent
-        border.width: borderThickness
-        visible: selected
+        source: "../assets/images/colorspng/" + mapLayoutImage(settings.ColorLayout) + ".png"
+		asynchronous: true
+        visible: false
+        
+        // Highlight animation (ColorOverlay causes graphical glitches on W10)
+        Rectangle {
+            anchors.fill: parent
+            color: "#fff"
+            visible: settings.AnimateHighlight === "Yes"
+            SequentialAnimation on opacity {
+            id: colorAnim
+
+                running: true
+                loops: Animation.Infinite
+                NumberAnimation { to: 1; duration: 200; }
+                NumberAnimation { to: 0; duration: 500; }
+                PauseAnimation { duration: 200 }
+            }
+        }
     }
 
-    // Animated highlight — flashes the frame white when enabled
-    Rectangle {
+    BorderImage {
+    id: mask
+
         anchors.fill: parent
-        color: "transparent"
-        radius: borderRadius
-        border.color: "#ffffff"
-        border.width: borderThickness
-        visible: selected && settings.AnimateHighlight === "Yes"
-        SequentialAnimation on opacity {
-            running: true
-            loops: Animation.Infinite
-            NumberAnimation { to: 1; duration: 200 }
-            NumberAnimation { to: 0; duration: 500 }
-            PauseAnimation  { duration: 200 }
-        }
+        source: "../assets/images/borderimage.gif"
+        border { left: vpx(5); right: vpx(5); top: vpx(5); bottom: vpx(5);}
+        smooth: false
+        visible: false
+        asynchronous: true
+    }
+
+    OpacityMask {
+        anchors.fill: border
+        source: border
+        maskSource: mask
+        visible: selected
     }
 
     Rectangle {

@@ -293,7 +293,7 @@ id: root
 
                         Keys.onUpPressed: {
                             if (currentIndex > 0) {
-                                sfxNav.play();
+                                playNav();
                                 currentIndex--;
                             } else {
                                 if (searchLoader.item) searchLoader.item.forceActiveFocus();
@@ -301,7 +301,7 @@ id: root
                         }
                         Keys.onDownPressed: {
                             if (currentIndex < count - 1) {
-                                sfxNav.play();
+                                playNav();
                                 currentIndex++;
                             }
                         }
@@ -309,7 +309,7 @@ id: root
                             if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                                 event.accepted = true;
                                 searchMode = model[currentIndex];
-                                sfxToggle.play();
+                                playToggle();
                                 if (searchLoader.item) searchLoader.item.forceActiveFocus();
                             }
                             if (api.keys.isCancel(event) && !event.isAutoRepeat) {
