@@ -327,9 +327,12 @@ id: root
             // Logo file chosen by Settings > Home page > Xbox Logo. "None" hides it.
             source: settings.XboxLogo === "None" ? "" :
                     settings.XboxLogo === "Logo2" ? "../assets/images/Xbox-logo2.png" :
-                    settings.XboxLogo === "Logo3" ? "../assets/images/Xbox-logo3.png" :
                                                     "../assets/images/Xbox-logo.png"
             visible: settings.XboxLogo !== "None"
+            // Logo Color Match: tints the logo to the current Color Layout accent.
+            // layer.enabled: false when off — zero render cost.
+            layer.enabled: settings.LogoColorMatch === "Yes"
+            layer.effect: ColorOverlay { color: theme.accent }
             sourceSize { width: 350; height: 250}
             fillMode: Image.PreserveAspectFit
             smooth: true
@@ -366,14 +369,112 @@ id: root
             // Logo file chosen by Settings > Home page > Xbox Logo. "None" hides it.
             source: settings.XboxLogo === "None" ? "" :
                     settings.XboxLogo === "Logo2" ? "../assets/images/Xbox-logo2.png" :
-                    settings.XboxLogo === "Logo3" ? "../assets/images/Xbox-logo3.png" :
                                                     "../assets/images/Xbox-logo.png"
+            // Logo Color Match: tints the logo to the current Color Layout accent.
+            layer.enabled: settings.LogoColorMatch === "Yes"
+            layer.effect: ColorOverlay { color: theme.accent }
             sourceSize { width: 150; height: 100}
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true
             anchors.verticalCenter: parent.verticalCenter
-            visible: !ftueContainer.visible && settings.XboxLogo !== "None"
+            visible: !ftueContainer.visible && settings.XboxLogo !== "None" && settings.XboxLogo !== "RetroAchievements"
+        }
+
+        // ── RetroAchievements header card ─────────────────────────────────
+        // Replaces the Xbox logo when Settings > Home page > Xbox Logo = RetroAchievements.
+        // Shows the same profile info as the RA overview (avatar, name, points, member).
+        Item {
+        id: raHeaderCard
+
+            anchors { left: parent.left; leftMargin: globalMargin; verticalCenter: parent.verticalCenter }
+            width: vpx(250); height: vpx(64)
+            visible: !ftueContainer.visible && settings.XboxLogo === "RetroAchievements"
+
+            // Pull the profile if RA credentials exist but the avatar hasn't been fetched yet
+            function ensureProfile() {
+                if (visible && cheevosData.raUserName !== "" && cheevosData.avatarUrl === "")
+                    cheevosData.loadUserProfile();
+            }
+            Component.onCompleted: ensureProfile()
+            onVisibleChanged:      ensureProfile()
+
+            Row {
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: vpx(10)
+
+                // Circular avatar with accent ring
+                Item {
+                    width: vpx(52); height: vpx(52)
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: cheevosData.avatarUrl !== ""
+                    Image {
+                    id: raHeaderAvatar
+                        anchors.fill: parent
+                        source: cheevosData.avatarUrl
+                        fillMode: Image.PreserveAspectCrop
+                        smooth: true; asynchronous: true
+                        sourceSize { width: 64; height: 64 }
+                        layer.enabled: true
+                        layer.smooth: true
+                        layer.effect: OpacityMask {
+                            maskSource: Rectangle {
+                                width: raHeaderAvatar.width; height: raHeaderAvatar.height
+                                radius: width / 2
+                            }
+                        }
+                    }
+                    Rectangle {
+                        anchors.fill: parent
+                        color: "transparent"
+                        border.color: theme.accent
+                        border.width: vpx(2)
+                        radius: width / 2
+                    }
+                }
+
+                // Username / points / member-since
+                Column {
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: vpx(2)
+                    visible: cheevosData.raUserName !== ""
+
+                    Text {
+                        text: cheevosData.raUserName
+                        color: theme.text
+                        font.family: subtitleFont.name
+                        font.pixelSize: vpx(17); font.bold: true
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        text: cheevosData.pointsText
+                        color: theme.text
+                        font.family: subtitleFont.name
+                        font.pixelSize: vpx(12)
+                        opacity: 0.7
+                        visible: cheevosData.pointsText !== ""
+                    }
+                    Text {
+                        text: cheevosData.memberText
+                        color: theme.text
+                        font.family: subtitleFont.name
+                        font.pixelSize: vpx(10)
+                        opacity: 0.5
+                        visible: cheevosData.memberText !== ""
+                    }
+                }
+            }
+
+            // Fallback hint if RA isn't set up yet
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Sign in to RetroAchievements"
+                color: theme.text
+                opacity: 0.4
+                font.family: subtitleFont.name
+                font.pixelSize: vpx(13)
+                visible: cheevosData.raUserName === ""
+            }
         }
         Rectangle {
         id: homebutton
