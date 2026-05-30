@@ -347,6 +347,12 @@ id: root
             bottom: metaPanel.top; bottomMargin: vpx(14)
         }
         clip: true
+        // Rounded "card" corners for the whole preview
+        layer.enabled: true
+        layer.smooth: true
+        layer.effect: OpacityMask {
+            maskSource: Rectangle { width: boxArt.width; height: boxArt.height; radius: vpx(12) }
+        }
 
         // Screenshot backdrop (fills the area)
         Image {
@@ -404,6 +410,21 @@ id: root
             smooth: true
             visible: status === Image.Ready
         }
+    }
+
+    // Rounded accent frame around the preview (drawn on top of the card)
+    Rectangle {
+        anchors {
+            top: header.bottom; topMargin: globalMargin
+            left: gamelist.right; leftMargin: globalMargin
+            right: parent.right; rightMargin: globalMargin
+            bottom: metaPanel.top; bottomMargin: vpx(14)
+        }
+        color: "transparent"
+        radius: vpx(12)
+        border.color: theme.accent
+        border.width: vpx(2)
+        antialiasing: true
     }
 
     // ── Metadata panel (bottom of right side) ─────────────────────────────
@@ -467,7 +488,7 @@ id: root
                 Column {
                     width: parent.width; spacing: vpx(1)
                     Text { text: "Rating"; color: theme.accent; font.family: subtitleFont.name; font.pixelSize: vpx(13); font.bold: true }
-                    Text { width: parent.width; text: currentGame && currentGame.rating > 0 ? Math.round(currentGame.rating * 100) + "%" : "—"; color: theme.text; font.family: subtitleFont.name; font.pixelSize: vpx(17); elide: Text.ElideRight }
+                    Text { width: parent.width; text: currentGame && currentGame.rating > 0 ? (currentGame.rating * 10).toFixed(1) : "—"; color: theme.text; font.family: subtitleFont.name; font.pixelSize: vpx(17); elide: Text.ElideRight }
                 }
             }
         }
@@ -748,11 +769,12 @@ id: root
                     }
                     color: selected ? "white" : theme.text
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(20)
+                    font.pixelSize: selected ? vpx(25) : vpx(19)
                     font.bold: selected
                     elide: Text.ElideRight
                     verticalAlignment: Text.AlignVCenter
-                    opacity: selected ? 1 : 0.35
+                    opacity: selected ? 1 : 0.28
+                    Behavior on font.pixelSize { NumberAnimation { duration: 90 } }
                 }
                 MouseArea {
                     anchors.fill: parent
