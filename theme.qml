@@ -99,6 +99,8 @@ id: root
             OmitEmulatorFromShowcase:      api.memory.has("Omit genre: Emulator from Showcase") ? api.memory.get("Omit genre: Emulator from Showcase") : "No",
             MoreByGenreDisplay:            api.memory.has("More by Genre Display") ? api.memory.get("More by Genre Display") : "Full",
             AllowDiscoverVideoAudio:         api.memory.has("Play discover video audio") ? api.memory.get("Play discover video audio") : "No",
+            MenuSounds:                      api.memory.has("Menu sounds") ? api.memory.get("Menu sounds") : "Yes",
+            MenuVolume:                      api.memory.has("Menu Volume") ? api.memory.get("Menu Volume") : "1.0",
             ShowWifi:                      api.memory.has("Show WiFi Indicator")     ? api.memory.get("Show WiFi Indicator")     : "Yes",
             ShowBattery:                   api.memory.has("Show Battery Percentage") ? api.memory.get("Show Battery Percentage") : "Yes",
             ShowClock:                     api.memory.has("Show Clock")              ? api.memory.get("Show Clock")              : "Yes"
@@ -180,12 +182,12 @@ id: root
     // stop() before play() forces a clean restart on every call, so rapid
     // retriggers (scrolling, cycling, etc.) never drop a play() the way Qt's
     // SoundEffect otherwise does when one is already in-flight.
-    function playNav()    { sfxNav.stop();    sfxNav.play(); }
-    function playAccept() { sfxAccept.stop(); sfxAccept.play(); }
-    function playBack()   { sfxBack.stop();   sfxBack.play(); }
-    function playToggle() { sfxToggle.stop(); sfxToggle.play(); }
-    function playTabLeft()  { sfxTabLeft.stop();  sfxTabLeft.play(); }
-    function playTabRight() { sfxTabRight.stop(); sfxTabRight.play(); }
+    function playNav()    { if (sfxVolume <= 0) return; sfxNav.stop();    sfxNav.play(); }
+    function playAccept() { if (sfxVolume <= 0) return; sfxAccept.stop(); sfxAccept.play(); }
+    function playBack()   { if (sfxVolume <= 0) return; sfxBack.stop();   sfxBack.play(); }
+    function playToggle() { if (sfxVolume <= 0) return; sfxToggle.stop(); sfxToggle.play(); }
+    function playTabLeft()  { if (sfxVolume <= 0) return; sfxTabLeft.stop();  sfxTabLeft.play(); }
+    function playTabRight() { if (sfxVolume <= 0) return; sfxTabRight.stop(); sfxTabRight.play(); }
 
     function launchGame(game) {
         if (game !== null) {
@@ -960,36 +962,60 @@ id: root
     ///////////////////
     // SOUND EFFECTS //
     ///////////////////
+
+    // Master menu-sound volume: 0 when "Menu sounds" = No, else the Menu Volume
+    // level (0.1-1.0). SoundEffect.volume is capped at 1.0.
+    property real sfxVolume: {
+        if (settings.MenuSounds === "No") return 0.0;
+        var v = parseFloat(settings.MenuVolume);
+        return (isNaN(v) || v < 0) ? 1.0 : Math.min(v, 1.0);
+    }
+
+    // Startup chime — plays shortly after the theme loads (delay lets the audio
+    // engine come up so the first play isn't dropped). Respects the menu volume.
+    Timer {
+        interval: 450; running: true; repeat: false
+        onTriggered: { if (sfxVolume > 0) { sfxStartup.stop(); sfxStartup.play(); } }
+    }
+    SoundEffect {
+        id: sfxStartup
+        source: "assets/sfx/startup.wav"
+        volume: sfxVolume
+    }
     SoundEffect {
         id: sfxNav
         source: "assets/sfx/navigation.wav"
-        volume: 1.0
+        volume: sfxVolume
     }
 
     SoundEffect {
         id: sfxBack
         source: "assets/sfx/back.wav"
-        volume: 1.0
+        volume: sfxVolume
     }
 
     SoundEffect {
         id: sfxAccept
         source: "assets/sfx/accept.wav"
+        volume: sfxVolume
     }
 
     SoundEffect {
         id: sfxToggle
         source: "assets/sfx/toggle.wav"
+        volume: sfxVolume
     }
 
     SoundEffect {
         id: sfxTabLeft
         source: "assets/sfx/tab_left.wav"
+        volume: sfxVolume
     }
 
     SoundEffect {
         id: sfxTabRight
         source: "assets/sfx/tab_right.wav"
+        volume: sfxVolume
     }
     
 }
