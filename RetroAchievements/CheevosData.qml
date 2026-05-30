@@ -207,6 +207,15 @@ id: root
             avatarUrl = "https://media.retroachievements.org" + cached;
     }
 
+    // Load stored credentials at startup so "signed in" state (and the showcase
+    // RA card) is populated immediately — without having to open an RA page first.
+    // If signed in, fetch the live profile once (avatar/points/member).
+    Component.onCompleted: {
+        reload();
+        if (raUserName !== "" && raApiKey !== "" && !profileLoaded)
+            loadUserProfile();
+    }
+
     // ── Core HTTP helper ─────────────────────────────────────────────────
     function raRequest(apiName, args, handler, errorHandler) {
         if (!raUserName || !raApiKey) {
