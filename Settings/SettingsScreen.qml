@@ -423,6 +423,25 @@ id: root
         kbShift = false; kbSpecial = false; keyIndex = 0; kbOpen = true;
         kbOverlay.forceActiveFocus();
     }
+    // Resolve a controller action to its glyph file (assets/images/controller/<hex>.png)
+    function fpBtnArt(action) {
+        var bm;
+        if      (action === "accept")   bm = api.keys.accept;
+        else if (action === "cancel")   bm = api.keys.cancel;
+        else if (action === "filters")  bm = api.keys.filters;
+        else if (action === "details")  bm = api.keys.details;
+        else if (action === "pageUp")   bm = api.keys.pageUp;
+        else if (action === "pageDown") bm = api.keys.pageDown;
+        else                            bm = api.keys.accept;
+        for (var i = 0; i < bm.length; i++) {
+            if (bm[i].name().includes("Gamepad")) {
+                var v = bm[i].key.toString(16);
+                return v.substring(v.length - 1, v.length);
+            }
+        }
+        return "0";
+    }
+
     function pressKey(k) {
         if (k === "SHIFT")      kbShift = !kbShift;
         else if (k === "áé")    kbSpecial = true;
@@ -933,11 +952,35 @@ id: root
                 }
             }
 
-            Text {
+            // Button-icon hint (A Type / B Cancel) + on-keyboard feature hints
+            Row {
                 anchors { bottom: parent.bottom; bottomMargin: vpx(14); horizontalCenter: parent.horizontalCenter }
-                text: "\u25B2\u25BC\u25C0\u25B6 keys    A type    \u21E7 Shift    áé Accents    B cancel"
-                color: theme.text; opacity: 0.4
-                font.family: subtitleFont.name; font.pixelSize: vpx(13)
+                spacing: vpx(18)
+
+                Repeater {
+                    model: [ {a:"accept",t:"Type"}, {a:"cancel",t:"Cancel"} ]
+                    delegate: Row {
+                        spacing: vpx(7)
+                        Image {
+                            anchors.verticalCenter: parent.verticalCenter
+                            source: "../assets/images/controller/" + fpBtnArt(modelData.a) + ".png"
+                            width: vpx(26); height: vpx(26)
+                            asynchronous: true; smooth: true
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData.t
+                            color: theme.text; opacity: 0.55
+                            font.family: subtitleFont.name; font.pixelSize: vpx(15)
+                        }
+                    }
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "\u21E7 Shift    áé Accents"
+                    color: theme.text; opacity: 0.4
+                    font.family: subtitleFont.name; font.pixelSize: vpx(13)
+                }
             }
         }
 
