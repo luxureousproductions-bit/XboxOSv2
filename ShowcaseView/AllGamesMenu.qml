@@ -41,8 +41,15 @@ id: root
     property var    systemOptions:     []   // [{name, index}, ...] built lazily
     property int    systemPickerIndex: 0
 
-    // ── Game preview art — screenshot backdrop + logo + 3D box (2D fallback)
-    // Independent of the Box Art (GameView) setting.
+    // ── Game preview art (miximage-style composite) ──
+    // Backdrop = fanart (falls back to a screenshot); framed square = a screenshot.
+    property string artBackdrop: {
+        if (!currentGame) return "";
+        var f = Utils.fanArt(currentGame);
+        if (f) return f;
+        var s2 = currentGame.assets.screenshotList;
+        return (s2 && s2.length) ? s2[0] : "";
+    }
     property string artScreenshot: {
         if (!currentGame) return "";
         var ss = currentGame.assets.screenshotList;
@@ -337,7 +344,9 @@ id: root
         color: theme.accent
     }
 
-    // ── Game preview (top of right side): screenshot + logo + 3D/2D box ───
+    // ── Game preview (miximage-style): darkened fanart backdrop + framed
+    //    square screenshot, with the 3D box overlapping its bottom-left and
+    //    the logo straddling its top edge. Border hugs just the screenshot.
     Item {
     id: boxArt
         anchors {
@@ -347,84 +356,100 @@ id: root
             bottom: metaPanel.top; bottomMargin: vpx(14)
         }
         clip: true
-        // Rounded "card" corners for the whole preview
-        layer.enabled: true
-        layer.smooth: true
-        layer.effect: OpacityMask {
-            maskSource: Rectangle { width: boxArt.width; height: boxArt.height; radius: vpx(12) }
-        }
 
-        // Screenshot backdrop (fills the area)
+        // Square screenshot side, sized to the area (leaves room for logo/box overhang)
+        property real shotSide: Math.min(height * 0.74, width * 0.56)
+
+        // Darkened fanart backdrop (full-bleed, no border)
         Image {
-        id: artScreenshotImg
+        id: bgArtImg
             anchors.fill: parent
             asynchronous: true
-            source: artScreenshot
-            fillMode: Image.PreserveAspectCrop   // full-bleed backdrop → box/logo overlay consistently
+            source: artBackdrop
+            fillMode: Image.PreserveAspectCrop
             smooth: true
             visible: status === Image.Ready
+            opacity: 0.55
         }
-        // Fallback backdrop when there's no screenshot
         Rectangle {
             anchors.fill: parent
-            visible: !artScreenshotImg.visible
-            color: Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.10)
+            color: bgArtImg.visible ? Qt.rgba(0, 0, 0, 0.45)
+                                    : Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.06)
         }
-        // Gentle top/bottom darkening so the logo and box read clearly
-        Rectangle {
-            anchors.fill: parent
-            visible: artScreenshotImg.visible
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.45) }
-                GradientStop { position: 0.35; color: Qt.rgba(0, 0, 0, 0.10) }
-                GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.50) }
+
+        // Framed square screenshot (shifted slightly right to leave room for the box)
+        Item {
+        id: shotFrame
+            width:  boxArt.shotSide
+            height: boxArt.shotSide
+            anchors.centerIn: parent
+            anchors.horizontalCenterOffset: vpx(28)
+
+            Image {
+            id: artScreenshotImg
+                anchors.fill: parent
+                asynchronous: true
+                source: artScreenshot
+                fillMode: Image.PreserveAspectCrop   // crop to a clean square
+                smooth: true
+                visible: status === Image.Ready
+                layer.enabled: true
+                layer.smooth: true
+                layer.effect: OpacityMask {
+                    maskSource: Rectangle { width: artScreenshotImg.width; height: artScreenshotImg.height; radius: vpx(10) }
+                }
+            }
+            Rectangle {   // fallback fill when no screenshot
+                anchors.fill: parent
+                visible: !artScreenshotImg.visible
+                radius: vpx(10)
+                color: Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.14)
+            }
+            Rectangle {   // border around JUST the screenshot
+                anchors.fill: parent
+                color: "transparent"
+                radius: vpx(10)
+                border.color: theme.accent
+                border.width: vpx(2)
+                antialiasing: true
             }
         }
 
-        // Game logo (top)
-        Image {
-        id: artLogoImg
-            anchors { top: parent.top; topMargin: vpx(14); right: parent.right; rightMargin: vpx(14) }
-            width:  parent.width * 0.52
-            height: parent.height * 0.26
-            asynchronous: true
-            source: artLogo
-            fillMode: Image.PreserveAspectFit
-            horizontalAlignment: Image.AlignRight
-            verticalAlignment: Image.AlignTop
-            smooth: true
-            visible: status === Image.Ready
-        }
-
-        // 3D box art (2D fallback) — bottom-left
+        // 3D box (2D fallback) — straddles the screenshot's bottom-left corner
         Image {
         id: artBoxImg
-            anchors { left: parent.left; leftMargin: vpx(12); bottom: parent.bottom; bottomMargin: vpx(12) }
-            width:  parent.width * 0.52 * boxScale
-            height: parent.height * 0.64 * boxScale
+            height: shotFrame.height * 0.66 * boxScale
+            width:  shotFrame.width  * 0.58 * boxScale
+            anchors {
+                horizontalCenter: shotFrame.left
+                bottom: shotFrame.bottom; bottomMargin: vpx(2)
+            }
             asynchronous: true
             source: artBoxSource
             fillMode: Image.PreserveAspectFit
-            horizontalAlignment: Image.AlignLeft
+            horizontalAlignment: Image.AlignHCenter
             verticalAlignment: Image.AlignBottom
             smooth: true
             visible: status === Image.Ready
         }
-    }
 
-    // Rounded accent frame around the preview (drawn on top of the card)
-    Rectangle {
-        anchors {
-            top: header.bottom; topMargin: globalMargin
-            left: gamelist.right; leftMargin: globalMargin
-            right: parent.right; rightMargin: globalMargin
-            bottom: metaPanel.top; bottomMargin: vpx(14)
+        // Game logo — straddles the top edge of the screenshot
+        Image {
+        id: artLogoImg
+            width:  shotFrame.width * 0.82
+            height: shotFrame.height * 0.26
+            anchors {
+                horizontalCenter: shotFrame.horizontalCenter
+                bottom: shotFrame.top; bottomMargin: -vpx(18)
+            }
+            asynchronous: true
+            source: artLogo
+            fillMode: Image.PreserveAspectFit
+            horizontalAlignment: Image.AlignHCenter
+            verticalAlignment: Image.AlignVCenter
+            smooth: true
+            visible: status === Image.Ready
         }
-        color: "transparent"
-        radius: vpx(12)
-        border.color: theme.accent
-        border.width: vpx(2)
-        antialiasing: true
     }
 
     // ── Metadata panel (bottom of right side) ─────────────────────────────
