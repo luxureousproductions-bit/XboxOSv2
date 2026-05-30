@@ -32,14 +32,6 @@ id: root
             setting: "Yes,No"
         }
         ListElement {
-            settingName: "Play video thumbnail audio"
-            setting: "No,Yes"
-        }
-        ListElement {
-            settingName: "Play discover video audio"
-            setting: "No,Yes"
-        }
-        ListElement {
             settingName: "Hide logo when thumbnail video plays"
             setting: "No,Yes"
         }
@@ -74,6 +66,38 @@ id: root
         return {
             pageName: "General",
             listmodel: settingsModel
+        }
+    }
+
+    ListModel {
+    id: audioSettingsModel
+
+        ListElement {
+            settingName: "Menu sounds"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Menu Volume"
+            setting: "1.0,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1"
+        }
+        ListElement {
+            settingName: "Play video thumbnail audio"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "Play discover video audio"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "Video preview audio"
+            setting: "No,Yes"
+        }
+    }
+
+    property var audioPage: {
+        return {
+            pageName: "Audio",
+            listmodel: audioSettingsModel
         }
     }
 
@@ -272,10 +296,6 @@ id: root
             setting: "Yes,No"
         }
         ListElement {
-            settingName: "Video preview audio"
-            setting: "No,Yes"
-        }
-        ListElement {
             settingName: "Randomize Background"
             setting: "No,Yes"
         }
@@ -376,7 +396,7 @@ id: root
         }
     }
 
-    property var settingsArr: [generalPage, showcasePage, collectionsPage, gridPage, gamePage, mediaCarouselPage, advancedPage, raPage]
+    property var settingsArr: [generalPage, showcasePage, collectionsPage, gridPage, gamePage, mediaCarouselPage, audioPage, advancedPage, raPage]
 
     property real itemheight: vpx(50)
     property color settingsTextColor: theme.accent
