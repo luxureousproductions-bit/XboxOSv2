@@ -354,7 +354,7 @@ id: root
             anchors.fill: parent
             asynchronous: true
             source: artScreenshot
-            fillMode: Image.PreserveAspectFit
+            fillMode: Image.PreserveAspectCrop   // full-bleed backdrop → box/logo overlay consistently
             smooth: true
             visible: status === Image.Ready
         }
@@ -487,22 +487,37 @@ id: root
             height: vpx(2); color: theme.accent
         }
 
+        // Icon + title (top row) — matches the platform page's clean header rhythm
         Image {
         id: libIcon
             source: "../assets/images/gamesandapps.png"
-            anchors { left: parent.left; leftMargin: globalMargin; verticalCenter: parent.verticalCenter }
+            anchors { top: parent.top; topMargin: vpx(10); left: parent.left; leftMargin: globalMargin }
             height: vpx(40); width: vpx(40)
             fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
         }
         Text {
-            anchors { left: libIcon.right; leftMargin: vpx(10); verticalCenter: parent.verticalCenter }
+            anchors { left: libIcon.right; leftMargin: vpx(12); verticalCenter: libIcon.verticalCenter }
             text: "My Games & Apps"
-            color: theme.text; font.family: titleFont.name; font.pixelSize: vpx(22); font.bold: true
+            color: theme.text; font.family: titleFont.name; font.pixelSize: vpx(24); font.bold: true
         }
+        // Game counter sits directly below the title row (no longer crowding it)
         Text {
-            anchors { left: parent.left; leftMargin: globalMargin; bottom: parent.bottom; bottomMargin: vpx(6) }
+            anchors { left: parent.left; leftMargin: globalMargin; top: libIcon.bottom; topMargin: vpx(2) }
             text: displayModel.count + " games"
-            color: theme.text; opacity: 0.7; font.family: subtitleFont.name; font.pixelSize: vpx(14)
+            color: theme.text; opacity: 0.7; font.family: subtitleFont.name; font.pixelSize: vpx(15)
+        }
+
+        // Current game's system logo (top-right), updates while scrolling the list
+        Image {
+        id: sysLogo
+            anchors { top: parent.top; topMargin: vpx(14); right: parent.right; rightMargin: globalMargin }
+            height: vpx(40)
+            fillMode: Image.PreserveAspectFit
+            source: (currentGame && currentGame.collections.count > 0)
+                    ? "../assets/images/logospng/" + Utils.processPlatformName(currentGame.collections.get(0).shortName) + ".png"
+                    : ""
+            visible: status === Image.Ready
+            smooth: true; asynchronous: true; cache: true
         }
 
         // Nav buttons (home / discover / achievements / settings)
