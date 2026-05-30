@@ -26,9 +26,10 @@ id: root
     property int    filterRow:   0
     property string nameFilter:   ""
     property bool   searchActive: false   // on-screen keyboard open
+    property bool   favsOnly:     false   // Favorites-only toggle (like platform pages)
 
-    // Genre filter
-    property string genreFilter:      ""   // "" = All
+    // Genre filter — multi-select (empty array = All)
+    property var    genreSelected:    []   // list of selected genre strings
     property bool   genrePickerOpen:  false
     property var    genreOptions:     []   // ["All", ...] built lazily & cached
     property int    genrePickerIndex: 0
@@ -113,10 +114,12 @@ id: root
     }
 
     // Turn a selected genre into a regex matching it as a whole comma-token
-    function genreToPattern(g) {
-        if (g === "" || g === "All") return "";
-        var esc = g.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        return "(^|,\\s*)" + esc + "(\\s*,|$)";
+    function genresToPattern(arr) {
+        if (!arr || arr.length === 0) return "";
+        var parts = [];
+        for (var i = 0; i < arr.length; i++)
+            parts.push(arr[i].replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+        return "(^|,\\s*)(" + parts.join("|") + ")(\\s*,|$)";
     }
     // Collect every genre present (comma-split), cached after first build
     function buildGenreOptions() {
@@ -137,15 +140,69 @@ id: root
     }
     function openGenrePicker() {
         if (genreOptions.length === 0) buildGenreOptions();
-        var want = (genreFilter === "") ? "All" : genreFilter;
+        var want = (genreSelected.length > 0) ? genreSelected[0] : "All";
         var idx = genreOptions.indexOf(want);
         genrePickerIndex = idx >= 0 ? idx : 0;
         genrePickerOpen = true;
     }
-    function selectGenre(g) {
-        genreFilter = (g === "All") ? "" : g;
+    // Alphabetical letter-jump through the genre picker (mirrors the game list)
+    function genreJumpLetter(dir) {
+        if (genreOptions.length < 2) return;
+        var cur = genrePickerIndex;
+        var curL = (genreOptions[cur] || "").charAt(0).toUpperCase();
+        if (dir > 0) {
+            var i = cur + 1;
+            while (i < genreOptions.length && (genreOptions[i] || "").charAt(0).toUpperCase() === curL) i++;
+            genrePickerIndex = (i < genreOptions.length) ? i : genreOptions.length - 1;
+        } else {
+            var j = cur - 1;
+            while (j > 0 && (genreOptions[j] || "").charAt(0).toUpperCase() === curL) j--;
+            if (j >= 0) {
+                var pL = (genreOptions[j] || "").charAt(0).toUpperCase();
+                while (j > 0 && (genreOptions[j-1] || "").charAt(0).toUpperCase() === pL) j--;
+                genrePickerIndex = j;
+            }
+        }
+    }
+
+    function toggleGenre(g) {
+        if (g === "All") { genreSelected = []; gamelist.currentIndex = 0; return; }
+        var arr = genreSelected.slice();
+        var idx = arr.indexOf(g);
+        if (idx >= 0) arr.splice(idx, 1);
+        else           arr.push(g);
+        genreSelected = arr;            // reassign so bindings re-evaluate
         gamelist.currentIndex = 0;
-        genrePickerOpen = false;
+    }
+
+    // Resolve a controller action to its glyph file (assets/images/controller/<hex>.png),
+    // matching how ButtonHelpBar maps buttons. Uses if/else (no switch) per QML build quirk.
+    function fpBtnArt(action) {
+        var bm;
+        if      (action === "accept")   bm = api.keys.accept;
+        else if (action === "cancel")   bm = api.keys.cancel;
+        else if (action === "filters")  bm = api.keys.filters;
+        else if (action === "details")  bm = api.keys.details;
+        else if (action === "pageUp")   bm = api.keys.pageUp;
+        else if (action === "pageDown") bm = api.keys.pageDown;
+        else                            bm = api.keys.accept;
+        for (var i = 0; i < bm.length; i++) {
+            if (bm[i].name().includes("Gamepad")) {
+                var v = bm[i].key.toString(16);
+                return v.substring(v.length - 1, v.length);
+            }
+        }
+        return "0";
+    }
+
+    // Reset every filter/sort back to defaults
+    function clearAllFilters() {
+        nameFilter  = "";
+        genreSelected = [];
+        favsOnly    = false;
+        sortField   = "sortBy";
+        sortDir     = Qt.AscendingOrder;
+        gamelist.currentIndex = 0;
     }
 
     // ── Display model ─────────────────────────────────────────────────────
@@ -165,9 +222,14 @@ id: root
             },
             RegExpFilter {
                 roleName: "genre"
-                pattern: genreToPattern(genreFilter)
+                pattern: genresToPattern(genreSelected)
                 caseSensitivity: Qt.CaseInsensitive
-                enabled: genreFilter !== ""
+                enabled: genreSelected.length > 0
+            },
+            ValueFilter {
+                roleName: "favorite"
+                value: true
+                enabled: favsOnly
             }
         ]
     }
@@ -699,7 +761,9 @@ id: root
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(46); right: arrow.left; rightMargin: vpx(8); verticalCenter: parent.verticalCenter }
-                        text: genreFilter === "" ? "Genre: All" : "Genre: " + genreFilter
+                        text: genreSelected.length === 0 ? "Genre: All"
+                             : genreSelected.length === 1 ? "Genre: " + genreSelected[0]
+                             : "Genre: " + genreSelected.length + " selected"
                         color: onRow ? theme.accent : theme.text
                         opacity: onRow ? 1 : 0.85
                         elide: Text.ElideRight
@@ -726,7 +790,8 @@ id: root
                     delegate: Rectangle {
                         width: ListView.view.width; height: vpx(42); radius: vpx(4)
                         property bool onRow: index === genrePickerIndex
-                        property bool isSel: modelData === (genreFilter === "" ? "All" : genreFilter)
+                        property bool isSel: modelData === "All" ? genreSelected.length === 0
+                                                                 : genreSelected.indexOf(modelData) >= 0
                         color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
@@ -741,7 +806,7 @@ id: root
                             elide: Text.ElideRight
                             font.family: subtitleFont.name; font.pixelSize: vpx(19); font.bold: onRow || isSel
                         }
-                        MouseArea { anchors.fill: parent; onClicked: { genrePickerIndex = index; selectGenre(modelData); } }
+                        MouseArea { anchors.fill: parent; onClicked: { genrePickerIndex = index; toggleGenre(modelData); } }
                     }
                 }
 
@@ -777,6 +842,34 @@ id: root
                     }
                 }
 
+                // Favorites-only toggle + Clear all filters
+                Column {
+                    visible: !searchActive && !genrePickerOpen
+                    width: parent.width
+                    spacing: vpx(6)
+
+                    // Favorites only
+                    Rectangle {
+                        width: parent.width; height: vpx(48); radius: vpx(6)
+                        property bool onRow: filterRow === sortFields.length + 2
+                        color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+                        Text {
+                            anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                            text: favsOnly ? "\u2713" : "  "
+                            color: theme.accent; font.pixelSize: vpx(16); font.bold: true
+                            width: vpx(22)
+                        }
+                        Text {
+                            anchors { left: parent.left; leftMargin: vpx(46); verticalCenter: parent.verticalCenter }
+                            text: "Favorites only"
+                            color: favsOnly ? theme.accent : theme.text
+                            opacity: favsOnly ? 1 : 0.85
+                            font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: favsOnly
+                        }
+                        MouseArea { anchors.fill: parent; onClicked: { filterRow = sortFields.length + 2; favsOnly = !favsOnly; gamelist.currentIndex = 0; } }
+                    }
+                }
+
                 // On-screen keyboard (shown when searching)
                 Grid {
                     visible: searchActive
@@ -806,13 +899,31 @@ id: root
                 }
             }
 
-            Text {
-                anchors { bottom: parent.bottom; bottomMargin: vpx(14); horizontalCenter: parent.horizontalCenter }
-                text: searchActive    ? "\u25B2\u25BC\u25C0\u25B6 keys    A type    B done"
-                     : genrePickerOpen ? "\u25B2\u25BC navigate    A choose genre    B back"
-                                       : "\u25B2\u25BC navigate    A select    B close"
-                color: theme.text; opacity: 0.4
-                font.family: subtitleFont.name; font.pixelSize: vpx(13)
+            // Button-icon hint bar — swaps prompts per context (search / genre / sort)
+            Row {
+                anchors { bottom: parent.bottom; bottomMargin: vpx(12); horizontalCenter: parent.horizontalCenter }
+                spacing: vpx(22)
+
+                Repeater {
+                    model: searchActive   ? [ {a:"accept",t:"Type"},   {a:"cancel",t:"Done"} ]
+                         : genrePickerOpen ? [ {a:"accept",t:"Toggle"}, {a:"cancel",t:"Done"} ]
+                         :                   [ {a:"accept",t:"Select"}, {a:"details",t:"Clear all"}, {a:"cancel",t:"Close"} ]
+                    delegate: Row {
+                        spacing: vpx(7)
+                        Image {
+                            anchors.verticalCenter: parent.verticalCenter
+                            source: "../assets/images/controller/" + fpBtnArt(modelData.a) + ".png"
+                            width: vpx(26); height: vpx(26)
+                            asynchronous: true; smooth: true
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData.t
+                            color: theme.text; opacity: 0.55
+                            font.family: subtitleFont.name; font.pixelSize: vpx(15)
+                        }
+                    }
+                }
             }
         }
 
@@ -826,15 +937,17 @@ id: root
             playNav();
             if (searchActive) { var ni = keyIndex + keyCols; if (ni < keyboardKeys.length) keyIndex = ni; else keyIndex = keyboardKeys.length - 1; }
             else if (genrePickerOpen) { if (genrePickerIndex < genreOptions.length - 1) genrePickerIndex++; }
-            else if (filterRow < sortFields.length + 1) filterRow++;
+            else if (filterRow < sortFields.length + 2) filterRow++;
         }
         Keys.onLeftPressed: {
             playNav();
             if (searchActive && (keyIndex % keyCols) !== 0) keyIndex--;
+            else if (genrePickerOpen) genrePickerIndex = Math.max(0, genrePickerIndex - 10);
         }
         Keys.onRightPressed: {
             playNav();
             if (searchActive && (keyIndex % keyCols) !== (keyCols - 1) && keyIndex < keyboardKeys.length - 1) keyIndex++;
+            else if (genrePickerOpen) genrePickerIndex = Math.min(genreOptions.length - 1, genrePickerIndex + 10);
         }
         Keys.onPressed: {
             if (searchActive) {
@@ -844,7 +957,9 @@ id: root
                 return;
             }
             if (genrePickerOpen) {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); selectGenre(genreOptions[genrePickerIndex]); }
+                if (api.keys.isPageDown(event) && !event.isAutoRepeat) { event.accepted = true; playToggle(); genreJumpLetter(1);  return; }
+                if (api.keys.isPageUp(event)   && !event.isAutoRepeat) { event.accepted = true; playToggle(); genreJumpLetter(-1); return; }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); toggleGenre(genreOptions[genrePickerIndex]); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); genrePickerOpen = false; }
                 if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); genrePickerOpen = false; }
                 return;
@@ -853,13 +968,14 @@ id: root
                 event.accepted = true; playAccept();
                 if (filterRow === 0) activateSearch();
                 else if (filterRow === 1) openGenrePicker();
-                else selectSort(sortFields[filterRow - 2].key);
+                else if (filterRow <= sortFields.length + 1) selectSort(sortFields[filterRow - 2].key);
+                else if (filterRow === sortFields.length + 2) { favsOnly = !favsOnly; gamelist.currentIndex = 0; }
             }
             if (api.keys.isCancel(event) && !event.isAutoRepeat) {
                 event.accepted = true; playBack(); filterOpen = false; gamelist.focus = true;
             }
             if (api.keys.isDetails(event) && !event.isAutoRepeat) {
-                event.accepted = true; playAccept(); filterOpen = false; gamelist.focus = true;
+                event.accepted = true; playToggle(); clearAllFilters();
             }
         }
     }
