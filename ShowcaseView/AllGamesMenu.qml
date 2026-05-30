@@ -1016,7 +1016,7 @@ id: root
 
             // Button-icon hint bar — swaps prompts per context (search / genre / sort)
             Row {
-                anchors { bottom: parent.bottom; bottomMargin: vpx(12); horizontalCenter: parent.horizontalCenter }
+                anchors { bottom: parent.bottom; bottomMargin: vpx(12); right: parent.right; rightMargin: vpx(20) }
                 spacing: vpx(22)
 
                 Repeater {
