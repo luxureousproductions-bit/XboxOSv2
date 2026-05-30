@@ -12,6 +12,7 @@
 //   • sourceSize on all network images
 
 import QtQuick 2.15
+import QtGraphicalEffects 1.15
 import "../Global"
 
 FocusScope {
@@ -106,14 +107,34 @@ id: root
             }
             spacing: vpx(12)
 
-            Image {
+            // Circular avatar (OpacityMask clip) + accent ring
+            Item {
                 width: vpx(56); height: vpx(56)
-                source: cheevosData.avatarUrl
-                fillMode: Image.PreserveAspectCrop
-                smooth: true
-                asynchronous: true
-                sourceSize { width: 64; height: 64 }
                 visible: cheevosData.avatarUrl !== ""
+                Image {
+                id: raGameAvatar
+                    anchors.fill: parent
+                    source: cheevosData.avatarUrl
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    asynchronous: true
+                    sourceSize { width: 64; height: 64 }
+                    layer.enabled: true
+                    layer.smooth: true
+                    layer.effect: OpacityMask {
+                        maskSource: Rectangle {
+                            width: raGameAvatar.width; height: raGameAvatar.height
+                            radius: width / 2
+                        }
+                    }
+                }
+                Rectangle {
+                    anchors.fill: parent
+                    color: "transparent"
+                    border.color: theme.accent
+                    border.width: vpx(2)
+                    radius: width / 2
+                }
             }
 
             Column {
