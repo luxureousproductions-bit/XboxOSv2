@@ -111,16 +111,71 @@ id: root
     }
     function openGenrePicker() {
         buildGenreOptions();
-        var want = (genreFilter === "") ? "All" : genreFilter;
+        var want = (genreSelected.length > 0) ? genreSelected[0] : "All";
         var idx = genreOptions.indexOf(want);
         genrePickerIndex = idx >= 0 ? idx : 0;
         genrePickerOpen = true;
     }
-    function selectGenre(g) {
-        genreFilter = (g === "All") ? "" : g;
+    function toggleGenre(g) {
+        if (g === "All") { genreSelected = []; gamegrid.currentIndex = 0; sortedGames = null; return; }
+        var arr = genreSelected.slice();
+        var idx = arr.indexOf(g);
+        if (idx >= 0) arr.splice(idx, 1);
+        else           arr.push(g);
+        genreSelected = arr;
         gamegrid.currentIndex = 0;
         sortedGames = null;
-        genrePickerOpen = false;
+    }
+
+    // Alphabetical letter-jump through the genre picker (mirrors the game grid)
+    function genreJumpLetter(dir) {
+        if (genreOptions.length < 2) return;
+        var cur = genrePickerIndex;
+        var curL = (genreOptions[cur] || "").charAt(0).toUpperCase();
+        if (dir > 0) {
+            var i = cur + 1;
+            while (i < genreOptions.length && (genreOptions[i] || "").charAt(0).toUpperCase() === curL) i++;
+            genrePickerIndex = (i < genreOptions.length) ? i : genreOptions.length - 1;
+        } else {
+            var j = cur - 1;
+            while (j > 0 && (genreOptions[j] || "").charAt(0).toUpperCase() === curL) j--;
+            if (j >= 0) {
+                var pL = (genreOptions[j] || "").charAt(0).toUpperCase();
+                while (j > 0 && (genreOptions[j-1] || "").charAt(0).toUpperCase() === pL) j--;
+                genrePickerIndex = j;
+            }
+        }
+    }
+
+    // Reset every filter/sort back to defaults
+    function clearAllFilters() {
+        searchTerm    = "";
+        searchMode    = "Title";
+        genreSelected = [];
+        showFavs      = false;
+        sortByIndex   = 0;
+        orderBy       = Qt.AscendingOrder;
+        gamegrid.currentIndex = 0;
+        sortedGames   = null;
+    }
+
+    // Resolve a controller action to its glyph file (assets/images/controller/<hex>.png)
+    function fpBtnArt(action) {
+        var bm;
+        if      (action === "accept")   bm = api.keys.accept;
+        else if (action === "cancel")   bm = api.keys.cancel;
+        else if (action === "filters")  bm = api.keys.filters;
+        else if (action === "details")  bm = api.keys.details;
+        else if (action === "pageUp")   bm = api.keys.pageUp;
+        else if (action === "pageDown") bm = api.keys.pageDown;
+        else                            bm = api.keys.accept;
+        for (var i = 0; i < bm.length; i++) {
+            if (bm[i].name().includes("Gamepad")) {
+                var v = bm[i].key.toString(16);
+                return v.substring(v.length - 1, v.length);
+            }
+        }
+        return "0";
     }
 
     function nextChar(c, modifier) {
@@ -640,7 +695,9 @@ id: root
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(46); right: gvArrow.left; rightMargin: vpx(8); verticalCenter: parent.verticalCenter }
-                        text: genreFilter === "" ? "Genre: All" : "Genre: " + genreFilter
+                        text: genreSelected.length === 0 ? "Genre: All"
+                             : genreSelected.length === 1 ? "Genre: " + genreSelected[0]
+                             : "Genre: " + genreSelected.length + " selected"
                         color: onRow ? theme.accent : theme.text
                         opacity: onRow ? 1 : 0.85
                         elide: Text.ElideRight
@@ -667,7 +724,8 @@ id: root
                     delegate: Rectangle {
                         width: ListView.view.width; height: vpx(42); radius: vpx(4)
                         property bool onRow: index === genrePickerIndex
-                        property bool isSel: modelData === (genreFilter === "" ? "All" : genreFilter)
+                        property bool isSel: modelData === "All" ? genreSelected.length === 0
+                                                                 : genreSelected.indexOf(modelData) >= 0
                         color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
@@ -682,7 +740,7 @@ id: root
                             elide: Text.ElideRight
                             font.family: subtitleFont.name; font.pixelSize: vpx(19); font.bold: onRow || isSel
                         }
-                        MouseArea { anchors.fill: parent; onClicked: { genrePickerIndex = index; selectGenre(modelData); } }
+                        MouseArea { anchors.fill: parent; onClicked: { genrePickerIndex = index; toggleGenre(modelData); } }
                     }
                 }
 
@@ -769,13 +827,31 @@ id: root
                 }
             }
 
-            Text {
-                anchors { bottom: parent.bottom; bottomMargin: vpx(14); horizontalCenter: parent.horizontalCenter }
-                text: searchActive    ? "\u25B2\u25BC\u25C0\u25B6 keys    A type    B done"
-                     : genrePickerOpen ? "\u25B2\u25BC navigate    A choose genre    B back"
-                                       : "\u25B2\u25BC navigate    A select    B close"
-                color: theme.text; opacity: 0.4
-                font.family: subtitleFont.name; font.pixelSize: vpx(13)
+            // Button-icon hint bar — swaps prompts per context (search / genre / sort)
+            Row {
+                anchors { bottom: parent.bottom; bottomMargin: vpx(12); horizontalCenter: parent.horizontalCenter }
+                spacing: vpx(22)
+
+                Repeater {
+                    model: searchActive   ? [ {a:"accept",t:"Type"},   {a:"cancel",t:"Done"} ]
+                         : genrePickerOpen ? [ {a:"accept",t:"Toggle"}, {a:"cancel",t:"Done"} ]
+                         :                   [ {a:"accept",t:"Select"}, {a:"details",t:"Clear all"}, {a:"cancel",t:"Close"} ]
+                    delegate: Row {
+                        spacing: vpx(7)
+                        Image {
+                            anchors.verticalCenter: parent.verticalCenter
+                            source: "../assets/images/controller/" + fpBtnArt(modelData.a) + ".png"
+                            width: vpx(26); height: vpx(26)
+                            asynchronous: true; smooth: true
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData.t
+                            color: theme.text; opacity: 0.55
+                            font.family: subtitleFont.name; font.pixelSize: vpx(15)
+                        }
+                    }
+                }
             }
         }
 
@@ -794,10 +870,12 @@ id: root
         Keys.onLeftPressed: {
             playNav();
             if (searchActive && (keyIndex % keyCols) !== 0) keyIndex--;
+            else if (genrePickerOpen) genrePickerIndex = Math.max(0, genrePickerIndex - 10);
         }
         Keys.onRightPressed: {
             playNav();
             if (searchActive && (keyIndex % keyCols) !== (keyCols - 1) && keyIndex < keyboardKeys.length - 1) keyIndex++;
+            else if (genrePickerOpen) genrePickerIndex = Math.min(genreOptions.length - 1, genrePickerIndex + 10);
         }
         Keys.onPressed: {
             if (searchActive) {
@@ -807,9 +885,11 @@ id: root
                 return;
             }
             if (genrePickerOpen) {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); selectGenre(genreOptions[genrePickerIndex]); }
+                if (api.keys.isPageDown(event) && !event.isAutoRepeat) { event.accepted = true; playToggle(); genreJumpLetter(1);  return; }
+                if (api.keys.isPageUp(event)   && !event.isAutoRepeat) { event.accepted = true; playToggle(); genreJumpLetter(-1); return; }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); toggleGenre(genreOptions[genrePickerIndex]); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); genrePickerOpen = false; }
-                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); genrePickerOpen = false; }
+                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); genrePickerOpen = false; }
                 return;
             }
             if (api.keys.isAccept(event) && !event.isAutoRepeat) {
@@ -823,7 +903,7 @@ id: root
                 event.accepted = true; playBack(); filterOpen = false; gamegrid.focus = true;
             }
             if (api.keys.isDetails(event) && !event.isAutoRepeat) {
-                event.accepted = true; playAccept(); filterOpen = false; gamegrid.focus = true;
+                event.accepted = true; playToggle(); clearAllFilters();
             }
         }
     }
