@@ -34,6 +34,13 @@ id: root
     property var    genreOptions:     []   // ["All", ...] built lazily & cached
     property int    genrePickerIndex: 0
 
+    // System/platform filter — single-select; switches the proxy's source model
+    property string systemFilter:      ""   // display name ("" = All systems)
+    property int    systemIndex:       -1   // api.collections index (-1 = All)
+    property bool   systemPickerOpen:  false
+    property var    systemOptions:     []   // [{name, index}, ...] built lazily
+    property int    systemPickerIndex: 0
+
     // ── Game preview art — screenshot backdrop + logo + 3D box (2D fallback)
     // Independent of the Box Art (GameView) setting.
     property string artScreenshot: {
@@ -175,6 +182,49 @@ id: root
         gamelist.currentIndex = 0;
     }
 
+    // ── System picker ─────────────────────────────────────────────────
+    function buildSystemOptions() {
+        var arr = [ { name: "All", index: -1 } ];
+        for (var i = 0; i < api.collections.count; i++) {
+            var c = api.collections.get(i);
+            arr.push({ name: (c.shortName && c.shortName.length) ? c.shortName : c.name, index: i });
+        }
+        systemOptions = arr;
+    }
+    function openSystemPicker() {
+        if (systemOptions.length === 0) buildSystemOptions();
+        var sel = 0;
+        for (var i = 0; i < systemOptions.length; i++)
+            if (systemOptions[i].index === systemIndex) { sel = i; break; }
+        systemPickerIndex = sel;
+        systemPickerOpen = true;
+    }
+    function selectSystem(opt) {
+        systemFilter = (opt.index < 0) ? "" : opt.name;
+        systemIndex  = opt.index;
+        gamelist.currentIndex = 0;
+        systemPickerOpen = false;
+    }
+    // Alphabetical letter-jump through the system picker
+    function systemJumpLetter(dir) {
+        if (systemOptions.length < 2) return;
+        var cur = systemPickerIndex;
+        var curL = (systemOptions[cur].name || "").charAt(0).toUpperCase();
+        if (dir > 0) {
+            var i = cur + 1;
+            while (i < systemOptions.length && (systemOptions[i].name || "").charAt(0).toUpperCase() === curL) i++;
+            systemPickerIndex = (i < systemOptions.length) ? i : systemOptions.length - 1;
+        } else {
+            var j = cur - 1;
+            while (j > 0 && (systemOptions[j].name || "").charAt(0).toUpperCase() === curL) j--;
+            if (j >= 0) {
+                var pL = (systemOptions[j].name || "").charAt(0).toUpperCase();
+                while (j > 0 && (systemOptions[j-1].name || "").charAt(0).toUpperCase() === pL) j--;
+                systemPickerIndex = j;
+            }
+        }
+    }
+
     // Resolve a controller action to its glyph file (assets/images/controller/<hex>.png),
     // matching how ButtonHelpBar maps buttons. Uses if/else (no switch) per QML build quirk.
     function fpBtnArt(action) {
@@ -200,6 +250,8 @@ id: root
         nameFilter  = "";
         genreSelected = [];
         favsOnly    = false;
+        systemFilter = "";
+        systemIndex  = -1;
         sortField   = "sortBy";
         sortDir     = Qt.AscendingOrder;
         gamelist.currentIndex = 0;
@@ -208,7 +260,8 @@ id: root
     // ── Display model ─────────────────────────────────────────────────────
     SortFilterProxyModel {
     id: displayModel
-        sourceModel: listAllGames.games
+        // All systems -> full all-games list; a chosen system -> that collection's games
+        sourceModel: systemIndex < 0 ? listAllGames.games : api.collections.get(systemIndex).games
         sorters: RoleSorter {
             roleName:  sortField
             sortOrder: sortDir
@@ -235,7 +288,9 @@ id: root
     }
 
     function getCurrentGame(idx) {
-        return listAllGames.currentGame(displayModel.mapToSource(idx));
+        var srcIdx = displayModel.mapToSource(idx);
+        if (systemIndex < 0) return listAllGames.currentGame(srcIdx);
+        return api.collections.get(systemIndex).games.get(srcIdx);
     }
 
     // Jump to the first game of the next / previous letter group
@@ -724,7 +779,7 @@ id: root
 
                 // Name row — shows the current search text
                 Rectangle {
-                    visible: !genrePickerOpen
+                    visible: !genrePickerOpen && !systemPickerOpen
                     width: parent.width; height: vpx(52); radius: vpx(6)
                     property bool onRow: filterRow === 0 || searchActive
                     color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
@@ -749,7 +804,7 @@ id: root
 
                 // Genre row — opens the genre picker
                 Rectangle {
-                    visible: !searchActive && !genrePickerOpen
+                    visible: !searchActive && !genrePickerOpen && !systemPickerOpen
                     width: parent.width; height: vpx(52); radius: vpx(6)
                     property bool onRow: filterRow === 1
                     color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
@@ -810,9 +865,69 @@ id: root
                     }
                 }
 
+                // System row — opens the system picker
+                Rectangle {
+                    visible: !searchActive && !genrePickerOpen && !systemPickerOpen
+                    width: parent.width; height: vpx(52); radius: vpx(6)
+                    property bool onRow: filterRow === 2
+                    color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+
+                    Text {
+                        anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                        text: "\u25A4"; font.pixelSize: vpx(15); width: vpx(22)
+                        color: theme.text; opacity: onRow ? 1 : 0.6
+                    }
+                    Text {
+                        anchors { left: parent.left; leftMargin: vpx(46); right: sysArrow.left; rightMargin: vpx(8); verticalCenter: parent.verticalCenter }
+                        text: systemIndex < 0 ? "System: All" : "System: " + systemFilter
+                        color: onRow ? theme.accent : theme.text
+                        opacity: onRow ? 1 : 0.85
+                        elide: Text.ElideRight
+                        font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: onRow
+                    }
+                    Text {
+                        id: sysArrow
+                        anchors { right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                        text: "\u25B8"; color: onRow ? theme.accent : theme.text
+                        opacity: onRow ? 1 : 0.6; font.pixelSize: vpx(18)
+                    }
+                    MouseArea { anchors.fill: parent; onClicked: { filterRow = 2; openSystemPicker(); } }
+                }
+
+                // System picker (scrollable list of platforms)
+                ListView {
+                    visible: systemPickerOpen
+                    width: parent.width
+                    height: vpx(300)
+                    clip: true
+                    model: systemOptions
+                    currentIndex: systemPickerIndex
+                    onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
+                    delegate: Rectangle {
+                        width: ListView.view.width; height: vpx(42); radius: vpx(4)
+                        property bool onRow: index === systemPickerIndex
+                        property bool isSel: modelData.index === systemIndex
+                        color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+                        Text {
+                            anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                            text: isSel ? "\u2713" : "  "
+                            color: theme.accent; font.pixelSize: vpx(15); font.bold: true; width: vpx(22)
+                        }
+                        Text {
+                            anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                            text: modelData.name
+                            color: (onRow || isSel) ? theme.accent : theme.text
+                            opacity: onRow ? 1 : 0.85
+                            elide: Text.ElideRight
+                            font.family: subtitleFont.name; font.pixelSize: vpx(19); font.bold: onRow || isSel
+                        }
+                        MouseArea { anchors.fill: parent; onClicked: { systemPickerIndex = index; selectSystem(modelData); } }
+                    }
+                }
+
                 // Sort fields (shown when neither the keyboard nor genre picker is open)
                 Column {
-                    visible: !searchActive && !genrePickerOpen
+                    visible: !searchActive && !genrePickerOpen && !systemPickerOpen
                     width: parent.width
                     spacing: vpx(6)
 
@@ -821,7 +936,7 @@ id: root
                         Rectangle {
                             width: parent.width; height: vpx(48); radius: vpx(6)
                             property bool active: sortField === modelData.key
-                            property bool onRow:  filterRow === index + 2
+                            property bool onRow:  filterRow === index + 3
                             color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
 
                             Text {
@@ -837,21 +952,21 @@ id: root
                                 opacity: active ? 1 : 0.85
                                 font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: active
                             }
-                            MouseArea { anchors.fill: parent; onClicked: { filterRow = index + 2; selectSort(modelData.key); } }
+                            MouseArea { anchors.fill: parent; onClicked: { filterRow = index + 3; selectSort(modelData.key); } }
                         }
                     }
                 }
 
-                // Favorites-only toggle + Clear all filters
+                // Favorites-only toggle
                 Column {
-                    visible: !searchActive && !genrePickerOpen
+                    visible: !searchActive && !genrePickerOpen && !systemPickerOpen
                     width: parent.width
                     spacing: vpx(6)
 
                     // Favorites only
                     Rectangle {
                         width: parent.width; height: vpx(48); radius: vpx(6)
-                        property bool onRow: filterRow === sortFields.length + 2
+                        property bool onRow: filterRow === sortFields.length + 3
                         color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
@@ -866,7 +981,7 @@ id: root
                             opacity: favsOnly ? 1 : 0.85
                             font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: favsOnly
                         }
-                        MouseArea { anchors.fill: parent; onClicked: { filterRow = sortFields.length + 2; favsOnly = !favsOnly; gamelist.currentIndex = 0; } }
+                        MouseArea { anchors.fill: parent; onClicked: { filterRow = sortFields.length + 3; favsOnly = !favsOnly; gamelist.currentIndex = 0; } }
                     }
                 }
 
@@ -905,9 +1020,10 @@ id: root
                 spacing: vpx(22)
 
                 Repeater {
-                    model: searchActive   ? [ {a:"accept",t:"Type"},   {a:"cancel",t:"Done"} ]
-                         : genrePickerOpen ? [ {a:"accept",t:"Toggle"}, {a:"cancel",t:"Done"} ]
-                         :                   [ {a:"accept",t:"Select"}, {a:"details",t:"Clear all"}, {a:"cancel",t:"Close"} ]
+                    model: searchActive    ? [ {a:"accept",t:"Type"},   {a:"cancel",t:"Done"} ]
+                         : genrePickerOpen  ? [ {a:"accept",t:"Toggle"}, {a:"cancel",t:"Done"} ]
+                         : systemPickerOpen ? [ {a:"accept",t:"Select"}, {a:"cancel",t:"Back"} ]
+                         :                    [ {a:"accept",t:"Select"}, {a:"details",t:"Clear all"}, {a:"cancel",t:"Close"} ]
                     delegate: Row {
                         spacing: vpx(7)
                         Image {
@@ -931,23 +1047,27 @@ id: root
             playNav();
             if (searchActive) { if (keyIndex >= keyCols) keyIndex -= keyCols; }
             else if (genrePickerOpen) { if (genrePickerIndex > 0) genrePickerIndex--; }
+            else if (systemPickerOpen) { if (systemPickerIndex > 0) systemPickerIndex--; }
             else if (filterRow > 0) filterRow--;
         }
         Keys.onDownPressed: {
             playNav();
             if (searchActive) { var ni = keyIndex + keyCols; if (ni < keyboardKeys.length) keyIndex = ni; else keyIndex = keyboardKeys.length - 1; }
             else if (genrePickerOpen) { if (genrePickerIndex < genreOptions.length - 1) genrePickerIndex++; }
-            else if (filterRow < sortFields.length + 2) filterRow++;
+            else if (systemPickerOpen) { if (systemPickerIndex < systemOptions.length - 1) systemPickerIndex++; }
+            else if (filterRow < sortFields.length + 3) filterRow++;
         }
         Keys.onLeftPressed: {
             playNav();
             if (searchActive && (keyIndex % keyCols) !== 0) keyIndex--;
             else if (genrePickerOpen) genrePickerIndex = Math.max(0, genrePickerIndex - 10);
+            else if (systemPickerOpen) systemPickerIndex = Math.max(0, systemPickerIndex - 10);
         }
         Keys.onRightPressed: {
             playNav();
             if (searchActive && (keyIndex % keyCols) !== (keyCols - 1) && keyIndex < keyboardKeys.length - 1) keyIndex++;
             else if (genrePickerOpen) genrePickerIndex = Math.min(genreOptions.length - 1, genrePickerIndex + 10);
+            else if (systemPickerOpen) systemPickerIndex = Math.min(systemOptions.length - 1, systemPickerIndex + 10);
         }
         Keys.onPressed: {
             if (searchActive) {
@@ -964,12 +1084,21 @@ id: root
                 if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); genrePickerOpen = false; }
                 return;
             }
+            if (systemPickerOpen) {
+                if (api.keys.isPageDown(event) && !event.isAutoRepeat) { event.accepted = true; playToggle(); systemJumpLetter(1);  return; }
+                if (api.keys.isPageUp(event)   && !event.isAutoRepeat) { event.accepted = true; playToggle(); systemJumpLetter(-1); return; }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); selectSystem(systemOptions[systemPickerIndex]); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); systemPickerOpen = false; }
+                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); systemPickerOpen = false; }
+                return;
+            }
             if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                 event.accepted = true; playAccept();
                 if (filterRow === 0) activateSearch();
                 else if (filterRow === 1) openGenrePicker();
-                else if (filterRow <= sortFields.length + 1) selectSort(sortFields[filterRow - 2].key);
-                else if (filterRow === sortFields.length + 2) { favsOnly = !favsOnly; gamelist.currentIndex = 0; }
+                else if (filterRow === 2) openSystemPicker();
+                else if (filterRow <= sortFields.length + 2) selectSort(sortFields[filterRow - 3].key);
+                else if (filterRow === sortFields.length + 3) { favsOnly = !favsOnly; gamelist.currentIndex = 0; }
             }
             if (api.keys.isCancel(event) && !event.isAutoRepeat) {
                 event.accepted = true; playBack(); filterOpen = false; gamelist.focus = true;
