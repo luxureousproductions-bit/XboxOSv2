@@ -433,22 +433,22 @@ id: root
             visible: status === Image.Ready
         }
 
-        // Game logo — sits in the upper area of the screenshot, nudged right
+        // Game logo — sits around the screenshot's top-right corner (right-aligned,
+        // vertically straddling the top edge: part above, part on the screenshot)
         Image {
         id: artLogoImg
-            width:  shotFrame.width * 0.82
-            height: shotFrame.height * 0.26
+            width:  shotFrame.width * 0.58
+            height: shotFrame.height * 0.34
             anchors {
-                horizontalCenter: shotFrame.horizontalCenter
-                horizontalCenterOffset: vpx(24)
-                top: shotFrame.top
-                topMargin: vpx(10)
+                right: shotFrame.right; rightMargin: -vpx(6)
+                verticalCenter: shotFrame.top
+                verticalCenterOffset: vpx(8)
             }
             asynchronous: true
             source: artLogo
             fillMode: Image.PreserveAspectFit
-            horizontalAlignment: Image.AlignHCenter
-            verticalAlignment: Image.AlignTop
+            horizontalAlignment: Image.AlignRight
+            verticalAlignment: Image.AlignVCenter
             smooth: true
             visible: status === Image.Ready
         }
@@ -1231,6 +1231,9 @@ id: root
         if (focus) {
             currentHelpbarModel     = allGamesHelpModel;
             currentCustomCollection = listAllGames.collection;
+            // Returning from game details: re-center the list on the current game
+            // (currentIndex is preserved, but the view resets to the top otherwise)
+            Qt.callLater(function() { gamelist.positionViewAtIndex(gamelist.currentIndex, ListView.Center); });
         }
     }
 }
