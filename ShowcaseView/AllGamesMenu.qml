@@ -19,6 +19,20 @@ id: root
         max: api.allGames.count
     }
 
+    // Restores the stored list selection once after a (re)load
+    property bool _restoredIndex: false
+    function restoreSelection() {
+        if (_restoredIndex || displayModel.count <= 0) return;
+        _restoredIndex = true;
+        var idx = storedAllGamesIndex;
+        if (idx < 0) idx = 0;
+        if (idx > displayModel.count - 1) idx = displayModel.count - 1;
+        gamelist.currentIndex = idx;
+        currentGameIndex = idx;
+        currentGame = getCurrentGame(idx);
+        Qt.callLater(function() { gamelist.positionViewAtIndex(idx, ListView.Center); });
+    }
+
     // ── Sort / filter state ───────────────────────────────────────────────
     property string sortField:   "sortBy"        // sortBy|lastPlayed|rating|releaseYear|favorite
     property int    sortDir:     Qt.AscendingOrder
@@ -328,8 +342,7 @@ id: root
     Component.onCompleted: {
         currentHelpbarModel     = allGamesHelpModel;
         currentCustomCollection = listAllGames.collection;
-        currentGameIndex = 0;
-        if (displayModel.count > 0) currentGame = getCurrentGame(0);
+        restoreSelection();   // restore the row we were on (if the model is ready)
     }
 
     // Vertical accent line dividing the text list from the game details
@@ -717,14 +730,19 @@ id: root
             if (currentIndex !== -1) {
                 currentGameIndex = currentIndex;
                 currentGame = getCurrentGame(currentIndex);
+                storedAllGamesIndex = currentIndex;   // persist across screen reloads
             }
         }
         // The proxy model populates asynchronously; when it first fills,
-        // set the box art / metadata for the current row immediately
+        // restore the previously-selected row (so returning from game details
+        // lands back on the same game) — then keep the current row in sync.
         onCountChanged: {
             if (count > 0) {
-                if (currentIndex < 0) currentIndex = 0;
-                currentGame = getCurrentGame(currentIndex < 0 ? 0 : currentIndex);
+                if (!root._restoredIndex) { root.restoreSelection(); }
+                else {
+                    if (currentIndex < 0) currentIndex = 0;
+                    currentGame = getCurrentGame(currentIndex < 0 ? 0 : currentIndex);
+                }
             }
         }
 
