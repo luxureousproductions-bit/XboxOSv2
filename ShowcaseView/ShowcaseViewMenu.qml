@@ -1015,7 +1015,10 @@ id: root
                     Image {
                         id: heroBg
                         anchors.fill: parent
-                        fillMode: Image.PreserveAspectCrop
+                        // Box art is stretched to fill the whole square tile (full top/bottom
+                        // visible, widened side-to-side). Fanart/screenshots crop-fill instead.
+                        fillMode: settings.HeroBoxArt === "Boxfront" ? Image.Stretch
+                                                                     : Image.PreserveAspectCrop
                         asynchronous: true; smooth: true
                         source: heroArtSource(platformlist.resumeGame)
                         opacity: selected ? 1 : 0.5
