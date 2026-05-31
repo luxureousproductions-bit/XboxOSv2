@@ -78,7 +78,7 @@ id: root
         }
         ListElement {
             settingName: "Menu Volume"
-            setting: "1.0,0.9,0.8,0.7,0.6,0.5,0.4,0.3,0.2,0.1"
+            setting: "1.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9"
         }
         ListElement {
             settingName: "Play video thumbnail audio"
@@ -89,7 +89,7 @@ id: root
             setting: "No,Yes"
         }
         ListElement {
-            settingName: "Video preview audio"
+            settingName: "Game details video preview audio"
             setting: "No,Yes"
         }
     }
