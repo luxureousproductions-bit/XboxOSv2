@@ -119,9 +119,19 @@ id: root
     })
 
     // ── Formatted strings for UI headers ─────────────────────────────────
-    // Adds thousands separators (e.g. 12345 -> "12,345")
+    // Adds thousands separators (e.g. 12345 -> "12,345").
+    // Manual loop instead of a regex — QML's JS engine mishandles the
+    // zero-width global lookahead and can emit a doubled comma.
     function raFmt(n) {
-        return (n || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        var s = (Math.round(n) || 0).toString();
+        var neg = s.charAt(0) === "-";
+        if (neg) s = s.substring(1);
+        var out = "";
+        for (var i = 0; i < s.length; i++) {
+            if (i > 0 && (s.length - i) % 3 === 0) out += ",";
+            out += s.charAt(i);
+        }
+        return (neg ? "-" : "") + out;
     }
     property string pointsText: {
         if (raUserName === "") return "";
@@ -283,6 +293,7 @@ id: root
             "u=" + encodeURIComponent(raUserName),
             function(resp) {
                 var r = parseInt(resp.Rank);
+                if (isNaN(r)) r = parseInt(resp.rank);
                 if (!isNaN(r) && r > 0) userRank = r;
             }
         );
