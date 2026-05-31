@@ -77,6 +77,10 @@ id: root
             setting: "Yes,No"
         }
         ListElement {
+            settingName: "Start up chime"
+            setting: "Yes,No"
+        }
+        ListElement {
             settingName: "Menu Volume"
             setting: "1.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9"
         }
@@ -90,6 +94,10 @@ id: root
         }
         ListElement {
             settingName: "Game details video preview audio"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "All games menu video audio"
             setting: "No,Yes"
         }
     }
@@ -317,6 +325,37 @@ id: root
     }
 
     ListModel {
+    id: allGamesSettingsModel
+        ListElement {
+            settingName: "AllGames Video preview"
+            label: "Video preview"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "AllGames Hide art on video"
+            label: "Hide logo/box art when video plays"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "AllGames Blur Background"
+            label: "Blur Background"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "AllGames Show scanlines"
+            label: "Show scanlines"
+            setting: "No,Yes"
+        }
+    }
+
+    property var allGamesPage: {
+        return {
+            pageName: "All Games Menu",
+            listmodel: allGamesSettingsModel
+        }
+    }
+
+    ListModel {
     id: mediaCarouselSettingsModel
 
         ListElement {
@@ -396,7 +435,7 @@ id: root
         }
     }
 
-    property var settingsArr: [generalPage, showcasePage, collectionsPage, gridPage, gamePage, mediaCarouselPage, audioPage, advancedPage, raPage]
+    property var settingsArr: [generalPage, showcasePage, collectionsPage, gridPage, gamePage, allGamesPage, mediaCarouselPage, audioPage, advancedPage, raPage]
 
     property real itemheight: vpx(50)
     property color settingsTextColor: theme.accent
@@ -672,6 +711,8 @@ id: root
                     }
                 }
                 property string itemNote: (typeof note !== 'undefined') ? note : ""
+                // Optional friendly display label; storage key remains settingName
+                property string displayLabel: (typeof label !== 'undefined' && label !== "") ? label : settingName
 
                 // Text-input rows (RA credentials) skip the cycling logic
                 property bool isTextInput: inputType === "text"
@@ -719,7 +760,7 @@ id: root
                 id: settingNameText
 
                     visible: !isTextInput
-                    text: settingName + ": "
+                    text: displayLabel + ": "
                     color: settingsTextColor
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(22)
