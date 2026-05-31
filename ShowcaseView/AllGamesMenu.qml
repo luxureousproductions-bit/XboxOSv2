@@ -70,7 +70,7 @@ id: root
         var s = ((c.shortName ? c.shortName : "") + " " + (c.name ? c.name : "")).toLowerCase();
         if (s.indexOf("snes") >= 0 || s.indexOf("super nintendo") >= 0
             || s.indexOf("n64") >= 0 || s.indexOf("nintendo 64") >= 0)
-            return 0.72;
+            return 0.88;
         return 1.0;
     }
 
@@ -433,20 +433,22 @@ id: root
             visible: status === Image.Ready
         }
 
-        // Game logo — straddles the top edge of the screenshot
+        // Game logo — sits in the upper area of the screenshot, nudged right
         Image {
         id: artLogoImg
             width:  shotFrame.width * 0.82
             height: shotFrame.height * 0.26
             anchors {
                 horizontalCenter: shotFrame.horizontalCenter
-                bottom: shotFrame.top; bottomMargin: -vpx(18)
+                horizontalCenterOffset: vpx(24)
+                top: shotFrame.top
+                topMargin: vpx(10)
             }
             asynchronous: true
             source: artLogo
             fillMode: Image.PreserveAspectFit
             horizontalAlignment: Image.AlignHCenter
-            verticalAlignment: Image.AlignVCenter
+            verticalAlignment: Image.AlignTop
             smooth: true
             visible: status === Image.Ready
         }
