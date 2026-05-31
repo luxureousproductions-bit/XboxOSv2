@@ -119,6 +119,7 @@ id: root
     property int storedHomeSecondaryIndex: 0
     property int storedCollectionIndex: 0
     property int storedCollectionGameIndex: 0
+    property int storedAllGamesIndex: 0
     // Keeps GameView alive after first visit so returning from Settings never shows a blank page.
     // Set to true by gameviewloader.onLoaded; never reset, so the component is only created once.
     property bool gameviewLoaded: false
