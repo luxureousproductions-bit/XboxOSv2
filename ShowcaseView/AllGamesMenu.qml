@@ -2,6 +2,7 @@
 import QtQuick 2.15
 import QtQuick.Layouts 1.11
 import QtGraphicalEffects 1.12
+import QtMultimedia 5.15
 import "../Global"
 import "../Lists"
 import "../utils.js" as Utils
@@ -110,6 +111,17 @@ id: root
             || s.indexOf("n64") >= 0 || s.indexOf("nintendo 64") >= 0)
             return 0.88;
         return 1.0;
+    }
+
+    // ── Video preview (plays inside the screenshot frame after a brief rest) ──
+    property string videoSource: (currentGame && currentGame.assets && currentGame.assets.videos && currentGame.assets.videos.length > 0) ? currentGame.assets.videos[0] : ""
+    property bool   videoArmed:      false
+    property bool   videoPlaying:    previewVideo.playbackState === MediaPlayer.PlayingState
+    property bool   hideArtForVideo: videoPlaying && settings.AllGamesHideArtOnVideo === "Yes"
+    Timer {
+    id: videoDebounce
+        interval: 1100; repeat: false
+        onTriggered: videoArmed = true
     }
 
     // On-screen keyboard — fully controller-driven, NO native Android IME
@@ -405,12 +417,27 @@ id: root
             source: artBackdrop
             fillMode: Image.PreserveAspectCrop
             smooth: true
-            visible: status === Image.Ready
+            visible: status === Image.Ready && settings.AllGamesBlurBackground !== "Yes"
             opacity: 0.55
+        }
+        // Blurred backdrop variant (only built when the setting is on)
+        Loader {
+        id: bgBlurLoader
+            anchors.fill: parent
+            active: settings.AllGamesBlurBackground === "Yes" && artBackdrop !== ""
+            readonly property Item blurSrc: bgArtImg
+            sourceComponent: Component {
+                FastBlur {
+                    anchors.fill: parent
+                    source: bgBlurLoader.blurSrc
+                    radius: 64
+                    opacity: 0.55
+                }
+            }
         }
         Rectangle {
             anchors.fill: parent
-            color: bgArtImg.visible ? Qt.rgba(0, 0, 0, 0.45)
+            color: (bgArtImg.visible || bgBlurLoader.active) ? Qt.rgba(0, 0, 0, 0.45)
                                     : Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.06)
         }
 
@@ -442,6 +469,36 @@ id: root
                 radius: vpx(10)
                 color: Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.14)
             }
+            // Video preview — plays over the screenshot once armed (after resting)
+            Video {
+            id: previewVideo
+                anchors.fill: parent
+                source: (settings.AllGamesVideoPreview !== "No" && videoArmed && videoSource !== "") ? videoSource : ""
+                fillMode: VideoOutput.PreserveAspectCrop
+                muted: settings.AllGamesVideoAudio !== "Yes"
+                loops: MediaPlayer.Infinite
+                autoPlay: true
+                visible: playbackState === MediaPlayer.PlayingState
+                layer.enabled: true
+                layer.smooth: true
+                layer.effect: OpacityMask {
+                    maskSource: Rectangle { width: previewVideo.width; height: previewVideo.height; radius: vpx(10) }
+                }
+            }
+            // Scanlines overlay (optional)
+            Image {
+            id: scanlinesOverlay
+                anchors.fill: parent
+                source: settings.AllGamesScanlines === "Yes" ? "../assets/images/scanlines_v3.png" : ""
+                asynchronous: true
+                opacity: 0.2
+                visible: settings.AllGamesScanlines === "Yes"
+                layer.enabled: true
+                layer.smooth: true
+                layer.effect: OpacityMask {
+                    maskSource: Rectangle { width: scanlinesOverlay.width; height: scanlinesOverlay.height; radius: vpx(10) }
+                }
+            }
             Rectangle {   // border around JUST the screenshot
                 anchors.fill: parent
                 color: "transparent"
@@ -468,6 +525,8 @@ id: root
             verticalAlignment: Image.AlignBottom
             smooth: true
             visible: status === Image.Ready
+            opacity: hideArtForVideo ? 0.0 : 1.0
+            Behavior on opacity { NumberAnimation { duration: 350; easing.type: Easing.InOutQuad } }
         }
 
         // Game logo — sits around the screenshot's top-right corner (right-aligned,
@@ -488,6 +547,8 @@ id: root
             verticalAlignment: Image.AlignVCenter
             smooth: true
             visible: status === Image.Ready
+            opacity: hideArtForVideo ? 0.0 : 1.0
+            Behavior on opacity { NumberAnimation { duration: 350; easing.type: Easing.InOutQuad } }
         }
     }
 
@@ -755,6 +816,8 @@ id: root
                 currentGameIndex = currentIndex;
                 currentGame = getCurrentGame(currentIndex);
                 storedAllGamesIndex = currentIndex;   // persist across screen reloads
+                root.videoArmed = false;              // stop video while navigating
+                videoDebounce.restart();              // re-arm after resting on a game
             }
         }
         // The proxy model populates asynchronously; when it first fills,
