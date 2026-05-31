@@ -631,9 +631,13 @@ id: root
 
         Rectangle { anchors.fill: parent; color: theme.main }
 
-        // Accent line under the header
+        // Accent line above the preview — pushed down so it sits the same
+        // distance from the fanart (vpx(14)) as the bottom accent line does.
         Rectangle {
-            anchors { bottom: parent.bottom; left: parent.left; right: parent.right }
+            anchors {
+                bottom: parent.bottom; bottomMargin: -(globalMargin - vpx(14))
+                left: parent.left; right: parent.right
+            }
             height: vpx(2); color: theme.accent
         }
 
