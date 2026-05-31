@@ -89,7 +89,7 @@ id: root
             setting: "No,Yes"
         }
         ListElement {
-            settingName: "Game details video preview audio"
+            settingName: "Play game details video preview audio"
             setting: "No,Yes"
         }
     }
