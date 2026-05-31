@@ -40,6 +40,12 @@ id: root
         var n = gamelist.count;
         if (n <= 0 || gamelist.height <= 0) { restoreViewTimer.restart(); return; }
         var i = gamelist.currentIndex < 0 ? 0 : gamelist.currentIndex;
+        // Re-assert the current index so the highlight realizes on the visible row
+        // (a delegate scrolled into view via contentY won't refresh isCurrentItem
+        //  until the current item changes again).
+        gamelist.currentIndex = -1;
+        gamelist.currentIndex = i;
+        // Center the view on the current row
         var target = i * itemheight - (gamelist.height - itemheight) / 2;
         var maxY = Math.max(0, n * itemheight - gamelist.height);
         gamelist.contentY = Math.max(0, Math.min(target, maxY));
