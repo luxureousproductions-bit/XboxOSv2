@@ -101,6 +101,12 @@ id: root
             AllowDiscoverVideoAudio:         api.memory.has("Play discover video audio") ? api.memory.get("Play discover video audio") : "No",
             MenuSounds:                      api.memory.has("Menu sounds") ? api.memory.get("Menu sounds") : "Yes",
             MenuVolume:                      api.memory.has("Menu Volume") ? api.memory.get("Menu Volume") : "1.0",
+            StartupChime:                    api.memory.has("Start up chime") ? api.memory.get("Start up chime") : "Yes",
+            AllGamesVideoPreview:            api.memory.has("AllGames Video preview") ? api.memory.get("AllGames Video preview") : "Yes",
+            AllGamesHideArtOnVideo:          api.memory.has("AllGames Hide art on video") ? api.memory.get("AllGames Hide art on video") : "No",
+            AllGamesBlurBackground:          api.memory.has("AllGames Blur Background") ? api.memory.get("AllGames Blur Background") : "No",
+            AllGamesScanlines:               api.memory.has("AllGames Show scanlines") ? api.memory.get("AllGames Show scanlines") : "No",
+            AllGamesVideoAudio:              api.memory.has("All games menu video audio") ? api.memory.get("All games menu video audio") : "No",
             ShowWifi:                      api.memory.has("Show WiFi Indicator")     ? api.memory.get("Show WiFi Indicator")     : "Yes",
             ShowBattery:                   api.memory.has("Show Battery Percentage") ? api.memory.get("Show Battery Percentage") : "Yes",
             ShowClock:                     api.memory.has("Show Clock")              ? api.memory.get("Show Clock")              : "Yes"
@@ -976,7 +982,7 @@ id: root
     // engine come up so the first play isn't dropped). Respects the menu volume.
     Timer {
         interval: 450; running: true; repeat: false
-        onTriggered: { if (sfxVolume > 0) { sfxStartup.stop(); sfxStartup.play(); } }
+        onTriggered: { if (settings.StartupChime !== "No" && sfxVolume > 0) { sfxStartup.stop(); sfxStartup.play(); } }
     }
     SoundEffect {
         id: sfxStartup
