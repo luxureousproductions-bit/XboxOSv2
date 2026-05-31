@@ -241,11 +241,15 @@ id: root
 
     // ── System picker ─────────────────────────────────────────────────
     function buildSystemOptions() {
-        var arr = [ { name: "All", index: -1 } ];
+        var arr = [];
         for (var i = 0; i < api.collections.count; i++) {
             var c = api.collections.get(i);
-            arr.push({ name: (c.shortName && c.shortName.length) ? c.shortName : c.name, index: i });
+            var nm = (c.shortName && c.shortName.length) ? c.shortName : c.name;
+            arr.push({ name: (nm || "").toUpperCase(), index: i });
         }
+        // Alphabetical by (already-uppercased) display name
+        arr.sort(function(a, b) { return (a.name < b.name) ? -1 : ((a.name > b.name) ? 1 : 0); });
+        arr.unshift({ name: "ALL", index: -1 });   // keep "All" pinned to the top
         systemOptions = arr;
     }
     function openSystemPicker() {
@@ -1048,7 +1052,7 @@ id: root
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(46); right: sysArrow.left; rightMargin: vpx(8); verticalCenter: parent.verticalCenter }
-                        text: systemIndex < 0 ? "System: All" : "System: " + systemFilter
+                        text: systemIndex < 0 ? "System: ALL" : "System: " + systemFilter
                         color: onRow ? theme.accent : theme.text
                         opacity: onRow ? 1 : 0.85
                         elide: Text.ElideRight
