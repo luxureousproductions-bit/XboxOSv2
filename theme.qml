@@ -64,6 +64,7 @@ id: root
             CustomBackground:               api.memory.has("Custom Background") ? api.memory.get("Custom Background") : "No",
             ShowcaseBackgroundOpacity:     api.memory.has("Showcase Background Opacity") ? api.memory.get("Showcase Background Opacity") : "0.55",
             ShowcaseArt:                   api.memory.has("Showcase Art") ? api.memory.get("Showcase Art") : "Fanart",
+            HeroBoxArt:                    api.memory.has("Hero box art") ? api.memory.get("Hero box art") : "Fanart",
             ShowcaseColumns:               api.memory.has("Number of games showcased") ? api.memory.get("Number of games showcased") : "15",
             ShowcaseFeaturedCollection:    api.memory.has("Featured collection") ? api.memory.get("Featured collection") : "Favorites",
             ShowcaseCollection1:           api.memory.has("Collection 1") ? api.memory.get("Collection 1") : "Recently Played",
