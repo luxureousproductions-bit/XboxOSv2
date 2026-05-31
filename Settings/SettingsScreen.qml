@@ -81,15 +81,15 @@ id: root
             setting: "1.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9"
         }
         ListElement {
-            settingName: "Play video thumbnail audio"
+            settingName: "Video thumbnail audio"
             setting: "No,Yes"
         }
         ListElement {
-            settingName: "Play discover video audio"
+            settingName: "Discover video audio"
             setting: "No,Yes"
         }
         ListElement {
-            settingName: "Play game details video preview audio"
+            settingName: "Game details video preview audio"
             setting: "No,Yes"
         }
     }
