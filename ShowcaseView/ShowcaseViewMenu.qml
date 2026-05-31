@@ -47,6 +47,19 @@ id: root
     function heroBorderImage(layoutName) {
         return layoutName;
     }
+
+    // Hero box art for the resume/last-played game, per the "Hero box art" setting.
+    // Falls back to other art types if the chosen one is missing, so it's never blank.
+    function heroArtSource(g) {
+        if (!g) return "";
+        var fan  = g.assets.background || "";
+        var shot = (g.assets.screenshots && g.assets.screenshots.length) ? g.assets.screenshots[0] : "";
+        var box  = g.assets.boxFront || "";
+        var mode = settings.HeroBoxArt;
+        if (mode === "Boxfront")   return box  || fan  || shot || "";
+        if (mode === "Screenshot") return shot || fan  || box  || "";
+        return fan || shot || box || "";   // Fanart (default)
+    }
     property var collection1: getCollection(settings.ShowcaseCollection1, settings.ShowcaseCollection1_Thumbnail)
     property var collection2: getCollection(settings.ShowcaseCollection2, settings.ShowcaseCollection2_Thumbnail)
     property var collection3: getCollection(settings.ShowcaseCollection3, settings.ShowcaseCollection3_Thumbnail)
@@ -1004,7 +1017,7 @@ id: root
                         anchors.fill: parent
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true; smooth: true
-                        source: platformlist.resumeGame ? (platformlist.resumeGame.assets.background || platformlist.resumeGame.assets.screenshots[0] || platformlist.resumeGame.assets.boxFront || "") : ""
+                        source: heroArtSource(platformlist.resumeGame)
                         opacity: selected ? 1 : 0.5
                     }
 
