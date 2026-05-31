@@ -30,7 +30,25 @@ id: root
         gamelist.currentIndex = idx;
         currentGameIndex = idx;
         currentGame = getCurrentGame(idx);
-        Qt.callLater(function() { gamelist.positionViewAtIndex(idx, ListView.Center); });
+        restoreViewTimer.restart();   // scroll the view to center on it (deferred)
+    }
+
+    // Center the list view on the current row by setting contentY directly.
+    // (positionViewAtIndex is unreliable right after a reload — the view geometry
+    //  isn't ready yet, so it clamps to the top until the user scrolls.)
+    function centerListOnCurrent() {
+        var n = gamelist.count;
+        if (n <= 0 || gamelist.height <= 0) { restoreViewTimer.restart(); return; }
+        var i = gamelist.currentIndex < 0 ? 0 : gamelist.currentIndex;
+        var target = i * itemheight - (gamelist.height - itemheight) / 2;
+        var maxY = Math.max(0, n * itemheight - gamelist.height);
+        gamelist.contentY = Math.max(0, Math.min(target, maxY));
+    }
+
+    Timer {
+    id: restoreViewTimer
+        interval: 110; repeat: false
+        onTriggered: centerListOnCurrent()
     }
 
     // ── Sort / filter state ───────────────────────────────────────────────
@@ -1250,8 +1268,7 @@ id: root
             currentHelpbarModel     = allGamesHelpModel;
             currentCustomCollection = listAllGames.collection;
             // Returning from game details: re-center the list on the current game
-            // (currentIndex is preserved, but the view resets to the top otherwise)
-            Qt.callLater(function() { gamelist.positionViewAtIndex(gamelist.currentIndex, ListView.Center); });
+            restoreViewTimer.restart();
         }
     }
 }
