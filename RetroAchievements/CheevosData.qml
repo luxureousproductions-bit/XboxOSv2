@@ -119,12 +119,17 @@ id: root
     })
 
     // ── Formatted strings for UI headers ─────────────────────────────────
+    // Adds thousands separators (e.g. 12345 -> "12,345")
+    function raFmt(n) {
+        return (n || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
     property string pointsText: {
         if (raUserName === "") return "";
-        var total = softcorePoints + hardcorePoints;
-        if (totalTruePoints > 0)
-            return total + " pts  ·  " + totalTruePoints + " true pts  ·  Rank #" + userRank;
-        return total + " Points  ·  Rank #" + userRank;
+        var parts = [ raFmt(hardcorePoints) + " HC" ];
+        if (softcorePoints  > 0) parts.push(raFmt(softcorePoints)  + " SC");
+        if (totalTruePoints > 0) parts.push(raFmt(totalTruePoints) + " true");
+        if (userRank        > 0) parts.push("Rank #" + raFmt(userRank));
+        return parts.join("  ·  ");
     }
 
     property string memberText: {
@@ -269,6 +274,16 @@ id: root
                     avatarUrl = "https://media.retroachievements.org" + resp.UserPic;
                     api.memory.set("raAvatarPath", resp.UserPic);
                 }
+            }
+        );
+        // GetUserSummary often omits the global rank — fetch it from the
+        // dedicated endpoint so the card/pages show the real rank, not #0.
+        raRequest(
+            "GetUserRankAndScore",
+            "u=" + encodeURIComponent(raUserName),
+            function(resp) {
+                var r = parseInt(resp.Rank);
+                if (!isNaN(r) && r > 0) userRank = r;
             }
         );
     }
