@@ -393,7 +393,7 @@ id: root
             top: header.bottom; topMargin: globalMargin
             bottom: parent.bottom; bottomMargin: globalMargin + helpMargin
         }
-        width: vpx(2)
+        width: vpx(3)
         color: theme.accent
     }
 
@@ -508,7 +508,7 @@ id: root
                 color: "transparent"
                 radius: vpx(10)
                 border.color: theme.accent
-                border.width: vpx(2)
+                border.width: vpx(3)
                 antialiasing: true
             }
         }
@@ -570,7 +570,7 @@ id: root
         // Accent line above the metadata
         Rectangle {
             anchors { top: parent.top; left: parent.left; right: parent.right }
-            height: vpx(2); color: theme.accent
+            height: vpx(3); color: theme.accent
         }
 
         Row {
@@ -638,7 +638,7 @@ id: root
                 bottom: parent.bottom; bottomMargin: -(globalMargin - vpx(14))
                 left: parent.left; right: parent.right
             }
-            height: vpx(2); color: theme.accent
+            height: vpx(3); color: theme.accent
         }
 
         // Icon + title (top row) — matches the platform page's clean header rhythm
@@ -900,21 +900,46 @@ id: root
                     color: theme.accent
                     visible: selected
                 }
-                Text {
-                    text: modelData.title
+                Item {
+                    id: titleClip
                     height: parent.height
                     anchors {
                         left: parent.left; leftMargin: vpx(20)
                         right: parent.right; rightMargin: vpx(30)
                     }
-                    color: selected ? "white" : theme.text
-                    font.family: subtitleFont.name
-                    font.pixelSize: selected ? vpx(25) : vpx(19)
-                    font.bold: selected
-                    elide: Text.ElideRight
-                    verticalAlignment: Text.AlignVCenter
-                    opacity: selected ? 1 : 0.28
-                    Behavior on font.pixelSize { NumberAnimation { duration: 90 } }
+                    clip: true
+                    Text {
+                        id: titleText
+                        text: modelData.title
+                        height: titleClip.height
+                        color: selected ? "white" : theme.text
+                        font.family: subtitleFont.name
+                        font.pixelSize: selected ? vpx(25) : vpx(19)
+                        font.bold: selected
+                        verticalAlignment: Text.AlignVCenter
+                        opacity: selected ? 1 : 0.28
+                        Behavior on font.pixelSize { NumberAnimation { duration: 90 } }
+                        // Only the highlighted row scrolls, and only when it overflows.
+                        // implicitWidth = natural text width (reliable; contentWidth gets
+                        // clamped once elide kicks in).
+                        property bool marquee: selected && implicitWidth > titleClip.width
+                        elide: marquee ? Text.ElideNone : Text.ElideRight
+                        width: marquee ? implicitWidth : titleClip.width
+                        x: 0
+                        onMarqueeChanged: if (!marquee) x = 0
+                        SequentialAnimation on x {
+                            running: titleText.marquee
+                            loops: Animation.Infinite
+                            PauseAnimation { duration: 1100 }
+                            NumberAnimation {
+                                to: titleClip.width - titleText.implicitWidth
+                                duration: Math.max(600, (titleText.implicitWidth - titleClip.width) * 11)
+                                easing.type: Easing.InOutSine
+                            }
+                            PauseAnimation { duration: 1100 }
+                            NumberAnimation { to: 0; duration: 550; easing.type: Easing.InOutSine }
+                        }
+                    }
                 }
                 MouseArea {
                     anchors.fill: parent
