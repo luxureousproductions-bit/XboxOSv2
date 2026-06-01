@@ -53,6 +53,11 @@ id: root
     // (HorizontalCollection) is unchanged; GridViewMenu overrides this with the
     // platform-page "Grid art" setting (Fanart / Screenshot / Boxfront).
     property string artMode: settings.ShowcaseArt
+    // Whether to draw the game-logo overlay. Defaults true so the showcase
+    // (HorizontalCollection) is unchanged; GridViewMenu sets this from the
+    // platform-page "Game logo" setting (lets logos be hidden so they don't
+    // clash with, e.g., Tall + Boxfront tiles that already show the title).
+    property bool showLogo: true
 
 
     // In order to use the retropie icons here we need to do a little collection specific hack
@@ -123,6 +128,7 @@ id: root
         Image {
         id: favelogo
 
+            visible: showLogo
             anchors.fill: parent
             anchors.centerIn: parent
             anchors.margins: root.width/10
@@ -209,7 +215,7 @@ id: root
         font.family: subtitleFont.name
         font.bold: true
         style: Text.Outline; styleColor: theme.main
-        visible: favelogo.status === Image.Null || favelogo.status === Image.Error
+        visible: showLogo && (favelogo.status === Image.Null || favelogo.status === Image.Error)
         anchors.centerIn: parent
         elide: Text.ElideRight
         wrapMode: Text.WordWrap
