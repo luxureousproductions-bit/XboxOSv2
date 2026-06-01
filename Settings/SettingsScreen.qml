@@ -345,8 +345,13 @@ id: root
             setting: "Yes,No"
         }
         ListElement {
-            settingName: "AllGames Hide art on video"
-            label: "Hide logo/box art when video plays"
+            settingName: "AllGames Hide box art on video"
+            label: "Hide box art when video plays"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "AllGames Hide logo on video"
+            label: "Hide logo when video plays"
             setting: "No,Yes"
         }
         ListElement {
