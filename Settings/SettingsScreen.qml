@@ -268,6 +268,11 @@ id: root
             setting: "Fanart,Screenshot,Boxfront"
         }
         ListElement {
+            settingName: "Grid Game Logo"
+            label: "Game logo"
+            setting: "Yes,No"
+        }
+        ListElement {
             settingName: "Number of columns"
             setting: "3,4,5,6,7,8"
         }
