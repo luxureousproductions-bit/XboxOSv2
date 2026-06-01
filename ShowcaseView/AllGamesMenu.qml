@@ -908,6 +908,16 @@ id: root
                         right: parent.right; rightMargin: vpx(30)
                     }
                     clip: true
+                    // Measures the full title at the selected font size, independently of
+                    // the visible Text. implicitWidth gets clamped to the elided width once
+                    // ElideRight has been active, which made the marquee stop short.
+                    TextMetrics {
+                        id: titleMetrics
+                        font.family: subtitleFont.name
+                        font.pixelSize: vpx(25)
+                        font.bold: true
+                        text: modelData.title
+                    }
                     Text {
                         id: titleText
                         text: modelData.title
@@ -920,11 +930,10 @@ id: root
                         opacity: selected ? 1 : 0.28
                         Behavior on font.pixelSize { NumberAnimation { duration: 90 } }
                         // Only the highlighted row scrolls, and only when it overflows.
-                        // implicitWidth = natural text width (reliable; contentWidth gets
-                        // clamped once elide kicks in).
-                        property bool marquee: selected && implicitWidth > titleClip.width
+                        property real overflow: titleMetrics.width - titleClip.width
+                        property bool marquee: selected && overflow > 0
                         elide: marquee ? Text.ElideNone : Text.ElideRight
-                        width: marquee ? implicitWidth : titleClip.width
+                        width: marquee ? titleMetrics.width : titleClip.width
                         x: 0
                         onMarqueeChanged: if (!marquee) x = 0
                         SequentialAnimation on x {
@@ -932,11 +941,11 @@ id: root
                             loops: Animation.Infinite
                             PauseAnimation { duration: 1100 }
                             NumberAnimation {
-                                to: titleClip.width - titleText.implicitWidth
-                                duration: Math.max(600, (titleText.implicitWidth - titleClip.width) * 11)
+                                to: -(titleText.overflow + vpx(6))
+                                duration: Math.max(600, (titleText.overflow + vpx(6)) * 11)
                                 easing.type: Easing.InOutSine
                             }
-                            PauseAnimation { duration: 1100 }
+                            PauseAnimation { duration: 1300 }
                             NumberAnimation { to: 0; duration: 550; easing.type: Easing.InOutSine }
                         }
                     }
