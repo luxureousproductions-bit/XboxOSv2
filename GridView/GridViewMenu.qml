@@ -583,6 +583,7 @@ id: root
 
                     selected: GridView.isCurrentItem && root.focus
                     artMode: settings.GridArt
+                    showLogo: settings.GridGameLogo === "Yes"
 
                     width:      GridView.view.cellWidth
                     height:     GridView.view.cellHeight - titleMargin
