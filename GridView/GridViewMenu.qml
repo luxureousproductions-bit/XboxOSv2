@@ -582,6 +582,7 @@ id: root
                 id: dynamicdelegatecontainer
 
                     selected: GridView.isCurrentItem && root.focus
+                    artMode: settings.GridArt
 
                     width:      GridView.view.cellWidth
                     height:     GridView.view.cellHeight - titleMargin
