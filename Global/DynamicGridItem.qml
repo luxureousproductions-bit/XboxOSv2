@@ -49,6 +49,10 @@ id: root
 
     property bool selected
     property var gameData: modelData
+    // Art type to display. Defaults to the showcase art setting so the showcase
+    // (HorizontalCollection) is unchanged; GridViewMenu overrides this with the
+    // platform-page "Grid art" setting (Fanart / Screenshot / Boxfront).
+    property string artMode: settings.ShowcaseArt
 
 
     // In order to use the retropie icons here we need to do a little collection specific hack
@@ -104,7 +108,11 @@ id: root
 
             anchors.fill: parent
             anchors.margins: vpx(2)
-            source: modelData ? (settings.ShowcaseArt === "Screenshot" ? (modelData.assets.screenshots[0] || "") : (modelData.assets.background || modelData.assets.screenshots[0] || "")) : ""
+            source: modelData ? (
+                      artMode === "Screenshot" ? (modelData.assets.screenshots[0] || modelData.assets.background || "")
+                    : artMode === "Boxfront"   ? (modelData.assets.boxFront || modelData.assets.background || modelData.assets.screenshots[0] || "")
+                    :                            (modelData.assets.background || modelData.assets.screenshots[0] || "")
+                  ) : ""
             fillMode: Image.PreserveAspectCrop
             sourceSize { width: 512; height: 512 }
             smooth: false
