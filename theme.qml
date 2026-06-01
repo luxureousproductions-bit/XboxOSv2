@@ -44,6 +44,7 @@ id: root
             PlatformView:                  api.memory.has("Game View") ? api.memory.get("Game View") : "Grid",
             GridThumbnail:                 (function(){ var v = api.memory.has("Grid Thumbnail") ? api.memory.get("Grid Thumbnail") : "Dynamic Wide"; return (v === "3D Box" || v === "Box Art") ? "Square" : v; })(),
             GridArt:                       api.memory.has("Grid art") ? api.memory.get("Grid art") : "Fanart",
+            GridGameLogo:                  api.memory.has("Grid Game Logo") ? api.memory.get("Grid Game Logo") : "Yes",
             GridColumns:                   api.memory.has("Number of columns") ? api.memory.get("Number of columns") : "3",
             GameBackground:                api.memory.has("Game Background") ? api.memory.get("Game Background") : "Screenshot",
             GameLogo:                      api.memory.has("Game Logo") ? api.memory.get("Game Logo") : "Show",
