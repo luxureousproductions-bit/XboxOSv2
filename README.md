@@ -35,7 +35,6 @@ It is recommended to use [Skraper.net](http://www.skraper.net/) to acquire media
 
 ## Whats Changed from XboxOs V1
   
-- Updated collection logos to color✅
 
 - Added Publisher/Developer/Release to game details✅
 
@@ -81,9 +80,7 @@ It is recommended to use [Skraper.net](http://www.skraper.net/) to acquire media
 - Added showcase options for fanart/screenshot✅
 
 - Implemented a refresh feature for showcase✅
- (showcase doesnt auto refresh when navigating away and coming back, only when hitting refresh button)
-
-- Added the ability to search by genre in platform search bar✅
+ (showcase doesnt auto refresh when navigating away and coming back, only when hitting refresh 
 
 - Updated the "More" Lists in game details to include Publisher & Developer or fallback to "More Recommended" when only one title is available for each✅
 
