@@ -1,40 +1,5 @@
 # XboxOSv2 (a fork of a fork of gameOS)
-<img width="1920" height="1080" alt="Screenshot_20260506-210910" src="https://github.com/user-attachments/assets/3c0bb083-6c9a-4ec4-b335-1ecabb80a1ad" />
--
 
-
-
-<img width="1920" height="1080" alt="Screenshot_20260506-211716" src="https://github.com/user-attachments/assets/587c4192-8cc6-4318-8ca0-94cfd47fdee0" />
-<img width="1920" height="1080" alt="Screenshot_20260506-211732" src="https://github.com/user-attachments/assets/f172e12b-1d6a-4ba4-8733-c4a01ae195a2" />
-<img width="1920" height="1080" alt="Screenshot_20260506-211009" src="https://github.com/user-attachments/assets/7940acd2-3e7b-4757-a215-56dc26682a12" />
-
-- Change box art image on the fly (2D, 3D, Miximage)
-
--
-<img width="1920" height="1080" alt="Screenshot_20260506-211050" src="https://github.com/user-attachments/assets/3be0a497-a80b-44eb-8baa-40fb5cca5e01" />
-
-<img width="1920" height="1080" alt="Screenshot_20260506-211100" src="https://github.com/user-attachments/assets/78d7d004-8182-471e-a3a4-9d9c4ecaabf5" />
-<img width="1920" height="1080" alt="Screenshot_20260506-211112" src="https://github.com/user-attachments/assets/1cf58b7d-77c5-436c-9513-9b1dd15dc79a" />
-
-- RetroAchievment Intergration(Experimental)
-
--
-
-<img width="1920" height="1080" alt="Screenshot_20260506-211404" src="https://github.com/user-attachments/assets/2c317626-1681-4dae-91ab-faf65d16dd21" />
-(Screenshot)
-<img width="1920" height="1080" alt="Screenshot_20260506-211424" src="https://github.com/user-attachments/assets/4d53c807-5c38-42ca-9726-d3e89ea705c5" />
-(Fanart)
-
-- Many New showcase options:
-
-  -  Options to display fanart or screenshot
-  
-  -  More collections with added collection options
--
-
-<img width="1920" height="1080" alt="Screenshot_20260506-211551" src="https://github.com/user-attachments/assets/283320cd-db37-4433-8e9d-d4c3814e6200" />
-
-- Dont know what to play? Hit the Random button to get a random shuffle of game videos. You can launch directly into a game you like or go to the game details page to learn more
 
 
 
@@ -45,8 +10,6 @@
 IMPORTANT: This is a fork of [gameOS](https://github.com/PlayingKarrde/gameOS/releases/latest) by the original and true UI God: Seth Powell. This theme further continues work from the XboxOS fork and now modernizes and refines the experience even more. The goal is to create a modern game launcher UI with quality-of-life improvements and additional media support.
 
 ## Installation
-
-<img width="1920" height="1080" alt="screenshot" src="https://github.com/user-attachments/assets/94b66f04-35e7-414e-a613-2b5b6cec8ed5" />
 
 download latest release and extract it in your [Pegasus theme directory](http://pegasus-frontend.org/docs/user-guide/installing-themes/).
 
@@ -139,5 +102,3 @@ It is recommended to use [Skraper.net](http://www.skraper.net/) to acquire media
      - "genre , subgenre"
      - "genre, subgenre"
      - "genre ,subgenre"
-
- - Added Retro Achievment tracker (Experimental) 
