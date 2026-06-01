@@ -104,6 +104,18 @@ id: root
 
         anchors.fill: parent
 
+        // Round the video preview to match the rounded tile frame (vpx(6)),
+        // so the playing thumbnail video doesn't poke past the frame corners.
+        layer.enabled: true
+        layer.smooth: true
+        layer.effect: OpacityMask {
+            maskSource: Rectangle {
+                width: videocontainer.width
+                height: videocontainer.height
+                radius: vpx(6)
+            }
+        }
+
         // Video
         Loader {
         id: videoPreviewLoader
