@@ -117,7 +117,8 @@ id: root
     property string videoSource: (currentGame && currentGame.assets && currentGame.assets.videos && currentGame.assets.videos.length > 0) ? currentGame.assets.videos[0] : ""
     property bool   videoArmed:      false
     property bool   videoPlaying:    previewVideo.playbackState === MediaPlayer.PlayingState
-    property bool   hideArtForVideo: videoPlaying && settings.AllGamesHideArtOnVideo === "Yes"
+    property bool   hideBoxForVideo:  videoPlaying && settings.AllGamesHideBoxOnVideo === "Yes"
+    property bool   hideLogoForVideo: videoPlaying && settings.AllGamesHideLogoOnVideo === "Yes"
     Timer {
     id: videoDebounce
         interval: 1100; repeat: false
@@ -529,7 +530,7 @@ id: root
             verticalAlignment: Image.AlignBottom
             smooth: true
             visible: status === Image.Ready
-            opacity: hideArtForVideo ? 0.0 : 1.0
+            opacity: hideBoxForVideo ? 0.0 : 1.0
             Behavior on opacity { NumberAnimation { duration: 350; easing.type: Easing.InOutQuad } }
         }
 
@@ -551,7 +552,7 @@ id: root
             verticalAlignment: Image.AlignVCenter
             smooth: true
             visible: status === Image.Ready
-            opacity: hideArtForVideo ? 0.0 : 1.0
+            opacity: hideLogoForVideo ? 0.0 : 1.0
             Behavior on opacity { NumberAnimation { duration: 350; easing.type: Easing.InOutQuad } }
         }
     }
