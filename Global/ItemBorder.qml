@@ -20,57 +20,42 @@ import QtGraphicalEffects 1.15
 Item {
 id: root
 
-    function mapLayoutImage(layoutName) {
-        if (layoutName === "Cyan") return "Turquoise";
-        if (layoutName === "Crimson") return "Dark Red";
-        if (layoutName === "Lime") return "Light Green";
-        if (layoutName === "Gold") return "Yellow";
-        if (layoutName === "Violet") return "Purple";
-        if (layoutName === "Teal") return "Stone";
-        return layoutName;
-    }
-
-    Image {
+    // Thick rounded accent frame — matches the hero box / game tiles in the
+    // showcase. This component is loaded only while the item is selected
+    // (the grid/collection delegates use `active: selected` on their Loader),
+    // so the frame appears on selection. Replaces the old borderimage.gif
+    // OpacityMask approach.
+    Rectangle {
     id: border
 
         anchors.fill: parent
-        source: "../assets/images/colorspng/" + mapLayoutImage(settings.ColorLayout) + ".png"
-		asynchronous: true
-        visible: false
-        
-        // Highlight animation (ColorOverlay causes graphical glitches on W10)
-        Rectangle {
-            anchors.fill: parent
-            color: "#fff"
-            visible: settings.AnimateHighlight === "Yes"
-            SequentialAnimation on opacity {
-            id: colorAnim
-
-                running: true
-                loops: Animation.Infinite
-                NumberAnimation { to: 1; duration: 200; }
-                NumberAnimation { to: 0; duration: 500; }
-                PauseAnimation { duration: 200 }
-            }
-        }
+        color: "transparent"
+        radius: vpx(6)
+        border.color: theme.accent
+        border.width: vpx(5)
+        antialiasing: true
     }
 
-    BorderImage {
-    id: mask
+    // Animated highlight — flashes the frame white when the setting is on
+    Rectangle {
+    id: highlightPulse
 
         anchors.fill: parent
-        source: "../assets/images/borderimage.gif"
-        border { left: vpx(5); right: vpx(5); top: vpx(5); bottom: vpx(5);}
-        smooth: false
-        visible: false
-        asynchronous: true
-    }
-
-    OpacityMask {
-        anchors.fill: border
-        source: border
-        maskSource: mask
-        visible: selected
+        visible: settings.AnimateHighlight === "Yes"
+        color: "transparent"
+        radius: vpx(6)
+        border.color: "#ffffff"
+        border.width: vpx(5)
+        antialiasing: true
+        opacity: 0   // start invisible so it can't pop in at peak brightness
+        SequentialAnimation on opacity {
+            running: highlightPulse.visible
+            loops: Animation.Infinite
+            PropertyAction { target: highlightPulse; property: "opacity"; value: 0 }
+            NumberAnimation { to: 1; duration: 200 }
+            NumberAnimation { to: 0; duration: 500 }
+            PauseAnimation  { duration: 200 }
+        }
     }
 
     Rectangle {

@@ -87,6 +87,18 @@ id: root
         anchors.fill: parent
         Behavior on opacity { NumberAnimation { duration: 200 } }
 
+        // Round the tile art to match the rounded selection frame (vpx(6)),
+        // so the crop-filled screenshot doesn't poke past the frame's corners.
+        layer.enabled: true
+        layer.smooth: true
+        layer.effect: OpacityMask {
+            maskSource: Rectangle {
+                width: container.width
+                height: container.height
+                radius: vpx(6)
+            }
+        }
+
         Image {
         id: screenshot
 
