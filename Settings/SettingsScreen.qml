@@ -261,7 +261,11 @@ id: root
 
         ListElement {
             settingName: "Grid Thumbnail"
-            setting: "Wide,Tall,Square,Box Art,3D Box"
+            setting: "Wide,Tall,Square"
+        }
+        ListElement {
+            settingName: "Grid art"
+            setting: "Fanart,Screenshot,Boxfront"
         }
         ListElement {
             settingName: "Number of columns"
@@ -706,12 +710,12 @@ id: root
 
                 property bool selected: ListView.isCurrentItem && settingsList.focus
                 property variant settingList: setting.split(',')
-                property int savedIndex: api.memory.get(settingName + 'Index') || 0
+                property int savedIndex: Math.min(api.memory.get(settingName + 'Index') || 0, settingList.length - 1)
 
                 Connections {
                     target: settingsList
                     onSettingsVersionChanged: {
-                        savedIndex = api.memory.get(settingName + 'Index') || 0;
+                        savedIndex = Math.min(api.memory.get(settingName + 'Index') || 0, settingList.length - 1);
                     }
                 }
                 property string itemNote: (typeof note !== 'undefined') ? note : ""
