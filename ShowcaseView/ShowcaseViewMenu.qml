@@ -668,7 +668,7 @@ id: root
 
         // ── Nav button labels — shown only for the highlighted button ─────
         Text {
-            text: "All Games"
+            text: "Full Library"
             anchors { top: homebutton.bottom; topMargin: vpx(3); horizontalCenter: homebutton.horizontalCenter }
             color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
