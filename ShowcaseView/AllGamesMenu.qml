@@ -22,6 +22,16 @@ id: root
 
     // Restores the stored list selection once after a (re)load
     property bool _restoredIndex: false
+    // Full release date as mm/dd/yyyy when month+day are known; falls back to
+    // just the year (most retro metadata only has a year), or "—" if unknown.
+    function fmtReleaseDate(g) {
+        if (!g || g.releaseYear <= 0) return "\u2014";
+        var m = g.releaseMonth, d = g.releaseDay;
+        if (m > 0 && d > 0)
+            return ("0" + m).slice(-2) + "/" + ("0" + d).slice(-2) + "/" + g.releaseYear;
+        return "" + g.releaseYear;
+    }
+
     function restoreSelection() {
         if (_restoredIndex || displayModel.count <= 0) return;
         _restoredIndex = true;
@@ -595,8 +605,8 @@ id: root
                 }
                 Column {
                     width: parent.width; spacing: vpx(1)
-                    Text { text: "Released"; color: theme.accent; font.family: subtitleFont.name; font.pixelSize: vpx(13); font.bold: true }
-                    Text { width: parent.width; text: currentGame && currentGame.releaseYear > 0 ? currentGame.releaseYear : "—"; color: theme.text; font.family: subtitleFont.name; font.pixelSize: vpx(17); elide: Text.ElideRight }
+                    Text { text: "Genre"; color: theme.accent; font.family: subtitleFont.name; font.pixelSize: vpx(13); font.bold: true }
+                    Text { width: parent.width; text: currentGame && currentGame.genre ? currentGame.genre : "—"; color: theme.text; font.family: subtitleFont.name; font.pixelSize: vpx(17); elide: Text.ElideRight }
                 }
             }
 
@@ -607,8 +617,8 @@ id: root
 
                 Column {
                     width: parent.width; spacing: vpx(1)
-                    Text { text: "Genre"; color: theme.accent; font.family: subtitleFont.name; font.pixelSize: vpx(13); font.bold: true }
-                    Text { width: parent.width; text: currentGame && currentGame.genre ? currentGame.genre : "—"; color: theme.text; font.family: subtitleFont.name; font.pixelSize: vpx(17); elide: Text.ElideRight }
+                    Text { text: "Released"; color: theme.accent; font.family: subtitleFont.name; font.pixelSize: vpx(13); font.bold: true }
+                    Text { width: parent.width; text: fmtReleaseDate(currentGame); color: theme.text; font.family: subtitleFont.name; font.pixelSize: vpx(17); elide: Text.ElideRight }
                 }
                 Column {
                     width: parent.width; spacing: vpx(1)
