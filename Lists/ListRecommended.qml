@@ -60,7 +60,7 @@ id: root
 
     property var collection: {
         return {
-            name:       "Recommended Games",
+            name:       "Games we picked for you",
             shortName:  "recommended",
             games:      gamesFiltered
         }
