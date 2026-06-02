@@ -104,17 +104,10 @@ id: root
 
         anchors.fill: parent
 
-        // Round the video preview to match the rounded tile frame (vpx(6)),
-        // so the playing thumbnail video doesn't poke past the frame corners.
-        layer.enabled: true
-        layer.smooth: true
-        layer.effect: OpacityMask {
-            maskSource: Rectangle {
-                width: videocontainer.width
-                height: videocontainer.height
-                radius: vpx(6)
-            }
-        }
+        // NOTE: do NOT wrap this in a layer/OpacityMask to round the corners.
+        // A Video/VideoOutput with PreserveAspectCrop is cropped on the GPU, and
+        // rendering it through a layer FBO breaks that fill — the clip falls back
+        // to its native aspect and shows thin pillarbox bars. Keep it unlayered.
 
         // Video
         Loader {
