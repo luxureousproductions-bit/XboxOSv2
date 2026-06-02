@@ -44,7 +44,7 @@ id: infocontainer
         elide: Text.ElideRight
     }
 
-    // Meta data – Row 1: Publisher | Developer | Released
+    // Meta data – Row 1: Publisher | Developer | Players
     RowLayout {
     id: metarow1
 
@@ -118,29 +118,24 @@ id: infocontainer
             opacity: 0.2
         }
 
-        // Release Date (equal – 1:1:1 ratio with Publisher/Developer)
+        // Players (equal – 1:1:1 ratio with Publisher/Developer)
         Item {
             Layout.fillWidth: true
             Layout.preferredWidth: vpx(100)
             Layout.fillHeight: true
 
             Text {
-            id: releaselabel
+            id: playerslabel
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                text: "Released: "
+                text: "Players: "
                 font.pixelSize: vpx(16)
                 font.family: subtitleFont.name
                 font.bold: true
                 color: theme.accent
             }
             Text {
-                anchors { left: releaselabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
-                text: {
-                    if (!gameData) return "";
-                    var d = gameData.releaseDate;
-                    if (d && !isNaN(d.valueOf())) return Qt.formatDate(d, "MM-dd-yyyy");
-                    return gameData.releaseYear > 0 ? String(gameData.releaseYear) : "";
-                }
+                anchors { left: playerslabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                text: gameData ? gameData.players : ""
                 font.pixelSize: vpx(16)
                 font.family: subtitleFont.name
                 color: theme.text
@@ -149,7 +144,7 @@ id: infocontainer
         }
     }
 
-    // Meta data – Row 2: Genre | Players | Rating
+    // Meta data – Row 2: Genre | Released | Rating
     RowLayout {
     id: metarow2
 
@@ -192,24 +187,30 @@ id: infocontainer
             opacity: 0.2
         }
 
-        // Players (equal – 1:1:1 ratio with Genre/Rating)
+        // Release Date (equal – 1:1:1 ratio with Genre/Rating)
         Item {
             Layout.fillWidth: true
             Layout.preferredWidth: vpx(100)
             Layout.fillHeight: true
 
             Text {
-            id: playerslabel
+            id: releaselabel
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                text: "Players: "
+                text: "Released: "
                 font.pixelSize: vpx(16)
                 font.family: subtitleFont.name
                 font.bold: true
                 color: theme.accent
             }
             Text {
-                anchors { left: playerslabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
-                text: gameData ? gameData.players : ""
+                anchors { left: releaselabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                text: {
+                    if (!gameData || gameData.releaseYear <= 0) return "";
+                    var m = gameData.releaseMonth, dd = gameData.releaseDay;
+                    if (m > 0 && dd > 0)
+                        return ("0" + m).slice(-2) + "/" + ("0" + dd).slice(-2) + "/" + gameData.releaseYear;
+                    return String(gameData.releaseYear);
+                }
                 font.pixelSize: vpx(16)
                 font.family: subtitleFont.name
                 color: theme.text
