@@ -108,6 +108,29 @@ id: root
             }
         }
 
+        // Name bar — shows the game title on highlight only. Lives inside the
+        // rounded container, so its bottom corners follow the tile radius (square top).
+        Rectangle {
+        id: titleBar
+            z: 20
+            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+            height: vpx(36)
+            color: "#99000000"            // ~60% black; text stays full-opacity
+            opacity: selected ? 1 : 0
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+            Text {
+                anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
+                text: modelData ? modelData.title : ""
+                color: "white"; font.family: subtitleFont.name
+                font.pixelSize: vpx(11); font.bold: true
+                wrapMode: Text.WordWrap
+                maximumLineCount: 2
+                elide: Text.ElideRight
+                horizontalAlignment: Text.AlignLeft
+            }
+        }
+
         Image {
         id: screenshot
 

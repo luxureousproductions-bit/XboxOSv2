@@ -58,34 +58,4 @@ id: root
         }
     }
 
-    Rectangle {
-    id: titlecontainer
-
-        width: bubbletitle.contentWidth + vpx(20)
-        height: bubbletitle.contentHeight + vpx(8)
-        color: theme.secondary
-        anchors {
-            top: border.bottom; topMargin: vpx(7)
-        }
-        anchors.horizontalCenter: parent.horizontalCenter
-        radius: height/2
-        opacity: selected ? 1 : 0
-        Behavior on opacity { NumberAnimation { duration: 100 } }
-        visible: opacity !== 0
-
-        Text {
-        id: bubbletitle
-
-            text: modelData.title
-            color: theme.text
-            font {
-                family: subtitleFont.name
-                pixelSize: vpx(14)
-                bold: true
-            }
-            elide: Text.ElideRight
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.verticalCenter: parent.verticalCenter
-        }
-    }
 }
