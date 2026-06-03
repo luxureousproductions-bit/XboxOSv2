@@ -31,7 +31,13 @@ id: root
     id: mostPlayedGames
 
         sourceModel: api.allGames
-        sorters: RoleSorter { roleName: "playCount"; sortOrder: Qt.DescendingOrder }
+        // Primary: total time played (seconds), most first.
+        // Tie-break: number of launches, most first (covers games with equal or
+        // zero playTime so they still order sensibly).
+        sorters: [
+            RoleSorter { roleName: "playTime";  sortOrder: Qt.DescendingOrder }
+            RoleSorter { roleName: "playCount"; sortOrder: Qt.DescendingOrder }
+        ]
         filters: ExpressionFilter {
             expression: {
                 var genres = model.genreList;
