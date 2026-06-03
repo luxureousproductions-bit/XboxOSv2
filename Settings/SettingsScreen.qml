@@ -183,7 +183,7 @@ id: root
         }
         ListElement {
             settingName: "System sort"
-            setting: "Alphabetical,Release year,Manufacturer"
+            setting: "Alphabetical (A-Z),Alphabetical (Z-A),Release year (oldest),Release year (newest),Manufacturer,Game count (most),Game count (fewest),Default"
         }
         ListElement {
             settingName: "Number of games showcased"
