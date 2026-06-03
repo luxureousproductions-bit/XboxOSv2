@@ -67,6 +67,57 @@ id: root
     property var collection5: getCollection(settings.ShowcaseCollection5, settings.ShowcaseCollection5_Thumbnail)
     property var collection6: getCollection(settings.ShowcaseCollection6, settings.ShowcaseCollection6_Thumbnail)
 
+    // Sorted mapping of strip position -> api.collections index, per the
+    // "System sort" setting. The system tiles read api.collections THROUGH this
+    // array, so they can be ordered alphabetically, by release year, or by
+    // manufacturer+year without altering Pegasus's own collection order.
+    property var sortedColl: buildSortedColl()
+    function buildSortedColl() {
+        var n = api.collections.count;
+        var items = [];
+        for (var i = 0; i < n; i++) {
+            var c = api.collections.get(i);
+            items.push({
+                idx:   i,
+                name:  (c.name || "").toLowerCase(),
+                year:  Utils.systemYear(c.shortName),
+                maker: Utils.systemMaker(c.shortName),
+                pin:   systemPinRank(c.shortName, c.name)
+            });
+        }
+        var mode = settings.SystemSort;
+        items.sort(function(a, b) {
+            // Pinned systems (Android, then Android games) always lead, in pin order,
+            // regardless of the chosen sort.
+            if (a.pin !== b.pin) {
+                if (a.pin === -1) return 1;
+                if (b.pin === -1) return -1;
+                return a.pin - b.pin;
+            }
+            if (a.pin !== -1) return 0;
+            if (mode === "Release year") {
+                if (a.year !== b.year) return a.year - b.year;
+            } else if (mode === "Manufacturer") {
+                if (a.maker !== b.maker) return a.maker < b.maker ? -1 : 1;
+                if (a.year !== b.year) return a.year - b.year;
+            }
+            // Alphabetical (default) and universal tie-break
+            return a.name < b.name ? -1 : (a.name > b.name ? 1 : 0);
+        });
+        var arr = [];
+        for (var k = 0; k < items.length; k++) arr.push(items[k].idx);
+        return arr;
+    }
+    // Returns a pin rank for systems that must always lead the list (0 = first).
+    // Android, then Android games; -1 means "not pinned" (normal sort).
+    function systemPinRank(sn, nm) {
+        var s = (sn || "").toLowerCase();
+        var nmm = (nm || "").toLowerCase();
+        if (s === "android" || nmm === "android") return 0;
+        if (s === "apps" || s === "androidgames" || nmm === "apps" || nmm === "android games" || nmm === "androidgames") return 1;
+        return -1;
+    }
+
     function getCollection(collectionName, collectionThumbnail) {
         var collection = {
             enabled: true,
@@ -882,7 +933,7 @@ id: root
                     if (platformlist.currentIndex <= 0) {
                         if (platformlist.resumeGame) highlightedGame = platformlist.resumeGame;
                     } else {
-                        var coll = api.collections.get(platformlist.currentIndex - 1);
+                        var coll = api.collections.get(root.sortedColl[platformlist.currentIndex - 1]);
                         if (coll && coll.games.count > 0) {
                             var randomIdx = Math.floor(Math.random() * coll.games.count);
                             highlightedGame = coll.games.get(randomIdx);
@@ -931,7 +982,7 @@ id: root
                     if (currentIndex <= 0) {
                         if (resumeGame) highlightedGame = resumeGame;
                     } else {
-                        var coll = api.collections.get(currentIndex - 1);
+                        var coll = api.collections.get(root.sortedColl[currentIndex - 1]);
                         if (coll && coll.games.count > 0) {
                             var randomIdx = Math.floor(Math.random() * coll.games.count);
                             highlightedGame = coll.games.get(randomIdx);
@@ -940,7 +991,7 @@ id: root
                 }
             }
 
-            property int savedIndex: currentCollectionIndex + 1   // strip index (hero = 0)
+            property int savedIndex: root.sortedColl.indexOf(currentCollectionIndex) + 1   // strip index (hero = 0)
             onFocusChanged: {
                 if (focus) {
                     currentIndex = savedIndex;
@@ -948,7 +999,7 @@ id: root
                         if (currentIndex <= 0) {
                             if (resumeGame) highlightedGame = resumeGame;
                         } else {
-                            var coll = api.collections.get(currentIndex - 1);
+                            var coll = api.collections.get(root.sortedColl[currentIndex - 1]);
                             if (coll && coll.games.count > 0) {
                                 var randomIdx = Math.floor(Math.random() * coll.games.count);
                                 highlightedGame = coll.games.get(randomIdx);
@@ -967,7 +1018,7 @@ id: root
             delegate: Rectangle {
                 id: tile
                 property bool isHero: index === 0
-                property var  coll: isHero ? null : api.collections.get(index - 1)
+                property var  coll: isHero ? null : api.collections.get(root.sortedColl[index - 1])
                 property bool selected: ListView.isCurrentItem && platformlist.focus
                 // Xbox-style: tiles to either side of the selected one slide a bit to make room
                 property real navShift: {
@@ -1015,20 +1066,23 @@ id: root
                     Image {
                         id: heroBg
                         anchors.fill: parent
-                        // Box art is stretched to fill the whole square tile (full top/bottom
-                        // visible, widened side-to-side). Fanart/screenshots crop-fill instead.
-                        fillMode: settings.HeroBoxArt === "Boxfront" ? Image.Stretch
-                                                                     : Image.PreserveAspectCrop
+                        // All art types crop-fill the square at their native aspect (box art
+                        // keeps its proportions, with top/bottom cropped) — no stretching.
+                        fillMode: Image.PreserveAspectCrop
                         asynchronous: true; smooth: true
                         source: heroArtSource(platformlist.resumeGame)
                         opacity: selected ? 1 : 0.5
                     }
 
                     Rectangle {
-                        // Full-width bar across the bottom. No radius — the parent OpacityMask
-                        // clips the bottom corners to match tile.radius automatically.
+                        // Full-width bar across the bottom — shown only on highlight now.
+                        // No radius — the parent OpacityMask clips the bottom corners to
+                        // match tile.radius automatically.
                         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                        height: vpx(36); color: "black"; opacity: 0.6
+                        height: vpx(36); color: "#99000000"
+                        opacity: selected ? 1 : 0
+                        visible: opacity > 0
+                        Behavior on opacity { NumberAnimation { duration: 120 } }
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
                             text: platformlist.resumeGame ? platformlist.resumeGame.title : ""
@@ -1106,6 +1160,27 @@ id: root
                     verticalAlignment: Text.AlignVCenter
                 }
 
+                // System name bar (experiment) — appears on highlight with the system name
+                Rectangle {
+                    visible: !isHero && opacity > 0
+                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                    height: vpx(36)
+                    radius: vpx(6)
+                    color: "#99000000"
+                    opacity: (!isHero && selected) ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 120 } }
+                    Text {
+                        anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
+                        text: coll ? coll.name : ""
+                        color: "white"; font.family: subtitleFont.name
+                        font.pixelSize: vpx(11); font.bold: true
+                        wrapMode: Text.WordWrap
+                        maximumLineCount: 2
+                        elide: Text.ElideRight
+                        horizontalAlignment: Text.AlignLeft
+                    }
+                }
+
                 // Accent frame: hero when selected; platform when selected AND system background loaded
                 // (platforms without a background keep the current accent-fill look instead)
                 Rectangle {
@@ -1144,7 +1219,7 @@ id: root
                     onClicked: {
                         if (selected) {
                             if (isHero) { if (platformlist.resumeGame) { playAccept(); platformlist.resumeGame.launch(); } }
-                            else { currentCollectionIndex = index - 1; softwareScreen(); }
+                            else { currentCollectionIndex = root.sortedColl[index - 1]; softwareScreen(); }
                         } else {
                             mainList.currentIndex = topRow.ObjectModel.index;
                             platformlist.currentIndex = index;
@@ -1170,7 +1245,7 @@ id: root
                     if (currentIndex <= 0) {
                         if (resumeGame) { playAccept(); resumeGame.launch(); }
                     } else {
-                        currentCollectionIndex = currentIndex - 1;
+                        currentCollectionIndex = root.sortedColl[currentIndex - 1];
                         softwareScreen();
                     }
                 }
