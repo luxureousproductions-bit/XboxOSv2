@@ -278,7 +278,7 @@ id: root
         smooth: true
         opacity: 0
         z: 0
-        Behavior on opacity { PropertyAnimation { duration: 400 } }
+        Behavior on opacity { PropertyAnimation { duration: 700 } }
     }
 
     Image {
@@ -289,7 +289,7 @@ id: root
         smooth: true
         opacity: 0
         z: 0
-        Behavior on opacity { PropertyAnimation { duration: 400 } }
+        Behavior on opacity { PropertyAnimation { duration: 700 } }
     }
 
     // Dim overlay so content stays readable
@@ -961,22 +961,26 @@ id: root
             highlightMoveDuration: 100
             keyNavigationWraps: false
             
+            // Whole-tile alignment of the scroll position. Shared by both the live
+            // navigation handler AND the first-load positioning so the gap between
+            // the hero box and the system tiles is identical at all times.
+            function alignToIndex(idx) {
+                var unit = topRow.tileSz + spacing;
+                if (unit <= 0) return;
+                var visibleCount = Math.max(1, Math.floor((width + spacing) / unit));
+                var firstVisible = Math.round(contentX / unit);
+                if (idx < firstVisible)
+                    firstVisible = idx;
+                else if (idx > firstVisible + visibleCount - 1)
+                    firstVisible = idx - visibleCount + 1;
+                firstVisible = Math.max(0, firstVisible);
+                contentX = firstVisible * unit;
+            }
+
             onCurrentIndexChanged: {
                 if (currentIndex < 0) return;   // deselected (focus moved away) — leave the scroll position alone
-                // Align the list to whole-tile boundaries so the leftmost tile is
-                // never half-cut into the hero box, while keeping the current tile
-                // fully visible (so the rightmost tile isn't cut off either)
-                var unit = topRow.tileSz + spacing;
-                if (unit > 0) {
-                    var visibleCount = Math.max(1, Math.floor((width + spacing) / unit));
-                    var firstVisible = Math.round(contentX / unit);
-                    if (currentIndex < firstVisible)
-                        firstVisible = currentIndex;
-                    else if (currentIndex > firstVisible + visibleCount - 1)
-                        firstVisible = currentIndex - visibleCount + 1;
-                    firstVisible = Math.max(0, firstVisible);
-                    contentX = firstVisible * unit;
-                }
+                // Align the list to whole-tile boundaries (same routine used on load).
+                alignToIndex(currentIndex);
                 // Update background fanart for the highlighted strip item
                 if (topRow.selected && settings.ShowcaseBackgroundArt === "Yes") {
                     if (currentIndex <= 0) {
@@ -1012,7 +1016,7 @@ id: root
                 }
             }
 
-            Component.onCompleted: positionViewAtIndex(savedIndex, ListView.End)
+            Component.onCompleted: alignToIndex(savedIndex)
 
             model: api.collections.count + 1   // index 0 = hero, 1.. = platforms
             delegate: Rectangle {
@@ -1022,7 +1026,12 @@ id: root
                 property bool selected: ListView.isCurrentItem && platformlist.focus
                 // Xbox-style: tiles to either side of the selected one slide a bit to make room
                 property real navShift: {
-                    if (platformlist.currentIndex < 0 || index === platformlist.currentIndex) return 0;
+                    // Only make room when a tile is actually enlarged — i.e. the list is
+                    // focused. On first load the hero is the current item but isn't grown
+                    // yet (focus hasn't arrived), so shifting the tiles here opened an
+                    // empty "room" gap beside the hero until the first scroll. Gating on
+                    // focus keeps the spacing identical at all times.
+                    if (!platformlist.focus || platformlist.currentIndex < 0 || index === platformlist.currentIndex) return 0;
                     var room = topRow.tileSz * 0.125;   // half of the 25% growth
                     return (index < platformlist.currentIndex) ? -room : room;
                 }
@@ -1071,6 +1080,24 @@ id: root
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true; smooth: true
                         source: heroArtSource(platformlist.resumeGame)
+                        opacity: selected ? 1 : 0.5
+                    }
+
+                    // Game logo overlay — only for the Screenshot / Fanart hero art modes.
+                    // (Boxfront already shows the title on the box, so it gets no logo.)
+                    Image {
+                        id: heroLogo
+                        anchors.fill: parent
+                        anchors.margins: vpx(16)
+                        anchors.bottomMargin: vpx(42)   // leave room for the title bar
+                        fillMode: Image.PreserveAspectFit
+                        horizontalAlignment: Image.AlignHCenter
+                        verticalAlignment: Image.AlignVCenter
+                        asynchronous: true; smooth: true
+                        source: (platformlist.resumeGame && platformlist.resumeGame.assets.logo)
+                                ? platformlist.resumeGame.assets.logo : ""
+                        visible: source != ""
+                                 && (settings.HeroBoxArt === "Screenshot" || settings.HeroBoxArt === "Fanart")
                         opacity: selected ? 1 : 0.5
                     }
 
