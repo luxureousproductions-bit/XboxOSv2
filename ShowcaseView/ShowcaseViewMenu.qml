@@ -82,6 +82,7 @@ id: root
                 name:  (c.name || "").toLowerCase(),
                 year:  Utils.systemYear(c.shortName),
                 maker: Utils.systemMaker(c.shortName),
+                count: c.games ? c.games.count : 0,
                 pin:   systemPinRank(c.shortName, c.name)
             });
         }
@@ -95,14 +96,47 @@ id: root
                 return a.pin - b.pin;
             }
             if (a.pin !== -1) return 0;
-            if (mode === "Release year") {
-                if (a.year !== b.year) return a.year - b.year;
-            } else if (mode === "Manufacturer") {
-                if (a.maker !== b.maker) return a.maker < b.maker ? -1 : 1;
-                if (a.year !== b.year) return a.year - b.year;
+
+            var alpha = (a.name < b.name) ? -1 : (a.name > b.name ? 1 : 0);
+
+            if (mode === "Alphabetical (Z-A)")
+                return -alpha;
+
+            // older labels "Release year" map to oldest-first
+            if (mode === "Release year (oldest)" || mode === "Release year") {
+                if (a.year !== b.year) {
+                    if (a.year === 9999) return 1;   // unknown year sinks to the end
+                    if (b.year === 9999) return -1;
+                    return a.year - b.year;          // oldest first
+                }
+                return alpha;
             }
-            // Alphabetical (default) and universal tie-break
-            return a.name < b.name ? -1 : (a.name > b.name ? 1 : 0);
+            if (mode === "Release year (newest)") {
+                if (a.year !== b.year) {
+                    if (a.year === 9999) return 1;   // unknown year sinks to the end
+                    if (b.year === 9999) return -1;
+                    return b.year - a.year;          // newest first
+                }
+                return alpha;
+            }
+            if (mode === "Manufacturer") {
+                if (a.maker !== b.maker) return a.maker < b.maker ? -1 : 1;  // "zzz" unknown sinks
+                if (a.year !== b.year) return a.year - b.year;
+                return alpha;
+            }
+            if (mode === "Game count (most)") {
+                if (a.count !== b.count) return b.count - a.count;
+                return alpha;
+            }
+            if (mode === "Game count (fewest)") {
+                if (a.count !== b.count) return a.count - b.count;
+                return alpha;
+            }
+            if (mode === "Default") {
+                return a.idx - b.idx;   // Pegasus's own collection order
+            }
+            // Alphabetical (A-Z) — default (also catches the old "Alphabetical" value)
+            return alpha;
         });
         var arr = [];
         for (var k = 0; k < items.length; k++) arr.push(items[k].idx);
