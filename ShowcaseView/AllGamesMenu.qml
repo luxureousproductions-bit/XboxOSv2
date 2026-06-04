@@ -119,16 +119,16 @@ id: root
         if (three) return three;                       // 3D box
         return currentGame.assets.boxFront || "";      // 2D fallback
     }
-    // SNES & N64 boxes are oversized — scale just those two down a bit
-    property real boxScale: {
-        if (!currentGame || currentGame.collections.count === 0) return 1.0;
+    // SNES & N64 3D box scans are stored landscape — rotate them upright (tall) so
+    // they match their miximages. Detected the same way the old scale-down was.
+    property bool boxRotated: {
+        if (!currentGame || currentGame.collections.count === 0) return false;
         var c = currentGame.collections.get(0);
         var s = ((c.shortName ? c.shortName : "") + " " + (c.name ? c.name : "")).toLowerCase();
-        if (s.indexOf("snes") >= 0 || s.indexOf("super nintendo") >= 0
-            || s.indexOf("n64") >= 0 || s.indexOf("nintendo 64") >= 0)
-            return 0.88;
-        return 1.0;
+        return (s.indexOf("snes") >= 0 || s.indexOf("super nintendo") >= 0
+                || s.indexOf("n64") >= 0 || s.indexOf("nintendo 64") >= 0);
     }
+    property real boxScale: 1.0   // full size (the old SNES/N64 0.88 shrink removed)
 
     // ── Video preview (plays inside the screenshot frame after a brief rest) ──
     property string videoSource: (currentGame && currentGame.assets && currentGame.assets.videos && currentGame.assets.videos.length > 0) ? currentGame.assets.videos[0] : ""
@@ -534,17 +534,24 @@ id: root
         // 3D box (2D fallback) — straddles the screenshot's bottom-left corner
         Image {
         id: artBoxImg
-            height: shotFrame.height * 0.66 * boxScale
-            width:  shotFrame.width  * 0.58 * boxScale
+            // For rotated systems the pre-rotation box is laid out landscape (w/h
+            // swapped) so that after the 90° turn it lands in the same tall footprint.
+            width:  boxRotated ? shotFrame.height * 0.66 * boxScale : shotFrame.width  * 0.58 * boxScale
+            height: boxRotated ? shotFrame.width  * 0.58 * boxScale : shotFrame.height * 0.66 * boxScale
             anchors {
                 horizontalCenter: shotFrame.left
                 bottom: shotFrame.bottom; bottomMargin: vpx(2)
             }
+            rotation: boxRotated ? 90 : 0       // 90 deg clockwise -> SNES/N64 stand tall
+            transformOrigin: Item.Center
             asynchronous: true
             source: artBoxSource
             fillMode: Image.PreserveAspectFit
             horizontalAlignment: Image.AlignHCenter
-            verticalAlignment: Image.AlignBottom
+            // Rotated boxes center vertically (-> horizontal centering once turned),
+            // so they sit centered on the screenshot's left edge. Upright boxes keep
+            // sitting on the bottom as before.
+            verticalAlignment: boxRotated ? Image.AlignVCenter : Image.AlignBottom
             smooth: true
             visible: status === Image.Ready
             opacity: hideBoxForVideo ? 0.0 : 1.0
