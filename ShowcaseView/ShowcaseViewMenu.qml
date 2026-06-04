@@ -1157,8 +1157,8 @@ id: root
                         // No radius — the parent OpacityMask clips the bottom corners to
                         // match tile.radius automatically.
                         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                        height: Math.max(vpx(36), heroBarText.contentHeight + vpx(16)); color: "#99000000"
-                        opacity: selected ? 1 : 0
+                        height: Math.max(vpx(36), topRow.tileSz * 0.16, heroBarText.contentHeight + vpx(16)); color: "#99000000"
+                        opacity: (selected || settings.AlwaysShowTitles === "Yes") ? 1 : 0
                         visible: opacity > 0
                         Behavior on opacity { NumberAnimation { duration: 120 } }
                         Text {
@@ -1166,7 +1166,7 @@ id: root
                             id: heroBarText
                             text: platformlist.resumeGame ? platformlist.resumeGame.title : ""
                             color: "white"; font.family: subtitleFont.name
-                            font.pixelSize: vpx(11); font.bold: true
+                            font.pixelSize: Math.max(vpx(11), topRow.tileSz * 0.05); font.bold: true
                             wrapMode: Text.WordWrap
                             maximumLineCount: 2
                             elide: Text.ElideRight
@@ -1243,17 +1243,17 @@ id: root
                 Rectangle {
                     visible: !isHero && opacity > 0
                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                    height: Math.max(vpx(36), sysBarText.contentHeight + vpx(16))   // grows for 2-line names
+                    height: Math.max(vpx(36), topRow.tileSz * 0.16, sysBarText.contentHeight + vpx(16))   // grows for 2-line names
                     radius: vpx(6)
                     color: "#99000000"
-                    opacity: (!isHero && selected) ? 1 : 0
+                    opacity: (!isHero && (selected || settings.AlwaysShowTitles === "Yes")) ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 120 } }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
                         id: sysBarText
                         text: coll ? coll.name : ""
                         color: "white"; font.family: subtitleFont.name
-                        font.pixelSize: vpx(11); font.bold: true
+                        font.pixelSize: Math.max(vpx(11), topRow.tileSz * 0.05); font.bold: true
                         wrapMode: Text.WordWrap
                         maximumLineCount: 2
                         elide: Text.ElideRight
