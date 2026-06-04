@@ -251,6 +251,48 @@ id: infocontainer
         }
     }
 
+    // Meta data – Row 3: Last Played
+    RowLayout {
+    id: metarow3
+
+        height: vpx(42)
+        anchors {
+            bottom: parent.bottom
+            left: parent.left
+            right: parent.right
+        }
+        spacing: 0
+
+        // Last Played (single field, left-aligned)
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredWidth: vpx(100)
+            Layout.fillHeight: true
+
+            Text {
+            id: lastplayedlabel
+                anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                text: "Last Played: "
+                font.pixelSize: vpx(16)
+                font.family: subtitleFont.name
+                font.bold: true
+                color: theme.accent
+            }
+            Text {
+                anchors { left: lastplayedlabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                text: {
+                    if (!gameData || !gameData.lastPlayed || isNaN(gameData.lastPlayed.getTime())) return "Never";
+                    var d = gameData.lastPlayed;
+                    return ("0" + (d.getMonth() + 1)).slice(-2) + "/" + ("0" + d.getDate()).slice(-2) + "/" + d.getFullYear();
+                }
+                font.pixelSize: vpx(16)
+                font.family: subtitleFont.name
+                color: theme.text
+                elide: Text.ElideRight
+            }
+        }
+    }
+
     // Description
     PegasusUtils.AutoScroll
     {
@@ -260,7 +302,7 @@ id: infocontainer
             left: parent.left; 
             right: parent.right;
             top: metarow2.bottom
-            bottom: parent.bottom;
+            bottom: metarow3.top; bottomMargin: vpx(6)
         }
 
         Text {
