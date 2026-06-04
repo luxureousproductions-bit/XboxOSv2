@@ -114,13 +114,14 @@ id: root
         id: titleBar
             z: 20
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-            height: vpx(36)
+            height: Math.max(vpx(36), nameBarText.contentHeight + vpx(16))   // grows for 2-line titles
             color: "#99000000"            // ~60% black; text stays full-opacity
             opacity: selected ? 1 : 0
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
             Text {
                 anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
+                id: nameBarText
                 text: modelData ? modelData.title : ""
                 color: "white"; font.family: subtitleFont.name
                 font.pixelSize: vpx(11); font.bold: true
