@@ -116,7 +116,7 @@ id: root
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
             height: Math.max(vpx(36), container.height * 0.16, nameBarText.contentHeight + vpx(16))   // scales with tile size; grows for 2-line titles
             color: "#99000000"            // ~60% black; text stays full-opacity
-            opacity: selected ? 1 : 0
+            opacity: (selected || settings.AlwaysShowTitles === "Yes") ? 1 : 0
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
             Text {
@@ -224,7 +224,7 @@ id: root
         width: parent.width
 
         opacity: 0.2
-        visible: settings.AlwaysShowTitles === "Yes" && !selected
+        visible: false   // old faint under-tile title; replaced by the on-tile black bar
     }
 
     Text {
