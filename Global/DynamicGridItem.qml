@@ -114,7 +114,7 @@ id: root
         id: titleBar
             z: 20
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-            height: Math.max(vpx(36), nameBarText.contentHeight + vpx(16))   // grows for 2-line titles
+            height: Math.max(vpx(36), container.height * 0.16, nameBarText.contentHeight + vpx(16))   // scales with tile size; grows for 2-line titles
             color: "#99000000"            // ~60% black; text stays full-opacity
             opacity: selected ? 1 : 0
             visible: opacity > 0
@@ -124,7 +124,7 @@ id: root
                 id: nameBarText
                 text: modelData ? modelData.title : ""
                 color: "white"; font.family: subtitleFont.name
-                font.pixelSize: vpx(11); font.bold: true
+                font.pixelSize: Math.max(vpx(11), container.height * 0.05); font.bold: true
                 wrapMode: Text.WordWrap
                 maximumLineCount: 2
                 elide: Text.ElideRight
