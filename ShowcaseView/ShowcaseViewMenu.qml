@@ -1006,8 +1006,10 @@ id: root
                 if (unit <= 0) return;
                 var visibleCount = Math.max(1, Math.floor((width + spacing) / unit));
                 var firstVisible = Math.round(contentX / unit);
-                if (idx < firstVisible)
-                    firstVisible = idx;
+                if (idx <= firstVisible)
+                    firstVisible = idx - 1;          // keep one tile of lead-in on the left (shift as soon
+                                                     // as the tile reaches the edge) so the grown tile's
+                                                     // left edge isn't clipped at the margin
                 else if (idx > firstVisible + visibleCount - 1)
                     firstVisible = idx - visibleCount + 1;
                 firstVisible = Math.max(0, firstVisible);
@@ -1155,12 +1157,13 @@ id: root
                         // No radius — the parent OpacityMask clips the bottom corners to
                         // match tile.radius automatically.
                         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                        height: vpx(36); color: "#99000000"
+                        height: Math.max(vpx(36), heroBarText.contentHeight + vpx(16)); color: "#99000000"
                         opacity: selected ? 1 : 0
                         visible: opacity > 0
                         Behavior on opacity { NumberAnimation { duration: 120 } }
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
+                            id: heroBarText
                             text: platformlist.resumeGame ? platformlist.resumeGame.title : ""
                             color: "white"; font.family: subtitleFont.name
                             font.pixelSize: vpx(11); font.bold: true
@@ -1240,13 +1243,14 @@ id: root
                 Rectangle {
                     visible: !isHero && opacity > 0
                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                    height: vpx(36)
+                    height: Math.max(vpx(36), sysBarText.contentHeight + vpx(16))   // grows for 2-line names
                     radius: vpx(6)
                     color: "#99000000"
                     opacity: (!isHero && selected) ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 120 } }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
+                        id: sysBarText
                         text: coll ? coll.name : ""
                         color: "white"; font.family: subtitleFont.name
                         font.pixelSize: vpx(11); font.bold: true
