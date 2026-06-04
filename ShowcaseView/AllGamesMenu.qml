@@ -32,6 +32,13 @@ id: root
         return "" + g.releaseYear;
     }
 
+    // Last played as mm/dd/yyyy, or "Never" if the game has no play history.
+    function fmtLastPlayed(g) {
+        if (!g || !g.lastPlayed || isNaN(g.lastPlayed.getTime())) return "Never";
+        var d = g.lastPlayed;
+        return ("0" + (d.getMonth() + 1)).slice(-2) + "/" + ("0" + d.getDate()).slice(-2) + "/" + d.getFullYear();
+    }
+
     function restoreSelection() {
         if (_restoredIndex || displayModel.count <= 0) return;
         _restoredIndex = true;
@@ -575,7 +582,7 @@ id: root
             right: parent.right; rightMargin: globalMargin
             bottom: parent.bottom; bottomMargin: globalMargin + helpMargin
         }
-        height: vpx(150)
+        height: vpx(170)
         visible: currentGame ? true : false
 
         // Accent line above the metadata
@@ -584,51 +591,116 @@ id: root
             height: vpx(3); color: theme.accent
         }
 
-        Row {
-            anchors { top: parent.top; topMargin: vpx(16); left: parent.left; right: parent.right; bottom: parent.bottom }
-            spacing: vpx(30)
+        Column {
+            anchors { top: parent.top; topMargin: vpx(14); left: parent.left; right: parent.right }
+            spacing: 0
 
-            // Left column
-            Column {
-                width: (parent.width - vpx(30)) / 2
-                spacing: vpx(11)
-
-                Column {
-                    width: parent.width; spacing: vpx(1)
-                    Text { text: "Publisher"; color: theme.accent; font.family: subtitleFont.name; font.pixelSize: vpx(13); font.bold: true }
-                    Text { width: parent.width; text: currentGame && currentGame.publisher ? currentGame.publisher : "—"; color: theme.text; font.family: subtitleFont.name; font.pixelSize: vpx(17); elide: Text.ElideRight }
+            // Row 1: Publisher | Developer | Players
+            RowLayout {
+                width: parent.width; height: vpx(42); spacing: vpx(18)
+                Item {
+                    Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
+                    Text { id: agPubLabel
+                        anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                        text: "Publisher: "; font.pixelSize: vpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
+                    }
+                    Text {
+                        anchors { left: agPubLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                        text: currentGame && currentGame.publisher ? currentGame.publisher : "—"
+                        font.pixelSize: vpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                    }
                 }
-                Column {
-                    width: parent.width; spacing: vpx(1)
-                    Text { text: "Developer"; color: theme.accent; font.family: subtitleFont.name; font.pixelSize: vpx(13); font.bold: true }
-                    Text { width: parent.width; text: currentGame && currentGame.developer ? currentGame.developer : "—"; color: theme.text; font.family: subtitleFont.name; font.pixelSize: vpx(17); elide: Text.ElideRight }
+                Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
+                Item {
+                    Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
+                    Text { id: agDevLabel
+                        anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                        text: "Developer: "; font.pixelSize: vpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
+                    }
+                    Text {
+                        anchors { left: agDevLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                        text: currentGame && currentGame.developer ? currentGame.developer : "—"
+                        font.pixelSize: vpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                    }
                 }
-                Column {
-                    width: parent.width; spacing: vpx(1)
-                    Text { text: "Genre"; color: theme.accent; font.family: subtitleFont.name; font.pixelSize: vpx(13); font.bold: true }
-                    Text { width: parent.width; text: currentGame && currentGame.genre ? currentGame.genre : "—"; color: theme.text; font.family: subtitleFont.name; font.pixelSize: vpx(17); elide: Text.ElideRight }
+                Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
+                Item {
+                    Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
+                    Text { id: agPlayersLabel
+                        anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                        text: "Players: "; font.pixelSize: vpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
+                    }
+                    Text {
+                        anchors { left: agPlayersLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                        text: currentGame && currentGame.players > 0 ? currentGame.players : "—"
+                        font.pixelSize: vpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                    }
                 }
             }
 
-            // Right column
-            Column {
-                width: (parent.width - vpx(30)) / 2
-                spacing: vpx(11)
+            // extra gap before Row 2 ("down 1")
+            Item { width: 1; height: vpx(10) }
 
-                Column {
-                    width: parent.width; spacing: vpx(1)
-                    Text { text: "Released"; color: theme.accent; font.family: subtitleFont.name; font.pixelSize: vpx(13); font.bold: true }
-                    Text { width: parent.width; text: fmtReleaseDate(currentGame); color: theme.text; font.family: subtitleFont.name; font.pixelSize: vpx(17); elide: Text.ElideRight }
+            // Row 2: Genre | Released | Rating
+            RowLayout {
+                width: parent.width; height: vpx(42); spacing: vpx(18)
+                Item {
+                    Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
+                    Text { id: agGenreLabel
+                        anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                        text: "Genre: "; font.pixelSize: vpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
+                    }
+                    Text {
+                        anchors { left: agGenreLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                        text: currentGame && currentGame.genre ? currentGame.genre : "—"
+                        font.pixelSize: vpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                    }
                 }
-                Column {
-                    width: parent.width; spacing: vpx(1)
-                    Text { text: "Players"; color: theme.accent; font.family: subtitleFont.name; font.pixelSize: vpx(13); font.bold: true }
-                    Text { width: parent.width; text: currentGame && currentGame.players > 0 ? currentGame.players + "P" : "—"; color: theme.text; font.family: subtitleFont.name; font.pixelSize: vpx(17); elide: Text.ElideRight }
+                Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
+                Item {
+                    Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
+                    Text { id: agRelLabel
+                        anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                        text: "Released: "; font.pixelSize: vpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
+                    }
+                    Text {
+                        anchors { left: agRelLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                        text: fmtReleaseDate(currentGame)
+                        font.pixelSize: vpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                    }
                 }
-                Column {
-                    width: parent.width; spacing: vpx(1)
-                    Text { text: "Rating"; color: theme.accent; font.family: subtitleFont.name; font.pixelSize: vpx(13); font.bold: true }
-                    Text { width: parent.width; text: currentGame && currentGame.rating > 0 ? (currentGame.rating * 10).toFixed(1) : "—"; color: theme.text; font.family: subtitleFont.name; font.pixelSize: vpx(17); elide: Text.ElideRight }
+                Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
+                Item {
+                    Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
+                    Text { id: agRatingLabel
+                        anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                        text: "Rating: "; font.pixelSize: vpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
+                    }
+                    Text {
+                        anchors { left: agRatingLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                        text: currentGame && currentGame.rating > 0 ? (currentGame.rating * 10).toFixed(1) : "—"
+                        font.pixelSize: vpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                    }
+                }
+            }
+
+            // extra gap before Row 3 ("down 2")
+            Item { width: 1; height: vpx(16) }
+
+            // Row 3: Last Played (single field, left-aligned)
+            RowLayout {
+                width: parent.width; height: vpx(42); spacing: vpx(18)
+                Item {
+                    Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
+                    Text { id: agLastLabel
+                        anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                        text: "Last Played: "; font.pixelSize: vpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
+                    }
+                    Text {
+                        anchors { left: agLastLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                        text: fmtLastPlayed(currentGame)
+                        font.pixelSize: vpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                    }
                 }
             }
         }
