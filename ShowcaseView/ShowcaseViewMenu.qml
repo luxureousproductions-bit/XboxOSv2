@@ -952,11 +952,14 @@ id: root
             property int myIndex: ObjectModel.index
             // Hero box / system tile size. NOT tied to any collection row.
             // NOTE: the divisor is inverse — HIGHER value = SMALLER tiles.
-            // 6.0 == exact "Square" collection size; bumped to 6.3 to trim it
-            // down a hair so it visually matches the square row. Raise this for
-            // smaller tiles, lower it for bigger.
-            property real tileDivisor: 6.35
+            // tileDivisor and growScale are tuned TOGETHER so the GROWN (selected)
+            // size stays constant while the RESTING tile shrinks: the peak,
+            // tileSz * growScale, is held. ~40% growth here (Xbox-like). To shrink
+            // the resting tile further, raise tileDivisor AND raise growScale by
+            // the same ratio to keep the same peak (peak ≈ width/5.08 * 1.25).
+            property real tileDivisor: 7.62
             property real tileSz: (root.width - globalMargin * 2) / tileDivisor
+            property real growScale: 1.50
             focus: selected
             width: root.width
             height: tileSz + globalMargin * 2
@@ -1066,17 +1069,29 @@ id: root
                     // empty "room" gap beside the hero until the first scroll. Gating on
                     // focus keeps the spacing identical at all times.
                     if (!platformlist.focus || platformlist.currentIndex < 0 || index === platformlist.currentIndex) return 0;
-                    var room = topRow.tileSz * 0.125;   // half of the 25% growth
-                    return (index < platformlist.currentIndex) ? -room : room;
+                    var sel  = platformlist.currentIndex;
+                    var last = platformlist.count - 1;
+                    var grow = topRow.tileSz * (topRow.growScale - 1);   // full growth, in px
+                    // The first (hero) and last tiles grow toward the INSIDE only (outer
+                    // border pinned), so the tiles beside them must slide by the FULL
+                    // growth. A middle tile grows from its centre, so its two neighbours
+                    // split the growth (half each).
+                    if (sel === 0)    return grow;     // hero grows right -> inside tiles slide right
+                    if (sel === last) return -grow;    // last grows left  -> inside tiles slide left
+                    return (index < sel) ? -(grow / 2) : (grow / 2);
                 }
                 width: topRow.tileSz
                 height: topRow.tileSz
                 radius: vpx(6)
                 color: selected ? theme.accent : theme.secondary
                 Behavior on color { ColorAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                // Grow from the bottom-center so the bottom edge stays put; top + sides expand outward
-                transformOrigin: Item.Bottom
-                scale: selected ? 1.25 : 1.0
+                // Grow from the bottom edge so the bottom stays put. The first (hero) tile
+                // grows up-and-right (left border pinned) and the last tile grows up-and-left
+                // (right border pinned) so neither outer border is clipped at the screen edge;
+                // every middle tile grows up from its centre.
+                transformOrigin: index === 0 ? Item.BottomLeft
+                                 : (index === platformlist.count - 1 ? Item.BottomRight : Item.Bottom)
+                scale: selected ? topRow.growScale : 1.0
                 Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                 // Animated horizontal shift so neighbors slide out of the way of the selected tile
                 transform: Translate {
