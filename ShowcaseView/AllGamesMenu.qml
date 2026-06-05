@@ -100,30 +100,30 @@ id: root
     // ── Game preview art (miximage-style composite) ──
     // Backdrop = fanart (falls back to a screenshot); framed square = a screenshot.
     property string artBackdrop: {
-        if (!currentGame) return "";
-        var f = Utils.fanArt(currentGame);
+        if (!settledGame) return "";
+        var f = Utils.fanArt(settledGame);
         if (f) return f;
-        var s2 = currentGame.assets.screenshotList;
+        var s2 = settledGame.assets.screenshotList;
         return (s2 && s2.length) ? s2[0] : "";
     }
     property string artScreenshot: {
-        if (!currentGame) return "";
-        var ss = currentGame.assets.screenshotList;
+        if (!settledGame) return "";
+        var ss = settledGame.assets.screenshotList;
         if (ss && ss.length) return ss[0];
-        return Utils.fanArt(currentGame) || "";
+        return Utils.fanArt(settledGame) || "";
     }
-    property string artLogo: currentGame ? (Utils.logo(currentGame) || currentGame.assets.logo || "") : ""
+    property string artLogo: settledGame ? (Utils.logo(settledGame) || settledGame.assets.logo || "") : ""
     property string artBoxSource: {
-        if (!currentGame) return "";
-        var three = Utils.get3dBoxArt(currentGame);
+        if (!settledGame) return "";
+        var three = Utils.get3dBoxArt(settledGame);
         if (three) return three;                       // 3D box
-        return currentGame.assets.boxFront || "";      // 2D fallback
+        return settledGame.assets.boxFront || "";      // 2D fallback
     }
     // SNES & N64 3D box scans are stored landscape — rotate them upright (tall) so
     // they match their miximages. Detected the same way the old scale-down was.
     property bool boxRotated: {
-        if (!currentGame || currentGame.collections.count === 0) return false;
-        var c = currentGame.collections.get(0);
+        if (!settledGame || settledGame.collections.count === 0) return false;
+        var c = settledGame.collections.get(0);
         var s = ((c.shortName ? c.shortName : "") + " " + (c.name ? c.name : "")).toLowerCase();
         return (s.indexOf("snes") >= 0 || s.indexOf("super nintendo") >= 0
                 || s.indexOf("n64") >= 0 || s.indexOf("nintendo 64") >= 0);
@@ -138,8 +138,18 @@ id: root
     property bool   hideLogoForVideo: videoPlaying && settings.AllGamesHideLogoOnVideo === "Yes"
     Timer {
     id: videoDebounce
-        interval: 1100; repeat: false
+        interval: 2000; repeat: false
         onTriggered: videoArmed = true
+    }
+
+    // Heavy preview art (backdrop/screenshot/box/logo) only swaps once the cursor
+    // settles, so flicking the list doesn't decode four images on every step.
+    // Metadata text stays bound to currentGame (instant); video has its own debounce.
+    property var settledGame: null
+    Timer {
+    id: artDebounce
+        interval: 150; repeat: false
+        onTriggered: settledGame = currentGame
     }
 
     // On-screen keyboard — fully controller-driven, NO native Android IME
@@ -401,6 +411,7 @@ id: root
         currentHelpbarModel     = allGamesHelpModel;
         currentCustomCollection = listAllGames.collection;
         restoreSelection();   // restore the row we were on (if the model is ready)
+        settledGame = currentGame;   // show the persisted game's art right away
     }
 
     // Vertical accent line dividing the text list from the game details
@@ -436,6 +447,7 @@ id: root
         id: bgArtImg
             anchors.fill: parent
             asynchronous: true
+            sourceSize: Qt.size(width, height)
             source: artBackdrop
             fillMode: Image.PreserveAspectCrop
             smooth: true
@@ -475,6 +487,7 @@ id: root
             id: artScreenshotImg
                 anchors.fill: parent
                 asynchronous: true
+                sourceSize: Qt.size(width, height)
                 source: artScreenshot
                 fillMode: Image.PreserveAspectCrop   // crop to a clean square
                 smooth: true
@@ -495,17 +508,18 @@ id: root
             Video {
             id: previewVideo
                 anchors.fill: parent
+                anchors.margins: vpx(3)   // inset so the square video corners stay inside the
+                                          // rounded screenshot; corners then show the backdrop
+                                          // (transparent) without ever masking the video itself
                 source: (settings.AllGamesVideoPreview !== "No" && videoArmed && videoSource !== "") ? videoSource : ""
                 fillMode: VideoOutput.PreserveAspectCrop
                 muted: settings.AllGamesVideoAudio !== "Yes"
                 loops: MediaPlayer.Infinite
                 autoPlay: true
                 visible: playbackState === MediaPlayer.PlayingState
-                layer.enabled: true
-                layer.smooth: true
-                layer.effect: OpacityMask {
-                    maskSource: Rectangle { width: previewVideo.width; height: previewVideo.height; radius: vpx(10) }
-                }
+                // No layer/OpacityMask here: rendering a VideoOutput through an FBO+mask
+                // shows audio-only (black frame) on some low-end Android GPUs. Square
+                // corners on the playing video are the safe, universal choice.
             }
             // Scanlines overlay (optional)
             Image {
@@ -545,6 +559,7 @@ id: root
             rotation: boxRotated ? 90 : 0       // 90 deg clockwise -> SNES/N64 stand tall
             transformOrigin: Item.Center
             asynchronous: true
+            sourceSize: Qt.size(width, height)
             source: artBoxSource
             fillMode: Image.PreserveAspectFit
             horizontalAlignment: Image.AlignHCenter
@@ -570,6 +585,7 @@ id: root
                 verticalCenterOffset: vpx(8)
             }
             asynchronous: true
+            sourceSize: Qt.size(width, height)
             source: artLogo
             fillMode: Image.PreserveAspectFit
             horizontalAlignment: Image.AlignRight
@@ -916,6 +932,7 @@ id: root
                 storedAllGamesIndex = currentIndex;   // persist across screen reloads
                 root.videoArmed = false;              // stop video while navigating
                 videoDebounce.restart();              // re-arm after resting on a game
+                artDebounce.restart();                // swap preview art after resting
             }
         }
         // The proxy model populates asynchronously; when it first fills,
@@ -928,6 +945,7 @@ id: root
                     if (currentIndex < 0) currentIndex = 0;
                     currentGame = getCurrentGame(currentIndex < 0 ? 0 : currentIndex);
                 }
+                settledGame = currentGame;   // initial/restore: show art immediately
             }
         }
 
