@@ -1427,6 +1427,38 @@ id: root
     }
 
 
+    // ── Closest-column vertical navigation ──────────────────────────────
+    // Moving between rows carries the horizontal position across: pick the item
+    // in the destination row whose on-screen centre is nearest the item we were
+    // just on, instead of restoring that row's own remembered index.
+    function navRowCenterX() {
+        var list = null;
+        if (mainList.currentIndex === 1) list = platformlist;
+        else if (mainList.currentItem && mainList.currentItem.collectionList) list = mainList.currentItem.collectionList;
+        if (!list || !list.currentItem) return -1;
+        var c = list.currentItem;
+        return c.mapToItem(root, c.width / 2, 0).x;          // screen-x centre of current item
+    }
+    function navNearestIndex(list, tileW, spacing, screenX, count) {
+        if (!list || count <= 0 || screenX < 0) return 0;
+        var unit = tileW + spacing;
+        if (unit <= 0) return 0;
+        var local = list.mapFromItem(root, screenX, 0).x;    // x inside the list's viewport
+        var i = Math.round((list.contentX + local - tileW / 2) / unit);
+        if (i < 0) i = 0;
+        if (i > count - 1) i = count - 1;
+        return i;
+    }
+    function navApplyColumn(screenX) {
+        if (screenX < 0) return;
+        if (mainList.currentIndex === 1) {
+            platformlist.currentIndex = navNearestIndex(platformlist, topRow.tileSz, platformlist.spacing, screenX, platformlist.count);
+        } else if (mainList.currentItem && mainList.currentItem.collectionList) {
+            var cl = mainList.currentItem.collectionList;
+            cl.currentIndex = navNearestIndex(cl, mainList.currentItem.itemWidth, cl.spacing, screenX, cl.count);
+        }
+    }
+
     ListView {
     id: mainList
 
@@ -1466,6 +1498,7 @@ id: root
 
         Keys.onUpPressed: {
             if (currentIndex <= 1) { homebutton.focus = true; return; }
+            var navX = navRowCenterX();   // capture our column BEFORE moving
             playNav();
             // Leaving a collection to land on the strip: pre-switch to NoHighlightRange
             // BEFORE the index changes so ApplyRange doesn't snap contentY first,
@@ -1476,8 +1509,10 @@ id: root
             do {
                 decrementCurrentIndex();
             } while (!currentItem.enabled);
+            navApplyColumn(navX);         // land on the nearest item straight above
         }
         Keys.onDownPressed: {
+            var navX = navRowCenterX();   // capture our column BEFORE moving
             playNav();
             // Leaving the top zone (index >= 1): restore ApplyRange BEFORE the
             // index changes, otherwise the list's internal repositioning runs
@@ -1490,6 +1525,7 @@ id: root
             do {
                 incrementCurrentIndex();
             } while (!currentItem.enabled);
+            navApplyColumn(navX);         // land on the nearest item straight below
         }
     }
 
