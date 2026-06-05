@@ -255,8 +255,10 @@ id: root
             publisherCollection.rebuild();
             // Refresh the recommended fallback only when the publisher/developer
             // list has no results (Option 2: skip the scan when not needed).
-            if (publisherCollection.games.length === 0)
+            if (publisherCollection.games.length === 0) {
+                recommendedCollection.active = true;   // arm the proxy only when actually shown
                 recommendedCollection.refresh();
+            }
 
             // Option B: genre – extract the correct genre token based on the
             // "More by Genre Display" setting, then trigger a rebuild.
@@ -487,6 +489,7 @@ id: root
         Loader {
             id: detailsContentLoader
             anchors.fill: parent
+            asynchronous: true
             active: detailsEverShown
             readonly property real headerH: header.height
             sourceComponent: Component {
