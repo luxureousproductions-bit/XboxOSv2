@@ -121,6 +121,7 @@ id: root
 
     // Collections
     property int currentCollectionIndex: 0
+    property bool collectionVisited: false   // strip stays on the hero until a collection is actually opened
     property int currentGameIndex: 0
     property var currentCollection: api.collections.get(currentCollectionIndex)    
     property var currentGame
