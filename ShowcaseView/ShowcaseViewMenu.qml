@@ -40,7 +40,6 @@ id: root
     ListGenre       { id: listGenre;       max: settings.ShowcaseColumns; genre: randoGenre;     omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
     ListGenre       { id: listGenre2;      max: settings.ShowcaseColumns; genre: randoGenre2;    omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
 
-    property var featuredCollection: listFavorites
     property var highlightedGame: null
 
     // Every Color Layout now has its own PNG, so use it directly (matches game tiles)
@@ -247,7 +246,6 @@ id: root
         currentHelpbarModel = gridviewHelpModel;
     }
 
-    property bool ftue: featuredCollection.games.count == 0
 
     function storeIndices(secondary) {
         storedHomePrimaryIndex = mainList.currentIndex;
@@ -360,98 +358,8 @@ id: root
     }
 
 
-    Item {
-    id: ftueContainer
-
-        width: parent.width
-        height: vpx(360)
-        visible: ftue
-        opacity: {
-            switch (mainList.currentIndex) {
-                case 0:
-                    return 1;
-                case 1:
-                    return 0.3;
-                case 2:
-                    return 0.1;
-                case -1:
-                    return 0.3;
-                default:
-                    return 0
-            }
-        }
-        Behavior on opacity { PropertyAnimation { duration: 1000; easing.type: Easing.OutQuart; easing.amplitude: 2.0; easing.period: 1.5 } }
-
-        /*Image {
-            anchors.fill: parent
-            source: "../assets/images/ftueBG01.jpeg"
-            sourceSize { width: root.width; height: root.height}
-            fillMode: Image.PreserveAspectCrop
-            smooth: true
-            asynchronous: true
-        }*/
-
-        Rectangle {
-            anchors.fill: parent
-            color: "black"
-            opacity: 0.5
-        }
-
-        Video {
-        id: videocomponent
-
-            anchors.fill: parent
-            source: "../assets/video/ftue.mp4"
-            fillMode: VideoOutput.PreserveAspectCrop
-            muted: true
-            loops: MediaPlayer.Infinite
-            autoPlay: true
-
-            OpacityAnimator {
-                target: videocomponent;
-                from: 0;
-                to: 1;
-                duration: 1000;
-                running: true;
-            }
-
-        }
-
-        Image {
-        id: ftueLogo
-
-            width: vpx(350)
-            anchors { left: parent.left; leftMargin: globalMargin }
-            // Logo file chosen by Settings > Home page > Xbox Logo. "None" hides it.
-            source: settings.XboxLogo === "None" ? "" :
-                    settings.XboxLogo === "Logo2" ? "../assets/images/Xbox-logo2.png" :
-                                                    "../assets/images/Xbox-logo.png"
-            visible: settings.XboxLogo !== "None"
-            // Logo Color Match: tints the logo to the current Color Layout accent.
-            // layer.enabled: false when off — zero render cost.
-            layer.enabled: settings.LogoColorMatch === "Yes"
-            layer.effect: ColorOverlay { color: theme.accent }
-            sourceSize { width: 350; height: 250}
-            fillMode: Image.PreserveAspectFit
-            smooth: true
-            asynchronous: true
-            anchors.centerIn: parent
-        }
-
-        Text {
-            text: "Try adding some favorite games"
-            
-            horizontalAlignment: Text.AlignHCenter
-            anchors { bottom: parent.bottom; bottomMargin: vpx(75) }
-            width: parent.width
-            height: contentHeight
-            color: theme.text
-            font.family: subtitleFont.name
-            font.pixelSize: vpx(16)
-            opacity: 0.5
-            visible: false
-        }
-    }
+    // FTUE favorites banner removed — the hero box serves that role now; the Xbox
+    // logo is rendered by the header below, honoring Settings > Home page > Xbox Logo.
 
     Item {
     id: header
@@ -476,7 +384,7 @@ id: root
             smooth: true
             asynchronous: true
             anchors.verticalCenter: parent.verticalCenter
-            visible: !ftueContainer.visible && settings.XboxLogo !== "None" && settings.XboxLogo !== "RetroAchievements"
+            visible: settings.XboxLogo !== "None" && settings.XboxLogo !== "RetroAchievements"
         }
 
         // ── RetroAchievements header card ─────────────────────────────────
@@ -487,7 +395,7 @@ id: root
 
             anchors { left: parent.left; leftMargin: globalMargin; verticalCenter: parent.verticalCenter }
             width: vpx(250); height: vpx(64)
-            visible: !ftueContainer.visible && settings.XboxLogo === "RetroAchievements"
+            visible: settings.XboxLogo === "RetroAchievements"
 
             // Pull the profile if RA credentials exist but the avatar hasn't been fetched yet
             function ensureProfile() {
