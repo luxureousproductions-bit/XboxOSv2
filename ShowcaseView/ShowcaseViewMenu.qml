@@ -942,7 +942,7 @@ id: root
                 }
             }
 
-            property int savedIndex: root.sortedColl.indexOf(currentCollectionIndex) + 1   // strip index (hero = 0)
+            property int savedIndex: collectionVisited ? (root.sortedColl.indexOf(currentCollectionIndex) + 1) : 0   // strip index (hero = 0); hero until a collection is opened
             onFocusChanged: {
                 if (focus) {
                     currentIndex = savedIndex;
@@ -1207,7 +1207,7 @@ id: root
                     onClicked: {
                         if (selected) {
                             if (isHero) { if (platformlist.resumeGame) { playAccept(); platformlist.resumeGame.launch(); } }
-                            else { currentCollectionIndex = root.sortedColl[index - 1]; softwareScreen(); }
+                            else { currentCollectionIndex = root.sortedColl[index - 1]; collectionVisited = true; softwareScreen(); }
                         } else {
                             mainList.currentIndex = topRow.ObjectModel.index;
                             platformlist.currentIndex = index;
@@ -1234,6 +1234,7 @@ id: root
                         if (resumeGame) { playAccept(); resumeGame.launch(); }
                     } else {
                         currentCollectionIndex = root.sortedColl[currentIndex - 1];
+                        collectionVisited = true;
                         softwareScreen();
                     }
                 }
