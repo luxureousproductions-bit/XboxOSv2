@@ -1449,13 +1449,26 @@ id: root
         if (i > count - 1) i = count - 1;
         return i;
     }
-    function navApplyColumn(screenX) {
+    function navNextEnabled(from, dir) {
+        var i = from + dir;
+        while (i >= 0 && i < mainList.count) {
+            var it = mainList.itemAtIndex(i);
+            if (!it || it.enabled) return i;
+            i += dir;
+        }
+        return from;
+    }
+    // Pre-seat the destination row's savedIndex to the nearest column BEFORE we move,
+    // so the row restores straight to that item in ONE step. (Overriding the index
+    // AFTER the move changed highlightedGame twice mid-crossfade — that was the flicker.)
+    function navPreset(destIndex, screenX) {
         if (screenX < 0) return;
-        if (mainList.currentIndex === 1) {
-            platformlist.currentIndex = navNearestIndex(platformlist, topRow.tileSz, platformlist.spacing, screenX, platformlist.count);
-        } else if (mainList.currentItem && mainList.currentItem.collectionList) {
-            var cl = mainList.currentItem.collectionList;
-            cl.currentIndex = navNearestIndex(cl, mainList.currentItem.itemWidth, cl.spacing, screenX, cl.count);
+        if (destIndex === 1) {
+            platformlist.savedIndex = navNearestIndex(platformlist, topRow.tileSz, platformlist.spacing, screenX, platformlist.count);
+        } else {
+            var it = mainList.itemAtIndex(destIndex);
+            if (it && it.collectionList)
+                it.savedIndex = navNearestIndex(it.collectionList, it.itemWidth, it.collectionList.spacing, screenX, it.collectionList.count);
         }
     }
 
@@ -1498,7 +1511,7 @@ id: root
 
         Keys.onUpPressed: {
             if (currentIndex <= 1) { homebutton.focus = true; return; }
-            var navX = navRowCenterX();   // capture our column BEFORE moving
+            navPreset(navNextEnabled(currentIndex, -1), navRowCenterX());   // seat nearest column before moving
             playNav();
             // Leaving a collection to land on the strip: pre-switch to NoHighlightRange
             // BEFORE the index changes so ApplyRange doesn't snap contentY first,
@@ -1509,10 +1522,9 @@ id: root
             do {
                 decrementCurrentIndex();
             } while (!currentItem.enabled);
-            navApplyColumn(navX);         // land on the nearest item straight above
         }
         Keys.onDownPressed: {
-            var navX = navRowCenterX();   // capture our column BEFORE moving
+            navPreset(navNextEnabled(currentIndex, 1), navRowCenterX());   // seat nearest column before moving
             playNav();
             // Leaving the top zone (index >= 1): restore ApplyRange BEFORE the
             // index changes, otherwise the list's internal repositioning runs
@@ -1525,7 +1537,6 @@ id: root
             do {
                 incrementCurrentIndex();
             } while (!currentItem.enabled);
-            navApplyColumn(navX);         // land on the nearest item straight below
         }
     }
 
