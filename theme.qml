@@ -62,6 +62,7 @@ id: root
             AllowVideoPreviewAudio:        api.memory.has("Video preview audio") ? api.memory.get("Video preview audio") : "No",
             ShowScanlines:                 api.memory.has("Show scanlines") ? api.memory.get("Show scanlines") : "Yes",
             DetailsDefault:                api.memory.has("Default to full details") ? api.memory.get("Default to full details") : "No",
+            LaunchScreenDelay:             api.memory.has("Launch screen delay") ? api.memory.get("Launch screen delay") : "0.6",
             ShowcaseBackgroundArt:          api.memory.has("Showcase Background Art") ? api.memory.get("Showcase Background Art") : "Yes",
             CustomBackground:               api.memory.has("Custom Background") ? api.memory.get("Custom Background") : "No",
             ShowcaseBackgroundOpacity:     api.memory.has("Showcase Background Opacity") ? api.memory.get("Showcase Background Opacity") : "0.55",
@@ -125,6 +126,12 @@ id: root
     property int currentGameIndex: 0
     property var currentCollection: api.collections.get(currentCollectionIndex)    
     property var currentGame
+    property var launchingGame: null         // game shown on the launch splash
+    property bool launchSuspended: false     // true once the app has backgrounded for a launch
+    property int  launchSplashDelay: {       // ms the splash is held before launch, from the "Launch screen delay" setting (seconds)
+        var v = parseFloat(settings.LaunchScreenDelay);
+        return isNaN(v) ? 600 : Math.round(v * 1000);
+    }
 
     // Stored variables for page navigation
     property int storedHomePrimaryIndex: 0
@@ -203,19 +210,10 @@ id: root
     function playTabRight() { if (sfxVolume <= 0) return; sfxTabRight.stop(); sfxTabRight.play(); }
 
     function launchGame(game) {
-        if (game !== null) {
-            //if (game.collections.get(0).name === "Steam")
-                launchGameScreen();
-
-            saveCurrentState(game);
-            game.launch();
-        } else {
-            //if (currentGame.collections.get(0).name === "Steam")
-                launchGameScreen();
-
-            saveCurrentState(currentGame);
-            currentGame.launch();
-        }
+        launchingGame = (game !== null) ? game : currentGame;
+        launchGameScreen();
+        saveCurrentState(launchingGame);
+        launchDelay.restart();          // hold the splash, then launch (see launchDelay)
     }
 
     // Save current states for returning from game
@@ -678,14 +676,17 @@ id: root
     function launchGameFromDiscover(game) {
         if (game !== null) {
             playAccept();
+            launchingGame = game;
+            launchSuspended = false;
             root.state = "launchgamescreen";
             saveCurrentState(game);
-            game.launch();
+            launchDelay.restart();      // hold the splash, then launch (see launchDelay)
         }
     }
 
     function launchGameScreen() {
         playAccept();
+        launchSuspended = false;
         lastState.push(state);
         root.state = "launchgamescreen";
     }
@@ -822,6 +823,36 @@ id: root
         anchors.fill: parent
         sourceComponent: launchgameview
         asynchronous: true
+    }
+
+    // Auto-return from the launch splash: once the app has been backgrounded (the game
+    // ran) and then comes back to the foreground, leave the splash and land back where
+    // we launched from. The "press any button" handler in LaunchGame stays as a fallback
+    // for devices where this app-state signal doesn't fire.
+    Connections {
+        target: Qt.application
+        onStateChanged: {
+            if (root.state !== "launchgamescreen") return;
+            if (Qt.application.state !== Qt.ApplicationActive)
+                root.launchSuspended = true;
+            else if (root.launchSuspended) {
+                root.launchSuspended = false;
+                previousScreen();
+            }
+        }
+    }
+
+    // Holds the launch splash on screen for launchSplashDelay ms, THEN starts the game.
+    // (The wait happens before the OS suspends Pegasus, so it's reliable.) Guarded so a
+    // back-press during the hold cancels the launch instead of starting it late.
+    Timer {
+        id: launchDelay
+        interval: launchSplashDelay
+        repeat: false
+        onTriggered: {
+            if (root.state === "launchgamescreen" && launchingGame)
+                launchingGame.launch();
+        }
     }
 
     Loader  {
