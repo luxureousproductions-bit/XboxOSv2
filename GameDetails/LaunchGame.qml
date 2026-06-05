@@ -22,7 +22,7 @@ import QtGraphicalEffects 1.15
 FocusScope {
 id: root
 
-    property var game: currentGame
+    property var game: launchingGame ? launchingGame : currentGame
     focus: true
 
     // Background
@@ -92,46 +92,7 @@ id: root
         opacity: 1
     }
 
-    Item {
-    id: container
-
-        width: launchText.width + vpx(50)
-        height: launchText.height + vpx(50)
-
-        property real centerOffset: logo.paintedHeight/2
-        
-        anchors {
-            top: logo.verticalCenter; topMargin: centerOffset + vpx(50)
-            horizontalCenter: logo.horizontalCenter
-        }
-        
-        //color: theme.secondary
-
-        Rectangle {
-        id: regborder
-
-            anchors.fill: parent
-            color: "black"
-            border.width: vpx(1)
-            border.color: "white"
-            opacity: 0.2
-            radius: height/2
-        }
-
-        Text {
-        id: launchText
-
-            text: "Press any button to return"//"Launching " + currentGame.title
-            width: contentWidth
-            height: contentHeight
-            font.family: titleFont.name
-            font.pixelSize: vpx(24)
-            color: theme.text
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.verticalCenter: parent.verticalCenter
-        }
-    }
-    
+    // (Launch splash text removed — logo-only splash; any key still returns.)
 
     // Helpbar buttons
     ListModel {
