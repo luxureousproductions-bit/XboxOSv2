@@ -1436,7 +1436,7 @@ id: root
         // A — launch the game directly
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus && currentGame) { playAccept(); currentGame.launch(); }
+            if (!filterOpen && gamelist.focus && currentGame) { launchGame(currentGame); }
         }
         // B — back
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {

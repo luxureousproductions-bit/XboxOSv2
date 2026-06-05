@@ -1206,7 +1206,7 @@ id: root
                     onEntered: { playNav(); mainList.currentIndex = topRow.ObjectModel.index; platformlist.currentIndex = index; }
                     onClicked: {
                         if (selected) {
-                            if (isHero) { if (platformlist.resumeGame) { playAccept(); platformlist.resumeGame.launch(); } }
+                            if (isHero) { if (platformlist.resumeGame) { launchGame(platformlist.resumeGame); } }
                             else { currentCollectionIndex = root.sortedColl[index - 1]; collectionVisited = true; softwareScreen(); }
                         } else {
                             mainList.currentIndex = topRow.ObjectModel.index;
@@ -1231,7 +1231,7 @@ id: root
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                     event.accepted = true;
                     if (currentIndex <= 0) {
-                        if (resumeGame) { playAccept(); resumeGame.launch(); }
+                        if (resumeGame) { launchGame(resumeGame); }
                     } else {
                         currentCollectionIndex = root.sortedColl[currentIndex - 1];
                         collectionVisited = true;
