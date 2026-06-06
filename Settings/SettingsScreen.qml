@@ -163,6 +163,7 @@ id: root
         }
         ListElement {
             settingName: "Logo Color Match"
+            label: "Logo Color Layout Match"
             setting: "No,Yes"
         }
         ListElement {
@@ -464,7 +465,7 @@ id: root
     property var settingsArr: [generalPage, showcasePage, collectionsPage, gridPage, gamePage, allGamesPage, mediaCarouselPage, audioPage, advancedPage, raPage]
 
     property real itemheight: vpx(50)
-    property color settingsTextColor: theme.accent
+    property color settingsTextColor: theme.text
 
     // ── On-screen keyboard for text fields (RA credentials) ───────────────
     // Fully controller-driven. NO native Android TextInput/IME (no blue box).
@@ -569,6 +570,13 @@ id: root
         settingsList.forceActiveFocus();
     }
 
+    // Settings background — locked to black (independent of Color Background)
+    Rectangle {
+        anchors.fill: parent
+        color: "#000000"
+        z: -10
+    }
+
     Rectangle {
     id: header
 
@@ -578,18 +586,34 @@ id: root
             right: parent.right
         }
         height: vpx(75)
-        color: theme.main
+        color: "#000000"
         z: 5
+
+        // Settings cog (same icon used elsewhere in the theme)
+        Image {
+            id: settingsCog
+            anchors {
+                left: parent.left; leftMargin: globalMargin
+                verticalCenter: parent.verticalCenter
+            }
+            height: vpx(28)
+            width: height
+            source: "../assets/images/settingsicon.svg"
+            sourceSize: Qt.size(vpx(28), vpx(28))
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            asynchronous: true
+        }
 
         // Platform title
         Text {
         id: headertitle
             
-            text: "Settings"
+            text: "SETTINGS"
             
             anchors {
                 top: parent.top;
-                left: parent.left; leftMargin: globalMargin
+                left: settingsCog.right; leftMargin: vpx(12)
                 right: parent.right
                 bottom: parent.bottom
             }
@@ -610,6 +634,36 @@ id: root
                 }
             }
         }
+
+        // Active tab name (accent)
+        Text {
+            anchors {
+                right: parent.right; rightMargin: globalMargin
+                verticalCenter: parent.verticalCenter
+            }
+            text: (pagelist.currentIndex >= 0 && settingsArr[pagelist.currentIndex])
+                  ? settingsArr[pagelist.currentIndex].pageName.toUpperCase() : ""
+            color: theme.accent
+            font.family: subtitleFont.name
+            font.pixelSize: vpx(24)
+            font.bold: true
+            verticalAlignment: Text.AlignVCenter
+        }
+    }
+
+    // Subtle nav-rail panel (balances the content panel)
+    Rectangle {
+        id: railPanel
+        anchors {
+            top: header.bottom
+            bottom: parent.bottom; bottomMargin: helpMargin
+            left: parent.left
+            right: pagelist.right
+        }
+        color: theme.secondary
+        opacity: 0.5
+        radius: 0
+        z: -1
     }
 
     ListView {
@@ -634,11 +688,32 @@ id: root
                 width: ListView.view.width
                 height: itemheight
 
+                // Selection tile
+                Rectangle {
+                id: pageTile
+                    anchors.fill: parent
+                    anchors.rightMargin: vpx(8)
+                    radius: vpx(6)
+                    color: theme.accent
+                    opacity: selected ? 0.16 : 0
+                    Behavior on opacity { NumberAnimation { duration: 120 } }
+                }
+                // Left accent edge-bar
+                Rectangle {
+                    anchors { left: pageTile.left; verticalCenter: pageTile.verticalCenter }
+                    width: vpx(4)
+                    height: pageTile.height * 0.55
+                    radius: width / 2
+                    color: theme.accent
+                    opacity: selected ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 120 } }
+                }
+
                 // Page name
                 Text {
                 id: oageNameText
                 
-                    text: modelData.pageName
+                    text: modelData.pageName.toUpperCase()
                     color: settingsTextColor
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(24)
@@ -686,14 +761,19 @@ id: root
 
     }
 
+    // Subtle content panel (depth behind the settings column)
     Rectangle {
+        id: settingsPanel
         anchors {
-            left: pagelist.right;
-            top: pagelist.top; bottom: pagelist.bottom
+            top: header.bottom
+            bottom: parent.bottom; bottomMargin: helpMargin
+            left: pagelist.right; leftMargin: vpx(10)
+            right: parent.right
         }
-        width: vpx(1)
-        color: theme.text
-        opacity: 0.1
+        color: theme.secondary
+        opacity: 0.5
+        radius: 0
+        z: -1
     }
 
     ListView {
@@ -781,12 +861,35 @@ id: root
                 width: ListView.view.width
                 height: itemNote !== "" ? itemheight + vpx(22) : itemheight
 
+                // Selection tile
+                Rectangle {
+                id: setTile
+                    anchors { left: parent.left; right: parent.right; top: parent.top }
+                    anchors.leftMargin: vpx(12)
+                    anchors.rightMargin: vpx(12)
+                    height: itemheight
+                    radius: vpx(6)
+                    color: theme.accent
+                    opacity: selected ? 0.16 : 0
+                    Behavior on opacity { NumberAnimation { duration: 120 } }
+                }
+                // Left accent edge-bar
+                Rectangle {
+                    anchors { left: setTile.left; verticalCenter: setTile.verticalCenter }
+                    width: vpx(4)
+                    height: itemheight * 0.55
+                    radius: width / 2
+                    color: theme.accent
+                    opacity: selected ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 120 } }
+                }
+
                 // ── Cycle-value rows (existing style) ──────────────────────
                 Text {
                 id: settingNameText
 
                     visible: !isTextInput
-                    text: displayLabel + ": "
+                    text: displayLabel.toUpperCase() + ": "
                     color: settingsTextColor
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(22)
@@ -799,11 +902,26 @@ id: root
                         left: parent.left; leftMargin: vpx(25)
                     }
                 }
+                // Value chip (accent pill around the adjustable value)
+                Rectangle {
+                    id: valueChip
+                    visible: selected && !isTextInput
+                    anchors.fill: settingtext
+                    anchors.topMargin: vpx(6)
+                    anchors.bottomMargin: vpx(6)
+                    anchors.leftMargin: vpx(-12)
+                    anchors.rightMargin: vpx(-12)
+                    color: "transparent"
+                    border.width: vpx(1)
+                    border.color: theme.accent
+                    radius: height / 2
+                }
                 Text {
                 id: settingtext
 
                     visible: !isTextInput
-                    text: settingList[savedIndex]
+                    text: (selected ? "\u2039  " : "") + settingList[savedIndex].toUpperCase() + (selected ? "  \u203A" : "")
+                    font.bold: selected
                     color: settingsTextColor
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(22)
@@ -821,7 +939,7 @@ id: root
                 id: textInputLabel
 
                     visible: isTextInput
-                    text: settingName + ":"
+                    text: settingName.toUpperCase() + ":"
                     color: settingsTextColor
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(22)
@@ -873,21 +991,32 @@ id: root
                     }
                 }
 
-                // ── Optional note (shared) ────────────────────────────────
-                Text {
-                id: settingNoteText
+                // ── Optional note (shared) — accent badge ─────────────────
+                Rectangle {
+                id: noteBadge
 
                     visible: itemNote !== ""
-                    text: itemNote
-                    color: settingsTextColor
-                    font.family: bodyFont.name
-                    font.pixelSize: vpx(15)
-                    font.italic: true
-                    opacity: selected ? 0.6 : 0.15
+                    width: noteLabel.width + vpx(16)
+                    height: noteLabel.height + vpx(6)
+                    color: "transparent"
+                    border.width: vpx(1)
+                    border.color: theme.accent
+                    radius: vpx(4)
+                    opacity: selected ? 1 : 0.45
 
                     anchors {
                         left: parent.left; leftMargin: vpx(25)
-                        top: parent.top; topMargin: itemheight
+                        top: parent.top; topMargin: itemheight - vpx(4)
+                    }
+
+                    Text {
+                        id: noteLabel
+                        anchors.centerIn: parent
+                        text: itemNote
+                        color: theme.accent
+                        font.family: bodyFont.name
+                        font.pixelSize: vpx(13)
+                        font.bold: true
                     }
                 }
 
