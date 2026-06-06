@@ -272,7 +272,7 @@ id: root
         var arr = [];
         for (var i = 0; i < api.collections.count; i++) {
             var c = api.collections.get(i);
-            var nm = (c.shortName && c.shortName.length) ? c.shortName : c.name;
+            var nm = (c.name && c.name.length) ? c.name : c.shortName;
             arr.push({ name: (nm || "").toUpperCase(), index: i });
         }
         // Alphabetical by (already-uppercased) display name
