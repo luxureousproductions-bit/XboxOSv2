@@ -1000,7 +1000,7 @@ id: root
             left: parent.left; right: parent.right; rightMargin: globalMargin
             bottom: parent.bottom
         }
-        visible: settings.HideButtonHelp === "No"
+        visible: settings.HideButtonHelp === "No" && root.state !== "launchgamescreen"
     }
 
     ///////////////////
