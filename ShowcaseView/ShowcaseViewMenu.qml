@@ -501,13 +501,13 @@ id: root
 
             onFocusChanged: {
                 if (focus) playNav();
-                mainList.currentIndex = focus ? -1 : 0;
+                if (focus) mainList.currentIndex = -1;
             }
-            Keys.onDownPressed:  { playNav(); mainList.forceActiveFocus(); mainList.currentIndex = 1; }
+            Keys.onDownPressed:  { playNav(); var r = mainList.navJump ? mainList.savedRow : 1; mainList.navJump = false; mainList.forceActiveFocus(); mainList.currentIndex = r; }
             Keys.onRightPressed: discoverbutton.focus = true;
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; allGamesScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; mainList.focus = true; }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; if (mainList.navJump) { mainList.navJump = false; mainList.currentIndex = mainList.savedRow; } mainList.focus = true; }
                 if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); discoverbutton.focus = true; }
                 if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); settingsbutton.focus = true; }
             }
@@ -544,14 +544,14 @@ id: root
 
             onFocusChanged: {
                 if (focus) playNav();
-                mainList.currentIndex = focus ? -1 : 0;
+                if (focus) mainList.currentIndex = -1;
             }
-            Keys.onDownPressed:  { playNav(); mainList.forceActiveFocus(); mainList.currentIndex = 1; }
+            Keys.onDownPressed:  { playNav(); var r = mainList.navJump ? mainList.savedRow : 1; mainList.navJump = false; mainList.forceActiveFocus(); mainList.currentIndex = r; }
             Keys.onLeftPressed:  homebutton.focus = true;
             Keys.onRightPressed: achievementsbutton.focus = true;
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; mainList.focus = true; }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; if (mainList.navJump) { mainList.navJump = false; mainList.currentIndex = mainList.savedRow; } mainList.focus = true; }
                 if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); achievementsbutton.focus = true; }
                 if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); homebutton.focus = true; }
             }
@@ -596,14 +596,14 @@ id: root
 
             onFocusChanged: {
                 if (focus) playNav();
-                mainList.currentIndex = focus ? -1 : 0;
+                if (focus) mainList.currentIndex = -1;
             }
-            Keys.onDownPressed:  { playNav(); mainList.forceActiveFocus(); mainList.currentIndex = 1; }
+            Keys.onDownPressed:  { playNav(); var r = mainList.navJump ? mainList.savedRow : 1; mainList.navJump = false; mainList.forceActiveFocus(); mainList.currentIndex = r; }
             Keys.onLeftPressed:  discoverbutton.focus = true;
             Keys.onRightPressed: settingsbutton.focus = true;
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; mainList.focus = true; }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; if (mainList.navJump) { mainList.navJump = false; mainList.currentIndex = mainList.savedRow; } mainList.focus = true; }
                 if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); settingsbutton.focus = true; }
                 if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); discoverbutton.focus = true; }
             }
@@ -643,13 +643,13 @@ id: root
 
             onFocusChanged: {
                 if (focus) playNav();
-                mainList.currentIndex = focus ? -1 : 0;
+                if (focus) mainList.currentIndex = -1;
             }
-            Keys.onDownPressed:  { playNav(); mainList.forceActiveFocus(); mainList.currentIndex = 1; }
+            Keys.onDownPressed:  { playNav(); var r = mainList.navJump ? mainList.savedRow : 1; mainList.navJump = false; mainList.forceActiveFocus(); mainList.currentIndex = r; }
             Keys.onLeftPressed:  achievementsbutton.focus = true;
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; mainList.focus = true; }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; if (mainList.navJump) { mainList.navJump = false; mainList.currentIndex = mainList.savedRow; } mainList.focus = true; }
                 if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); homebutton.focus = true; }
                 if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); achievementsbutton.focus = true; }
             }
@@ -1484,6 +1484,16 @@ id: root
 
     ListView {
     id: mainList
+        // When the nav bar is reached via the LB/RB shortcut we must NOT glide the
+        // page to the top; remember the row so we can restore it on the way back.
+        property bool navJump: false
+        property int  savedRow: 1
+        onActiveFocusChanged: {
+            if (activeFocus && navJump) {            // safety net (e.g. returning from a sub-screen)
+                navJump = false;
+                if (currentIndex < 0) currentIndex = savedRow;
+            }
+        }
 
         anchors.fill: parent
         model: mainModel
@@ -1510,6 +1520,7 @@ id: root
             duration: 220; easing.type: Easing.OutCubic
         }
         onCurrentIndexChanged: {
+            if (navJump) return;            // jumping to/from the nav bar: leave scroll position alone
             if (currentIndex <= 1) {
                 highlightRangeMode = ListView.NoHighlightRange;
                 glideTop.restart();
@@ -1570,7 +1581,12 @@ id: root
         // LB / RB — jump straight up to the nav bar from the content area
         if ((api.keys.isPrevPage(event) || api.keys.isNextPage(event)) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (mainList.activeFocus) { playNav(); homebutton.focus = true; }
+            if (mainList.activeFocus) {
+                playNav();
+                mainList.savedRow = mainList.currentIndex;   // remember where we were
+                mainList.navJump  = true;                    // don't glide the page to the top
+                homebutton.focus  = true;
+            }
         }
     }
 
