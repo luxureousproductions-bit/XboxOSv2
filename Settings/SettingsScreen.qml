@@ -114,12 +114,12 @@ id: root
         ListElement {
             settingName: "Omit genre: Application from Showcase"
             setting: "No,Yes"
-            note: "(Reload Required)"
+            note: "Reload Required"
         }
         ListElement {
             settingName: "Omit genre: Emulator from Showcase"
             setting: "No,Yes"
-            note: "(Reload Required)"
+            note: "Reload Required"
         }
         ListElement {
             settingName: "Show WiFi Indicator"
@@ -598,7 +598,7 @@ id: root
             }
             height: vpx(28)
             width: height
-            source: "../assets/images/settingsicon.svg"
+            source: "../assets/images/settingscog_outline.svg"
             sourceSize: Qt.size(vpx(28), vpx(28))
             fillMode: Image.PreserveAspectFit
             smooth: true
@@ -635,20 +635,23 @@ id: root
             }
         }
 
-        // Active tab name (accent)
-        Text {
-            anchors {
-                right: parent.right; rightMargin: globalMargin
-                verticalCenter: parent.verticalCenter
-            }
-            text: (pagelist.currentIndex >= 0 && settingsArr[pagelist.currentIndex])
-                  ? settingsArr[pagelist.currentIndex].pageName.toUpperCase() : ""
-            color: theme.accent
-            font.family: subtitleFont.name
-            font.pixelSize: vpx(24)
-            font.bold: true
-            verticalAlignment: Text.AlignVCenter
+    }
+
+    // Active page name — left of the content box, matches the SETTINGS title color
+    Text {
+        id: activePageLabel
+        z: 6
+        anchors {
+            left: settingsList.left; leftMargin: vpx(25)
+            verticalCenter: header.verticalCenter
         }
+        text: (pagelist.currentIndex >= 0 && settingsArr[pagelist.currentIndex])
+              ? settingsArr[pagelist.currentIndex].pageName.toUpperCase() : ""
+        color: settingsTextColor
+        font.family: subtitleFont.name
+        font.pixelSize: vpx(24)
+        font.bold: true
+        verticalAlignment: Text.AlignVCenter
     }
 
     // Subtle nav-rail panel (balances the content panel)
@@ -864,7 +867,8 @@ id: root
                 // Selection tile
                 Rectangle {
                 id: setTile
-                    anchors { left: parent.left; right: parent.right; top: parent.top }
+                    anchors { left: parent.left; top: parent.top }
+                    anchors.right: isTextInput ? textInputContainer.left : parent.right
                     anchors.leftMargin: vpx(12)
                     anchors.rightMargin: vpx(12)
                     height: itemheight
@@ -901,20 +905,6 @@ id: root
                     anchors {
                         left: parent.left; leftMargin: vpx(25)
                     }
-                }
-                // Value chip (accent pill around the adjustable value)
-                Rectangle {
-                    id: valueChip
-                    visible: selected && !isTextInput
-                    anchors.fill: settingtext
-                    anchors.topMargin: vpx(6)
-                    anchors.bottomMargin: vpx(6)
-                    anchors.leftMargin: vpx(-12)
-                    anchors.rightMargin: vpx(-12)
-                    color: "transparent"
-                    border.width: vpx(1)
-                    border.color: theme.accent
-                    radius: height / 2
                 }
                 Text {
                 id: settingtext
