@@ -1528,8 +1528,10 @@ id: root
     }
 
     onActiveFocusChanged: {
-        if (activeFocus)
+        if (activeFocus) {
             currentHelpbarModel = gridviewHelpModel;
+            listRecommended.maybeRefresh();   // re-pick Recommended only if the showcased count changed
+        }
     }
 
 }
