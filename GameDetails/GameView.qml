@@ -775,7 +775,7 @@ id: root
                 return !(low2 === "application" || low2 === "emulator");
             }
             height: parent.height
-            selected: ListView.isCurrentItem && menu.focus
+            selected: ListView.isCurrentItem && menu.activeFocus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated: 
                 if (selected) {
@@ -793,7 +793,7 @@ id: root
             icon: "../assets/images/trophy.svg"
             iconPadding: vpx(22)
             height: parent.height
-            selected: ListView.isCurrentItem && menu.focus
+            selected: ListView.isCurrentItem && menu.activeFocus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated:
                 if (selected) {
@@ -810,7 +810,7 @@ id: root
 
             icon: "../assets/images/icon_details.svg"
             height: parent.height
-            selected: ListView.isCurrentItem && menu.focus
+            selected: ListView.isCurrentItem && menu.activeFocus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated: 
                 if (selected) {
@@ -829,7 +829,7 @@ id: root
             //text: buttonText
             icon: favIcon
             height: parent.height
-            selected: ListView.isCurrentItem && menu.focus
+            selected: ListView.isCurrentItem && menu.activeFocus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated: 
                 if (selected) {
@@ -847,7 +847,7 @@ id: root
             //text: "Back"
             icon: "../assets/images/icon_back.svg"
             height: parent.height
-            selected: ListView.isCurrentItem && menu.focus
+            selected: ListView.isCurrentItem && menu.activeFocus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated: 
                 if (selected) 
