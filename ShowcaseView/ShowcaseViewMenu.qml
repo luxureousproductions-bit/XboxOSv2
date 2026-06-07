@@ -608,11 +608,13 @@ id: root
             }
         }
 
-        Text {
+        Image {
         id: achievementsTrophyIcon
-            text: "🏆"
+            width: vpx(24); height: vpx(24)
+            sourceSize: Qt.size(vpx(24), vpx(24))
+            source: "../assets/images/trophy.svg"
+            fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
             anchors.centerIn: achievementsbutton
-            font.pixelSize: vpx(18)
             opacity: achievementsbutton.focus ? 1 : 0.7
         }
 
