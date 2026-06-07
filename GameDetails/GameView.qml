@@ -625,6 +625,8 @@ id: root
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; content.focus = true; }
+                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; gv_discoverbutton.focus = true; }
+                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; gv_settingsbutton.focus = true; }
             }
             MouseArea {
                 anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
@@ -664,6 +666,8 @@ id: root
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; content.focus = true; }
+                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; gv_settingsbutton.focus = true; }
+                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; gv_homebutton.focus = true; }
             }
             MouseArea {
                 anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
@@ -710,6 +714,8 @@ id: root
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; content.focus = true; }
+                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; gv_homebutton.focus = true; }
+                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; gv_discoverbutton.focus = true; }
             }
             MouseArea {
                 anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
@@ -1056,6 +1062,11 @@ id: root
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
             settingsScreen();
+        }
+        // LB / RB — jump straight up to the nav bar from the content area
+        if ((api.keys.isPrevPage(event) || api.keys.isNextPage(event)) && !event.isAutoRepeat) {
+            event.accepted = true;
+            if (content.activeFocus && !mediaScreen.visible) { gv_homebutton.focus = true; }
         }
     }
 
