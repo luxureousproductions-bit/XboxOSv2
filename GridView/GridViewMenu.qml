@@ -32,6 +32,80 @@ id: root
     property bool isLeftTriggerPressed: false;
     property bool isRightTriggerPressed: false;
 
+    // System order shared with the home/platform page: collections are walked
+    // THROUGH this array so LB/RB cycling matches the "System sort" setting.
+    property var sortedColl: buildSortedColl()
+    function buildSortedColl() {
+        var n = api.collections.count;
+        var items = [];
+        for (var i = 0; i < n; i++) {
+            var c = api.collections.get(i);
+            items.push({
+                idx:   i,
+                name:  (c.name || "").toLowerCase(),
+                year:  Utils.systemYear(c.shortName),
+                maker: Utils.systemMaker(c.shortName),
+                count: c.games ? c.games.count : 0,
+                pin:   systemPinRank(c.shortName, c.name)
+            });
+        }
+        var mode = settings.SystemSort;
+        items.sort(function(a, b) {
+            if (a.pin !== b.pin) {
+                if (a.pin === -1) return 1;
+                if (b.pin === -1) return -1;
+                return a.pin - b.pin;
+            }
+            if (a.pin !== -1) return 0;
+            var alpha = (a.name < b.name) ? -1 : (a.name > b.name ? 1 : 0);
+            if (mode === "Alphabetical (Z-A)")
+                return -alpha;
+            if (mode === "Release year (oldest)" || mode === "Release year") {
+                if (a.year !== b.year) {
+                    if (a.year === 9999) return 1;
+                    if (b.year === 9999) return -1;
+                    return a.year - b.year;
+                }
+                return alpha;
+            }
+            if (mode === "Release year (newest)") {
+                if (a.year !== b.year) {
+                    if (a.year === 9999) return 1;
+                    if (b.year === 9999) return -1;
+                    return b.year - a.year;
+                }
+                return alpha;
+            }
+            if (mode === "Manufacturer") {
+                if (a.maker !== b.maker) return a.maker < b.maker ? -1 : 1;
+                if (a.year !== b.year) return a.year - b.year;
+                return alpha;
+            }
+            if (mode === "Game count (most)") {
+                if (a.count !== b.count) return b.count - a.count;
+                return alpha;
+            }
+            if (mode === "Game count (fewest)") {
+                if (a.count !== b.count) return a.count - b.count;
+                return alpha;
+            }
+            if (mode === "Default") {
+                return a.idx - b.idx;
+            }
+            return alpha;
+        });
+        var arr = [];
+        for (var k = 0; k < items.length; k++) arr.push(items[k].idx);
+        return arr;
+    }
+    function systemPinRank(sn, nm) {
+        var s = (sn || "").toLowerCase();
+        var nmm = (nm || "").toLowerCase();
+        if (s === "android" || nmm === "android") return 0;
+        if (s === "apps" || s === "androidgames" || nmm === "apps" || nmm === "android games" || nmm === "androidgames") return 1;
+        return -1;
+    }
+
     // ── Sorting & Filters overlay state ───────────────────────────────────
     // Drives the GLOBAL searchTerm / sortByIndex / orderBy / showFavs that the
     // proxy inside ListCollectionGames already filters & sorts on — so the
@@ -552,7 +626,7 @@ id: root
             id: boxartdelegate
 
                 BoxArtGridItem {
-                    selected: GridView.isCurrentItem && root.focus
+                    selected: GridView.isCurrentItem && gamegrid.focus
                     gameData: modelData
                     artStyle: settings.GridThumbnail
 
@@ -577,7 +651,7 @@ id: root
                 DynamicGridItem {
                 id: dynamicdelegatecontainer
 
-                    selected: GridView.isCurrentItem && root.focus
+                    selected: GridView.isCurrentItem && gamegrid.focus
                     artMode: settings.GridArt
                     showLogo: settings.GridGameLogo === "Yes"
 
@@ -989,10 +1063,9 @@ id: root
             // Play the sfx BEFORE the heavy model rebuild below; the helper does stop()+play()
             // so rapid cycling always restarts the sound instead of dropping the retrigger.
             playTabRight();
-            if (currentCollectionIndex < api.collections.count-1)
-                currentCollectionIndex++;
-            else
-                currentCollectionIndex = 0;
+            var ni = sortedColl.indexOf(currentCollectionIndex);
+            ni = (ni < 0) ? 0 : (ni + 1) % sortedColl.length;
+            currentCollectionIndex = sortedColl[ni];
 
             gamegrid.currentIndex = 0;
             sortedGames = null;
@@ -1003,10 +1076,9 @@ id: root
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
             playTabLeft();
-            if (currentCollectionIndex > 0)
-                currentCollectionIndex--;
-            else
-                currentCollectionIndex = api.collections.count-1;
+            var pi = sortedColl.indexOf(currentCollectionIndex);
+            pi = (pi < 0) ? 0 : (pi - 1 + sortedColl.length) % sortedColl.length;
+            currentCollectionIndex = sortedColl[pi];
 
             gamegrid.currentIndex = 0;
             sortedGames = null;
