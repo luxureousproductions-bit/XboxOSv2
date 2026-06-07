@@ -791,6 +791,8 @@ id: root
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamelist.focus = true; }
+                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); discoverbutton.focus = true; }
+                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); settingsbutton.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: showcaseScreen(); }
             Image {
@@ -814,6 +816,8 @@ id: root
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamelist.focus = true; }
+                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); achievementsbutton.focus = true; }
+                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); homebutton.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: discoverScreen(); }
             Canvas {
@@ -844,6 +848,8 @@ id: root
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamelist.focus = true; }
+                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); settingsbutton.focus = true; }
+                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); discoverbutton.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: achievementsScreen(); }
             Image {
@@ -866,6 +872,8 @@ id: root
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamelist.focus = true; }
+                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); homebutton.focus = true; }
+                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); achievementsbutton.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: settingsScreen(); }
             Image {
@@ -988,7 +996,7 @@ id: root
             Item {
                 width: ListView.view.width
                 height: itemheight
-                property bool selected: ListView.isCurrentItem
+                property bool selected: ListView.isCurrentItem && gamelist.activeFocus
 
                 Rectangle {
                     anchors {
@@ -1463,6 +1471,11 @@ id: root
         if (api.keys.isPageDown(event) && !event.isAutoRepeat) {
             event.accepted = true;
             if (!filterOpen && gamelist.focus) { playToggle(); jumpToNextLetter(); }
+        }
+        // LB / RB — jump straight up to the nav bar from anywhere in the list
+        if ((api.keys.isPrevPage(event) || api.keys.isNextPage(event)) && !event.isAutoRepeat) {
+            event.accepted = true;
+            if (!filterOpen && gamelist.focus) { playNav(); homebutton.focus = true; }
         }
     }
 
