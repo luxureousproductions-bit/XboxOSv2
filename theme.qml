@@ -25,6 +25,7 @@ import "Global"
 import "GameDetails"
 import "ShowcaseView"
 import "Settings"
+import "utils.js" as Utils
 
 FocusScope {
 id: root
@@ -124,7 +125,85 @@ id: root
     property int currentCollectionIndex: 0
     property bool collectionVisited: false   // strip stays on the hero until a collection is actually opened
     property int currentGameIndex: 0
-    property var currentCollection: api.collections.get(currentCollectionIndex)    
+    property var currentCollection: api.collections.get(currentCollectionIndex)
+
+    // Shared system order (home/platform page + grid LB/RB cycle), per the
+    // "System sort" setting. Collections are read THROUGH this index array so
+    // every screen orders systems identically without altering Pegasus's order.
+    property var sortedColl: buildSortedColl()
+    function buildSortedColl() {
+        var n = api.collections.count;
+        var items = [];
+        for (var i = 0; i < n; i++) {
+            var c = api.collections.get(i);
+            items.push({
+                idx:   i,
+                name:  (c.name || "").toLowerCase(),
+                year:  Utils.systemYear(c.shortName),
+                maker: Utils.systemMaker(c.shortName),
+                count: c.games ? c.games.count : 0,
+                pin:   systemPinRank(c.shortName, c.name)
+            });
+        }
+        var mode = settings.SystemSort;
+        items.sort(function(a, b) {
+            // Pinned systems (Android, then Android games) always lead.
+            if (a.pin !== b.pin) {
+                if (a.pin === -1) return 1;
+                if (b.pin === -1) return -1;
+                return a.pin - b.pin;
+            }
+            if (a.pin !== -1) return 0;
+
+            var alpha = (a.name < b.name) ? -1 : (a.name > b.name ? 1 : 0);
+
+            if (mode === "Alphabetical (Z-A)")
+                return -alpha;
+            if (mode === "Release year (oldest)" || mode === "Release year") {
+                if (a.year !== b.year) {
+                    if (a.year === 9999) return 1;
+                    if (b.year === 9999) return -1;
+                    return a.year - b.year;
+                }
+                return alpha;
+            }
+            if (mode === "Release year (newest)") {
+                if (a.year !== b.year) {
+                    if (a.year === 9999) return 1;
+                    if (b.year === 9999) return -1;
+                    return b.year - a.year;
+                }
+                return alpha;
+            }
+            if (mode === "Manufacturer") {
+                if (a.maker !== b.maker) return a.maker < b.maker ? -1 : 1;
+                if (a.year !== b.year) return a.year - b.year;
+                return alpha;
+            }
+            if (mode === "Game count (most)") {
+                if (a.count !== b.count) return b.count - a.count;
+                return alpha;
+            }
+            if (mode === "Game count (fewest)") {
+                if (a.count !== b.count) return a.count - b.count;
+                return alpha;
+            }
+            if (mode === "Default") {
+                return a.idx - b.idx;
+            }
+            return alpha;
+        });
+        var arr = [];
+        for (var k = 0; k < items.length; k++) arr.push(items[k].idx);
+        return arr;
+    }
+    function systemPinRank(sn, nm) {
+        var s = (sn || "").toLowerCase();
+        var nmm = (nm || "").toLowerCase();
+        if (s === "android" || nmm === "android") return 0;
+        if (s === "apps" || s === "androidgames" || nmm === "apps" || nmm === "android games" || nmm === "androidgames") return 1;
+        return -1;
+    }
     property var currentGame
     property var launchingGame: null         // game shown on the launch splash
     property bool launchSuspended: false     // true once the app has backgrounded for a launch
