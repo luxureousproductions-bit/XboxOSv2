@@ -771,6 +771,13 @@ id: root
                 var lower = (sepM ? sepM[1] : g).trim().toLowerCase();
                 return (lower === "application" || lower === "emulator") ? "Open" : "Play game";
             }
+            iconVisible: {
+                if (!game || game.genreList.length === 0) return true;
+                var g2 = game.genreList[0];
+                var m2 = g2.match(/^(.*?)\s*[\/,]\s*(.+)$/);
+                var low2 = (m2 ? m2[1] : g2).trim().toLowerCase();
+                return !(low2 === "application" || low2 === "emulator");
+            }
             height: parent.height
             selected: ListView.isCurrentItem && menu.focus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
@@ -788,7 +795,7 @@ id: root
 
             width: height
             icon: "../assets/images/trophy.svg"
-            iconPadding: vpx(16)
+            iconPadding: vpx(22)
             height: parent.height
             selected: ListView.isCurrentItem && menu.focus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
@@ -1073,7 +1080,7 @@ id: root
             button: "details"
         }
         ListElement {
-            name: "Launch"
+            name: "Select"
             button: "accept"
         }
     }
