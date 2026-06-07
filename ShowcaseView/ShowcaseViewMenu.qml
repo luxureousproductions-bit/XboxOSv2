@@ -66,91 +66,6 @@ id: root
     property var collection5: getCollection(settings.ShowcaseCollection5, settings.ShowcaseCollection5_Thumbnail)
     property var collection6: getCollection(settings.ShowcaseCollection6, settings.ShowcaseCollection6_Thumbnail)
 
-    // Sorted mapping of strip position -> api.collections index, per the
-    // "System sort" setting. The system tiles read api.collections THROUGH this
-    // array, so they can be ordered alphabetically, by release year, or by
-    // manufacturer+year without altering Pegasus's own collection order.
-    property var sortedColl: buildSortedColl()
-    function buildSortedColl() {
-        var n = api.collections.count;
-        var items = [];
-        for (var i = 0; i < n; i++) {
-            var c = api.collections.get(i);
-            items.push({
-                idx:   i,
-                name:  (c.name || "").toLowerCase(),
-                year:  Utils.systemYear(c.shortName),
-                maker: Utils.systemMaker(c.shortName),
-                count: c.games ? c.games.count : 0,
-                pin:   systemPinRank(c.shortName, c.name)
-            });
-        }
-        var mode = settings.SystemSort;
-        items.sort(function(a, b) {
-            // Pinned systems (Android, then Android games) always lead, in pin order,
-            // regardless of the chosen sort.
-            if (a.pin !== b.pin) {
-                if (a.pin === -1) return 1;
-                if (b.pin === -1) return -1;
-                return a.pin - b.pin;
-            }
-            if (a.pin !== -1) return 0;
-
-            var alpha = (a.name < b.name) ? -1 : (a.name > b.name ? 1 : 0);
-
-            if (mode === "Alphabetical (Z-A)")
-                return -alpha;
-
-            // older labels "Release year" map to oldest-first
-            if (mode === "Release year (oldest)" || mode === "Release year") {
-                if (a.year !== b.year) {
-                    if (a.year === 9999) return 1;   // unknown year sinks to the end
-                    if (b.year === 9999) return -1;
-                    return a.year - b.year;          // oldest first
-                }
-                return alpha;
-            }
-            if (mode === "Release year (newest)") {
-                if (a.year !== b.year) {
-                    if (a.year === 9999) return 1;   // unknown year sinks to the end
-                    if (b.year === 9999) return -1;
-                    return b.year - a.year;          // newest first
-                }
-                return alpha;
-            }
-            if (mode === "Manufacturer") {
-                if (a.maker !== b.maker) return a.maker < b.maker ? -1 : 1;  // "zzz" unknown sinks
-                if (a.year !== b.year) return a.year - b.year;
-                return alpha;
-            }
-            if (mode === "Game count (most)") {
-                if (a.count !== b.count) return b.count - a.count;
-                return alpha;
-            }
-            if (mode === "Game count (fewest)") {
-                if (a.count !== b.count) return a.count - b.count;
-                return alpha;
-            }
-            if (mode === "Default") {
-                return a.idx - b.idx;   // Pegasus's own collection order
-            }
-            // Alphabetical (A-Z) — default (also catches the old "Alphabetical" value)
-            return alpha;
-        });
-        var arr = [];
-        for (var k = 0; k < items.length; k++) arr.push(items[k].idx);
-        return arr;
-    }
-    // Returns a pin rank for systems that must always lead the list (0 = first).
-    // Android, then Android games; -1 means "not pinned" (normal sort).
-    function systemPinRank(sn, nm) {
-        var s = (sn || "").toLowerCase();
-        var nmm = (nm || "").toLowerCase();
-        if (s === "android" || nmm === "android") return 0;
-        if (s === "apps" || s === "androidgames" || nmm === "apps" || nmm === "android games" || nmm === "androidgames") return 1;
-        return -1;
-    }
-
     function getCollection(collectionName, collectionThumbnail) {
         var collection = {
             enabled: true,
@@ -888,7 +803,7 @@ id: root
                     if (platformlist.currentIndex <= 0) {
                         if (platformlist.resumeGame) highlightedGame = platformlist.resumeGame;
                     } else {
-                        var coll = api.collections.get(root.sortedColl[platformlist.currentIndex - 1]);
+                        var coll = api.collections.get(sortedColl[platformlist.currentIndex - 1]);
                         if (coll && coll.games.count > 0) {
                             var randomIdx = Math.floor(Math.random() * coll.games.count);
                             highlightedGame = coll.games.get(randomIdx);
@@ -943,7 +858,7 @@ id: root
                     if (currentIndex <= 0) {
                         if (resumeGame) highlightedGame = resumeGame;
                     } else {
-                        var coll = api.collections.get(root.sortedColl[currentIndex - 1]);
+                        var coll = api.collections.get(sortedColl[currentIndex - 1]);
                         if (coll && coll.games.count > 0) {
                             var randomIdx = Math.floor(Math.random() * coll.games.count);
                             highlightedGame = coll.games.get(randomIdx);
@@ -952,7 +867,7 @@ id: root
                 }
             }
 
-            property int savedIndex: collectionVisited ? (root.sortedColl.indexOf(currentCollectionIndex) + 1) : 0   // strip index (hero = 0); hero until a collection is opened
+            property int savedIndex: collectionVisited ? (sortedColl.indexOf(currentCollectionIndex) + 1) : 0   // strip index (hero = 0); hero until a collection is opened
             onFocusChanged: {
                 if (focus) {
                     currentIndex = savedIndex;
@@ -960,7 +875,7 @@ id: root
                         if (currentIndex <= 0) {
                             if (resumeGame) highlightedGame = resumeGame;
                         } else {
-                            var coll = api.collections.get(root.sortedColl[currentIndex - 1]);
+                            var coll = api.collections.get(sortedColl[currentIndex - 1]);
                             if (coll && coll.games.count > 0) {
                                 var randomIdx = Math.floor(Math.random() * coll.games.count);
                                 highlightedGame = coll.games.get(randomIdx);
@@ -979,7 +894,7 @@ id: root
             delegate: Rectangle {
                 id: tile
                 property bool isHero: index === 0
-                property var  coll: isHero ? null : api.collections.get(root.sortedColl[index - 1])
+                property var  coll: isHero ? null : api.collections.get(sortedColl[index - 1])
                 property bool selected: ListView.isCurrentItem && platformlist.focus
                 // Xbox-style: tiles to either side of the selected one slide a bit to make room
                 property real navShift: {
@@ -1217,7 +1132,7 @@ id: root
                     onClicked: {
                         if (selected) {
                             if (isHero) { if (platformlist.resumeGame) { launchGame(platformlist.resumeGame); } }
-                            else { currentCollectionIndex = root.sortedColl[index - 1]; collectionVisited = true; softwareScreen(); }
+                            else { currentCollectionIndex = sortedColl[index - 1]; collectionVisited = true; softwareScreen(); }
                         } else {
                             mainList.currentIndex = topRow.ObjectModel.index;
                             platformlist.currentIndex = index;
@@ -1243,7 +1158,7 @@ id: root
                     if (currentIndex <= 0) {
                         if (resumeGame) { launchGame(resumeGame); }
                     } else {
-                        currentCollectionIndex = root.sortedColl[currentIndex - 1];
+                        currentCollectionIndex = sortedColl[currentIndex - 1];
                         collectionVisited = true;
                         softwareScreen();
                     }
