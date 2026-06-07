@@ -22,45 +22,74 @@ id: root
     
     readonly property var games: gamesFiltered
     function currentGame(index) { return api.allGames.get(gamesFiltered.mapToSource(index)) }
-    property int max: gamesFiltered.count
+    property int max: 15
 
     property bool omitApplication: false
     property bool omitEmulator: false
 
+    // Lazy: the proxy does NO work (no full-library rating sort / per-row filter)
+    // until armed. GameView sets this true only when the Recommended fallback is
+    // actually shown (publisher/developer list empty), so it costs nothing at load.
+    property bool active: false
+
     property var randomIndices: {};
 
+    // The `max` value used for the current picks. Lets the showcase re-pick ONLY
+    // when the "Number of games showcased" count actually changed.
+    property int lastPickedMax: -1
+
     function refresh() {
+        // Pick up to `max` random games, applying the application/emulator omit
+        // HERE (at selection time) so the result never depends on filter timing.
         var indices = {};
-        for (var i = 0; i < max; ++i) {
-            var randomIndex = Math.floor(Math.random() * api.allGames.count);
-            indices[randomIndex.toString()] = true;
+        var total   = api.allGames.count;
+        var picked  = 0;
+        var tries   = 0;
+        while (picked < max && total > 0 && tries < max * 20) {
+            tries++;
+            var ri  = Math.floor(Math.random() * total);
+            var key = ri.toString();
+            if (indices[key]) continue;
+            var g = api.allGames.get(ri);
+            var skip = false;
+            if (g) {
+                var genres = g.genreList;
+                for (var j = 0; j < genres.length; j++) {
+                    var gg = genres[j].toLowerCase();
+                    if (omitApplication && gg === "application") { skip = true; break; }
+                    if (omitEmulator    && gg === "emulator")    { skip = true; break; }
+                }
+            }
+            if (skip) continue;
+            indices[key] = true;
+            picked++;
         }
         randomIndices = indices;
+        lastPickedMax = max;
     }
 
-    Component.onCompleted: refresh()
+    // Re-pick only if the showcased count changed since the last refresh.
+    function maybeRefresh() { if (active && max !== lastPickedMax) refresh(); }
+
+    // Eager seed only when armed at construction (the Showcase sets active:true).
+    // Instances left inactive (e.g. GameView) do nothing here and arm on demand,
+    // so they cost nothing at load.
+    Component.onCompleted: if (active) refresh()
 
     SortFilterProxyModel {
     id: gamesFiltered
-        sourceModel: api.allGames
+        sourceModel: active ? api.allGames : null
         sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder; }
         filters: ExpressionFilter {
-            expression: {
-                if (!randomIndices[model.index.toString()]) return false;
-                var genres = model.genreList;
-                for (var i = 0; i < genres.length; i++) {
-                    var g = genres[i].toLowerCase();
-                    if (root.omitApplication && g === "application") return false;
-                    if (root.omitEmulator && g === "emulator") return false;
-                }
-                return true;
-            }
+            // Membership test only — omit logic now lives in refresh(), so this
+            // depends solely on randomIndices (which the proxy reliably reacts to).
+            expression: randomIndices[model.index.toString()] === true
         }
     }
 
     property var collection: {
         return {
-            name:       "Recommended Games",
+            name:       "Games We Picked For You",
             shortName:  "recommended",
             games:      gamesFiltered
         }

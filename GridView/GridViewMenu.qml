@@ -23,8 +23,6 @@ import "../utils.js" as Utils
 
 FocusScope {
 id: root
-    // While not necessary to do it here, this means we don't need to change it in both
-    // touch and gamepad functions each time
     function gameActivated() {
         storedCollectionGameIndex = gamegrid.currentIndex
         gameDetails(list.currentGame(gamegrid.currentIndex));
@@ -33,6 +31,152 @@ id: root
     property var sortedGames;
     property bool isLeftTriggerPressed: false;
     property bool isRightTriggerPressed: false;
+
+    // ── Sorting & Filters overlay state ───────────────────────────────────
+    // Drives the GLOBAL searchTerm / sortByIndex / orderBy / showFavs that the
+    // proxy inside ListCollectionGames already filters & sorts on — so the
+    // grid itself stays untouched. Fully controller-driven, no native IME.
+    property bool filterOpen:   false
+    property bool searchActive: false
+    property int  filterRow:    0
+    property bool genrePickerOpen:  false
+    property var  genreOptions:     []
+    property int  genrePickerIndex: 0
+    property var  sortFields: [
+        { label: "Title",       idx: 0 },
+        { label: "Last Played", idx: 1 },
+        { label: "Most Played", idx: 2 },
+        { label: "Rating",      idx: 3 }
+    ]
+    property bool kbSpecial: false
+    property var kbMain: [
+        "A","B","C","D","E","F","G","H","I","J",
+        "K","L","M","N","O","P","Q","R","S","T",
+        "U","V","W","X","Y","Z","-","'",".",":",
+        "0","1","2","3","4","5","6","7","8","9",
+        "áé","SPACE","DEL","CLR","OK"
+    ]
+    property var kbSpec: [
+        "À","Á","Â","Ã","Ä","Å","Æ","Ç","È","É",
+        "Ê","Ë","Ì","Í","Î","Ï","Ñ","Ò","Ó","Ô",
+        "Õ","Ö","Ø","Ù","Ú","Û","Ü","Ý","ß","°",
+        "&","!","?","@","#","%","+","=",",",";",
+        "ABC","SPACE","DEL","CLR","OK"
+    ]
+    property var keyboardKeys: kbSpecial ? kbSpec : kbMain
+    property int keyCols:  10
+    property int keyIndex: 0
+
+    function activateSearch() { searchMode = "Title"; keyIndex = 0; kbSpecial = false; searchActive = true; }
+    function pressKey(k) {
+        if (k === "áé")  { kbSpecial = true;  return; }
+        if (k === "ABC") { kbSpecial = false; return; }
+        if (k === "SPACE")    searchTerm += " ";
+        else if (k === "DEL") searchTerm = searchTerm.slice(0, -1);
+        else if (k === "CLR") searchTerm = "";
+        else if (k === "OK")  searchActive = false;
+        else                  searchTerm += k;
+        gamegrid.currentIndex = 0;
+        sortedGames = null;
+    }
+    function selectSort(idx) {
+        if (sortByIndex === idx) {
+            orderBy = (orderBy === Qt.AscendingOrder) ? Qt.DescendingOrder : Qt.AscendingOrder;
+        } else {
+            sortByIndex = idx;
+            orderBy = (idx === 0) ? Qt.AscendingOrder : Qt.DescendingOrder;
+        }
+        gamegrid.currentIndex = 0;
+        sortedGames = null;
+    }
+
+    // genreToPattern() is global (theme.qml). Genres are collected from the
+    // full (unfiltered) collection and rebuilt each time the picker opens.
+    function buildGenreOptions() {
+        var set = {};
+        var src = list.collection.games;
+        var n = src.count;
+        for (var i = 0; i < n; i++) {
+            var g = src.get(i);
+            if (!g || !g.genre) continue;
+            var parts = g.genre.split(",");
+            for (var j = 0; j < parts.length; j++) {
+                var t = parts[j].trim();
+                if (t.length) set[t] = true;
+            }
+        }
+        var arr = Object.keys(set).sort(function(a,b){ return a.toLowerCase().localeCompare(b.toLowerCase()); });
+        arr.unshift("All");
+        genreOptions = arr;
+    }
+    function openGenrePicker() {
+        buildGenreOptions();
+        var want = (genreSelected.length > 0) ? genreSelected[0] : "All";
+        var idx = genreOptions.indexOf(want);
+        genrePickerIndex = idx >= 0 ? idx : 0;
+        genrePickerOpen = true;
+    }
+    function toggleGenre(g) {
+        if (g === "All") { genreSelected = []; gamegrid.currentIndex = 0; sortedGames = null; return; }
+        var arr = genreSelected.slice();
+        var idx = arr.indexOf(g);
+        if (idx >= 0) arr.splice(idx, 1);
+        else           arr.push(g);
+        genreSelected = arr;
+        gamegrid.currentIndex = 0;
+        sortedGames = null;
+    }
+
+    // Alphabetical letter-jump through the genre picker (mirrors the game grid)
+    function genreJumpLetter(dir) {
+        if (genreOptions.length < 2) return;
+        var cur = genrePickerIndex;
+        var curL = (genreOptions[cur] || "").charAt(0).toUpperCase();
+        if (dir > 0) {
+            var i = cur + 1;
+            while (i < genreOptions.length && (genreOptions[i] || "").charAt(0).toUpperCase() === curL) i++;
+            genrePickerIndex = (i < genreOptions.length) ? i : genreOptions.length - 1;
+        } else {
+            var j = cur - 1;
+            while (j > 0 && (genreOptions[j] || "").charAt(0).toUpperCase() === curL) j--;
+            if (j >= 0) {
+                var pL = (genreOptions[j] || "").charAt(0).toUpperCase();
+                while (j > 0 && (genreOptions[j-1] || "").charAt(0).toUpperCase() === pL) j--;
+                genrePickerIndex = j;
+            }
+        }
+    }
+
+    // Reset every filter/sort back to defaults
+    function clearAllFilters() {
+        searchTerm    = "";
+        searchMode    = "Title";
+        genreSelected = [];
+        showFavs      = false;
+        sortByIndex   = 0;
+        orderBy       = Qt.AscendingOrder;
+        gamegrid.currentIndex = 0;
+        sortedGames   = null;
+    }
+
+    // Resolve a controller action to its glyph file (assets/images/controller/<hex>.png)
+    function fpBtnArt(action) {
+        var bm;
+        if      (action === "accept")   bm = api.keys.accept;
+        else if (action === "cancel")   bm = api.keys.cancel;
+        else if (action === "filters")  bm = api.keys.filters;
+        else if (action === "details")  bm = api.keys.details;
+        else if (action === "pageUp")   bm = api.keys.pageUp;
+        else if (action === "pageDown") bm = api.keys.pageDown;
+        else                            bm = api.keys.accept;
+        for (var i = 0; i < bm.length; i++) {
+            if (bm[i].name().includes("Gamepad")) {
+                var v = bm[i].key.toString(16);
+                return v.substring(v.length - 1, v.length);
+            }
+        }
+        return "0";
+    }
 
     function nextChar(c, modifier) {
         const firstAlpha = 97;
@@ -127,7 +271,9 @@ id: root
         }
 
         gamegrid.focus = true;
-        sfxToggle.play();
+        // stop() first so rapid letter-jumping always restarts the sound (Qt SoundEffect
+        // otherwise drops a play() that arrives while the previous one is still playing).
+        playToggle();
 
         return true;
     }
@@ -178,28 +324,175 @@ id: root
         }
     }
 
-    Rectangle {
+    // ── Custom header (collection name + centered nav buttons) ────────────
+    Item {
     id: header
-
-        anchors {
-            top:    parent.top
-            left:   parent.left
-            right:  parent.right
-        }
-        height: vpx(95)
-        color: theme.main
+        anchors { top: parent.top; left: parent.left; right: parent.right }
+        height: vpx(75)
         z: 5
 
-        HeaderBar {
-        id: headercontainer
+        Rectangle { anchors.fill: parent; color: theme.main }
 
-            anchors.fill: parent
-            filteredCount: list.games.count
+        // Platform logo (top-left); falls back to the collection name if missing
+        Image {
+        id: platformlogo
+            anchors { top: parent.top; topMargin: vpx(8); left: parent.left; leftMargin: globalMargin }
+            height: vpx(50)
+            fillMode: Image.PreserveAspectFit
+            source: list.collection ? "../assets/images/logospng/" + Utils.processPlatformName(list.collection.shortName) + ".png" : ""
+            smooth: true
+            asynchronous: false
+            cache: true
+            visible: status === Image.Ready
+            MouseArea { anchors.fill: parent; onClicked: previousScreen(); }
         }
-        Keys.onDownPressed: {
-            sfxNav.play();
-            gamegrid.focus = true;
-            gamegrid.currentIndex = 0;
+        Text {
+        id: platformtitle
+            anchors { top: parent.top; topMargin: vpx(8); left: parent.left; leftMargin: globalMargin; right: homebutton.left; rightMargin: vpx(20) }
+            height: vpx(50)
+            text: list.collection ? list.collection.name : ""
+            color: theme.text; font.family: titleFont.name; font.pixelSize: vpx(30); font.bold: true
+            verticalAlignment: Text.AlignVCenter
+            elide: Text.ElideRight
+            visible: platformlogo.status !== Image.Ready
+            MouseArea { anchors.fill: parent; onClicked: previousScreen(); }
+        }
+        Text {
+            anchors { left: parent.left; leftMargin: globalMargin; top: platformlogo.bottom; topMargin: vpx(2) }
+            text: list.games.count + " games"
+            color: theme.text; opacity: 0.7; font.family: subtitleFont.name; font.pixelSize: vpx(17)
+            visible: settings.GameCounter !== "No"
+        }
+
+        // Nav buttons (home / discover / achievements / settings)
+        Rectangle {
+        id: homebutton
+            width: vpx(36); height: vpx(36); radius: height/2
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(81) }
+            color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
+            Keys.onDownPressed:  { playNav(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            Keys.onRightPressed: { playNav(); discoverbutton.focus = true; }
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            }
+            MouseArea { anchors.fill: parent; onClicked: showcaseScreen(); }
+            Image {
+                anchors.centerIn: parent
+                width: vpx(24); height: vpx(24)
+                sourceSize: Qt.size(vpx(24), vpx(24))
+                source: "../assets/images/icon_home.svg"
+                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+                opacity: homebutton.focus ? 1 : 0.7
+            }
+        }
+
+        Rectangle {
+        id: discoverbutton
+            width: vpx(36); height: vpx(36); radius: height/2
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(27) }
+            color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
+            Keys.onDownPressed:  { playNav(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            Keys.onLeftPressed:  { playNav(); homebutton.focus = true; }
+            Keys.onRightPressed: { playNav(); achievementsbutton.focus = true; }
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            }
+            MouseArea { anchors.fill: parent; onClicked: discoverScreen(); }
+            Canvas {
+                anchors { fill: parent; margins: vpx(6) }
+                onPaint: {
+                    var ctx = getContext("2d"); ctx.reset();
+                    var cx = width/2, cy = height/2, r = Math.min(cx,cy)-1;
+                    ctx.globalAlpha = discoverbutton.focus ? 1.0 : 0.85;
+                    ctx.strokeStyle = "white"; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+                    ctx.fillStyle = "white";
+                    ctx.beginPath(); ctx.moveTo(cx, cy-r*0.65); ctx.lineTo(cx+r*0.30, cy+r*0.10); ctx.lineTo(cx, cy+r*0.20); ctx.lineTo(cx-r*0.30, cy+r*0.10); ctx.closePath(); ctx.fill();
+                    ctx.globalAlpha = 0.35;
+                    ctx.beginPath(); ctx.moveTo(cx, cy+r*0.65); ctx.lineTo(cx-r*0.30, cy-r*0.10); ctx.lineTo(cx, cy-r*0.20); ctx.lineTo(cx+r*0.30, cy-r*0.10); ctx.closePath(); ctx.fill();
+                }
+                Connections { target: discoverbutton; onFocusChanged: parent.requestPaint() }
+            }
+        }
+
+        Rectangle {
+        id: achievementsbutton
+            width: vpx(36); height: vpx(36); radius: height/2
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(27) }
+            color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
+            Keys.onDownPressed:  { playNav(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            Keys.onLeftPressed:  { playNav(); discoverbutton.focus = true; }
+            Keys.onRightPressed: { playNav(); settingsbutton.focus = true; }
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            }
+            MouseArea { anchors.fill: parent; onClicked: achievementsScreen(); }
+            Image {
+                anchors.centerIn: parent
+                width: vpx(24); height: vpx(24)
+                sourceSize: Qt.size(vpx(24), vpx(24))
+                source: "../assets/images/trophy.svg"
+                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+                opacity: achievementsbutton.focus ? 1 : 0.7
+            }
+        }
+
+        Rectangle {
+        id: settingsbutton
+            width: vpx(36); height: vpx(36); radius: height/2
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(81) }
+            color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
+            Keys.onDownPressed: { playNav(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            Keys.onLeftPressed: { playNav(); achievementsbutton.focus = true; }
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+            }
+            MouseArea { anchors.fill: parent; onClicked: settingsScreen(); }
+            Image {
+                anchors.centerIn: parent
+                width: vpx(24); height: vpx(24)
+                sourceSize: Qt.size(vpx(24), vpx(24))
+                source: "../assets/images/settingsicon.svg"
+                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+            }
+        }
+
+        // Nav button labels — shown only when the button is highlighted
+        Text {
+            text: "Home"
+            anchors { top: homebutton.bottom; topMargin: vpx(3); horizontalCenter: homebutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: homebutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+        Text {
+            text: "Discover"
+            anchors { top: discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: discoverbutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: discoverbutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+        Text {
+            text: "RetroAchievements"
+            anchors { top: achievementsbutton.bottom; topMargin: vpx(3); horizontalCenter: achievementsbutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: achievementsbutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+        Text {
+            text: "Settings"
+            anchors { top: settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: settingsbutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: settingsbutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
         }
     }
 
@@ -216,7 +509,6 @@ id: root
         GridView {
         id: gamegrid
 
-            // Figuring out the aspect ratio for box art
             property real cellHeightRatio: fakebox.paintedHeight / fakebox.paintedWidth
             property real savedCellHeight: {
                 if (settings.GridThumbnail == "Tall") {
@@ -260,13 +552,13 @@ id: root
             id: boxartdelegate
 
                 BoxArtGridItem {
-                    selected: GridView.isCurrentItem && root.focus
+                    selected: GridView.isCurrentItem && gamegrid.focus
                     gameData: modelData
                     artStyle: settings.GridThumbnail
 
                     width:      GridView.view.cellWidth
                     height:     GridView.view.cellHeight - titleMargin
-                    
+
                     onActivate: {
                         if (selected)
                             gameActivated();
@@ -285,11 +577,13 @@ id: root
                 DynamicGridItem {
                 id: dynamicdelegatecontainer
 
-                    selected: GridView.isCurrentItem && root.focus
+                    selected: GridView.isCurrentItem && gamegrid.focus
+                    artMode: settings.GridArt
+                    showLogo: settings.GridGameLogo === "Yes"
 
                     width:      GridView.view.cellWidth
                     height:     GridView.view.cellHeight - titleMargin
-                    
+
                     onActivated: {
                         if (selected)
                             gameActivated();
@@ -314,31 +608,312 @@ id: root
                 }
             }
 
-            // Manually set the navigation this way so audio can play without performance hits
             Keys.onUpPressed: {
-                sfxNav.play();
+                playNav();
                 if (currentIndex < numColumns) {
-                    headercontainer.focus = true;
+                    homebutton.focus = true;
                     gamegrid.currentIndex = -1;
                 } else {
                     moveCurrentIndexUp();
                 }
             }
-            Keys.onDownPressed:     { sfxNav.play(); moveCurrentIndexDown() }
-            Keys.onLeftPressed:     { sfxNav.play(); moveCurrentIndexLeft() }
-            Keys.onRightPressed:    { sfxNav.play(); moveCurrentIndexRight() }
+            Keys.onDownPressed:     { playNav(); moveCurrentIndexDown() }
+            Keys.onLeftPressed:     { playNav(); moveCurrentIndexLeft() }
+            Keys.onRightPressed:    { playNav(); moveCurrentIndexRight() }
         }
 
     }
 
+    // ── Sorting & Filters overlay (same keyboard filters as All Games) ────
+    Rectangle {
+    id: filterPanel
+        visible: filterOpen; z: 30
+        anchors.fill: parent
+        color: Qt.rgba(0, 0, 0, 0.78)
+
+        MouseArea { anchors.fill: parent; onClicked: { searchActive = false; filterOpen = false; gamegrid.focus = true; } }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: vpx(500)
+            height: titleTxt.height + fieldCol.height + vpx(60)
+            radius: vpx(10)
+            color: Qt.rgba(0.10, 0.10, 0.10, 0.98)
+            border.color: theme.accent; border.width: 2
+
+            Text {
+            id: titleTxt
+                text: "Filters"
+                color: theme.text
+                font.family: titleFont.name; font.pixelSize: vpx(24); font.bold: true
+                anchors { top: parent.top; topMargin: vpx(18); left: parent.left; leftMargin: vpx(24) }
+            }
+
+            Column {
+            id: fieldCol
+                anchors { top: titleTxt.bottom; topMargin: vpx(14); left: parent.left; right: parent.right; leftMargin: vpx(16); rightMargin: vpx(16) }
+                spacing: vpx(6)
+
+                // Name row — shows the current search text
+                Rectangle {
+                    visible: !genrePickerOpen
+                    width: parent.width; height: vpx(52); radius: vpx(6)
+                    property bool onRow: filterRow === 0 || searchActive
+                    color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+
+                    Text {
+                        anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                        text: "\uD83D\uDD0D"; font.pixelSize: vpx(15); width: vpx(22)
+                        color: theme.text; opacity: onRow ? 1 : 0.6
+                    }
+                    Text {
+                        anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                        text: searchActive
+                              ? (searchTerm === "" ? "Type a name\u2026" : searchTerm)
+                              : (searchTerm === "" ? "Name: (no filter)" : "Name: " + searchTerm)
+                        color: onRow ? theme.accent : theme.text
+                        opacity: onRow ? 1 : 0.85
+                        elide: Text.ElideRight
+                        font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: onRow
+                    }
+                    MouseArea { anchors.fill: parent; onClicked: { filterRow = 0; activateSearch(); } }
+                }
+
+                // Genre row — opens the genre picker
+                Rectangle {
+                    visible: !searchActive && !genrePickerOpen
+                    width: parent.width; height: vpx(52); radius: vpx(6)
+                    property bool onRow: filterRow === 1
+                    color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+
+                    Text {
+                        anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                        text: "\u2630"; font.pixelSize: vpx(15); width: vpx(22)
+                        color: theme.text; opacity: onRow ? 1 : 0.6
+                    }
+                    Text {
+                        anchors { left: parent.left; leftMargin: vpx(46); right: gvArrow.left; rightMargin: vpx(8); verticalCenter: parent.verticalCenter }
+                        text: genreSelected.length === 0 ? "Genre: All"
+                             : genreSelected.length === 1 ? "Genre: " + genreSelected[0]
+                             : "Genre: " + genreSelected.length + " selected"
+                        color: onRow ? theme.accent : theme.text
+                        opacity: onRow ? 1 : 0.85
+                        elide: Text.ElideRight
+                        font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: onRow
+                    }
+                    Text {
+                        id: gvArrow
+                        anchors { right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                        text: "\u25B8"; color: onRow ? theme.accent : theme.text
+                        opacity: onRow ? 1 : 0.6; font.pixelSize: vpx(18)
+                    }
+                    MouseArea { anchors.fill: parent; onClicked: { filterRow = 1; openGenrePicker(); } }
+                }
+
+                // Genre picker (scrollable list of available genres)
+                ListView {
+                    visible: genrePickerOpen
+                    width: parent.width
+                    height: vpx(300)
+                    clip: true
+                    model: genreOptions
+                    currentIndex: genrePickerIndex
+                    onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
+                    delegate: Rectangle {
+                        width: ListView.view.width; height: vpx(42); radius: vpx(4)
+                        property bool onRow: index === genrePickerIndex
+                        property bool isSel: modelData === "All" ? genreSelected.length === 0
+                                                                 : genreSelected.indexOf(modelData) >= 0
+                        color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+                        Text {
+                            anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                            text: isSel ? "\u2713" : "  "
+                            color: theme.accent; font.pixelSize: vpx(15); font.bold: true; width: vpx(22)
+                        }
+                        Text {
+                            anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                            text: modelData
+                            color: (onRow || isSel) ? theme.accent : theme.text
+                            opacity: onRow ? 1 : 0.85
+                            elide: Text.ElideRight
+                            font.family: subtitleFont.name; font.pixelSize: vpx(19); font.bold: onRow || isSel
+                        }
+                        MouseArea { anchors.fill: parent; onClicked: { genrePickerIndex = index; toggleGenre(modelData); } }
+                    }
+                }
+
+                // Sort fields + favorites (shown when neither keyboard nor genre picker is open)
+                Column {
+                    visible: !searchActive && !genrePickerOpen
+                    width: parent.width
+                    spacing: vpx(6)
+
+                    Repeater {
+                        model: sortFields
+                        Rectangle {
+                            width: parent.width; height: vpx(46); radius: vpx(6)
+                            property bool active: sortByIndex === modelData.idx
+                            property bool onRow:  filterRow === index + 2
+                            color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+
+                            Text {
+                                anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                                text: active ? (orderBy === Qt.AscendingOrder ? "\u25B2" : "\u25BC") : "  "
+                                color: theme.accent; font.pixelSize: vpx(16); font.bold: true
+                                width: vpx(22)
+                            }
+                            Text {
+                                anchors { left: parent.left; leftMargin: vpx(46); verticalCenter: parent.verticalCenter }
+                                text: modelData.label
+                                color: active ? theme.accent : theme.text
+                                opacity: active ? 1 : 0.85
+                                font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: active
+                            }
+                            MouseArea { anchors.fill: parent; onClicked: { filterRow = index + 2; selectSort(modelData.idx); } }
+                        }
+                    }
+
+                    // Favorites-only toggle
+                    Rectangle {
+                        width: parent.width; height: vpx(46); radius: vpx(6)
+                        property bool onRow: filterRow === sortFields.length + 2
+                        color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+
+                        Text {
+                            anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                            text: showFavs ? "\u2713" : "  "
+                            color: theme.accent; font.pixelSize: vpx(16); font.bold: true
+                            width: vpx(22)
+                        }
+                        Text {
+                            anchors { left: parent.left; leftMargin: vpx(46); verticalCenter: parent.verticalCenter }
+                            text: "Favorites only"
+                            color: showFavs ? theme.accent : theme.text
+                            opacity: showFavs ? 1 : 0.85
+                            font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: showFavs
+                        }
+                        MouseArea { anchors.fill: parent; onClicked: { filterRow = sortFields.length + 2; showFavs = !showFavs; gamegrid.currentIndex = 0; sortedGames = null; } }
+                    }
+                }
+
+                // On-screen keyboard (shown when searching)
+                Grid {
+                    visible: searchActive
+                    columns: keyCols
+                    spacing: vpx(4)
+                    width: parent.width
+
+                    Repeater {
+                        model: keyboardKeys
+                        Rectangle {
+                            width: (fieldCol.width - (keyCols - 1) * vpx(4)) / keyCols
+                            height: vpx(42); radius: vpx(4)
+                            property bool sel: keyIndex === index
+                            property bool wide: modelData.length > 1 && modelData !== "SPACE" && modelData !== "DEL"
+                            color: sel ? theme.accent : Qt.rgba(1,1,1,0.08)
+                            Text {
+                                anchors.centerIn: parent
+                                text: modelData === "SPACE" ? "\u2423" : (modelData === "DEL" ? "\u232B" : modelData)
+                                color: sel ? "white" : theme.text
+                                font.family: subtitleFont.name
+                                font.pixelSize: wide ? vpx(12) : vpx(17)
+                                font.bold: sel
+                            }
+                            MouseArea { anchors.fill: parent; onClicked: { keyIndex = index; pressKey(modelData); } }
+                        }
+                    }
+                }
+            }
+
+            // Button-icon hint bar — swaps prompts per context (search / genre / sort)
+            Row {
+                anchors { bottom: parent.bottom; bottomMargin: vpx(12); right: parent.right; rightMargin: vpx(20) }
+                spacing: vpx(22)
+
+                Repeater {
+                    model: searchActive   ? [ {a:"accept",t:"Type"},   {a:"cancel",t:"Done"} ]
+                         : genrePickerOpen ? [ {a:"accept",t:"Toggle"}, {a:"cancel",t:"Done"} ]
+                         :                   [ {a:"accept",t:"Select"}, {a:"details",t:"Clear all"}, {a:"cancel",t:"Close"} ]
+                    delegate: Row {
+                        spacing: vpx(7)
+                        Image {
+                            anchors.verticalCenter: parent.verticalCenter
+                            source: "../assets/images/controller/" + fpBtnArt(modelData.a) + ".png"
+                            width: vpx(26); height: vpx(26)
+                            asynchronous: true; smooth: true
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData.t
+                            color: theme.text; opacity: 0.55
+                            font.family: subtitleFont.name; font.pixelSize: vpx(15)
+                        }
+                    }
+                }
+            }
+        }
+
+        Keys.onUpPressed: {
+            playNav();
+            if (searchActive) { if (keyIndex >= keyCols) keyIndex -= keyCols; }
+            else if (genrePickerOpen) { if (genrePickerIndex > 0) genrePickerIndex--; }
+            else if (filterRow > 0) filterRow--;
+        }
+        Keys.onDownPressed: {
+            playNav();
+            if (searchActive) { var ni = keyIndex + keyCols; if (ni < keyboardKeys.length) keyIndex = ni; else keyIndex = keyboardKeys.length - 1; }
+            else if (genrePickerOpen) { if (genrePickerIndex < genreOptions.length - 1) genrePickerIndex++; }
+            else if (filterRow < sortFields.length + 2) filterRow++;
+        }
+        Keys.onLeftPressed: {
+            playNav();
+            if (searchActive && (keyIndex % keyCols) !== 0) keyIndex--;
+            else if (genrePickerOpen) genrePickerIndex = Math.max(0, genrePickerIndex - 10);
+        }
+        Keys.onRightPressed: {
+            playNav();
+            if (searchActive && (keyIndex % keyCols) !== (keyCols - 1) && keyIndex < keyboardKeys.length - 1) keyIndex++;
+            else if (genrePickerOpen) genrePickerIndex = Math.min(genreOptions.length - 1, genrePickerIndex + 10);
+        }
+        Keys.onPressed: {
+            if (searchActive) {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey(keyboardKeys[keyIndex]); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); searchActive = false; }
+                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); searchActive = false; }
+                return;
+            }
+            if (genrePickerOpen) {
+                if (api.keys.isPageDown(event) && !event.isAutoRepeat) { event.accepted = true; playToggle(); genreJumpLetter(1);  return; }
+                if (api.keys.isPageUp(event)   && !event.isAutoRepeat) { event.accepted = true; playToggle(); genreJumpLetter(-1); return; }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); toggleGenre(genreOptions[genrePickerIndex]); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); genrePickerOpen = false; }
+                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); genrePickerOpen = false; }
+                return;
+            }
+            if (api.keys.isAccept(event) && !event.isAutoRepeat) {
+                event.accepted = true; playAccept();
+                if (filterRow === 0) activateSearch();
+                else if (filterRow === 1) openGenrePicker();
+                else if (filterRow <= sortFields.length + 1) selectSort(sortFields[filterRow - 2].idx);
+                else { showFavs = !showFavs; gamegrid.currentIndex = 0; sortedGames = null; }
+            }
+            if (api.keys.isCancel(event) && !event.isAutoRepeat) {
+                event.accepted = true; playBack(); filterOpen = false; gamegrid.focus = true;
+            }
+            if (api.keys.isDetails(event) && !event.isAutoRepeat) {
+                event.accepted = true; playToggle(); clearAllFilters();
+            }
+        }
+    }
+
     Keys.onReleased: {
+        if (filterOpen) return;
         // Scroll Down
         if (api.keys.isPageDown(event) && !event.isAutoRepeat) {
             event.accepted = true;
             isRightTriggerPressed = false;
             return;
         }
-
         // Scroll Up
         if (api.keys.isPageUp(event) && !event.isAutoRepeat) {
             event.accepted = true;
@@ -348,12 +923,15 @@ id: root
     }
 
     Keys.onPressed: {
+        if (filterOpen) return;
+
         // Accept
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
             if (gamegrid.focus) {
-                gameActivated();
+                gameActivated();              // plays sfxAccept via gameDetails()
             } else {
+                playAccept();             // only the refocus path needs its own sound
                 gamegrid.currentIndex = 0;
                 gamegrid.focus = true;
             }
@@ -364,95 +942,84 @@ id: root
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
             if (gamegrid.focus) {
-                previousScreen();
+                previousScreen();             // plays its own sfxBack
             } else {
+                playBack();               // only the refocus path needs its own sound
                 gamegrid.focus = true;
             }
             return;
         }
 
-        // Filters
+        // Filters (X) — open the Sorting & Filters overlay
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxToggle.play();
-            cycleSort();
+            playAccept();
+            filterRow = (sortByIndex >= 0 && sortByIndex < sortFields.length) ? sortByIndex + 2 : 0;
+            searchActive = false;
+            genrePickerOpen = false;
+            filterOpen = true;
+            filterPanel.forceActiveFocus();
             return;
         }
 
-        // Settings
+        // Settings (Y)
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
             settingsScreen();
             return;
         }
 
-        // Scroll Down
+        // Scroll Down (RT) — next letter
         if (api.keys.isPageDown(event) && !event.isAutoRepeat) {
             event.accepted = true;
             isRightTriggerPressed = navigateToNextLetter(+1) ? true : isRightTriggerPressed;
             return;
         }
 
-        // Scroll Up
+        // Scroll Up (LT) — previous letter
         if (api.keys.isPageUp(event) && !event.isAutoRepeat) {
             event.accepted = true;
             isLeftTriggerPressed = navigateToNextLetter(-1) ? true : isLeftTriggerPressed;
             return;
         }
 
-        // Next collection
+        // Next collection (RB)
         if (api.keys.isNextPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (currentCollectionIndex < api.collections.count-1)
-                currentCollectionIndex++;
-            else
-                currentCollectionIndex = 0;
+            // Play the sfx BEFORE the heavy model rebuild below; the helper does stop()+play()
+            // so rapid cycling always restarts the sound instead of dropping the retrigger.
+            playTabRight();
+            var ni = sortedColl.indexOf(currentCollectionIndex);
+            ni = (ni < 0) ? 0 : (ni + 1) % sortedColl.length;
+            currentCollectionIndex = sortedColl[ni];
 
             gamegrid.currentIndex = 0;
-            sfxToggle.play();
-
-            // Reset our cached sorted games
             sortedGames = null;
             return;
         }
 
-        // Previous collection
+        // Previous collection (LB)
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (currentCollectionIndex > 0)
-                currentCollectionIndex--;
-            else
-                currentCollectionIndex = api.collections.count-1;
+            playTabLeft();
+            var pi = sortedColl.indexOf(currentCollectionIndex);
+            pi = (pi < 0) ? 0 : (pi - 1 + sortedColl.length) % sortedColl.length;
+            currentCollectionIndex = sortedColl[pi];
 
             gamegrid.currentIndex = 0;
-            sfxToggle.play();
-
-            // Reset our cached sorted games
             sortedGames = null;
             return;
         }
     }
 
-    // Helpbar buttons
+    // ── Helpbar: A View details, X Filters, Y Settings, B Back ────────────
     ListModel {
         id: gridviewHelpModel
 
-        ListElement {
-            name: "Back"
-            button: "cancel"
-        }
-        ListElement {
-            name: "Settings"
-            button: "filters"
-        }
-        ListElement {
-            name: "Filters"
-            button: "details"
-        }
-        ListElement {
-            name: "View details"
-            button: "accept"
-        }
+        ListElement { name: "Back";         button: "cancel"  }
+        ListElement { name: "Settings";     button: "filters" }
+        ListElement { name: "Filters";      button: "details" }
+        ListElement { name: "View details"; button: "accept"  }
     }
 
     onFocusChanged: {

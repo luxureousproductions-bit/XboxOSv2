@@ -119,12 +119,27 @@ id: root
     })
 
     // ── Formatted strings for UI headers ─────────────────────────────────
+    // Adds thousands separators (e.g. 12345 -> "12,345").
+    // Manual loop instead of a regex — QML's JS engine mishandles the
+    // zero-width global lookahead and can emit a doubled comma.
+    function raFmt(n) {
+        var s = (Math.round(n) || 0).toString();
+        var neg = s.charAt(0) === "-";
+        if (neg) s = s.substring(1);
+        var out = "";
+        for (var i = 0; i < s.length; i++) {
+            if (i > 0 && (s.length - i) % 3 === 0) out += ",";
+            out += s.charAt(i);
+        }
+        return (neg ? "-" : "") + out;
+    }
     property string pointsText: {
         if (raUserName === "") return "";
-        var total = softcorePoints + hardcorePoints;
-        if (totalTruePoints > 0)
-            return total + " pts  ·  " + totalTruePoints + " true pts  ·  Rank #" + userRank;
-        return total + " Points  ·  Rank #" + userRank;
+        var parts = [ raFmt(hardcorePoints) + " HC" ];
+        if (softcorePoints  > 0) parts.push(raFmt(softcorePoints)  + " SC");
+        if (totalTruePoints > 0) parts.push(raFmt(totalTruePoints) + " true");
+        if (userRank        > 0) parts.push("Rank #" + raFmt(userRank));
+        return parts.join("  ·  ");
     }
 
     property string memberText: {
@@ -207,6 +222,15 @@ id: root
             avatarUrl = "https://media.retroachievements.org" + cached;
     }
 
+    // Load stored credentials at startup so "signed in" state (and the showcase
+    // RA card) is populated immediately — without having to open an RA page first.
+    // If signed in, fetch the live profile once (avatar/points/member).
+    Component.onCompleted: {
+        reload();
+        if (raUserName !== "" && raApiKey !== "" && !profileLoaded)
+            loadUserProfile();
+    }
+
     // ── Core HTTP helper ─────────────────────────────────────────────────
     function raRequest(apiName, args, handler, errorHandler) {
         if (!raUserName || !raApiKey) {
@@ -260,6 +284,17 @@ id: root
                     avatarUrl = "https://media.retroachievements.org" + resp.UserPic;
                     api.memory.set("raAvatarPath", resp.UserPic);
                 }
+            }
+        );
+        // GetUserSummary often omits the global rank — fetch it from the
+        // dedicated endpoint so the card/pages show the real rank, not #0.
+        raRequest(
+            "GetUserRankAndScore",
+            "u=" + encodeURIComponent(raUserName),
+            function(resp) {
+                var r = parseInt(resp.Rank);
+                if (isNaN(r)) r = parseInt(resp.rank);
+                if (!isNaN(r) && r > 0) userRank = r;
             }
         );
     }

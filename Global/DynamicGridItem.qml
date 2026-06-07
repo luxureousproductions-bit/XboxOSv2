@@ -49,6 +49,15 @@ id: root
 
     property bool selected
     property var gameData: modelData
+    // Art type to display. Defaults to the showcase art setting so the showcase
+    // (HorizontalCollection) is unchanged; GridViewMenu overrides this with the
+    // platform-page "Grid art" setting (Fanart / Screenshot / Boxfront).
+    property string artMode: settings.ShowcaseArt
+    // Whether to draw the game-logo overlay. Defaults true so the showcase
+    // (HorizontalCollection) is unchanged; GridViewMenu sets this from the
+    // platform-page "Game logo" setting (lets logos be hidden so they don't
+    // clash with, e.g., Tall + Boxfront tiles that already show the title).
+    property bool showLogo: true
 
 
     // In order to use the retropie icons here we need to do a little collection specific hack
@@ -87,12 +96,52 @@ id: root
         anchors.fill: parent
         Behavior on opacity { NumberAnimation { duration: 200 } }
 
+        // Round the tile art to match the rounded selection frame (vpx(6)),
+        // so the crop-filled screenshot doesn't poke past the frame's corners.
+        layer.enabled: true
+        layer.smooth: true
+        layer.effect: OpacityMask {
+            maskSource: Rectangle {
+                width: container.width
+                height: container.height
+                radius: vpx(6)
+            }
+        }
+
+        // Name bar — shows the game title on highlight only. Lives inside the
+        // rounded container, so its bottom corners follow the tile radius (square top).
+        Rectangle {
+        id: titleBar
+            z: 20
+            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+            height: Math.max(vpx(36), container.height * 0.16, nameBarText.contentHeight + vpx(16))   // scales with tile size; grows for 2-line titles
+            color: "#99000000"            // ~60% black; text stays full-opacity
+            opacity: (selected || settings.AlwaysShowTitles === "Yes") ? 1 : 0
+            visible: opacity > 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+            Text {
+                anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
+                id: nameBarText
+                text: modelData ? modelData.title : ""
+                color: "white"; font.family: subtitleFont.name
+                font.pixelSize: Math.max(vpx(11), container.height * 0.05); font.bold: true
+                wrapMode: Text.WordWrap
+                maximumLineCount: 2
+                elide: Text.ElideRight
+                horizontalAlignment: Text.AlignLeft
+            }
+        }
+
         Image {
         id: screenshot
 
             anchors.fill: parent
             anchors.margins: vpx(2)
-            source: modelData ? (settings.ShowcaseArt === "Screenshot" ? (modelData.assets.screenshots[0] || "") : (modelData.assets.background || modelData.assets.screenshots[0] || "")) : ""
+            source: modelData ? (
+                      artMode === "Screenshot" ? (modelData.assets.screenshots[0] || modelData.assets.background || "")
+                    : artMode === "Boxfront"   ? (modelData.assets.boxFront || modelData.assets.background || modelData.assets.screenshots[0] || "")
+                    :                            (modelData.assets.background || modelData.assets.screenshots[0] || "")
+                  ) : ""
             fillMode: Image.PreserveAspectCrop
             sourceSize { width: 512; height: 512 }
             smooth: false
@@ -103,6 +152,7 @@ id: root
         Image {
         id: favelogo
 
+            visible: showLogo
             anchors.fill: parent
             anchors.centerIn: parent
             anchors.margins: root.width/10
@@ -174,7 +224,7 @@ id: root
         width: parent.width
 
         opacity: 0.2
-        visible: settings.AlwaysShowTitles === "Yes" && !selected
+        visible: false   // old faint under-tile title; replaced by the on-tile black bar
     }
 
     Text {
@@ -189,7 +239,7 @@ id: root
         font.family: subtitleFont.name
         font.bold: true
         style: Text.Outline; styleColor: theme.main
-        visible: favelogo.status === Image.Null || favelogo.status === Image.Error
+        visible: showLogo && (favelogo.status === Image.Null || favelogo.status === Image.Error)
         anchors.centerIn: parent
         elide: Text.ElideRight
         wrapMode: Text.WordWrap
@@ -257,10 +307,10 @@ id: root
     MouseArea {
         anchors.fill: parent
         hoverEnabled: settings.MouseHover == "Yes"
-        onEntered: { sfxNav.play(); highlighted(); }
+        onEntered: { playNav(); highlighted(); }
         onExited: { unhighlighted(); }
         onClicked: {
-            sfxNav.play();
+            playNav();
             activated();
         }
     }

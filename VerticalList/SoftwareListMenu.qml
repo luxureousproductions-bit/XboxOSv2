@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import QtQuick 2.15
-import QtQuick.Layouts 1.15
+import QtQuick 2.0
+import QtQuick.Layouts 1.11
 import "../Global"
 
 FocusScope {
@@ -34,10 +34,9 @@ id: root
             bottom: parent.bottom
         }
         asynchronous: true
-        source: currentGame ? (settings.ShowcaseArt === "Screenshot" ? (currentGame.assets.screenshots[0] || "") : (currentGame.assets.background || currentGame.assets.screenshots[0] || "")) : ""
-        sourceSize: Qt.size(parent.width, parent.height)
+        source: currentGame && currentGame.assets.screenshots[0] ? currentGame.assets.screenshots[0] : ""
         fillMode: Image.PreserveAspectCrop
-        smooth: false
+        smooth: true
 
         GameInfo {
         id: info
@@ -59,7 +58,7 @@ id: root
             left:   parent.left
             right:  parent.right
         }
-        height: vpx(95)
+        height: vpx(75)
     }
     
     // Software list
@@ -73,6 +72,10 @@ id: root
         }
 
         focus: true
+        Keys.onUpPressed: {
+            if (currentIndex != 0) currentIndex--;
+            else header.focusNavButtons();
+        }
         
         anchors {
             top: header.bottom; topMargin: globalMargin
@@ -149,13 +152,6 @@ id: root
     }
 
     // Handle input
-    // Up
-    Keys.onUpPressed: {
-        if (softwarelist.currentIndex != 0)
-            softwarelist.currentIndex--;
-        else
-            softwarelist.currentIndex = softwarelist.count - 1
-    }
     // Down
     Keys.onDownPressed: {
         if (softwarelist.currentIndex != softwarelist.count - 1)

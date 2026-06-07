@@ -25,6 +25,7 @@ id: root
     property alias buttonWidth: container.width
     property real buttonMargin: vpx(25)
     property real iconPadding: vpx(30)
+    property bool iconVisible: true   // caller can hide the icon (and reclaim its space)
     width: container.width
 
     signal activated
@@ -33,7 +34,11 @@ id: root
     Rectangle {
     id: container
 
-        width: (buttonlabel.text !== "") ? buttonlabel.x + buttonlabel.contentWidth + buttonMargin : height
+        width: {
+            if (buttonlabel.text === "") return height;
+            var leftEdge = buttonicon.visible ? (buttonicon.x + buttonicon.width + vpx(15)) : buttonMargin;
+            return leftEdge + buttonlabel.contentWidth + buttonMargin;
+        }
         Behavior on width { NumberAnimation { duration: 100 } }
         height: vpx(50)
         color: selected ? theme.accent : "transparent"
@@ -46,8 +51,8 @@ id: root
         id: buttonicon
 
             source: "../assets/images/icon_play.svg"
-            visible: source !== ""
-            width: source !== "" ? parent.height - iconPadding : 0
+            visible: iconVisible
+            width: iconVisible ? parent.height - iconPadding : 0
             height: parent.height - iconPadding
             fillMode: Image.PreserveAspectFit
             asynchronous: true
@@ -66,7 +71,7 @@ id: root
         id: buttonlabel
 
             font.family: subtitleFont.name
-            font.pixelSize: vpx(16)
+            font.pixelSize: vpx(18)
             font.bold: true
             color: theme.text
             //opacity: selected ? 1 : 0.2

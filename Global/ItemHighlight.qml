@@ -73,6 +73,9 @@ id: root
         id: videocomponent
 
             anchors.fill: parent
+            anchors.margins: vpx(2)   // inset so the square video's corners stay inside the
+                                      // rounded tile (radius vpx6); keeps corners from poking
+                                      // without masking the video (low-end GPU safe)
             source: game.assets.videoList.length ? game.assets.videoList[0] : ""
             fillMode: VideoOutput.PreserveAspectCrop
             muted: settings.AllowThumbVideoAudio === "No"
@@ -103,6 +106,11 @@ id: root
     id: videocontainer
 
         anchors.fill: parent
+
+        // NOTE: do NOT wrap this in a layer/OpacityMask to round the corners.
+        // A Video/VideoOutput with PreserveAspectCrop is cropped on the GPU, and
+        // rendering it through a layer FBO breaks that fill — the clip falls back
+        // to its native aspect and shows thin pillarbox bars. Keep it unlayered.
 
         // Video
         Loader {

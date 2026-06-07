@@ -25,6 +25,11 @@ id: root
 
     property bool searchActive
     property int filteredCount: currentCollection.games.count
+    function focusNavButtons() {
+        // Nav buttons are items 4-7 in headermodel (home is index 7, rightmost in model = leftmost visually)
+        buttonbar.currentIndex = 7;
+        buttonbar.forceActiveFocus();
+    }
 
     onFocusChanged: buttonbar.currentIndex = 0;
 
@@ -34,11 +39,24 @@ id: root
             // still exists and has focus. Calling it after changing searchActive
             // destroys (or defocuses) the native EditText first, leaving Android's
             // IME attached to a dead view — which causes the persistent blue box.
+            if (searchLoader.item) searchLoader.item.focus = false;
             Qt.inputMethod.hide();
-            searchActive = false;
             buttonbar.forceActiveFocus();
+            searchActive = false;
         } else {
             searchActive = true;
+        }
+    }
+
+    // Reliable watcher: when the soft keyboard becomes hidden for ANY reason
+    // (controller B mapped to Android BACK, system gesture, etc.) tear down the
+    // search so no orphaned native input box remains on screen.
+    property bool imeVisible: Qt.inputMethod.visible
+    onImeVisibleChanged: {
+        if (!imeVisible && searchActive) {
+            if (searchLoader.item) searchLoader.item.focus = false;
+            buttonbar.forceActiveFocus();
+            searchActive = false;
         }
     }
 
@@ -186,6 +204,11 @@ id: root
                             text: searchTerm
                             selectionColor: theme.accent
                             selectedTextColor: theme.text
+                            inputMethodHints: Qt.ImhNoPredictiveText | Qt.ImhNoAutoUppercase
+                            onActiveFocusChanged: {
+                                if (!activeFocus) Qt.inputMethod.hide();
+                                else Qt.inputMethod.show();
+                            }
                             onTextEdited: {
                                 searchTerm = text
                             }
@@ -270,7 +293,7 @@ id: root
 
                         Keys.onUpPressed: {
                             if (currentIndex > 0) {
-                                sfxNav.play();
+                                playNav();
                                 currentIndex--;
                             } else {
                                 if (searchLoader.item) searchLoader.item.forceActiveFocus();
@@ -278,7 +301,7 @@ id: root
                         }
                         Keys.onDownPressed: {
                             if (currentIndex < count - 1) {
-                                sfxNav.play();
+                                playNav();
                                 currentIndex++;
                             }
                         }
@@ -286,7 +309,7 @@ id: root
                             if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                                 event.accepted = true;
                                 searchMode = model[currentIndex];
-                                sfxToggle.play();
+                                playToggle();
                                 if (searchLoader.item) searchLoader.item.forceActiveFocus();
                             }
                             if (api.keys.isCancel(event) && !event.isAutoRepeat) {
@@ -438,6 +461,98 @@ id: root
                     }
                 }
             }
+
+            // ── Nav buttons (home, discover, RA, settings) ──────────────────
+            Item {
+            id: sl_settingsbutton
+                property bool selected: ListView.isCurrentItem && root.focus
+                width: vpx(40); height: searchbar.height
+                Rectangle {
+                    anchors.fill: parent; radius: height/2
+                    color: theme.accent; visible: sl_settingsbutton.selected
+                }
+                Image {
+                    anchors.centerIn: parent
+                    width: vpx(24); height: vpx(24)
+                    sourceSize: Qt.size(vpx(24), vpx(24))
+                    source: "../assets/images/settingsicon.svg"; smooth: true; asynchronous: true
+                    opacity: parent.selected ? 1 : 0.7
+                }
+                Keys.onPressed: {
+                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
+                }
+            }
+
+            Item {
+            id: sl_rabutton
+                property bool selected: ListView.isCurrentItem && root.focus
+                width: vpx(40); height: searchbar.height
+                Rectangle {
+                    anchors.fill: parent; radius: height/2
+                    color: theme.accent; visible: sl_rabutton.selected
+                }
+                Image {
+                    anchors.centerIn: parent
+                    width: vpx(24); height: vpx(24)
+                    sourceSize: Qt.size(vpx(24), vpx(24))
+                    source: "../assets/images/trophy.svg"
+                    fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+                    opacity: parent.selected ? 1 : 0.7
+                }
+                Keys.onPressed: {
+                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
+                }
+            }
+
+            Item {
+            id: sl_discoverbutton
+                property bool selected: ListView.isCurrentItem && root.focus
+                width: vpx(40); height: searchbar.height
+                Rectangle {
+                    anchors.fill: parent; radius: height/2
+                    color: theme.accent; visible: sl_discoverbutton.selected
+                }
+                Canvas {
+                    anchors { fill: parent; margins: vpx(10) }
+                    onPaint: {
+                        var ctx = getContext("2d"); ctx.reset();
+                        var cx = width/2, cy = height/2, r = Math.min(cx,cy)-1;
+                        ctx.globalAlpha = sl_discoverbutton.selected ? 1.0 : 0.7;
+                        ctx.strokeStyle = "white"; ctx.lineWidth = 1.5;
+                        ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+                        ctx.fillStyle = "white";
+                        ctx.beginPath(); ctx.moveTo(cx,cy-r*0.65); ctx.lineTo(cx+r*0.3,cy+r*0.1); ctx.lineTo(cx,cy+r*0.2); ctx.lineTo(cx-r*0.3,cy+r*0.1); ctx.closePath(); ctx.fill();
+                        ctx.globalAlpha=0.35;
+                        ctx.beginPath(); ctx.moveTo(cx,cy+r*0.65); ctx.lineTo(cx-r*0.3,cy-r*0.1); ctx.lineTo(cx,cy-r*0.2); ctx.lineTo(cx+r*0.3,cy-r*0.1); ctx.closePath(); ctx.fill();
+                    }
+                    Connections { target: sl_discoverbutton; onSelectedChanged: parent.requestPaint() }
+                }
+                Keys.onPressed: {
+                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
+                }
+            }
+
+            Item {
+            id: sl_homebutton
+                property bool selected: ListView.isCurrentItem && root.focus
+                width: vpx(40); height: searchbar.height
+                Rectangle {
+                    anchors.fill: parent; radius: height/2
+                    color: theme.accent; visible: sl_homebutton.selected
+                }
+                Image {
+                    anchors.centerIn: parent
+                    width: vpx(24); height: vpx(24)
+                    sourceSize: Qt.size(vpx(24), vpx(24))
+                    source: "../assets/images/icon_home.svg"
+                    fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+                    opacity: parent.selected ? 1 : 0.7
+                }
+                Keys.onPressed: {
+                    if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
+                }
+            }
+
         }
 
         // Buttons

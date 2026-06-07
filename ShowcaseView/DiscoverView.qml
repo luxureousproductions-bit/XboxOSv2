@@ -53,7 +53,7 @@ id: root
     // Pick a discover game different from the current one
     function discoverJump() {
         if (gameList.length === 0) return;
-        sfxNav.play();
+        playNav();
         if (gameList.length === 1) return;
         var newIndex;
         do {

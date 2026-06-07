@@ -1,40 +1,32 @@
 # XboxOSv2 (a fork of a fork of gameOS)
-<img width="1920" height="1080" alt="Screenshot_20260506-210910" src="https://github.com/user-attachments/assets/3c0bb083-6c9a-4ec4-b335-1ecabb80a1ad" />
--
+<img width="1920" height="1080" alt="Screenshot_20260607-104924" src="https://github.com/user-attachments/assets/c05192cc-8d24-41a6-b384-990ed581ad0b" />
 
+ - A complete overhaul to the showcase
 
+<img width="1920" height="1080" alt="Screenshot_20260607-105125" src="https://github.com/user-attachments/assets/00c91574-67bc-4945-bd20-284f68ddf507" />
+<img width="1920" height="1080" alt="Screenshot_20260607-105012" src="https://github.com/user-attachments/assets/f5ba37a4-3a25-4c1e-8bd0-170d11568f3e" />
 
-<img width="1920" height="1080" alt="Screenshot_20260506-211716" src="https://github.com/user-attachments/assets/587c4192-8cc6-4318-8ca0-94cfd47fdee0" />
-<img width="1920" height="1080" alt="Screenshot_20260506-211732" src="https://github.com/user-attachments/assets/f172e12b-1d6a-4ba4-8733-c4a01ae195a2" />
-<img width="1920" height="1080" alt="Screenshot_20260506-211009" src="https://github.com/user-attachments/assets/7940acd2-3e7b-4757-a215-56dc26682a12" />
-
-- Change box art image on the fly (2D, 3D, Miximage)
-
--
-<img width="1920" height="1080" alt="Screenshot_20260506-211050" src="https://github.com/user-attachments/assets/3be0a497-a80b-44eb-8baa-40fb5cca5e01" />
-
-<img width="1920" height="1080" alt="Screenshot_20260506-211100" src="https://github.com/user-attachments/assets/78d7d004-8182-471e-a3a4-9d9c4ecaabf5" />
-<img width="1920" height="1080" alt="Screenshot_20260506-211112" src="https://github.com/user-attachments/assets/1cf58b7d-77c5-436c-9513-9b1dd15dc79a" />
-
-- RetroAchievment Intergration(Experimental)
-
--
-
-<img width="1920" height="1080" alt="Screenshot_20260506-211404" src="https://github.com/user-attachments/assets/2c317626-1681-4dae-91ab-faf65d16dd21" />
-(Screenshot)
-<img width="1920" height="1080" alt="Screenshot_20260506-211424" src="https://github.com/user-attachments/assets/4d53c807-5c38-42ca-9726-d3e89ea705c5" />
-(Fanart)
-
-- Many New showcase options:
-
-  -  Options to display fanart or screenshot
+- Crossfade background art, or use your own custom background:
+    - Place Background.png to assests/images/backgrounds
   
-  -  More collections with added collection options
--
+<img width="1920" height="1080" alt="Screenshot_20260607-105541" src="https://github.com/user-attachments/assets/6aaac017-1e3e-4a6a-b012-5f011e6a010e" />
+<img width="1920" height="1080" alt="Screenshot_20260607-105234" src="https://github.com/user-attachments/assets/d09b55c9-39bc-43c4-a8b8-3d50c453311a" />
+- New Full Library section with advance filters
+<img width="1920" height="1080" alt="Screenshot_20260607-105335" src="https://github.com/user-attachments/assets/8b552c4d-df91-433a-8d7f-f281d3843eb5" />
+- Updated RA page
+<img width="1920" height="1080" alt="Screenshot_20260607-105247" src="https://github.com/user-attachments/assets/a515aed5-e992-4cf3-8e4a-0168b5a9e13a" />
+- New settings and ui
+<img width="1920" height="1080" alt="Screenshot_20260607-105428" src="https://github.com/user-attachments/assets/74a4465d-a825-4be8-959a-d2e01ac53583" />
+- Discover classics and hidden gems and jump right in with the Discover page
 
-<img width="1920" height="1080" alt="Screenshot_20260506-211551" src="https://github.com/user-attachments/assets/283320cd-db37-4433-8e9d-d4c3814e6200" />
 
-- Dont know what to play? Hit the Random button to get a random shuffle of game videos. You can launch directly into a game you like or go to the game details page to learn more
+
+
+
+
+    
+
+
 
 
 
@@ -44,9 +36,9 @@
 
 IMPORTANT: This is a fork of [gameOS](https://github.com/PlayingKarrde/gameOS/releases/latest) by the original and true UI God: Seth Powell. This theme further continues work from the XboxOS fork and now modernizes and refines the experience even more. The goal is to create a modern game launcher UI with quality-of-life improvements and additional media support.
 
-## Installation
+- Ideas and inspirations from of course the original gameOS and XboxOs by Seth Powell and Alfred Olvera respectively, Yan Miller Sleipnir theme, and MrJud AquaFlow. I am not a developer nor will ever pretend to be, this started as a tinkering project to make changes I wanted to see to a big project I thought others may also enjoy so I’m here sharing my end result here.
 
-<img width="1920" height="1080" alt="screenshot" src="https://github.com/user-attachments/assets/94b66f04-35e7-414e-a613-2b5b6cec8ed5" />
+## Installation
 
 download latest release and extract it in your [Pegasus theme directory](http://pegasus-frontend.org/docs/user-guide/installing-themes/).
 
@@ -72,7 +64,6 @@ It is recommended to use [Skraper.net](http://www.skraper.net/) to acquire media
 
 ## Whats Changed from XboxOs V1
   
-- Updated collection logos to color✅
 
 - Added Publisher/Developer/Release to game details✅
 
@@ -118,9 +109,7 @@ It is recommended to use [Skraper.net](http://www.skraper.net/) to acquire media
 - Added showcase options for fanart/screenshot✅
 
 - Implemented a refresh feature for showcase✅
- (showcase doesnt auto refresh when navigating away and coming back, only when hitting refresh button)
-
-- Added the ability to search by genre in platform search bar✅
+ (showcase doesnt auto refresh when navigating away and coming back, only when hitting refresh)
 
 - Updated the "More" Lists in game details to include Publisher & Developer or fallback to "More Recommended" when only one title is available for each✅
 
@@ -139,5 +128,3 @@ It is recommended to use [Skraper.net](http://www.skraper.net/) to acquire media
      - "genre , subgenre"
      - "genre, subgenre"
      - "genre ,subgenre"
-
- - Added Retro Achievment tracker (Experimental) 

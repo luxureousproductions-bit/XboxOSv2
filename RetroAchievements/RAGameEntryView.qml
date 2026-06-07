@@ -224,8 +224,8 @@ id: root
                     MouseArea {
                         anchors.fill: parent
                         hoverEnabled: settings.MouseHover === "Yes"
-                        onEntered: { sfxNav.play(); buttonRow.selectedIndex = 0; }
-                        onClicked: { sfxAccept.play(); activateSelected(); }
+                        onEntered: { playNav(); buttonRow.selectedIndex = 0; }
+                        onClicked: { playAccept(); activateSelected(); }
                     }
                 }
 
@@ -255,8 +255,8 @@ id: root
                     MouseArea {
                         anchors.fill: parent
                         hoverEnabled: settings.MouseHover === "Yes"
-                        onEntered: { sfxNav.play(); buttonRow.selectedIndex = 1; }
-                        onClicked: { sfxAccept.play(); activateSelected(); }
+                        onEntered: { playNav(); buttonRow.selectedIndex = 1; }
+                        onClicked: { playAccept(); activateSelected(); }
                     }
                 }
             }
@@ -280,7 +280,7 @@ id: root
         event.accepted = true;
         if (!cheevosData.lookupInProgress && cheevosData.pendingGameID === 0
                 && buttonRow.selectedIndex > 0) {
-            sfxNav.play();
+            playNav();
             buttonRow.selectedIndex--;
         }
     }
@@ -288,7 +288,7 @@ id: root
         event.accepted = true;
         if (!cheevosData.lookupInProgress && cheevosData.pendingGameID === 0
                 && buttonRow.selectedIndex < 1) {
-            sfxNav.play();
+            playNav();
             buttonRow.selectedIndex++;
         }
     }
@@ -296,7 +296,7 @@ id: root
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
             if (!cheevosData.lookupInProgress && cheevosData.pendingGameID === 0) {
-                sfxAccept.play();
+                playAccept();
                 activateSelected();
             }
         }

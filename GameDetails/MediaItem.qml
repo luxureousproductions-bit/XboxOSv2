@@ -58,7 +58,7 @@ id: root
     id: border
 
         anchors.fill: parent
-        source: "../assets/images/" + mapLayoutImage(settings.ColorLayout) + ".png"
+        source: "../assets/images/colorspng/" + mapLayoutImage(settings.ColorLayout) + ".png"
         visible: selected
         asynchronous: true
 
@@ -125,7 +125,7 @@ id: root
         id: iconFill
 
             anchors.fill: parent
-            source: "../assets/images/" + mapLayoutImage(settings.ColorLayout) + ".png"
+            source: "../assets/images/colorspng/" + mapLayoutImage(settings.ColorLayout) + ".png"
             fillMode: Image.PreserveAspectCrop
             visible: false
             asynchronous: true

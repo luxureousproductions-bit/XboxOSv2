@@ -32,14 +32,6 @@ id: root
             setting: "Yes,No"
         }
         ListElement {
-            settingName: "Play video thumbnail audio"
-            setting: "No,Yes"
-        }
-        ListElement {
-            settingName: "Play discover video audio"
-            setting: "No,Yes"
-        }
-        ListElement {
             settingName: "Hide logo when thumbnail video plays"
             setting: "No,Yes"
         }
@@ -60,9 +52,14 @@ id: root
             setting: "No,Yes"
         }
         ListElement {
-            settingName: "Color Layout"
-            setting: "Dark Green,Light Green,Turquoise,Dark Red,Light Red,Dark Pink,Light Pink,Dark Blue,Light Blue,Navy Blue,Royal Blue,Sky Blue,Ice Blue,Cobalt,Orange,Dark Orange,Amber,Yellow,Gold,Dark Gold,Bronze,Magenta,Hot Pink,Rose,Coral,Salmon,Purple,Dark Purple,Violet,Lavender,Indigo,Maroon,Crimson,Burgundy,Brick Red,Lime,Mint,Sage,Forest Green,Olive,Dark Gray,Mid Gray,Light Gray,Silver,Steel,Slate,Stone,Charcoal,Gunmetal,Tan,Dark Brown,Light Brown,Copper,Rust,Sienna,Cyan,Teal,Dark Teal,Arctic,Seafoam,Ruby,Sapphire,Emerald,Jade,Onyx,White"
+            settingName: "Color Background"
+            setting: "Black,Charcoal,Dark Gray,Mid Gray,Navy Blue,Dark Blue,Dark Teal,Dark Green,Forest Green,Dark Red,Burgundy,Dark Purple,Indigo,Dark Brown,Dark Orange,Slate,Midnight Blue,Deep Purple,Dark Steel,Gray,Cool Gray,Steel Blue,Teal,Forest,Wine,Plum,Light Gray,Silver,Light Blue,Sage,Tan,Rose,White,Gradient"
         }
+        ListElement {
+            settingName: "Color Layout"
+            setting: "Dark Green,Light Green,Turquoise,Dark Red,Light Red,Dark Pink,Light Pink,Dark Blue,Light Blue,Navy Blue,Royal Blue,Sky Blue,Ice Blue,Cobalt,Orange,Dark Orange,Amber,Yellow,Gold,Dark Gold,Bronze,Magenta,Hot Pink,Rose,Coral,Salmon,Purple,Dark Purple,Violet,Lavender,Indigo,Maroon,Crimson,Burgundy,Brick Red,Lime,Mint,Sage,Forest Green,Olive,Dark Gray,Mid Gray,Light Gray,Silver,Steel,Slate,Stone,Charcoal,Gunmetal,Tan,Dark Brown,Light Brown,Copper,Rust,Sienna,Cyan,Teal,Dark Teal,Arctic,Seafoam,Ruby,Sapphire,Emerald,Jade,Onyx,White,Gradient"
+        }
+
     }
 
     property var generalPage: {
@@ -73,16 +70,56 @@ id: root
     }
 
     ListModel {
+    id: audioSettingsModel
+
+        ListElement {
+            settingName: "Menu sounds"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Start up chime"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Menu Volume"
+            setting: "1.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9"
+        }
+        ListElement {
+            settingName: "Video thumbnail audio"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "Discover video audio"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "Game details video preview audio"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "All games menu video audio"
+            setting: "No,Yes"
+        }
+    }
+
+    property var audioPage: {
+        return {
+            pageName: "Audio",
+            listmodel: audioSettingsModel
+        }
+    }
+
+    ListModel {
         id: advancedSettingsModel
         ListElement {
             settingName: "Omit genre: Application from Showcase"
             setting: "No,Yes"
-            note: "(Reload Required)"
+            note: "Reload Required"
         }
         ListElement {
             settingName: "Omit genre: Emulator from Showcase"
             setting: "No,Yes"
-            note: "(Reload Required)"
+            note: "Reload Required"
         }
         ListElement {
             settingName: "Show WiFi Indicator"
@@ -95,6 +132,10 @@ id: root
         ListElement {
             settingName: "Show Clock"
             setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Launch screen delay"
+            setting: "0.6,0.7,0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3.0"
         }
         ListElement {
             settingName: "Wide - Ratio"
@@ -115,14 +156,57 @@ id: root
 
     ListModel {
     id: showcaseSettingsModel
+
         ListElement {
-            settingName: "Showcase Art"
+            settingName: "Xbox Logo"
+            setting: "Logo1,Logo2,RetroAchievements,None"
+        }
+        ListElement {
+            settingName: "Logo Color Match"
+            label: "Logo Color Layout Match"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "Showcase Background Art"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Custom Background"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "Showcase Background Opacity"
+            setting: "0.55,0.60,0.65,0.70,0.75,0.80,0.85,0.90,0.95,1.00,0.10,0.15,0.20,0.25,0.30,0.35,0.40,0.45,0.50"
+        }
+                ListElement {
+            settingName: "Showcase Collections Art"
             setting: "Fanart,Screenshot"
+        }
+        ListElement {
+            settingName: "Hero box art"
+            setting: "Fanart,Boxfront,Screenshot"
+        }
+        ListElement {
+            settingName: "System sort"
+            setting: "Alphabetical (A-Z),Alphabetical (Z-A),Release year (oldest),Release year (newest),Manufacturer,Game count (most),Game count (fewest),Default"
         }
         ListElement {
             settingName: "Number of games showcased"
             setting: "15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,1,2,3,4,5,6,7,8,9,10,11,12,13,14"
         }
+
+    }
+
+    property var showcasePage: {
+        return {
+            pageName: "Home page",
+            listmodel: showcaseSettingsModel
+        }
+    }
+
+    ListModel {
+    id: collectionsSettingsModel
+
         ListElement {
             settingName: "Collection 1"
             setting: "Recently Played,Most Played,Recommended,Top by Publisher,Top by Developer,Top by Genre,Top by Genre 2,None,Favorites"
@@ -174,10 +258,10 @@ id: root
 
     }
 
-    property var showcasePage: {
+    property var collectionsPage: {
         return {
-            pageName: "Home page",
-            listmodel: showcaseSettingsModel
+            pageName: "Collections",
+            listmodel: collectionsSettingsModel
         }
     }
 
@@ -186,7 +270,16 @@ id: root
 
         ListElement {
             settingName: "Grid Thumbnail"
-            setting: "Wide,Tall,Square,Box Art,3D Box"
+            setting: "Wide,Tall,Square"
+        }
+        ListElement {
+            settingName: "Grid art"
+            setting: "Fanart,Screenshot,Boxfront"
+        }
+        ListElement {
+            settingName: "Grid Game Logo"
+            label: "Game logo"
+            setting: "Yes,No"
         }
         ListElement {
             settingName: "Number of columns"
@@ -233,10 +326,6 @@ id: root
             setting: "Yes,No"
         }
         ListElement {
-            settingName: "Video preview audio"
-            setting: "No,Yes"
-        }
-        ListElement {
             settingName: "Randomize Background"
             setting: "No,Yes"
         }
@@ -254,6 +343,42 @@ id: root
         return {
             pageName: "Game details",
             listmodel: gameSettingsModel
+        }
+    }
+
+    ListModel {
+    id: allGamesSettingsModel
+        ListElement {
+            settingName: "AllGames Video preview"
+            label: "Video preview"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "AllGames Hide box art on video"
+            label: "Hide box art when video plays"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "AllGames Hide logo on video"
+            label: "Hide logo when video plays"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "AllGames Blur Background"
+            label: "Blur Background"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "AllGames Show scanlines"
+            label: "Show scanlines"
+            setting: "No,Yes"
+        }
+    }
+
+    property var allGamesPage: {
+        return {
+            pageName: "All Games Menu",
+            listmodel: allGamesSettingsModel
         }
     }
 
@@ -337,10 +462,120 @@ id: root
         }
     }
 
-    property var settingsArr: [generalPage, showcasePage, gridPage, gamePage, mediaCarouselPage, advancedPage, raPage]
+    property var settingsArr: [generalPage, showcasePage, collectionsPage, gridPage, gamePage, allGamesPage, mediaCarouselPage, audioPage, advancedPage, raPage]
 
     property real itemheight: vpx(50)
-    property color settingsTextColor: theme.accent
+    property color settingsTextColor: theme.text
+
+    // ── On-screen keyboard for text fields (RA credentials) ───────────────
+    // Fully controller-driven. NO native Android TextInput/IME (no blue box).
+    property bool   kbOpen:          false
+    property string editText:        ""
+    property string editSettingName: ""
+    property bool   editMasked:      false
+    property bool   kbShift:         false
+    property bool   kbSpecial:       false
+    property int    keyIndex:        0
+    property int    keyCols:         10
+    property int    memRevision:     0   // bump to refresh displayed values
+
+    property var kbLower: [
+        "1","2","3","4","5","6","7","8","9","0",
+        "q","w","e","r","t","y","u","i","o","p",
+        "a","s","d","f","g","h","j","k","l","@",
+        "z","x","c","v","b","n","m",".","_","-",
+        "SHIFT","áé","SPACE","DEL","CLR","PASTE","COPY","OK"
+    ]
+    property var kbUpper: [
+        "!","@","#","$","%","^","&","*","(",")",
+        "Q","W","E","R","T","Y","U","I","O","P",
+        "A","S","D","F","G","H","J","K","L","+",
+        "Z","X","C","V","B","N","M","?","/","=",
+        "SHIFT","áé","SPACE","DEL","CLR","PASTE","COPY","OK"
+    ]
+    property var kbSpec: [
+        "à","á","â","ã","ä","å","æ","ç","è","é",
+        "ê","ë","ì","í","î","ï","ñ","ò","ó","ô",
+        "õ","ö","ø","ù","ú","û","ü","ý","ÿ","ß",
+        "~","`","|","\\","<",">","{","}","[","]",
+        "SHIFT","ABC","SPACE","DEL","CLR","PASTE","COPY","OK"
+    ]
+    property var keyboardKeys: kbSpecial ? kbSpec : (kbShift ? kbUpper : kbLower)
+
+    function openEditor(name, masked) {
+        editSettingName = name;
+        editMasked = masked;
+        editText = api.memory.has(name) ? api.memory.get(name) : "";
+        kbShift = false; kbSpecial = false; keyIndex = 0; kbOpen = true;
+        kbOverlay.forceActiveFocus();
+    }
+    // Resolve a controller action to its glyph file (assets/images/controller/<hex>.png)
+    function fpBtnArt(action) {
+        var bm;
+        if      (action === "accept")   bm = api.keys.accept;
+        else if (action === "cancel")   bm = api.keys.cancel;
+        else if (action === "filters")  bm = api.keys.filters;
+        else if (action === "details")  bm = api.keys.details;
+        else if (action === "pageUp")   bm = api.keys.pageUp;
+        else if (action === "pageDown") bm = api.keys.pageDown;
+        else                            bm = api.keys.accept;
+        for (var i = 0; i < bm.length; i++) {
+            if (bm[i].name().includes("Gamepad")) {
+                var v = bm[i].key.toString(16);
+                return v.substring(v.length - 1, v.length);
+            }
+        }
+        return "0";
+    }
+
+    function pressKey(k) {
+        if (k === "SHIFT")      kbShift = !kbShift;
+        else if (k === "áé")    kbSpecial = true;
+        else if (k === "ABC")   kbSpecial = false;
+        else if (k === "SPACE") editText += " ";
+        else if (k === "DEL")   editText = editText.slice(0, -1);
+        else if (k === "CLR")   editText = "";
+        else if (k === "PASTE") pasteFromClipboard();
+        else if (k === "COPY")  copyToClipboard();
+        else if (k === "OK") {
+            api.memory.set(editSettingName, editText);
+            memRevision++;
+            kbOpen = false;
+            settingsList.forceActiveFocus();
+        } else {
+            editText += k;
+        }
+    }
+    // Paste from the system clipboard via a hidden, never-focused TextEdit
+    // (no focus = no Android IME = no blue box)
+    function pasteFromClipboard() {
+        clipboardHelper.text = "";
+        clipboardHelper.selectAll();
+        clipboardHelper.paste();
+        editText += clipboardHelper.text;
+        clipboardHelper.text = "";
+    }
+    // Copy the entire current editText to the system clipboard via the same hidden
+    // TextEdit. We push editText into it, select-all, then copy() — effectively
+    // "select all + copy" in one button press. No-op if the field is empty.
+    function copyToClipboard() {
+        if (editText === "") return;
+        clipboardHelper.text = editText;
+        clipboardHelper.selectAll();
+        clipboardHelper.copy();
+        clipboardHelper.text = "";
+    }
+    function closeEditor() {
+        kbOpen = false;
+        settingsList.forceActiveFocus();
+    }
+
+    // Settings background — locked to black (independent of Color Background)
+    Rectangle {
+        anchors.fill: parent
+        color: "#000000"
+        z: -10
+    }
 
     Rectangle {
     id: header
@@ -351,18 +586,34 @@ id: root
             right: parent.right
         }
         height: vpx(75)
-        color: theme.main
+        color: "#000000"
         z: 5
+
+        // Settings cog (same icon used elsewhere in the theme)
+        Image {
+            id: settingsCog
+            anchors {
+                left: parent.left; leftMargin: globalMargin
+                verticalCenter: parent.verticalCenter
+            }
+            height: vpx(28)
+            width: height
+            source: "../assets/images/settingsicon.svg"
+            sourceSize: Qt.size(vpx(28), vpx(28))
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            asynchronous: true
+        }
 
         // Platform title
         Text {
         id: headertitle
             
-            text: "Settings"
+            text: "SETTINGS"
             
             anchors {
                 top: parent.top;
-                left: parent.left; leftMargin: globalMargin
+                left: settingsCog.right; leftMargin: vpx(12)
                 right: parent.right
                 bottom: parent.bottom
             }
@@ -383,6 +634,39 @@ id: root
                 }
             }
         }
+
+    }
+
+    // Active page name — left of the content box, matches the SETTINGS title color
+    Text {
+        id: activePageLabel
+        z: 6
+        anchors {
+            left: settingsList.left; leftMargin: vpx(25)
+            verticalCenter: header.verticalCenter
+        }
+        text: (pagelist.currentIndex >= 0 && settingsArr[pagelist.currentIndex])
+              ? settingsArr[pagelist.currentIndex].pageName.toUpperCase() : ""
+        color: settingsTextColor
+        font.family: subtitleFont.name
+        font.pixelSize: vpx(24)
+        font.bold: true
+        verticalAlignment: Text.AlignVCenter
+    }
+
+    // Subtle nav-rail panel (balances the content panel)
+    Rectangle {
+        id: railPanel
+        anchors {
+            top: header.bottom
+            bottom: parent.bottom; bottomMargin: helpMargin
+            left: parent.left
+            right: pagelist.right
+        }
+        color: theme.secondary
+        opacity: 0.5
+        radius: 0
+        z: -1
     }
 
     ListView {
@@ -407,11 +691,32 @@ id: root
                 width: ListView.view.width
                 height: itemheight
 
+                // Selection tile
+                Rectangle {
+                id: pageTile
+                    anchors.fill: parent
+                    anchors.rightMargin: vpx(8)
+                    radius: vpx(6)
+                    color: theme.accent
+                    opacity: selected ? 0.16 : 0
+                    Behavior on opacity { NumberAnimation { duration: 120 } }
+                }
+                // Left accent edge-bar
+                Rectangle {
+                    anchors { left: pageTile.left; verticalCenter: pageTile.verticalCenter }
+                    width: vpx(4)
+                    height: pageTile.height * 0.55
+                    radius: width / 2
+                    color: theme.accent
+                    opacity: selected ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 120 } }
+                }
+
                 // Page name
                 Text {
                 id: oageNameText
                 
-                    text: modelData.pageName
+                    text: modelData.pageName.toUpperCase()
                     color: settingsTextColor
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(24)
@@ -430,9 +735,9 @@ id: root
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: settings.MouseHover == "Yes"
-                    onEntered: { sfxNav.play(); }
+                    onEntered: { playNav(); }
                     onClicked: {
-                        sfxNav.play();
+                        playNav();
                         pagelist.currentIndex = index;
                         settingsList.focus = true;
                     }
@@ -441,13 +746,13 @@ id: root
             }
         } 
 
-        Keys.onUpPressed: { sfxNav.play(); decrementCurrentIndex() }
-        Keys.onDownPressed: { sfxNav.play(); incrementCurrentIndex() }
+        Keys.onUpPressed: { playNav(); decrementCurrentIndex() }
+        Keys.onDownPressed: { playNav(); incrementCurrentIndex() }
         Keys.onPressed: {
             // Accept
             if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                 event.accepted = true;
-                sfxAccept.play();
+                playAccept();
                 settingsList.focus = true;
             }
             // Back
@@ -459,18 +764,25 @@ id: root
 
     }
 
+    // Subtle content panel (depth behind the settings column)
     Rectangle {
+        id: settingsPanel
         anchors {
-            left: pagelist.right;
-            top: pagelist.top; bottom: pagelist.bottom
+            top: header.bottom
+            bottom: parent.bottom; bottomMargin: helpMargin
+            left: pagelist.right; leftMargin: vpx(10)
+            right: parent.right
         }
-        width: vpx(1)
-        color: theme.text
-        opacity: 0.1
+        color: theme.secondary
+        opacity: 0.5
+        radius: 0
+        z: -1
     }
 
     ListView {
     id: settingsList
+
+        property int settingsVersion: 0   // increment to force delegate savedIndex refresh
 
         model: settingsArr[pagelist.currentIndex].listmodel
         delegate: settingsDelegate
@@ -499,8 +811,17 @@ id: root
 
                 property bool selected: ListView.isCurrentItem && settingsList.focus
                 property variant settingList: setting.split(',')
-                property int savedIndex: api.memory.get(settingName + 'Index') || 0
+                property int savedIndex: Math.min(api.memory.get(settingName + 'Index') || 0, settingList.length - 1)
+
+                Connections {
+                    target: settingsList
+                    onSettingsVersionChanged: {
+                        savedIndex = Math.min(api.memory.get(settingName + 'Index') || 0, settingList.length - 1);
+                    }
+                }
                 property string itemNote: (typeof note !== 'undefined') ? note : ""
+                // Optional friendly display label; storage key remains settingName
+                property string displayLabel: (typeof label !== 'undefined' && label !== "") ? label : settingName
 
                 // Text-input rows (RA credentials) skip the cycling logic
                 property bool isTextInput: inputType === "text"
@@ -511,6 +832,17 @@ id: root
                     if (isTextInput) return;
                     api.memory.set(settingName + 'Index', savedIndex);
                     api.memory.set(settingName, settingList[savedIndex]);
+                    // Mutual exclusion: fanart and custom background can't both be on
+                    if (settingName === "Showcase Background Art" && settingList[savedIndex] === "Yes") {
+                        api.memory.set("Custom Background", "No");
+                        api.memory.set("Custom BackgroundIndex", "0");
+                        settingsList.settingsVersion++;
+                    }
+                    if (settingName === "Custom Background" && settingList[savedIndex] === "Yes") {
+                        api.memory.set("Showcase Background Art", "No");
+                        api.memory.set("Showcase Background ArtIndex", "1");
+                        settingsList.settingsVersion++;
+                    }
                 }
 
                 function nextSetting() {
@@ -532,12 +864,36 @@ id: root
                 width: ListView.view.width
                 height: itemNote !== "" ? itemheight + vpx(22) : itemheight
 
+                // Selection tile
+                Rectangle {
+                id: setTile
+                    anchors { left: parent.left; top: parent.top }
+                    anchors.right: isTextInput ? textInputContainer.left : parent.right
+                    anchors.leftMargin: vpx(12)
+                    anchors.rightMargin: vpx(12)
+                    height: itemheight
+                    radius: vpx(6)
+                    color: theme.accent
+                    opacity: selected ? 0.16 : 0
+                    Behavior on opacity { NumberAnimation { duration: 120 } }
+                }
+                // Left accent edge-bar
+                Rectangle {
+                    anchors { left: setTile.left; verticalCenter: setTile.verticalCenter }
+                    width: vpx(4)
+                    height: itemheight * 0.55
+                    radius: width / 2
+                    color: theme.accent
+                    opacity: selected ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 120 } }
+                }
+
                 // ── Cycle-value rows (existing style) ──────────────────────
                 Text {
                 id: settingNameText
 
                     visible: !isTextInput
-                    text: settingName + ": "
+                    text: displayLabel.toUpperCase() + ": "
                     color: settingsTextColor
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(22)
@@ -554,7 +910,8 @@ id: root
                 id: settingtext
 
                     visible: !isTextInput
-                    text: settingList[savedIndex]
+                    text: (selected ? "\u2039  " : "") + settingList[savedIndex].toUpperCase() + (selected ? "  \u203A" : "")
+                    font.bold: selected
                     color: settingsTextColor
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(22)
@@ -572,7 +929,7 @@ id: root
                 id: textInputLabel
 
                     visible: isTextInput
-                    text: settingName + ":"
+                    text: settingName.toUpperCase() + ":"
                     color: settingsTextColor
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(22)
@@ -586,7 +943,8 @@ id: root
                     }
                 }
 
-                // Container that looks plain when reading, bordered when editing
+                // Read-only value display — editing happens in the on-screen
+                // keyboard overlay (no native TextInput here)
                 Rectangle {
                 id: textInputContainer
 
@@ -595,85 +953,60 @@ id: root
                         right: parent.right; rightMargin: vpx(25)
                         top: parent.top
                     }
-                    y: (itemheight - height) / 2   // vertically center within the label row
+                    y: (itemheight - height) / 2
                     width:  vpx(280)
                     height: vpx(34)
-                    color:  isEditing ? theme.secondary : "transparent"
-                    border.width: isEditing ? vpx(1) : 0
+                    color: "transparent"
+                    border.width: settingRow.selected ? vpx(1) : 0
                     border.color: theme.accent
                     radius: vpx(4)
 
-                    // Always-present TextInput — the native Android EditText always
-                    // exists in the view hierarchy. When editing ends, focus is
-                    // transferred to settingsList (forceActiveFocus) *before*
-                    // isEditing is cleared, so Android calls clearFocus() on the
-                    // EditText cleanly — no orphaned blue-box highlight.
-                    TextInput {
-                    id: raTextInput
-
+                    Text {
                         anchors { fill: parent; margins: vpx(8) }
-                        // Seed initial text from persistent storage
-                        text: api.memory.has(settingName) ? api.memory.get(settingName) : ""
+                        property string storedVal: {
+                            var _r = root.memRevision;   // refresh after edits
+                            return api.memory.has(settingName) ? api.memory.get(settingName) : "";
+                        }
+                        text: storedVal === ""
+                              ? "(press A to set)"
+                              : ((typeof masked !== 'undefined' && masked)
+                                 ? Array(storedVal.length + 1).join("\u25CF")
+                                 : storedVal)
                         color: settingsTextColor
                         font.family: subtitleFont.name
                         font.pixelSize: vpx(18)
-                        clip: true
-                        selectionColor: theme.accent
-                        selectedTextColor: settingsTextColor
                         opacity: settingRow.selected ? 1 : 0.2
                         verticalAlignment: Text.AlignVCenter
-
-                        // Only accept key events / show cursor when editing
-                        readOnly: !settingRow.isEditing
-                        // Show masked dots at rest (if masked field); plain text while editing
-                        echoMode: (typeof masked !== 'undefined' && masked && !settingRow.isEditing)
-                                  ? TextInput.Password : TextInput.Normal
-
-                        // Take focus when editing starts; release it before isEditing
-                        // is cleared so Android can run clearFocus() properly.
-                        Connections {
-                            target: settingRow
-                            function onIsEditingChanged() {
-                                if (settingRow.isEditing) {
-                                    raTextInput.forceActiveFocus();
-                                    raTextInput.cursorPosition = raTextInput.text.length;
-                                }
-                            }
-                        }
-
-                        Keys.onPressed: {
-                            if (api.keys.isCancel(event) && !event.isAutoRepeat) {
-                                event.accepted = true;
-                                text = settingRow.originalText;
-                                Qt.inputMethod.hide();
-                                settingsList.forceActiveFocus();
-                                settingRow.isEditing = false;
-                            }
-                        }
-                        Keys.onReturnPressed: {
-                            api.memory.set(settingName, text);
-                            Qt.inputMethod.hide();
-                            settingsList.forceActiveFocus();
-                            settingRow.isEditing = false;
-                        }
+                        elide: Text.ElideRight
                     }
                 }
 
-                // ── Optional note (shared) ────────────────────────────────
-                Text {
-                id: settingNoteText
+                // ── Optional note (shared) — accent badge ─────────────────
+                Rectangle {
+                id: noteBadge
 
                     visible: itemNote !== ""
-                    text: itemNote
-                    color: settingsTextColor
-                    font.family: bodyFont.name
-                    font.pixelSize: vpx(15)
-                    font.italic: true
-                    opacity: selected ? 0.6 : 0.15
+                    width: noteLabel.width + vpx(16)
+                    height: noteLabel.height + vpx(6)
+                    color: "transparent"
+                    border.width: vpx(1)
+                    border.color: theme.accent
+                    radius: vpx(4)
+                    opacity: selected ? 1 : 0.45
 
                     anchors {
                         left: parent.left; leftMargin: vpx(25)
-                        top: parent.top; topMargin: itemheight
+                        top: parent.top; topMargin: itemheight - vpx(4)
+                    }
+
+                    Text {
+                        id: noteLabel
+                        anchors.centerIn: parent
+                        text: itemNote
+                        color: theme.accent
+                        font.family: bodyFont.name
+                        font.pixelSize: vpx(13)
+                        font.bold: true
                     }
                 }
 
@@ -690,10 +1023,10 @@ id: root
 
                 // ── Input handling ────────────────────────────────────────
                 Keys.onRightPressed: {
-                    if (!isTextInput) { sfxToggle.play(); nextSetting(); saveSetting(); }
+                    if (!isTextInput) { playToggle(); nextSetting(); saveSetting(); }
                 }
                 Keys.onLeftPressed: {
-                    if (!isTextInput) { sfxToggle.play(); prevSetting(); saveSetting(); }
+                    if (!isTextInput) { playToggle(); prevSetting(); saveSetting(); }
                 }
 
                 Keys.onPressed: {
@@ -702,11 +1035,10 @@ id: root
                         event.accepted = true;
                         if (isTextInput) {
                             // Capture current saved value before opening editor
-                            originalText = api.memory.has(settingName) ? api.memory.get(settingName) : "";
-                            isEditing = true;
-                            // Focus and cursor position handled by raTextInput.onIsEditingChanged
+                            playAccept();
+                            root.openEditor(settingName, (typeof masked !== 'undefined' && masked));
                         } else {
-                            sfxToggle.play();
+                            playToggle();
                             nextSetting();
                             saveSetting();
                         }
@@ -714,7 +1046,7 @@ id: root
                     // Back
                     if (api.keys.isCancel(event) && !event.isAutoRepeat) {
                         event.accepted = true;
-                        sfxBack.play();
+                        playBack();
                         pagelist.focus = true;
                     }
                 }
@@ -723,15 +1055,14 @@ id: root
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: settings.MouseHover == "Yes"
-                    onEntered: { sfxNav.play(); }
+                    onEntered: { playNav(); }
                     onClicked: {
                         if (selected) {
                             if (isTextInput) {
-                                originalText = api.memory.has(settingName) ? api.memory.get(settingName) : "";
-                                isEditing = true;
-                                // Focus and cursor position handled by raTextInput.onIsEditingChanged
+                                playAccept();
+                                root.openEditor(settingName, (typeof masked !== 'undefined' && masked));
                             } else {
-                                sfxToggle.play();
+                                playToggle();
                                 nextSetting();
                                 saveSetting();
                             }
@@ -744,8 +1075,129 @@ id: root
             }
         } 
 
-        Keys.onUpPressed: { sfxNav.play(); decrementCurrentIndex() }
-        Keys.onDownPressed: { sfxNav.play(); incrementCurrentIndex() }
+        Keys.onUpPressed: { playNav(); decrementCurrentIndex() }
+        Keys.onDownPressed: { playNav(); incrementCurrentIndex() }
+    }
+
+    // ── On-screen keyboard overlay ────────────────────────────────────────
+    Rectangle {
+    id: kbOverlay
+        visible: kbOpen; z: 100
+        anchors.fill: parent
+        color: Qt.rgba(0, 0, 0, 0.82)
+
+        MouseArea { anchors.fill: parent; onClicked: closeEditor(); }
+
+        // Hidden helper used only for clipboard paste() — never focused
+        TextEdit {
+        id: clipboardHelper
+            visible: false
+            width: 0; height: 0
+            activeFocusOnPress: false
+        }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: vpx(560)
+            height: kbTitle.height + vpx(46) + kbGrid.height + vpx(96)
+            radius: vpx(10)
+            color: Qt.rgba(0.10, 0.10, 0.10, 0.98)
+            border.color: theme.accent; border.width: 2
+
+            Text {
+            id: kbTitle
+                text: "Enter " + editSettingName
+                color: theme.text
+                font.family: titleFont.name; font.pixelSize: vpx(24); font.bold: true
+                anchors { top: parent.top; topMargin: vpx(18); left: parent.left; leftMargin: vpx(24) }
+            }
+
+            Rectangle {
+            id: kbField
+                anchors { top: kbTitle.bottom; topMargin: vpx(12); left: parent.left; right: parent.right; leftMargin: vpx(24); rightMargin: vpx(24) }
+                height: vpx(46); radius: vpx(6)
+                color: Qt.rgba(1,1,1,0.10)
+                border.color: theme.accent; border.width: vpx(1)
+                Text {
+                    anchors { left: parent.left; leftMargin: vpx(14); right: parent.right; rightMargin: vpx(14); verticalCenter: parent.verticalCenter }
+                    text: editText === "" ? "Type\u2026"
+                          : (editMasked ? Array(editText.length + 1).join("\u25CF") : editText)
+                    color: editText === "" ? Qt.rgba(1,1,1,0.4) : theme.text
+                    font.family: subtitleFont.name; font.pixelSize: vpx(20)
+                    elide: Text.ElideRight
+                }
+            }
+
+            Grid {
+            id: kbGrid
+                anchors { top: kbField.bottom; topMargin: vpx(14); horizontalCenter: parent.horizontalCenter }
+                columns: keyCols
+                spacing: vpx(5)
+
+                Repeater {
+                    model: keyboardKeys
+                    Rectangle {
+                        width: vpx(48); height: vpx(42); radius: vpx(4)
+                        property bool sel: keyIndex === index
+                        property bool shiftOn: (modelData === "SHIFT" && kbShift)
+                        color: sel ? theme.accent
+                               : (shiftOn ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.45)
+                                          : Qt.rgba(1,1,1,0.08))
+                        Text {
+                            anchors.centerIn: parent
+                            text: modelData === "SPACE" ? "\u2423"
+                                  : (modelData === "DEL" ? "\u232B"
+                                  : (modelData === "SHIFT" ? "\u21E7" : modelData))
+                            color: sel ? "white" : theme.text
+                            font.family: subtitleFont.name
+                            font.pixelSize: (modelData.length > 1 && modelData !== "SHIFT" && modelData !== "SPACE" && modelData !== "DEL") ? vpx(11) : vpx(18)
+                            font.bold: sel
+                        }
+                        MouseArea { anchors.fill: parent; onClicked: { keyIndex = index; pressKey(modelData); } }
+                    }
+                }
+            }
+
+            // Button-icon hint (A Type / B Cancel) + on-keyboard feature hints
+            Row {
+                anchors { bottom: parent.bottom; bottomMargin: vpx(14); horizontalCenter: parent.horizontalCenter }
+                spacing: vpx(18)
+
+                Repeater {
+                    model: [ {a:"accept",t:"Type"}, {a:"cancel",t:"Cancel"} ]
+                    delegate: Row {
+                        spacing: vpx(7)
+                        Image {
+                            anchors.verticalCenter: parent.verticalCenter
+                            source: "../assets/images/controller/" + fpBtnArt(modelData.a) + ".png"
+                            width: vpx(26); height: vpx(26)
+                            asynchronous: true; smooth: true
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData.t
+                            color: theme.text; opacity: 0.55
+                            font.family: subtitleFont.name; font.pixelSize: vpx(15)
+                        }
+                    }
+                }
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: "\u21E7 Shift    áé Accents"
+                    color: theme.text; opacity: 0.4
+                    font.family: subtitleFont.name; font.pixelSize: vpx(13)
+                }
+            }
+        }
+
+        Keys.onUpPressed:    { playNav(); if (keyIndex >= keyCols) keyIndex -= keyCols; }
+        Keys.onDownPressed:  { playNav(); var ni = keyIndex + keyCols; if (ni < keyboardKeys.length) keyIndex = ni; else keyIndex = keyboardKeys.length - 1; }
+        Keys.onLeftPressed:  { playNav(); if ((keyIndex % keyCols) !== 0) keyIndex--; }
+        Keys.onRightPressed: { playNav(); if ((keyIndex % keyCols) !== (keyCols - 1) && keyIndex < keyboardKeys.length - 1) keyIndex++; }
+        Keys.onPressed: {
+            if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey(keyboardKeys[keyIndex]); }
+            if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); closeEditor(); }
+        }
     }
 
     // Helpbar buttons

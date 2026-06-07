@@ -11,6 +11,7 @@
 //   • sourceSize on all network images
 
 import QtQuick 2.15
+import QtGraphicalEffects 1.15
 import "../Global"
 
 FocusScope {
@@ -86,17 +87,27 @@ id: root
             }
             spacing: vpx(12)
 
-            Image {
+            // Circular avatar (OpacityMask clip) + accent ring
+            Item {
                 width: vpx(56); height: vpx(56)
-                source: cheevosData.avatarUrl
-                fillMode: Image.PreserveAspectCrop
-                smooth: true
-                asynchronous: true
-                sourceSize { width: 64; height: 64 }
                 visible: cheevosData.avatarUrl !== ""
-                // Clip to circle
-                layer.enabled: true
-                layer.effect: null
+                Image {
+                id: raOverviewAvatar
+                    anchors.fill: parent
+                    source: cheevosData.avatarUrl
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    asynchronous: true
+                    sourceSize { width: 64; height: 64 }
+                    layer.enabled: true
+                    layer.smooth: true
+                    layer.effect: OpacityMask {
+                        maskSource: Rectangle {
+                            width: raOverviewAvatar.width; height: raOverviewAvatar.height
+                            radius: width / 2
+                        }
+                    }
+                }
                 Rectangle {
                     anchors.fill: parent
                     color: "transparent"
@@ -194,6 +205,13 @@ id: root
         currentIndex: 0
         clip:         true
         cacheBuffer:  vpx(300)   // pre-render ~3 off-screen rows for smooth Android scrolling
+
+        // Nav sound fires on ANY index change (keyboard up/down, mouse hover/click).
+        // The focused ListView consumes Up/Down internally, so the root Keys handlers
+        // never see them — hooking the index change is the reliable place for the sound.
+        property bool navReady: false
+        Component.onCompleted: navReady = true
+        onCurrentIndexChanged: if (navReady) playNav()
 
         highlightMoveDuration: 100
         preferredHighlightBegin: vpx(96)
@@ -393,10 +411,10 @@ id: root
             MouseArea {
                 anchors.fill: parent
                 hoverEnabled: settings.MouseHover === "Yes"
-                onEntered: { sfxNav.play(); gameList.currentIndex = index; }
+                onEntered: { gameList.currentIndex = index; }
                 onClicked: {
                     if (isSelected) openSelectedGame();
-                    else { sfxNav.play(); gameList.currentIndex = index; }
+                    else { gameList.currentIndex = index; }
                 }
             }
         }
@@ -466,19 +484,17 @@ id: root
     // ── Key handling ─────────────────────────────────────────────────────
     Keys.onUpPressed: {
         event.accepted = true;
-        sfxNav.play();
         if (gameList.currentIndex > 0) gameList.currentIndex--;
     }
     Keys.onDownPressed: {
         event.accepted = true;
-        sfxNav.play();
         if (gameList.currentIndex < cheevosData.raRecentGames.count - 1)
             gameList.currentIndex++;
     }
     Keys.onPressed: {
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxAccept.play();
+            playAccept();
             openSelectedGame();
         }
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
@@ -487,6 +503,7 @@ id: root
         }
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
+            playAccept();
             initialized = false;
             cheevosData.refreshAll();
         }

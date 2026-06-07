@@ -34,13 +34,31 @@ id: root
     ListFavorites   { id: listFavorites;   max: settings.ShowcaseColumns }
     ListLastPlayed  { id: listLastPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
     ListMostPlayed  { id: listMostPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
-    ListRecommended { id: listRecommended; max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
+    ListRecommended { id: listRecommended; active: true; max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
     ListPublisher   { id: listPublisher;   max: settings.ShowcaseColumns; publisher: randoPub;   omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
     ListDeveloper   { id: listDeveloper;   max: settings.ShowcaseColumns; developer: randoDev;   omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
     ListGenre       { id: listGenre;       max: settings.ShowcaseColumns; genre: randoGenre;     omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
     ListGenre       { id: listGenre2;      max: settings.ShowcaseColumns; genre: randoGenre2;    omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
 
-    property var featuredCollection: listFavorites
+    property var highlightedGame: null
+
+    // Every Color Layout now has its own PNG, so use it directly (matches game tiles)
+    function heroBorderImage(layoutName) {
+        return layoutName;
+    }
+
+    // Hero box art for the resume/last-played game, per the "Hero box art" setting.
+    // Falls back to other art types if the chosen one is missing, so it's never blank.
+    function heroArtSource(g) {
+        if (!g) return "";
+        var fan  = g.assets.background || "";
+        var shot = (g.assets.screenshots && g.assets.screenshots.length) ? g.assets.screenshots[0] : "";
+        var box  = g.assets.boxFront || "";
+        var mode = settings.HeroBoxArt;
+        if (mode === "Boxfront")   return box  || fan  || shot || "";
+        if (mode === "Screenshot") return shot || fan  || box  || "";
+        return fan || shot || box || "";   // Fanart (default)
+    }
     property var collection1: getCollection(settings.ShowcaseCollection1, settings.ShowcaseCollection1_Thumbnail)
     property var collection2: getCollection(settings.ShowcaseCollection2, settings.ShowcaseCollection2_Thumbnail)
     property var collection3: getCollection(settings.ShowcaseCollection3, settings.ShowcaseCollection3_Thumbnail)
@@ -143,7 +161,6 @@ id: root
         currentHelpbarModel = gridviewHelpModel;
     }
 
-    property bool ftue: featuredCollection.games.count == 0
 
     function storeIndices(secondary) {
         storedHomePrimaryIndex = mainList.currentIndex;
@@ -173,90 +190,91 @@ id: root
     
     anchors.fill: parent
 
-    Item {
-    id: ftueContainer
-
-        width: parent.width
-        height: vpx(360)
-        visible: ftue
-        opacity: {
-            switch (mainList.currentIndex) {
-                case 0:
-                    return 1;
-                case 1:
-                    return 0.3;
-                case 2:
-                    return 0.1;
-                case -1:
-                    return 0.3;
-                default:
-                    return 0
-            }
-        }
-        Behavior on opacity { PropertyAnimation { duration: 1000; easing.type: Easing.OutQuart; easing.amplitude: 2.0; easing.period: 1.5 } }
-
-        /*Image {
-            anchors.fill: parent
-            source: "../assets/images/ftueBG01.jpeg"
-            sourceSize { width: root.width; height: root.height}
-            fillMode: Image.PreserveAspectCrop
-            smooth: true
-            asynchronous: true
-        }*/
-
-        Rectangle {
-            anchors.fill: parent
-            color: "black"
-            opacity: 0.5
-        }
-
-        Video {
-        id: videocomponent
-
-            anchors.fill: parent
-            source: "../assets/video/ftue.mp4"
-            fillMode: VideoOutput.PreserveAspectCrop
-            muted: true
-            loops: MediaPlayer.Infinite
-            autoPlay: true
-
-            OpacityAnimator {
-                target: videocomponent;
-                from: 0;
-                to: 1;
-                duration: 1000;
-                running: true;
-            }
-
-        }
-
-        Image {
-        id: ftueLogo
-
-            width: vpx(350)
-            anchors { left: parent.left; leftMargin: globalMargin }
-            source: "../assets/images/gameOS-logo.png"
-            sourceSize { width: 350; height: 250}
-            fillMode: Image.PreserveAspectFit
-            smooth: true
-            asynchronous: true
-            anchors.centerIn: parent
-        }
-
-        Text {
-            text: "Try adding some favorite games"
-            
-            horizontalAlignment: Text.AlignHCenter
-            anchors { bottom: parent.bottom; bottomMargin: vpx(75) }
-            width: parent.width
-            height: contentHeight
-            color: theme.text
-            font.family: subtitleFont.name
-            font.pixelSize: vpx(16)
-            opacity: 0.5
-            visible: false
+    // Set initial fanart background on first load
+    Timer {
+        interval: 300; running: true; repeat: false
+        onTriggered: {
+            if      (list1.selected && list1.search) highlightedGame = list1.search.currentGame(list1.currentIndex)
+            else if (list2.selected && list2.search) highlightedGame = list2.search.currentGame(list2.currentIndex)
+            else if (list3.selected && list3.search) highlightedGame = list3.search.currentGame(list3.currentIndex)
+            else if (list4.selected && list4.search) highlightedGame = list4.search.currentGame(list4.currentIndex)
+            else if (list5.selected && list5.search) highlightedGame = list5.search.currentGame(list5.currentIndex)
+            else if (list6.selected && list6.search) highlightedGame = list6.search.currentGame(list6.currentIndex)
         }
     }
+
+    // User's custom background (background.png) — shows when fanart is OFF
+    Image {
+    id: customBg
+        anchors.fill: parent
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+        smooth: true
+        z: -1
+        source: (settings.CustomBackground === "Yes") ? "../assets/images/backgrounds/background.png" : ""
+        opacity: (settings.CustomBackground === "Yes" && settings.ShowcaseBackgroundArt !== "Yes") ? 1 : 0
+        Behavior on opacity { PropertyAnimation { duration: 400 } }
+    }
+
+    // Fanart / screenshot background with crossfade
+    Image {
+    id: bgImage1
+        anchors.fill: parent
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+        smooth: true
+        opacity: 0
+        z: 0
+        Behavior on opacity { PropertyAnimation { duration: 700 } }
+    }
+
+    Image {
+    id: bgImage2
+        anchors.fill: parent
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+        smooth: true
+        opacity: 0
+        z: 0
+        Behavior on opacity { PropertyAnimation { duration: 700 } }
+    }
+
+    // Dim overlay so content stays readable
+    Rectangle {
+        anchors.fill: parent
+        color: "black"
+        opacity: 0.45
+        z: 1
+    }
+
+    property bool bgToggle: false
+    property string bgSource: {
+        if (settings.ShowcaseBackgroundArt !== "Yes") return "";
+        if (!highlightedGame) return "";
+        return highlightedGame.assets.background || highlightedGame.assets.screenshots[0] || "";
+    }
+
+    onBgSourceChanged: {
+        if (!bgSource) {
+            bgImage1.opacity = 0;
+            bgImage2.opacity = 0;
+            return;
+        }
+        if (bgToggle) {
+            bgImage1.source = bgSource;
+            bgImage1.opacity = parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55;
+            bgImage2.opacity = 0;
+        } else {
+            bgImage2.source = bgSource;
+            bgImage2.opacity = parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55;
+            bgImage1.opacity = 0;
+        }
+        bgToggle = !bgToggle;
+    }
+
+
+    // FTUE favorites banner removed — the hero box serves that role now; the Xbox
+    // logo is rendered by the header below, honoring Settings > Home page > Xbox Logo.
 
     Item {
     id: header
@@ -269,123 +287,335 @@ id: root
 
             width: vpx(150)
             anchors { left: parent.left; leftMargin: globalMargin }
-            source: "../assets/images/gameOS-logo.png"
+            // Logo file chosen by Settings > Home page > Xbox Logo. "None" hides it.
+            source: settings.XboxLogo === "None" ? "" :
+                    settings.XboxLogo === "Logo2" ? "../assets/images/Xbox-logo2.png" :
+                                                    "../assets/images/Xbox-logo.png"
+            // Logo Color Match: tints the logo to the current Color Layout accent.
+            layer.enabled: settings.LogoColorMatch === "Yes"
+            layer.effect: ColorOverlay { color: theme.accent }
             sourceSize { width: 150; height: 100}
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true
             anchors.verticalCenter: parent.verticalCenter
-            visible: !ftueContainer.visible
+            visible: settings.XboxLogo !== "None" && settings.XboxLogo !== "RetroAchievements"
+        }
+
+        // ── RetroAchievements header card ─────────────────────────────────
+        // Replaces the Xbox logo when Settings > Home page > Xbox Logo = RetroAchievements.
+        // Shows the same profile info as the RA overview (avatar, name, points, member).
+        Item {
+        id: raHeaderCard
+
+            anchors { left: parent.left; leftMargin: globalMargin; verticalCenter: parent.verticalCenter }
+            width: vpx(250); height: vpx(64)
+            visible: settings.XboxLogo === "RetroAchievements"
+
+            // Pull the profile if RA credentials exist but the avatar hasn't been fetched yet
+            function ensureProfile() {
+                if (visible && cheevosData.raUserName !== "" && cheevosData.avatarUrl === "")
+                    cheevosData.loadUserProfile();
+            }
+            Component.onCompleted: ensureProfile()
+            onVisibleChanged:      ensureProfile()
+
+            Row {
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: vpx(10)
+
+                // Circular avatar with accent ring
+                Item {
+                    width: vpx(52); height: vpx(52)
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: cheevosData.avatarUrl !== ""
+                    Image {
+                    id: raHeaderAvatar
+                        anchors.fill: parent
+                        source: cheevosData.avatarUrl
+                        fillMode: Image.PreserveAspectCrop
+                        smooth: true; asynchronous: true
+                        sourceSize { width: 64; height: 64 }
+                        layer.enabled: true
+                        layer.smooth: true
+                        layer.effect: OpacityMask {
+                            maskSource: Rectangle {
+                                width: raHeaderAvatar.width; height: raHeaderAvatar.height
+                                radius: width / 2
+                            }
+                        }
+                    }
+                    Rectangle {
+                        anchors.fill: parent
+                        color: "transparent"
+                        border.color: theme.accent
+                        border.width: vpx(2)
+                        radius: width / 2
+                    }
+                }
+
+                // Username / points / member-since
+                Column {
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: vpx(2)
+                    visible: cheevosData.raUserName !== ""
+
+                    Text {
+                        text: cheevosData.raUserName
+                        color: theme.text
+                        font.family: subtitleFont.name
+                        font.pixelSize: vpx(17); font.bold: true
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        text: cheevosData.pointsText
+                        color: theme.text
+                        font.family: subtitleFont.name
+                        font.pixelSize: vpx(12)
+                        opacity: 0.7
+                        visible: cheevosData.pointsText !== ""
+                    }
+                    Text {
+                        text: cheevosData.memberText
+                        color: theme.text
+                        font.family: subtitleFont.name
+                        font.pixelSize: vpx(10)
+                        opacity: 0.5
+                        visible: cheevosData.memberText !== ""
+                    }
+                }
+            }
+
+            // Fallback hint if RA isn't set up yet
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Sign in to RetroAchievements"
+                color: theme.text
+                opacity: 0.4
+                font.family: subtitleFont.name
+                font.pixelSize: vpx(13)
+                visible: cheevosData.raUserName === ""
+            }
+        }
+        Rectangle {
+        id: homebutton
+
+            width:  vpx(36); height: vpx(36); radius: height / 2
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(81) }
+            color:   focus ? theme.accent : "transparent"
+            opacity: focus ? 1 : 0.6
+            layer.enabled: true
+            layer.effect: DropShadow {
+                transparentBorder: true
+                horizontalOffset: 0
+                verticalOffset: 0
+                radius: 8
+                samples: 17
+                color: "#cc000000"
+            }
+
+            onFocusChanged: {
+                if (focus) playNav();
+                if (focus) mainList.currentIndex = -1;
+            }
+            Keys.onDownPressed:  { playNav(); var r = mainList.navJump ? mainList.savedRow : 1; mainList.navJump = false; mainList.forceActiveFocus(); mainList.currentIndex = r; }
+            Keys.onRightPressed: discoverbutton.focus = true;
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; allGamesScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; if (mainList.navJump) { mainList.navJump = false; mainList.currentIndex = mainList.savedRow; } mainList.focus = true; }
+                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); discoverbutton.focus = true; }
+                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); settingsbutton.focus = true; }
+            }
+            MouseArea {
+                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
+                onEntered: homebutton.focus = true; onExited: homebutton.focus = false;
+                onClicked: allGamesScreen();
+            }
+            Image {
+                anchors { fill: parent; margins: vpx(2) }
+                source: "../assets/images/gamesandapps.png"
+                fillMode: Image.PreserveAspectFit
+                smooth: true; asynchronous: true
+                opacity: homebutton.focus ? 1.0 : 0.85
+            }
+        }
+
+        Rectangle {
+        id: discoverbutton
+
+            width:  vpx(36); height: vpx(36); radius: height / 2
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(27) }
+            color:   focus ? theme.accent : "transparent"
+            opacity: focus ? 1 : 0.6
+            layer.enabled: true
+            layer.effect: DropShadow {
+                transparentBorder: true
+                horizontalOffset: 0
+                verticalOffset: 0
+                radius: 8
+                samples: 17
+                color: "#cc000000"
+            }
+
+            onFocusChanged: {
+                if (focus) playNav();
+                if (focus) mainList.currentIndex = -1;
+            }
+            Keys.onDownPressed:  { playNav(); var r = mainList.navJump ? mainList.savedRow : 1; mainList.navJump = false; mainList.forceActiveFocus(); mainList.currentIndex = r; }
+            Keys.onLeftPressed:  homebutton.focus = true;
+            Keys.onRightPressed: achievementsbutton.focus = true;
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; if (mainList.navJump) { mainList.navJump = false; mainList.currentIndex = mainList.savedRow; } mainList.focus = true; }
+                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); achievementsbutton.focus = true; }
+                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); homebutton.focus = true; }
+            }
+            MouseArea {
+                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
+                onEntered: discoverbutton.focus = true; onExited: discoverbutton.focus = false;
+                onClicked: discoverScreen();
+            }
+            Canvas {
+                anchors { fill: parent; margins: vpx(6) }
+                onPaint: {
+                    var ctx = getContext("2d"); ctx.reset();
+                    var cx = width/2, cy = height/2, r = Math.min(cx,cy)-1;
+                    ctx.globalAlpha = discoverbutton.focus ? 1.0 : 0.85;
+                    ctx.strokeStyle = "white"; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+                    ctx.fillStyle = "white";
+                    ctx.beginPath(); ctx.moveTo(cx, cy-r*0.65); ctx.lineTo(cx+r*0.30, cy+r*0.10); ctx.lineTo(cx, cy+r*0.20); ctx.lineTo(cx-r*0.30, cy+r*0.10); ctx.closePath(); ctx.fill();
+                    ctx.globalAlpha = 0.35;
+                    ctx.beginPath(); ctx.moveTo(cx, cy+r*0.65); ctx.lineTo(cx-r*0.30, cy-r*0.10); ctx.lineTo(cx, cy-r*0.20); ctx.lineTo(cx+r*0.30, cy-r*0.10); ctx.closePath(); ctx.fill();
+                }
+                Connections { target: discoverbutton; onFocusChanged: parent.requestPaint() }
+            }
         }
 
         Rectangle {
         id: achievementsbutton
 
-            width:  vpx(36)
-            height: vpx(36)
-            anchors {
-                bottom: parent.bottom; bottomMargin: vpx(6)
-                right: settingsbutton.left; rightMargin: vpx(10)
-            }
+            width:  vpx(36); height: vpx(36); radius: height / 2
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(27) }
             color:   focus ? theme.accent : "transparent"
-            radius:  height / 2
-            opacity: focus ? 1 : 0.2
+            opacity: focus ? 1 : 0.6
+            layer.enabled: true
+            layer.effect: DropShadow {
+                transparentBorder: true
+                horizontalOffset: 0
+                verticalOffset: 0
+                radius: 8
+                samples: 17
+                color: "#cc000000"
+            }
 
             onFocusChanged: {
-                sfxNav.play();
-                if (focus)
-                    mainList.currentIndex = -1;
-                else
-                    mainList.currentIndex = 0;
+                if (focus) playNav();
+                if (focus) mainList.currentIndex = -1;
             }
-
-            Keys.onDownPressed: mainList.focus = true;
+            Keys.onDownPressed:  { playNav(); var r = mainList.navJump ? mainList.savedRow : 1; mainList.navJump = false; mainList.forceActiveFocus(); mainList.currentIndex = r; }
+            Keys.onLeftPressed:  discoverbutton.focus = true;
             Keys.onRightPressed: settingsbutton.focus = true;
             Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) {
-                    event.accepted = true;
-                    achievementsScreen();
-                }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) {
-                    event.accepted = true;
-                    mainList.focus = true;
-                }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; if (mainList.navJump) { mainList.navJump = false; mainList.currentIndex = mainList.savedRow; } mainList.focus = true; }
+                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); settingsbutton.focus = true; }
+                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); discoverbutton.focus = true; }
             }
             MouseArea {
-                anchors.fill: parent
-                hoverEnabled: settings.MouseHover == "Yes"
-                onEntered: achievementsbutton.focus = true;
-                onExited:  achievementsbutton.focus = false;
+                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
+                onEntered: achievementsbutton.focus = true; onExited: achievementsbutton.focus = false;
                 onClicked: achievementsScreen();
             }
         }
 
-        // Trophy icon for the achievements button
-        Text {
+        Image {
         id: achievementsTrophyIcon
-
-            text: "🏆"
+            width: vpx(24); height: vpx(24)
+            sourceSize: Qt.size(vpx(24), vpx(24))
+            source: "../assets/images/trophy.svg"
+            fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
             anchors.centerIn: achievementsbutton
-            font.pixelSize: vpx(18)
             opacity: achievementsbutton.focus ? 1 : 0.7
         }
 
         Rectangle {
         id: settingsbutton
 
-            width: vpx(36)
-            height: vpx(36)
-            anchors {
-                bottom: parent.bottom; bottomMargin: vpx(6)
-                right: parent.right; rightMargin: vpx(25)
-            }
-            color: focus ? theme.accent : "transparent"
-            radius: height/2
-            opacity: focus ? 1 : 0.2
-            onFocusChanged: {
-                sfxNav.play()
-                if (focus)
-                    mainList.currentIndex = -1;
-                else
-                    mainList.currentIndex = 0;
+            width:  vpx(36); height: vpx(36); radius: height / 2
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(81) }
+            color:   focus ? theme.accent : "transparent"
+            opacity: focus ? 1 : 0.6
+            layer.enabled: true
+            layer.effect: DropShadow {
+                transparentBorder: true
+                horizontalOffset: 0
+                verticalOffset: 0
+                radius: 8
+                samples: 17
+                color: "#cc000000"
             }
 
-            Keys.onDownPressed: mainList.focus = true;
-            Keys.onLeftPressed: {
-                achievementsbutton.focus = true;
+            onFocusChanged: {
+                if (focus) playNav();
+                if (focus) mainList.currentIndex = -1;
             }
+            Keys.onDownPressed:  { playNav(); var r = mainList.navJump ? mainList.savedRow : 1; mainList.navJump = false; mainList.forceActiveFocus(); mainList.currentIndex = r; }
+            Keys.onLeftPressed:  achievementsbutton.focus = true;
             Keys.onPressed: {
-                // Accept
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) {
-                    event.accepted = true;
-                    settingsScreen();            
-                }
-                // Back
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) {
-                    event.accepted = true;
-                    mainList.focus = true;
-                }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; if (mainList.navJump) { mainList.navJump = false; mainList.currentIndex = mainList.savedRow; } mainList.focus = true; }
+                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); homebutton.focus = true; }
+                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); achievementsbutton.focus = true; }
             }
-            // Mouse/touch functionality
             MouseArea {
-                anchors.fill: parent
-                hoverEnabled: settings.MouseHover == "Yes"
-                onEntered: settingsbutton.focus = true;
-                onExited: settingsbutton.focus = false;
+                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
+                onEntered: settingsbutton.focus = true; onExited: settingsbutton.focus = false;
                 onClicked: settingsScreen();
             }
         }
 
         Image {
         id: settingsicon
-
-            width: height
-            height: vpx(24)
+            width: height; height: vpx(24)
             anchors.centerIn: settingsbutton
-            smooth: true
-            asynchronous: true
+            smooth: true; asynchronous: true
             source: "../assets/images/settingsicon.svg"
             opacity: root.focus ? 0.8 : 0.5
+        }
+
+        // ── Nav button labels — shown only for the highlighted button ─────
+        Text {
+            text: "Full Library"
+            anchors { top: homebutton.bottom; topMargin: vpx(3); horizontalCenter: homebutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: homebutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+        Text {
+            text: "Discover"
+            anchors { top: discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: discoverbutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: discoverbutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+        Text {
+            text: "RetroAchievements"
+            anchors { top: achievementsbutton.bottom; topMargin: vpx(3); horizontalCenter: achievementsbutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: achievementsbutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+        Text {
+            text: "Settings"
+            anchors { top: settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: settingsbutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: settingsbutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
         }
 		
        Text {
@@ -540,244 +770,402 @@ id: root
     ObjectModel {
     id: mainModel
 
-        ListView {
-        id: featuredlist
-
-            property bool selected: ListView.isCurrentItem
-            focus: selected
+        // Empty space — background fanart shows through (Xbox dashboard style)
+        Item {
             width: parent.width
             height: vpx(360)
-            spacing: vpx(0)
-            orientation: ListView.Horizontal
-            clip: true
-            preferredHighlightBegin: vpx(0)
-            preferredHighlightEnd: parent.width
-            highlightRangeMode: ListView.StrictlyEnforceRange
-            //highlightMoveDuration: 200
-            highlightMoveVelocity: -1
-            snapMode: ListView.SnapOneItem
-            keyNavigationWraps: true
-            currentIndex: (storedHomePrimaryIndex == 0) ? storedHomeSecondaryIndex : 0
-            Component.onCompleted: positionViewAtIndex(currentIndex, ListView.Visible)
-            
-            model: !ftue ? featuredCollection.games : 0
-            delegate: featuredDelegate
-
-            Component {
-            id: featuredDelegate
-
-                Image {
-                id: background
-
-                    property bool selected: ListView.isCurrentItem && featuredlist.focus
-                    width: featuredlist.width
-                    height: featuredlist.height
-                    source: settings.ShowcaseArt === "Screenshot"
-                            ? (modelData ? modelData.assets.screenshots[0] || "" : "")
-                            : Utils.fanArt(modelData);
-                    sourceSize { width: featuredlist.width; height: featuredlist.height }
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                        
-                    onSelectedChanged: {
-                        if (selected)
-                            logoAnim.start()
-                    }
-
-                    Rectangle {
-                        
-                        anchors.fill: parent
-                        color: "black"
-                        opacity: featuredlist.focus ? 0 : 0.5
-                        Behavior on opacity { PropertyAnimation { duration: 150; easing.type: Easing.OutQuart; easing.amplitude: 2.0; easing.period: 1.5 } }
-                    }
-
-                    Image {
-                    id: specialLogo
-
-                        width: parent.height - vpx(20)
-                        height: width
-                        source: Utils.logo(modelData)
-                        fillMode: Image.PreserveAspectFit
-                        asynchronous: true
-                        sourceSize { width: 256; height: 256 }
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        anchors.verticalCenter: parent.verticalCenter
-                        opacity: featuredlist.focus ? 1 : 0.5
-
-                        PropertyAnimation { 
-                        id: logoAnim; 
-                            target: specialLogo; 
-                            properties: "y"; 
-                            from: specialLogo.y-vpx(50); 
-                            duration: 100
-                        }
-                    }
-
-                    // Mouse/touch functionality
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: settings.MouseHover == "Yes"
-                        onEntered: { sfxNav.play(); mainList.currentIndex = 0; }
-                        onClicked: {
-                            if (selected)
-                                gameDetails(modelData);  
-                            else
-                                mainList.currentIndex = 0;
-                        }
-                    }
-                }
-            }
-            
-            Row {
-            id: blips
-
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors { bottom: parent.bottom; bottomMargin: vpx(20) }
-                spacing: vpx(10)
-                Repeater {
-                    model: featuredlist.count
-                    Rectangle {
-                        width: vpx(10)
-                        height: width
-                        color: (featuredlist.currentIndex == index) && featuredlist.focus ? theme.accent : theme.text
-                        radius: width/2
-                        opacity: (featuredlist.currentIndex == index) ? 1 : 0.5
-                    }
-                }
-            }
-
-            // List specific input
-            Keys.onUpPressed: settingsbutton.focus = true;
-            Keys.onLeftPressed: { sfxNav.play(); decrementCurrentIndex() }
-            Keys.onRightPressed: { sfxNav.play(); incrementCurrentIndex() }
-            Keys.onPressed: {
-                // Accept
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) {
-                    event.accepted = true;
-                    storedHomeSecondaryIndex = featuredlist.currentIndex;
-                    if (!ftue)
-                        gameDetails(featuredCollection.currentGame(currentIndex));            
-                }
-            }
         }
-        
+
         // Collections list
-        ListView {
-        id: platformlist
+        // ── Top row: Resume box + system collections ───────────────────────
+        FocusScope {
+        id: topRow
 
             property bool selected: ListView.isCurrentItem
             property int myIndex: ObjectModel.index
+            // Hero box / system tile size. NOT tied to any collection row.
+            // NOTE: the divisor is inverse — HIGHER value = SMALLER tiles.
+            // tileDivisor and growScale are tuned TOGETHER so the GROWN (selected)
+            // size stays constant while the RESTING tile shrinks: the peak,
+            // tileSz * growScale, is held. ~40% growth here (Xbox-like). To shrink
+            // the resting tile further, raise tileDivisor AND raise growScale by
+            // the same ratio to keep the same peak (peak ≈ width/5.08 * 1.25).
+            property real tileDivisor: 7.62
+            property real tileSz: (root.width - globalMargin * 2) / tileDivisor
+            property real growScale: 1.50
             focus: selected
             width: root.width
-            height: vpx(100) + globalMargin * 2
+            height: tileSz + globalMargin * 2
+
+            onFocusChanged: { if (focus && platformlist.currentIndex < 0) platformlist.currentIndex = platformlist.savedIndex; }
+            onSelectedChanged: {
+                if (selected && settings.ShowcaseBackgroundArt === "Yes") {
+                    if (platformlist.currentIndex <= 0) {
+                        if (platformlist.resumeGame) highlightedGame = platformlist.resumeGame;
+                    } else {
+                        var coll = api.collections.get(sortedColl[platformlist.currentIndex - 1]);
+                        if (coll && coll.games.count > 0) {
+                            var randomIdx = Math.floor(Math.random() * coll.games.count);
+                            highlightedGame = coll.games.get(randomIdx);
+                        }
+                    }
+                }
+            }
+
+        ListView {
+        id: platformlist
+
+            focus: topRow.focus
+            property var resumeGame: listLastPlayed.games.count > 0 ? listLastPlayed.currentGame(0) : null
+            height: topRow.tileSz + globalMargin * 2
+            clip: false
             anchors {
                 left: parent.left; leftMargin: globalMargin
                 right: parent.right; rightMargin: globalMargin
+                verticalCenter: parent.verticalCenter
             }
             spacing: vpx(10)
             orientation: ListView.Horizontal
-            preferredHighlightBegin: vpx(0)
-            preferredHighlightEnd: parent.width - vpx(60)
-            highlightRangeMode: ListView.ApplyRange
-            snapMode: ListView.SnapOneItem
+            highlightRangeMode: ListView.NoHighlightRange
+            snapMode: ListView.SnapToItem
             highlightMoveDuration: 100
-            keyNavigationWraps: true
+            keyNavigationWraps: false
             
-            property int savedIndex: currentCollectionIndex
+            // Whole-tile alignment of the scroll position. Shared by both the live
+            // navigation handler AND the first-load positioning so the gap between
+            // the hero box and the system tiles is identical at all times.
+            function alignToIndex(idx) {
+                var unit = topRow.tileSz + spacing;
+                if (unit <= 0) return;
+                var visibleCount = Math.max(1, Math.floor((width + spacing) / unit));
+                var firstVisible = Math.round(contentX / unit);
+                if (idx <= firstVisible)
+                    firstVisible = idx - 1;          // keep one tile of lead-in on the left (shift as soon
+                                                     // as the tile reaches the edge) so the grown tile's
+                                                     // left edge isn't clipped at the margin
+                else if (idx > firstVisible + visibleCount - 1)
+                    firstVisible = idx - visibleCount + 1;
+                firstVisible = Math.max(0, firstVisible);
+                contentX = firstVisible * unit;
+            }
+
+            onCurrentIndexChanged: {
+                if (currentIndex < 0) return;   // deselected (focus moved away) — leave the scroll position alone
+                // Align the list to whole-tile boundaries (same routine used on load).
+                alignToIndex(currentIndex);
+                // Update background fanart for the highlighted strip item
+                if (topRow.selected && settings.ShowcaseBackgroundArt === "Yes") {
+                    if (currentIndex <= 0) {
+                        if (resumeGame) highlightedGame = resumeGame;
+                    } else {
+                        var coll = api.collections.get(sortedColl[currentIndex - 1]);
+                        if (coll && coll.games.count > 0) {
+                            var randomIdx = Math.floor(Math.random() * coll.games.count);
+                            highlightedGame = coll.games.get(randomIdx);
+                        }
+                    }
+                }
+            }
+
+            property int savedIndex: collectionVisited ? (sortedColl.indexOf(currentCollectionIndex) + 1) : 0   // strip index (hero = 0); hero until a collection is opened
             onFocusChanged: {
-                if (focus)
+                if (focus) {
                     currentIndex = savedIndex;
-                else {
+                    if (settings.ShowcaseBackgroundArt === "Yes") {
+                        if (currentIndex <= 0) {
+                            if (resumeGame) highlightedGame = resumeGame;
+                        } else {
+                            var coll = api.collections.get(sortedColl[currentIndex - 1]);
+                            if (coll && coll.games.count > 0) {
+                                var randomIdx = Math.floor(Math.random() * coll.games.count);
+                                highlightedGame = coll.games.get(randomIdx);
+                            }
+                        }
+                    }
+                } else {
                     savedIndex = currentIndex;
                     currentIndex = -1;
                 }
             }
 
-            Component.onCompleted: positionViewAtIndex(savedIndex, ListView.End)
+            Component.onCompleted: alignToIndex(savedIndex)
 
-            model: api.collections//Utils.reorderCollection(api.collections);
+            model: api.collections.count + 1   // index 0 = hero, 1.. = platforms
             delegate: Rectangle {
+                id: tile
+                property bool isHero: index === 0
+                property var  coll: isHero ? null : api.collections.get(sortedColl[index - 1])
                 property bool selected: ListView.isCurrentItem && platformlist.focus
-                width: (root.width - globalMargin * 2) / 7.0
-                height: width * settings.WideRatio
-				radius: vpx(4)
+                // Xbox-style: tiles to either side of the selected one slide a bit to make room
+                property real navShift: {
+                    // Only make room when a tile is actually enlarged — i.e. the list is
+                    // focused. On first load the hero is the current item but isn't grown
+                    // yet (focus hasn't arrived), so shifting the tiles here opened an
+                    // empty "room" gap beside the hero until the first scroll. Gating on
+                    // focus keeps the spacing identical at all times.
+                    if (!platformlist.focus || platformlist.currentIndex < 0 || index === platformlist.currentIndex) return 0;
+                    var sel  = platformlist.currentIndex;
+                    var last = platformlist.count - 1;
+                    var grow = topRow.tileSz * (topRow.growScale - 1);   // full growth, in px
+                    // The first (hero) and last tiles grow toward the INSIDE only (outer
+                    // border pinned), so the tiles beside them must slide by the FULL
+                    // growth. A middle tile grows from its centre, so its two neighbours
+                    // split the growth (half each).
+                    if (sel === 0)    return grow;     // hero grows right -> inside tiles slide right
+                    if (sel === last) return -grow;    // last grows left  -> inside tiles slide left
+                    return (index < sel) ? -(grow / 2) : (grow / 2);
+                }
+                width: topRow.tileSz
+                height: topRow.tileSz
+                radius: vpx(6)
                 color: selected ? theme.accent : theme.secondary
-                scale: selected ? 1.05 : 1
-                Behavior on scale { NumberAnimation { duration: 100 } }
+                Behavior on color { ColorAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                // Grow from the bottom edge so the bottom stays put. The first (hero) tile
+                // grows up-and-right (left border pinned) and the last tile grows up-and-left
+                // (right border pinned) so neither outer border is clipped at the screen edge;
+                // every middle tile grows up from its centre.
+                transformOrigin: index === 0 ? Item.BottomLeft
+                                 : (index === platformlist.count - 1 ? Item.BottomRight : Item.Bottom)
+                scale: selected ? topRow.growScale : 1.0
+                Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                // Animated horizontal shift so neighbors slide out of the way of the selected tile
+                transform: Translate {
+                    x: navShift
+                    Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                }
+                // Selected always renders above its neighbors so the border can't be clipped behind them
+                z: selected ? 1 : 0
                 border.width: vpx(1)
                 border.color: "#19FFFFFF"
-
                 anchors.verticalCenter: parent.verticalCenter
+
+                // ── HERO (index 0): resume / last-played screenshot + title ──
+                // heroBg + title bar share a single OpacityMask so the bar's BOTTOM
+                // corners follow the rounded tile edge while its TOP corners stay square.
+                Item {
+                    id: heroClipper
+                    visible: isHero
+                    anchors.fill: parent
+                    layer.enabled: isHero
+                    layer.smooth: true
+                    layer.effect: OpacityMask {
+                        maskSource: Rectangle {
+                            width: heroClipper.width
+                            height: heroClipper.height
+                            radius: tile.radius
+                        }
+                    }
+
+                    Image {
+                        id: heroBg
+                        anchors.fill: parent
+                        // All art types crop-fill the square at their native aspect (box art
+                        // keeps its proportions, with top/bottom cropped) — no stretching.
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true; smooth: true
+                        source: heroArtSource(platformlist.resumeGame)
+                        opacity: selected ? 1 : 0.5
+                    }
+
+                    // Game logo overlay — only for the Screenshot / Fanart hero art modes.
+                    // (Boxfront already shows the title on the box, so it gets no logo.)
+                    Image {
+                        id: heroLogo
+                        anchors.fill: parent
+                        anchors.margins: vpx(16)
+                        anchors.bottomMargin: vpx(42)   // leave room for the title bar
+                        fillMode: Image.PreserveAspectFit
+                        horizontalAlignment: Image.AlignHCenter
+                        verticalAlignment: Image.AlignVCenter
+                        asynchronous: true; smooth: true
+                        source: (platformlist.resumeGame && platformlist.resumeGame.assets.logo)
+                                ? platformlist.resumeGame.assets.logo : ""
+                        visible: source != ""
+                                 && (settings.HeroBoxArt === "Screenshot" || settings.HeroBoxArt === "Fanart")
+                        opacity: selected ? 1 : 0.5
+                    }
+
+                    Rectangle {
+                        // Full-width bar across the bottom — shown only on highlight now.
+                        // No radius — the parent OpacityMask clips the bottom corners to
+                        // match tile.radius automatically.
+                        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                        height: Math.max(vpx(36), topRow.tileSz * 0.16, heroBarText.contentHeight + vpx(16)); color: "#99000000"
+                        opacity: (selected || settings.AlwaysShowTitles === "Yes") ? 1 : 0
+                        visible: opacity > 0
+                        Behavior on opacity { NumberAnimation { duration: 120 } }
+                        Text {
+                            anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
+                            id: heroBarText
+                            text: platformlist.resumeGame ? platformlist.resumeGame.title : ""
+                            color: "white"; font.family: subtitleFont.name
+                            font.pixelSize: Math.max(vpx(11), topRow.tileSz * 0.05); font.bold: true
+                            wrapMode: Text.WordWrap
+                            maximumLineCount: 2
+                            elide: Text.ElideRight
+                            horizontalAlignment: Text.AlignLeft
+                        }
+                    }
+                }
+
+                // ── PLATFORM (index >= 1): system background + logo ──
+
+                // System background art — place files in assets/images/systembackground/
+                // named to match the system logo (e.g. "snes.png", "nintendo switch.jpg").
+                // Tries .png → .jpg → .jpeg → .webp in order; stops at first match.
+                Image {
+                id: sysBg
+                    property string basePath: (!isHero && coll)
+                        ? "../assets/images/systembackground/" + Utils.processPlatformName(coll.shortName) : ""
+                    property var exts: [".png", ".jpg", ".jpeg", ".webp"]
+                    property int extIdx: 0
+                    onBasePathChanged: extIdx = 0      // reset when tile recycles to a new system
+                    onStatusChanged: {
+                        if (status === Image.Error && extIdx < exts.length - 1)
+                            extIdx = extIdx + 1;       // try next extension
+                    }
+                    visible: !isHero && status === Image.Ready
+                    anchors.fill: parent
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true; smooth: true
+                    source: basePath !== "" ? basePath + exts[extIdx] : ""
+                    opacity: selected ? 0.9 : 0.6
+                    // Rounded-corner clip just on the image
+                    layer.enabled: !isHero
+                    layer.smooth: true
+                    layer.effect: OpacityMask {
+                        maskSource: Rectangle {
+                            width: sysBg.width
+                            height: sysBg.height
+                            radius: tile.radius
+                        }
+                    }
+                }
 
                 Image {
                 id: collectionlogo
-
+                    visible: !isHero
                     anchors.fill: parent
-                    anchors.centerIn: parent
                     anchors.margins: vpx(15)
-                    source: "../assets/images/logospng/" + Utils.processPlatformName(modelData.shortName) + ".png"
-                    sourceSize { width: 256; height: 128 }
+                    source: (!isHero && coll) ? "../assets/images/logospng/" + Utils.processPlatformName(coll.shortName) + ".png" : ""
+                    sourceSize { width: 512; height: 512 }
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                     smooth: true
                     opacity: selected ? 1 : 0.2
-                    scale: selected ? 1.00 : 1
-                    Behavior on scale { NumberAnimation { duration: 100 } }
                 }
-
                 Text {
                 id: platformname
-
-                    text: modelData.name
+                    visible: !isHero && collectionlogo.status == Image.Error
+                    text: coll ? coll.name : ""
                     anchors { fill: parent; margins: vpx(10) }
                     color: theme.text
                     opacity: selected ? 1 : 0.2
-                    Behavior on opacity { NumberAnimation { duration: 100 } }
                     font.pixelSize: vpx(18)
                     font.family: subtitleFont.name
                     font.bold: true
                     style: Text.Outline; styleColor: theme.main
-                    visible: collectionlogo.status == Image.Error
-                    anchors.centerIn: parent
                     elide: Text.ElideRight
                     wrapMode: Text.WordWrap
                     lineHeight: 0.8
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
-                
-                // Mouse/touch functionality
+
+                // System name bar (experiment) — appears on highlight with the system name
+                Rectangle {
+                    visible: !isHero && opacity > 0
+                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                    height: Math.max(vpx(36), topRow.tileSz * 0.16, sysBarText.contentHeight + vpx(16))   // grows for 2-line names
+                    radius: vpx(6)
+                    color: "#99000000"
+                    opacity: (!isHero && (selected || settings.AlwaysShowTitles === "Yes")) ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 120 } }
+                    Text {
+                        anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
+                        id: sysBarText
+                        text: coll ? coll.name : ""
+                        color: "white"; font.family: subtitleFont.name
+                        font.pixelSize: Math.max(vpx(11), topRow.tileSz * 0.05); font.bold: true
+                        wrapMode: Text.WordWrap
+                        maximumLineCount: 2
+                        elide: Text.ElideRight
+                        horizontalAlignment: Text.AlignLeft
+                    }
+                }
+
+                // Accent frame: hero when selected; platform when selected AND system background loaded
+                // (platforms without a background keep the current accent-fill look instead)
+                Rectangle {
+                    anchors.fill: parent
+                    visible: selected && (isHero || sysBg.status === Image.Ready)
+                    color: "transparent"
+                    radius: vpx(6)
+                    border.color: theme.accent
+                    border.width: vpx(5)
+                }
+
+                // Animated highlight — flashes the frame white when the AnimateHighlight setting is on
+                Rectangle {
+                    id: highlightPulse
+                    anchors.fill: parent
+                    visible: selected && settings.AnimateHighlight === "Yes"
+                    color: "transparent"
+                    radius: vpx(6)
+                    border.color: "#ffffff"
+                    border.width: vpx(5)
+                    opacity: 0   // start invisible so it can't pop in at peak brightness
+                    SequentialAnimation on opacity {
+                        running: highlightPulse.visible
+                        loops: Animation.Infinite
+                        PropertyAction { target: highlightPulse; property: "opacity"; value: 0 }
+                        NumberAnimation { to: 1; duration: 200 }
+                        NumberAnimation { to: 0; duration: 500 }
+                        PauseAnimation  { duration: 200 }
+                    }
+                }
+
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: settings.MouseHover == "Yes"
-                    onEntered: { sfxNav.play(); mainList.currentIndex = platformlist.ObjectModel.index; platformlist.savedIndex = index; platformlist.currentIndex = index; }
-                    onExited: {}
+                    onEntered: { playNav(); mainList.currentIndex = topRow.ObjectModel.index; platformlist.currentIndex = index; }
                     onClicked: {
-                        if (selected)
-                        {
-                            currentCollectionIndex = index;
-                            softwareScreen();
+                        if (selected) {
+                            if (isHero) { if (platformlist.resumeGame) { launchGame(platformlist.resumeGame); } }
+                            else { currentCollectionIndex = sortedColl[index - 1]; collectionVisited = true; softwareScreen(); }
                         } else {
-                            mainList.currentIndex = platformlist.ObjectModel.index;
+                            mainList.currentIndex = topRow.ObjectModel.index;
                             platformlist.currentIndex = index;
                         }
-                        
                     }
                 }
             }
 
             // List specific input
-            Keys.onLeftPressed: { sfxNav.play(); decrementCurrentIndex() }
-            Keys.onRightPressed: { sfxNav.play(); incrementCurrentIndex() }
+            Keys.onLeftPressed: {
+                playNav();
+                if (currentIndex > 0) decrementCurrentIndex();
+                else currentIndex = count - 1;   // hero -> last tile
+            }
+            Keys.onRightPressed: {
+                playNav();
+                if (currentIndex < count - 1) incrementCurrentIndex();
+                else currentIndex = 0;            // last tile -> hero
+            }
             Keys.onPressed: {
-                // Accept
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                     event.accepted = true;
-                    currentCollectionIndex = platformlist.currentIndex;
-                    softwareScreen();            
+                    if (currentIndex <= 0) {
+                        if (resumeGame) { launchGame(resumeGame); }
+                    } else {
+                        currentCollectionIndex = sortedColl[currentIndex - 1];
+                        collectionVisited = true;
+                        softwareScreen();
+                    }
                 }
             }
+
+        }
 
         }
 
@@ -806,7 +1194,9 @@ id: root
 
             onActivateSelected: storedHomeSecondaryIndex = currentIndex;
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
-            onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onListHighlighted: { playNav(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
+            onSelectedChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
 
         HorizontalCollection {
@@ -834,7 +1224,9 @@ id: root
 
             onActivateSelected: storedHomeSecondaryIndex = currentIndex;
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
-            onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onListHighlighted: { playNav(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
+            onSelectedChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
 
         HorizontalCollection {
@@ -862,7 +1254,9 @@ id: root
 
             onActivateSelected: storedHomeSecondaryIndex = currentIndex;
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
-            onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onListHighlighted: { playNav(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
+            onSelectedChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
 
         HorizontalCollection {
@@ -890,7 +1284,9 @@ id: root
 
             onActivateSelected: storedHomeSecondaryIndex = currentIndex;
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
-            onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onListHighlighted: { playNav(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
+            onSelectedChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
 
         HorizontalCollection {
@@ -918,7 +1314,9 @@ id: root
 
             onActivateSelected: storedHomeSecondaryIndex = currentIndex;
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
-            onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onListHighlighted: { playNav(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
+            onSelectedChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
 
         HorizontalCollection {
@@ -946,13 +1344,71 @@ id: root
 
             onActivateSelected: storedHomeSecondaryIndex = currentIndex;
             onActivate: { if (!selected) { mainList.currentIndex = currentList.ObjectModel.index; } }
-            onListHighlighted: { sfxNav.play(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onListHighlighted: { playNav(); mainList.currentIndex = currentList.ObjectModel.index; }
+            onCurrentIndexChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
+            onSelectedChanged: { if (selected) highlightedGame = search ? search.currentGame(currentIndex) : null; }
         }
 
     }
 
+
+    // ── Closest-column vertical navigation ──────────────────────────────
+    // Moving between rows carries the horizontal position across: pick the item
+    // in the destination row whose on-screen centre is nearest the item we were
+    // just on, instead of restoring that row's own remembered index.
+    function navRowCenterX() {
+        var list = null;
+        if (mainList.currentIndex === 1) list = platformlist;
+        else if (mainList.currentItem && mainList.currentItem.collectionList) list = mainList.currentItem.collectionList;
+        if (!list || !list.currentItem) return -1;
+        var c = list.currentItem;
+        return c.mapToItem(root, c.width / 2, 0).x;          // screen-x centre of current item
+    }
+    function navNearestIndex(list, tileW, spacing, screenX, count) {
+        if (!list || count <= 0 || screenX < 0) return 0;
+        var unit = tileW + spacing;
+        if (unit <= 0) return 0;
+        var local = list.mapFromItem(root, screenX, 0).x;    // x inside the list's viewport
+        var i = Math.round((list.contentX + local - tileW / 2) / unit);
+        if (i < 0) i = 0;
+        if (i > count - 1) i = count - 1;
+        return i;
+    }
+    function navNextEnabled(from, dir) {
+        var i = from + dir;
+        while (i >= 0 && i < mainList.count) {
+            var it = mainList.itemAtIndex(i);
+            if (!it || it.enabled) return i;
+            i += dir;
+        }
+        return from;
+    }
+    // Pre-seat the destination row's savedIndex to the nearest column BEFORE we move,
+    // so the row restores straight to that item in ONE step. (Overriding the index
+    // AFTER the move changed highlightedGame twice mid-crossfade — that was the flicker.)
+    function navPreset(destIndex, screenX) {
+        if (screenX < 0) return;
+        if (destIndex === 1) {
+            platformlist.savedIndex = navNearestIndex(platformlist, topRow.tileSz, platformlist.spacing, screenX, platformlist.count);
+        } else {
+            var it = mainList.itemAtIndex(destIndex);
+            if (it && it.collectionList)
+                it.savedIndex = navNearestIndex(it.collectionList, it.itemWidth, it.collectionList.spacing, screenX, it.collectionList.count);
+        }
+    }
+
     ListView {
     id: mainList
+        // When the nav bar is reached via the LB/RB shortcut we must NOT glide the
+        // page to the top; remember the row so we can restore it on the way back.
+        property bool navJump: false
+        property int  savedRow: 1
+        onActiveFocusChanged: {
+            if (activeFocus && navJump) {            // safety net (e.g. returning from a sub-screen)
+                navJump = false;
+                if (currentIndex < 0) currentIndex = savedRow;
+            }
+        }
 
         anchors.fill: parent
         model: mainModel
@@ -968,14 +1424,52 @@ id: root
         cacheBuffer: 1000
         footer: Item { height: helpMargin }
 
+        // When landing on the top row (hero box / system tiles), glide the
+        // whole page smoothly to the very top. positionViewAtBeginning() sets
+        // contentY in C++ (instant, bypasses Behaviors), so instead we animate
+        // contentY explicitly and disable the highlight range while it runs so
+        // the ListView's own positioning can't override the animation.
+        NumberAnimation {
+            id: glideTop
+            target: mainList; property: "contentY"; to: mainList.originY
+            duration: 220; easing.type: Easing.OutCubic
+        }
+        onCurrentIndexChanged: {
+            if (navJump) return;            // jumping to/from the nav bar: leave scroll position alone
+            if (currentIndex <= 1) {
+                highlightRangeMode = ListView.NoHighlightRange;
+                glideTop.restart();
+            } else {
+                glideTop.stop();
+                highlightRangeMode = ListView.ApplyRange;
+            }
+        }
+
         Keys.onUpPressed: {
-            sfxNav.play();
+            if (currentIndex <= 1) { homebutton.focus = true; return; }
+            navPreset(navNextEnabled(currentIndex, -1), navRowCenterX());   // seat nearest column before moving
+            playNav();
+            // Leaving a collection to land on the strip: pre-switch to NoHighlightRange
+            // BEFORE the index changes so ApplyRange doesn't snap contentY first,
+            // letting the glide own the whole transition. (Mirrors the down handler.)
+            if (currentIndex === 2) {
+                highlightRangeMode = ListView.NoHighlightRange;
+            }
             do {
                 decrementCurrentIndex();
             } while (!currentItem.enabled);
         }
         Keys.onDownPressed: {
-            sfxNav.play();
+            navPreset(navNextEnabled(currentIndex, 1), navRowCenterX());   // seat nearest column before moving
+            playNav();
+            // Leaving the top zone (index >= 1): restore ApplyRange BEFORE the
+            // index changes, otherwise the list's internal repositioning runs
+            // while still in NoHighlightRange and never scrolls down. (At index
+            // 0 we leave it alone so landing on the first row stays glued to top.)
+            if (currentIndex >= 1) {
+                glideTop.stop();
+                highlightRangeMode = ListView.ApplyRange;
+            }
             do {
                 incrementCurrentIndex();
             } while (!currentItem.enabled);
@@ -998,6 +1492,16 @@ id: root
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
             discoverScreen();
+        }
+        // LB / RB — jump straight up to the nav bar from the content area
+        if ((api.keys.isPrevPage(event) || api.keys.isNextPage(event)) && !event.isAutoRepeat) {
+            event.accepted = true;
+            if (mainList.activeFocus) {
+                playNav();
+                mainList.savedRow = mainList.currentIndex;   // remember where we were
+                mainList.navJump  = true;                    // don't glide the page to the top
+                homebutton.focus  = true;
+            }
         }
     }
 
@@ -1024,8 +1528,10 @@ id: root
     }
 
     onActiveFocusChanged: {
-        if (activeFocus)
+        if (activeFocus) {
             currentHelpbarModel = gridviewHelpModel;
+            listRecommended.maybeRefresh();   // re-pick Recommended only if the showcased count changed
+        }
     }
 
 }

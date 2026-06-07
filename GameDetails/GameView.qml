@@ -154,14 +154,14 @@ id: root
 
     // Show/hide the media view
     function showMedia(index) {
-        sfxAccept.play();
+        playAccept();
         mediaScreen.mediaIndex = index;
         mediaScreen.focus = true;
         mediaScreen.opacity = 1;
     }
 
     function closeMedia() {
-        sfxBack.play();
+        playBack();
         mediaScreen.opacity = 0;
         content.focus = true;
         currentHelpbarModel = gameviewHelpModel;
@@ -255,8 +255,10 @@ id: root
             publisherCollection.rebuild();
             // Refresh the recommended fallback only when the publisher/developer
             // list has no results (Option 2: skip the scan when not needed).
-            if (publisherCollection.games.length === 0)
+            if (publisherCollection.games.length === 0) {
+                recommendedCollection.active = true;   // arm the proxy only when actually shown
                 recommendedCollection.refresh();
+            }
 
             // Option B: genre – extract the correct genre token based on the
             // "More by Genre Display" setting, then trigger a rebuild.
@@ -487,6 +489,7 @@ id: root
         Loader {
             id: detailsContentLoader
             anchors.fill: parent
+            asynchronous: true
             active: detailsEverShown
             readonly property real headerH: header.height
             sourceComponent: Component {
@@ -598,6 +601,161 @@ id: root
             }
         }
         z: 10
+
+        // 4 nav buttons — centered in header
+        Rectangle {
+        id: gv_homebutton
+            width: vpx(32); height: vpx(32); radius: height / 2
+            anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(48) }
+            color:   focus ? theme.accent : "transparent"
+            opacity: focus ? 1 : 0.6
+            layer.enabled: true
+            layer.effect: DropShadow {
+                transparentBorder: true
+                horizontalOffset: 0
+                verticalOffset: 0
+                radius: 8
+                samples: 17
+                color: "#cc000000"
+            }
+
+            onFocusChanged: if (focus) playNav();
+            Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
+            Keys.onRightPressed: gv_discoverbutton.focus = true;
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; content.focus = true; }
+                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; gv_discoverbutton.focus = true; }
+                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; gv_settingsbutton.focus = true; }
+            }
+            MouseArea {
+                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
+                onEntered: gv_homebutton.focus = true; onExited: gv_homebutton.focus = false;
+                onClicked: showcaseScreen();
+            }
+            Image {
+                anchors.centerIn: parent
+                width: vpx(24); height: vpx(24)
+                sourceSize: Qt.size(vpx(24), vpx(24))
+                source: "../assets/images/icon_home.svg"
+                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+                opacity: parent.focus ? 1 : 0.7
+            }
+        }
+
+        Rectangle {
+        id: gv_discoverbutton
+            width: vpx(32); height: vpx(32); radius: height / 2
+            anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(0) }
+            color:   focus ? theme.accent : "transparent"
+            opacity: focus ? 1 : 0.6
+            layer.enabled: true
+            layer.effect: DropShadow {
+                transparentBorder: true
+                horizontalOffset: 0
+                verticalOffset: 0
+                radius: 8
+                samples: 17
+                color: "#cc000000"
+            }
+
+            onFocusChanged: if (focus) playNav();
+            Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
+            Keys.onLeftPressed:  gv_homebutton.focus = true;
+            Keys.onRightPressed: gv_settingsbutton.focus = true;
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; content.focus = true; }
+                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; gv_settingsbutton.focus = true; }
+                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; gv_homebutton.focus = true; }
+            }
+            MouseArea {
+                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
+                onEntered: gv_discoverbutton.focus = true; onExited: gv_discoverbutton.focus = false;
+                onClicked: discoverScreen();
+            }
+            Canvas {
+                anchors { fill: parent; margins: vpx(5) }
+                onPaint: {
+                    var ctx = getContext("2d"); ctx.reset();
+                    var cx = width/2, cy = height/2, r = Math.min(cx,cy)-1;
+                    ctx.globalAlpha = gv_discoverbutton.focus ? 1.0 : 0.85;
+                    ctx.strokeStyle = "white"; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+                    ctx.fillStyle = "white";
+                    ctx.beginPath(); ctx.moveTo(cx, cy-r*0.65); ctx.lineTo(cx+r*0.30, cy+r*0.10); ctx.lineTo(cx, cy+r*0.20); ctx.lineTo(cx-r*0.30, cy+r*0.10); ctx.closePath(); ctx.fill();
+                    ctx.globalAlpha = 0.35;
+                    ctx.beginPath(); ctx.moveTo(cx, cy+r*0.65); ctx.lineTo(cx-r*0.30, cy-r*0.10); ctx.lineTo(cx, cy-r*0.20); ctx.lineTo(cx+r*0.30, cy-r*0.10); ctx.closePath(); ctx.fill();
+                }
+                Connections { target: gv_discoverbutton; onFocusChanged: parent.requestPaint() }
+            }
+        }
+
+
+        Rectangle {
+        id: gv_settingsbutton
+            width: vpx(32); height: vpx(32); radius: height / 2
+            anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(48) }
+            color:   focus ? theme.accent : "transparent"
+            opacity: focus ? 1 : 0.6
+            layer.enabled: true
+            layer.effect: DropShadow {
+                transparentBorder: true
+                horizontalOffset: 0
+                verticalOffset: 0
+                radius: 8
+                samples: 17
+                color: "#cc000000"
+            }
+
+            onFocusChanged: if (focus) playNav();
+            Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
+            Keys.onLeftPressed:  gv_discoverbutton.focus = true;
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; content.focus = true; }
+                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; gv_homebutton.focus = true; }
+                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; gv_discoverbutton.focus = true; }
+            }
+            MouseArea {
+                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
+                onEntered: gv_settingsbutton.focus = true; onExited: gv_settingsbutton.focus = false;
+                onClicked: settingsScreen();
+            }
+            Image {
+                anchors.centerIn: parent
+                width: vpx(24); height: vpx(24)
+                sourceSize: Qt.size(vpx(24), vpx(24))
+                source: "../assets/images/settingsicon.svg"; smooth: true; asynchronous: true
+                opacity: parent.focus ? 1 : 0.7
+            }
+        }
+
+        // Nav button labels — shown only when the button is highlighted
+        Text {
+            text: "Home"
+            anchors { top: gv_homebutton.bottom; topMargin: vpx(3); horizontalCenter: gv_homebutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: titleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: gv_homebutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+        Text {
+            text: "Discover"
+            anchors { top: gv_discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: gv_discoverbutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: titleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: gv_discoverbutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+        Text {
+            text: "Settings"
+            anchors { top: gv_settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: gv_settingsbutton.horizontalCenter }
+            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: titleFont.name; font.pixelSize: vpx(11); font.bold: true
+            opacity: gv_settingsbutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
     }
 
 
@@ -615,15 +773,21 @@ id: root
                 var lower = (sepM ? sepM[1] : g).trim().toLowerCase();
                 return (lower === "application" || lower === "emulator") ? "Open" : "Play game";
             }
+            iconVisible: {
+                if (!game || game.genreList.length === 0) return true;
+                var g2 = game.genreList[0];
+                var m2 = g2.match(/^(.*?)\s*[\/,]\s*(.+)$/);
+                var low2 = (m2 ? m2[1] : g2).trim().toLowerCase();
+                return !(low2 === "application" || low2 === "emulator");
+            }
             height: parent.height
-            selected: ListView.isCurrentItem && menu.focus
+            selected: ListView.isCurrentItem && menu.activeFocus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated: 
                 if (selected) {
-                    sfxAccept.play();
                     launchGame(game);
                 } else {
-                    sfxNav.play();
+                    playNav();
                     menu.currentIndex = ObjectModel.index;
                 }
         }
@@ -632,17 +796,17 @@ id: root
         id: button5
 
             width: height
-            icon: "../assets/images/icon_ra.svg"
-            iconPadding: vpx(16)
+            icon: "../assets/images/trophy.svg"
+            iconPadding: vpx(22)
             height: parent.height
-            selected: ListView.isCurrentItem && menu.focus
+            selected: ListView.isCurrentItem && menu.activeFocus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated:
                 if (selected) {
-                    sfxAccept.play();
+                    playAccept();
                     raEntryScreen();
                 } else {
-                    sfxNav.play();
+                    playNav();
                     menu.currentIndex = ObjectModel.index;
                 }
         }
@@ -652,14 +816,14 @@ id: root
 
             icon: "../assets/images/icon_details.svg"
             height: parent.height
-            selected: ListView.isCurrentItem && menu.focus
+            selected: ListView.isCurrentItem && menu.activeFocus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated: 
                 if (selected) {
-                    sfxToggle.play();
+                    playToggle();
                     showDetails();
                 } else {
-                    sfxNav.play();
+                    playNav();
                     menu.currentIndex = ObjectModel.index;
                 }
         }
@@ -671,14 +835,14 @@ id: root
             //text: buttonText
             icon: favIcon
             height: parent.height
-            selected: ListView.isCurrentItem && menu.focus
+            selected: ListView.isCurrentItem && menu.activeFocus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated: 
                 if (selected) {
-                    sfxToggle.play();
+                    playToggle();
                     game.favorite = !game.favorite;
                 } else {
-                    sfxNav.play();
+                    playNav();
                     menu.currentIndex = ObjectModel.index;
                 }
         }
@@ -689,13 +853,13 @@ id: root
             //text: "Back"
             icon: "../assets/images/icon_back.svg"
             height: parent.height
-            selected: ListView.isCurrentItem && menu.focus
+            selected: ListView.isCurrentItem && menu.activeFocus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated: 
                 if (selected) 
                     previousScreen();
                 else {
-                    sfxNav.play(); 
+                    playNav(); 
                     menu.currentIndex = ObjectModel.index;
                 }
         }
@@ -717,8 +881,8 @@ id: root
             orientation: ListView.Horizontal
             spacing: vpx(10)
             keyNavigationWraps: true
-            Keys.onLeftPressed: { sfxNav.play(); decrementCurrentIndex() }
-            Keys.onRightPressed: { sfxNav.play(); incrementCurrentIndex() }
+            Keys.onLeftPressed: { playNav(); decrementCurrentIndex() }
+            Keys.onRightPressed: { playNav(); incrementCurrentIndex() }
         }
 
         HorizontalCollection {
@@ -737,7 +901,7 @@ id: root
                 mediaItem: modelData
 
                 onHighlighted: {
-                    sfxNav.play(); 
+                    playNav(); 
                     media.currentIndex = index;
                     content.currentIndex = media.ObjectModel.index;
                 }
@@ -747,7 +911,7 @@ id: root
                     showMedia(index);
                 else
                 {
-                    sfxNav.play(); 
+                    playNav(); 
                     media.currentIndex = index;
                     content.currentIndex = media.ObjectModel.index;
                 }
@@ -789,7 +953,7 @@ id: root
                 // Replace the current game without pushing a new gameviewscreen onto lastState
                 currentGame = search.currentGame(activeIndex);
             }
-            onListHighlighted: { sfxNav.play(); content.currentIndex = list1.ObjectModel.index; }
+            onListHighlighted: { playNav(); content.currentIndex = list1.ObjectModel.index; }
         }
         // --- END: More by Publisher/Developer (More section only) ---
 
@@ -826,7 +990,7 @@ id: root
                 // Replace the current game without pushing a new gameviewscreen onto lastState
                 currentGame = search.currentGame(activeIndex);
             }
-            onListHighlighted: { sfxNav.play(); content.currentIndex = list2.ObjectModel.index; }
+            onListHighlighted: { playNav(); content.currentIndex = list2.ObjectModel.index; }
         }
         // --- END: More by Genre (Option B: genre token controlled by setting) ---
         
@@ -859,8 +1023,11 @@ id: root
             }
         }
         keyNavigationWraps: true
-        Keys.onUpPressed: { sfxNav.play(); decrementCurrentIndex() }
-        Keys.onDownPressed: { sfxNav.play(); incrementCurrentIndex() }
+        Keys.onUpPressed: {
+            if (currentIndex > 0) { playNav(); decrementCurrentIndex(); }
+            else { gv_homebutton.focus = true; }
+        }
+        Keys.onDownPressed: { playNav(); incrementCurrentIndex() }
     }
 
     MediaView {
@@ -888,13 +1055,18 @@ id: root
         // Toggle Favorite
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxAccept.play();
+            playAccept();
             game.favorite = !game.favorite;
         }
         // Settings
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
             settingsScreen();
+        }
+        // LB / RB — jump straight up to the nav bar from the content area
+        if ((api.keys.isPrevPage(event) || api.keys.isNextPage(event)) && !event.isAutoRepeat) {
+            event.accepted = true;
+            if (content.activeFocus && !mediaScreen.visible) { gv_homebutton.focus = true; }
         }
     }
 
@@ -915,7 +1087,7 @@ id: root
             button: "details"
         }
         ListElement {
-            name: "Launch"
+            name: "Select"
             button: "accept"
         }
     }
@@ -923,7 +1095,8 @@ id: root
     onActiveFocusChanged: {
         if (activeFocus) {
             currentHelpbarModel = gameviewHelpModel;
-            menu.focus = true;
+            content.currentIndex = 0;
+            content.focus = true;
             menu.currentIndex = 0;
         } else {
             screenshot.opacity = 1;

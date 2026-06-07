@@ -228,6 +228,94 @@ function processPlatformName(platform) {
   }
 }
 
+// ── System metadata for sorting the showcase system tiles ──────────────────
+// Keyed by the normalized short name (the output of processPlatformName, i.e.
+// the same key used for the logo/background filenames). Unknown systems fall
+// back to year 9999 / maker "zzz" so they sort to the end without breaking
+// anything — just add a line here when you add a new system.
+var systemData = {
+  // Nintendo
+  "nes":          { year: 1983, maker: "Nintendo" },
+  "snes":         { year: 1990, maker: "Nintendo" },
+  "n64":          { year: 1996, maker: "Nintendo" },
+  "gc":           { year: 2001, maker: "Nintendo" },
+  "wii":          { year: 2006, maker: "Nintendo" },
+  "wiiu":         { year: 2012, maker: "Nintendo" },
+  "switch":       { year: 2017, maker: "Nintendo" },
+  "gb":           { year: 1989, maker: "Nintendo" },
+  "gbc":          { year: 1998, maker: "Nintendo" },
+  "gba":          { year: 2001, maker: "Nintendo" },
+  "nds":          { year: 2004, maker: "Nintendo" },
+  "3ds":          { year: 2011, maker: "Nintendo" },
+  "virtualboy":   { year: 1995, maker: "Nintendo" },
+  // Sega
+  "sg1000":       { year: 1983, maker: "Sega" },
+  "mastersystem": { year: 1985, maker: "Sega" },
+  "genesis":      { year: 1988, maker: "Sega" },
+  "megadrive":    { year: 1988, maker: "Sega" },
+  "segacd":       { year: 1991, maker: "Sega" },
+  "sega32x":      { year: 1994, maker: "Sega" },
+  "saturn":       { year: 1994, maker: "Sega" },
+  "dreamcast":    { year: 1998, maker: "Sega" },
+  "gamegear":     { year: 1990, maker: "Sega" },
+  // Sony
+  "psx":          { year: 1994, maker: "Sony" },
+  "ps2":          { year: 2000, maker: "Sony" },
+  "ps3":          { year: 2006, maker: "Sony" },
+  "psp":          { year: 2004, maker: "Sony" },
+  "vita":         { year: 2011, maker: "Sony" },
+  // Microsoft
+  "xbox":         { year: 2001, maker: "Microsoft" },
+  "xbox360":      { year: 2005, maker: "Microsoft" },
+  "msx":          { year: 1983, maker: "Microsoft" },
+  // Atari
+  "atari2600":    { year: 1977, maker: "Atari" },
+  "atari5200":    { year: 1982, maker: "Atari" },
+  "atari7800":    { year: 1986, maker: "Atari" },
+  "atari800":     { year: 1979, maker: "Atari" },
+  "atarist":      { year: 1985, maker: "Atari" },
+  "atarilynx":    { year: 1989, maker: "Atari" },
+  "atarijaguar":  { year: 1993, maker: "Atari" },
+  "atarijaguarcd":{ year: 1995, maker: "Atari" },
+  // SNK
+  "neogeo":       { year: 1990, maker: "SNK" },
+  "neogeocd":     { year: 1994, maker: "SNK" },
+  "ngp":          { year: 1998, maker: "SNK" },
+  "ngpc":         { year: 1999, maker: "SNK" },
+  // NEC
+  "turbografx16": { year: 1987, maker: "NEC" },
+  "pcengine":     { year: 1987, maker: "NEC" },
+  "pcenginecd":   { year: 1988, maker: "NEC" },
+  "supergrafx":   { year: 1989, maker: "NEC" },
+  // Commodore
+  "c64":          { year: 1982, maker: "Commodore" },
+  "amiga":        { year: 1985, maker: "Commodore" },
+  "vic20":        { year: 1980, maker: "Commodore" },
+  // Others
+  "3do":          { year: 1993, maker: "Panasonic" },
+  "intellivision":{ year: 1979, maker: "Mattel" },
+  "colecovision": { year: 1982, maker: "Coleco" },
+  "amstradcpc":   { year: 1984, maker: "Amstrad" },
+  "apple2":       { year: 1977, maker: "Apple" },
+  "coco":         { year: 1980, maker: "Tandy" },
+  "atomiswave":   { year: 2003, maker: "Sammy" },
+  "wonderswan":   { year: 1999, maker: "Bandai" },
+  "wonderswancolor":{ year: 2000, maker: "Bandai" },
+  "fba":          { year: 1985, maker: "Arcade" },
+  "arcade":       { year: 1980, maker: "Arcade" },
+  "mame":         { year: 1980, maker: "Arcade" }
+};
+
+function systemYear(shortName) {
+  var d = systemData[processPlatformName(shortName)];
+  return d ? d.year : 9999;
+}
+
+function systemMaker(shortName) {
+  var d = systemData[processPlatformName(shortName)];
+  return d ? d.maker : "zzz";
+}
+
 function processButtonArt(button) {
   var buttonModel;
   switch (button) {

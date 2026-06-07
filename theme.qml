@@ -25,6 +25,7 @@ import "Global"
 import "GameDetails"
 import "ShowcaseView"
 import "Settings"
+import "utils.js" as Utils
 
 FocusScope {
 id: root
@@ -42,7 +43,9 @@ id: root
     property var settings: {
         return {
             PlatformView:                  api.memory.has("Game View") ? api.memory.get("Game View") : "Grid",
-            GridThumbnail:                 api.memory.has("Grid Thumbnail") ? api.memory.get("Grid Thumbnail") : "Dynamic Wide",
+            GridThumbnail:                 (function(){ var v = api.memory.has("Grid Thumbnail") ? api.memory.get("Grid Thumbnail") : "Dynamic Wide"; return (v === "3D Box" || v === "Box Art") ? "Square" : v; })(),
+            GridArt:                       api.memory.has("Grid art") ? api.memory.get("Grid art") : "Fanart",
+            GridGameLogo:                  api.memory.has("Grid Game Logo") ? api.memory.get("Grid Game Logo") : "Yes",
             GridColumns:                   api.memory.has("Number of columns") ? api.memory.get("Number of columns") : "3",
             GameBackground:                api.memory.has("Game Background") ? api.memory.get("Game Background") : "Screenshot",
             GameLogo:                      api.memory.has("Game Logo") ? api.memory.get("Game Logo") : "Show",
@@ -60,7 +63,13 @@ id: root
             AllowVideoPreviewAudio:        api.memory.has("Video preview audio") ? api.memory.get("Video preview audio") : "No",
             ShowScanlines:                 api.memory.has("Show scanlines") ? api.memory.get("Show scanlines") : "Yes",
             DetailsDefault:                api.memory.has("Default to full details") ? api.memory.get("Default to full details") : "No",
+            LaunchScreenDelay:             api.memory.has("Launch screen delay") ? api.memory.get("Launch screen delay") : "0.6",
+            ShowcaseBackgroundArt:          api.memory.has("Showcase Background Art") ? api.memory.get("Showcase Background Art") : "Yes",
+            CustomBackground:               api.memory.has("Custom Background") ? api.memory.get("Custom Background") : "No",
+            ShowcaseBackgroundOpacity:     api.memory.has("Showcase Background Opacity") ? api.memory.get("Showcase Background Opacity") : "0.55",
             ShowcaseArt:                   api.memory.has("Showcase Art") ? api.memory.get("Showcase Art") : "Fanart",
+            HeroBoxArt:                    api.memory.has("Hero box art") ? api.memory.get("Hero box art") : "Fanart",
+            SystemSort:                    api.memory.has("System sort") ? api.memory.get("System sort") : "Alphabetical (A-Z)",
             ShowcaseColumns:               api.memory.has("Number of games showcased") ? api.memory.get("Number of games showcased") : "15",
             ShowcaseFeaturedCollection:    api.memory.has("Featured collection") ? api.memory.get("Featured collection") : "Favorites",
             ShowcaseCollection1:           api.memory.has("Collection 1") ? api.memory.get("Collection 1") : "Recently Played",
@@ -76,6 +85,9 @@ id: root
             ShowcaseCollection6:           api.memory.has("Collection 6") ? api.memory.get("Collection 6") : "None",
             ShowcaseCollection6_Thumbnail: api.memory.has("Collection 6 - Thumbnail") ? api.memory.get("Collection 6 - Thumbnail") : "Wide",
             WideRatio:                     api.memory.has("Wide - Ratio") ? api.memory.get("Wide - Ratio") : "0.64",
+            ColorBackground:               api.memory.has("Color Background") ? api.memory.get("Color Background") : "Black",
+            XboxLogo:                      api.memory.has("Xbox Logo") ? api.memory.get("Xbox Logo") : "Logo1",
+            LogoColorMatch:                api.memory.has("Logo Color Match") ? api.memory.get("Logo Color Match") : "No",
             TallRatio:                     api.memory.has("Tall - Ratio") ? api.memory.get("Tall - Ratio") : "0.66",
             BoxArtStyle:                   api.memory.has("Box Art") ? api.memory.get("Box Art") : "2D",
             GameCounter:                   api.memory.has("Game Counter") ? api.memory.get("Game Counter") : "Yes",
@@ -93,6 +105,15 @@ id: root
             OmitEmulatorFromShowcase:      api.memory.has("Omit genre: Emulator from Showcase") ? api.memory.get("Omit genre: Emulator from Showcase") : "No",
             MoreByGenreDisplay:            api.memory.has("More by Genre Display") ? api.memory.get("More by Genre Display") : "Full",
             AllowDiscoverVideoAudio:         api.memory.has("Play discover video audio") ? api.memory.get("Play discover video audio") : "No",
+            MenuSounds:                      api.memory.has("Menu sounds") ? api.memory.get("Menu sounds") : "Yes",
+            MenuVolume:                      api.memory.has("Menu Volume") ? api.memory.get("Menu Volume") : "1.0",
+            StartupChime:                    api.memory.has("Start up chime") ? api.memory.get("Start up chime") : "Yes",
+            AllGamesVideoPreview:            api.memory.has("AllGames Video preview") ? api.memory.get("AllGames Video preview") : "Yes",
+            AllGamesHideBoxOnVideo:          api.memory.has("AllGames Hide box art on video") ? api.memory.get("AllGames Hide box art on video") : "No",
+            AllGamesHideLogoOnVideo:         api.memory.has("AllGames Hide logo on video") ? api.memory.get("AllGames Hide logo on video") : "No",
+            AllGamesBlurBackground:          api.memory.has("AllGames Blur Background") ? api.memory.get("AllGames Blur Background") : "No",
+            AllGamesScanlines:               api.memory.has("AllGames Show scanlines") ? api.memory.get("AllGames Show scanlines") : "No",
+            AllGamesVideoAudio:              api.memory.has("All games menu video audio") ? api.memory.get("All games menu video audio") : "No",
             ShowWifi:                      api.memory.has("Show WiFi Indicator")     ? api.memory.get("Show WiFi Indicator")     : "Yes",
             ShowBattery:                   api.memory.has("Show Battery Percentage") ? api.memory.get("Show Battery Percentage") : "Yes",
             ShowClock:                     api.memory.has("Show Clock")              ? api.memory.get("Show Clock")              : "Yes"
@@ -102,15 +123,101 @@ id: root
 
     // Collections
     property int currentCollectionIndex: 0
+    property bool collectionVisited: false   // strip stays on the hero until a collection is actually opened
     property int currentGameIndex: 0
-    property var currentCollection: api.collections.get(currentCollectionIndex)    
+    property var currentCollection: api.collections.get(currentCollectionIndex)
+
+    // Shared system order (home/platform page + grid LB/RB cycle), per the
+    // "System sort" setting. Collections are read THROUGH this index array so
+    // every screen orders systems identically without altering Pegasus's order.
+    property var sortedColl: buildSortedColl()
+    function buildSortedColl() {
+        var n = api.collections.count;
+        var items = [];
+        for (var i = 0; i < n; i++) {
+            var c = api.collections.get(i);
+            items.push({
+                idx:   i,
+                name:  (c.name || "").toLowerCase(),
+                year:  Utils.systemYear(c.shortName),
+                maker: Utils.systemMaker(c.shortName),
+                count: c.games ? c.games.count : 0,
+                pin:   systemPinRank(c.shortName, c.name)
+            });
+        }
+        var mode = settings.SystemSort;
+        items.sort(function(a, b) {
+            // Pinned systems (Android, then Android games) always lead.
+            if (a.pin !== b.pin) {
+                if (a.pin === -1) return 1;
+                if (b.pin === -1) return -1;
+                return a.pin - b.pin;
+            }
+            if (a.pin !== -1) return 0;
+
+            var alpha = (a.name < b.name) ? -1 : (a.name > b.name ? 1 : 0);
+
+            if (mode === "Alphabetical (Z-A)")
+                return -alpha;
+            if (mode === "Release year (oldest)" || mode === "Release year") {
+                if (a.year !== b.year) {
+                    if (a.year === 9999) return 1;
+                    if (b.year === 9999) return -1;
+                    return a.year - b.year;
+                }
+                return alpha;
+            }
+            if (mode === "Release year (newest)") {
+                if (a.year !== b.year) {
+                    if (a.year === 9999) return 1;
+                    if (b.year === 9999) return -1;
+                    return b.year - a.year;
+                }
+                return alpha;
+            }
+            if (mode === "Manufacturer") {
+                if (a.maker !== b.maker) return a.maker < b.maker ? -1 : 1;
+                if (a.year !== b.year) return a.year - b.year;
+                return alpha;
+            }
+            if (mode === "Game count (most)") {
+                if (a.count !== b.count) return b.count - a.count;
+                return alpha;
+            }
+            if (mode === "Game count (fewest)") {
+                if (a.count !== b.count) return a.count - b.count;
+                return alpha;
+            }
+            if (mode === "Default") {
+                return a.idx - b.idx;
+            }
+            return alpha;
+        });
+        var arr = [];
+        for (var k = 0; k < items.length; k++) arr.push(items[k].idx);
+        return arr;
+    }
+    function systemPinRank(sn, nm) {
+        var s = (sn || "").toLowerCase();
+        var nmm = (nm || "").toLowerCase();
+        if (s === "android" || nmm === "android") return 0;
+        if (s === "apps" || s === "androidgames" || nmm === "apps" || nmm === "android games" || nmm === "androidgames") return 1;
+        return -1;
+    }
     property var currentGame
+    property var launchingGame: null         // game shown on the launch splash
+    property bool launchSuspended: false     // true once the app has backgrounded for a launch
+    property int  launchSplashDelay: {       // ms the splash is held before launch, from the "Launch screen delay" setting (seconds)
+        var v = parseFloat(settings.LaunchScreenDelay);
+        return isNaN(v) ? 600 : Math.round(v * 1000);
+    }
 
     // Stored variables for page navigation
     property int storedHomePrimaryIndex: 0
     property int storedHomeSecondaryIndex: 0
     property int storedCollectionIndex: 0
     property int storedCollectionGameIndex: 0
+    property int storedAllGamesIndex: 0
     // Keeps GameView alive after first visit so returning from Settings never shows a blank page.
     // Set to true by gameviewloader.onLoaded; never reset, so the component is only created once.
     property bool gameviewLoaded: false
@@ -125,6 +232,21 @@ id: root
     property var orderBy: Qt.AscendingOrder
     property string searchTerm: ""
     property string searchMode: "Title"
+    property var    genreSelected: []   // grid genre filter (multi-select; [] = All)
+    // Turn a selected genre into a regex matching it as a whole comma-token
+    function genreToPattern(g) {
+        if (g === "" || g === "All") return "";
+        var esc = g.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        return "(^|,\\s*)" + esc + "(\\s*,|$)";
+    }
+    // Multi-genre: regex matching ANY selected genre as a whole comma-token
+    function genresToPattern(arr) {
+        if (!arr || arr.length === 0) return "";
+        var parts = [];
+        for (var i = 0; i < arr.length; i++)
+            parts.push(arr[i].replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+        return "(^|,\\s*)(" + parts.join("|") + ")(\\s*,|$)";
+    }
     property bool steam: currentCollection.name === "Steam"
     function steamExists() {
         for (i = 0; i < api.collections.count; i++) {
@@ -155,20 +277,22 @@ id: root
     }
 
     // Launch the current game
+    // ── Robust SFX helpers ────────────────────────────────────────────────
+    // stop() before play() forces a clean restart on every call, so rapid
+    // retriggers (scrolling, cycling, etc.) never drop a play() the way Qt's
+    // SoundEffect otherwise does when one is already in-flight.
+    function playNav()    { if (sfxVolume <= 0) return; sfxNav.stop();    sfxNav.play(); }
+    function playAccept() { if (sfxVolume <= 0) return; sfxAccept.stop(); sfxAccept.play(); }
+    function playBack()   { if (sfxVolume <= 0) return; sfxBack.stop();   sfxBack.play(); }
+    function playToggle() { if (sfxVolume <= 0) return; sfxToggle.stop(); sfxToggle.play(); }
+    function playTabLeft()  { if (sfxVolume <= 0) return; sfxTabLeft.stop();  sfxTabLeft.play(); }
+    function playTabRight() { if (sfxVolume <= 0) return; sfxTabRight.stop(); sfxTabRight.play(); }
+
     function launchGame(game) {
-        if (game !== null) {
-            //if (game.collections.get(0).name === "Steam")
-                launchGameScreen();
-
-            saveCurrentState(game);
-            game.launch();
-        } else {
-            //if (currentGame.collections.get(0).name === "Steam")
-                launchGameScreen();
-
-            saveCurrentState(currentGame);
-            currentGame.launch();
-        }
+        launchingGame = (game !== null) ? game : currentGame;
+        launchGameScreen();
+        saveCurrentState(launchingGame);
+        launchDelay.restart();          // hold the splash, then launch (see launchDelay)
     }
 
     // Save current states for returning from game
@@ -222,6 +346,153 @@ id: root
         var text          = "#ebebeb";
         var gradientstart = "#001f1f1f";
         var gradientend   = "#FF000000";
+        if (settings.ColorBackground === "Black") {
+            background    = "#000000";
+            gradientstart = "#001f1f1f";
+            gradientend   = "#FF000000";
+        } else if (settings.ColorBackground === "Charcoal") {
+            background    = "#1a1a1a";
+            gradientstart = "#001a1a1a";
+            gradientend   = "#FF1a1a1a";
+        } else if (settings.ColorBackground === "Dark Gray") {
+            background    = "#1f1f1f";
+            gradientstart = "#001f1f1f";
+            gradientend   = "#FF1F1F1F";
+        } else if (settings.ColorBackground === "Mid Gray") {
+            background    = "#2d2d2d";
+            gradientstart = "#002d2d2d";
+            gradientend   = "#FF2d2d2d";
+        } else if (settings.ColorBackground === "Navy Blue") {
+            background    = "#0a0e2e";
+            gradientstart = "#000a0e2e";
+            gradientend   = "#FF0a0e2e";
+        } else if (settings.ColorBackground === "Dark Blue") {
+            background    = "#1d253d";
+            gradientstart = "#001d253d";
+            gradientend   = "#FF1d253d";
+        } else if (settings.ColorBackground === "Dark Teal") {
+            background    = "#041a18";
+            gradientstart = "#00041a18";
+            gradientend   = "#FF041a18";
+        } else if (settings.ColorBackground === "Dark Green") {
+            background    = "#054b16";
+            gradientstart = "#00054b16";
+            gradientend   = "#FF054b16";
+        } else if (settings.ColorBackground === "Forest Green") {
+            background    = "#0a200a";
+            gradientstart = "#000a200a";
+            gradientend   = "#FF0a200a";
+        } else if (settings.ColorBackground === "Dark Red") {
+            background    = "#520000";
+            gradientstart = "#00520000";
+            gradientend   = "#FF520000";
+        } else if (settings.ColorBackground === "Burgundy") {
+            background    = "#1c0008";
+            gradientstart = "#001c0008";
+            gradientend   = "#FF1c0008";
+        } else if (settings.ColorBackground === "Dark Purple") {
+            background    = "#120012";
+            gradientstart = "#00120012";
+            gradientend   = "#FF120012";
+        } else if (settings.ColorBackground === "Indigo") {
+            background    = "#0a0020";
+            gradientstart = "#000a0020";
+            gradientend   = "#FF0a0020";
+        } else if (settings.ColorBackground === "Dark Brown") {
+            background    = "#1a0e00";
+            gradientstart = "#001a0e00";
+            gradientend   = "#FF1a0e00";
+        } else if (settings.ColorBackground === "Dark Orange") {
+            background    = "#1a0800";
+            gradientstart = "#001a0800";
+            gradientend   = "#FF1a0800";
+        } else if (settings.ColorBackground === "Slate") {
+            background    = "#1a1e26";
+            gradientstart = "#001a1e26";
+            gradientend   = "#FF1a1e26";
+        } else if (settings.ColorBackground === "Midnight Blue") {
+            background    = "#050510";
+            gradientstart = "#00050510";
+            gradientend   = "#FF050510";
+        } else if (settings.ColorBackground === "Deep Purple") {
+            background    = "#0e0018";
+            gradientstart = "#000e0018";
+            gradientend   = "#FF0e0018";
+        } else if (settings.ColorBackground === "Dark Steel") {
+            background    = "#1e2a3a";
+            gradientstart = "#001e2a3a";
+            gradientend   = "#FF1e2a3a";
+        } else if (settings.ColorBackground === "Gray") {
+            background    = "#3a3a3a";
+            gradientstart = "#003a3a3a";
+            gradientend   = "#FF3a3a3a";
+        } else if (settings.ColorBackground === "Cool Gray") {
+            background    = "#4a5060";
+            gradientstart = "#004a5060";
+            gradientend   = "#FF4a5060";
+        } else if (settings.ColorBackground === "Steel Blue") {
+            background    = "#2c4a6e";
+            gradientstart = "#002c4a6e";
+            gradientend   = "#FF2c4a6e";
+        } else if (settings.ColorBackground === "Teal") {
+            background    = "#1a4a4a";
+            gradientstart = "#001a4a4a";
+            gradientend   = "#FF1a4a4a";
+        } else if (settings.ColorBackground === "Forest") {
+            background    = "#1a3a1a";
+            gradientstart = "#001a3a1a";
+            gradientend   = "#FF1a3a1a";
+        } else if (settings.ColorBackground === "Wine") {
+            background    = "#4a1020";
+            gradientstart = "#004a1020";
+            gradientend   = "#FF4a1020";
+        } else if (settings.ColorBackground === "Plum") {
+            background    = "#3a1a3a";
+            gradientstart = "#003a1a3a";
+            gradientend   = "#FF3a1a3a";
+        } else if (settings.ColorBackground === "Light Gray") {
+            background    = "#707070";
+            gradientstart = "#00707070";
+            gradientend   = "#FF707070";
+            text          = "#101010";
+        } else if (settings.ColorBackground === "Silver") {
+            background    = "#909090";
+            gradientstart = "#00909090";
+            gradientend   = "#FF909090";
+            text          = "#101010";
+        } else if (settings.ColorBackground === "Light Blue") {
+            background    = "#4a7aa0";
+            gradientstart = "#004a7aa0";
+            gradientend   = "#FF4a7aa0";
+            text          = "#101010";
+        } else if (settings.ColorBackground === "Sage") {
+            background    = "#6a8a6a";
+            gradientstart = "#006a8a6a";
+            gradientend   = "#FF6a8a6a";
+            text          = "#101010";
+        } else if (settings.ColorBackground === "Tan") {
+            background    = "#8a7a5a";
+            gradientstart = "#008a7a5a";
+            gradientend   = "#FF8a7a5a";
+            text          = "#101010";
+        } else if (settings.ColorBackground === "Rose") {
+            background    = "#a06070";
+            gradientstart = "#00a06070";
+            gradientend   = "#FFa06070";
+            text          = "#101010";
+        } else if (settings.ColorBackground === "Gradient") {
+            // theme.main becomes transparent so the root-level Gradient Image shows through.
+            background    = "transparent";
+            gradientstart = "#00000000";
+            gradientend   = "#A0000000";
+            text          = "#ebebeb";
+        } else if (settings.ColorBackground === "White") {
+            background    = "#ebebeb";
+            gradientstart = "#00ebebeb";
+            gradientend   = "#FFebebeb";
+            text          = "#101010";
+        }
+
         var accent        = "#288928";   // default: Dark Green
 
         // ── Full color palette ───────────────────────────────────────────
@@ -302,9 +573,10 @@ id: root
             case "Jade":          accent = "#2a8a5a"; break;
             case "Onyx":          accent = "#353535"; break;
             case "White":         accent = "#e8e8e8"; break;
+            // Special: image-based palette using assets/images/colorspng/Gradient.png
+            case "Gradient":      accent = "#c060c0"; break;
             default:              accent = "#288928"; break;
         }
-
         return {
             main:          background,
             secondary:     "#303030",
@@ -354,6 +626,9 @@ id: root
         },
         State {
             name: "discoverscreen";
+        },
+        State {
+            name: "allgamesscreen";
         }
     ]
 
@@ -362,10 +637,11 @@ id: root
 
     // Screen switching functions
     function softwareScreen() {
-        sfxAccept.play();
+        playAccept();
         lastState.push(state);
         searchTerm = "";
         searchMode = "Title";
+        genreSelected = [];
         switch(settings.PlatformView) {
             case "Grid":
                 root.state = "softwaregridscreen";
@@ -376,13 +652,19 @@ id: root
     }
 
     function showcaseScreen() {
-        sfxAccept.play();
+        playAccept();
         lastState.push(state);
         root.state = "showcasescreen";
     }
 
+    function allGamesScreen() {
+        playAccept();
+        lastState.push(state);
+        root.state = "allgamesscreen";
+    }
+
     function gameDetails(game) {
-        sfxAccept.play();
+        playAccept();
 
         // If we're already on gameviewscreen (e.g. navigating the "More games"
         // lists inside GameView), just swap the current game without pushing a
@@ -407,13 +689,13 @@ id: root
     }
 
     function settingsScreen() {
-        sfxAccept.play();
+        playAccept();
         lastState.push(state);
         root.state = "settingsscreen";
     }
 
     function achievementsScreen() {
-        sfxAccept.play();
+        playAccept();
         lastState.push(state);
         root.state = "achievementsscreen";
     }
@@ -422,7 +704,7 @@ id: root
     // Used when already inside RA (A from game achievements, or "View Overview"
     // from RAGameEntryView) so B exits RA in one press.
     function achievementsScreenFromGame() {
-        sfxAccept.play();
+        playAccept();
         root.state = "achievementsscreen";
     }
 
@@ -451,7 +733,7 @@ id: root
     }
 
     function discoverScreen() {
-        sfxAccept.play();
+        playAccept();
         lastState.push(state);
         root.state = "discoverscreen";
     }
@@ -460,7 +742,7 @@ id: root
     // Called by DiscoverView so that pressing Back in Game Details returns to
     // Showcase (or wherever the user came from) rather than back to Discover.
     function gameDetailsFromDiscover(game) {
-        sfxAccept.play();
+        playAccept();
         if (lastState.length != 0)
             lastGame.push(currentGame);
         if (game !== null)
@@ -472,21 +754,24 @@ id: root
     // lastState so that returning from the game skips the Discover screen.
     function launchGameFromDiscover(game) {
         if (game !== null) {
-            sfxAccept.play();
+            playAccept();
+            launchingGame = game;
+            launchSuspended = false;
             root.state = "launchgamescreen";
             saveCurrentState(game);
-            game.launch();
+            launchDelay.restart();      // hold the splash, then launch (see launchDelay)
         }
     }
 
     function launchGameScreen() {
-        sfxAccept.play();
+        playAccept();
+        launchSuspended = false;
         lastState.push(state);
         root.state = "launchgamescreen";
     }
 
     function previousScreen() {
-        sfxBack.play();
+        playBack();
         if (state == lastState[lastState.length-1])
             popLastGame();
 
@@ -518,6 +803,22 @@ id: root
         color: theme.main
     }
 
+    // ── Background gradient image ─────────────────────────────────────────
+    // Renders behind all screen Loaders (z: -1). Each screen's bg Rectangle has
+    // color: theme.main, which is "transparent" only when Gradient is selected,
+    // so this image shows through. Other ColorBackground choices render normally
+    // as solid colors and this Image is hidden.
+    Image {
+        id: bgGradient
+        anchors.fill: parent
+        source: "assets/images/colorspng/Gradient.png"
+        fillMode: Image.PreserveAspectCrop
+        visible: settings.ColorBackground === "Gradient"
+        asynchronous: true
+        smooth: true
+        z: -1
+    }
+
     Loader  {
     id: showcaseLoader
 
@@ -527,6 +828,19 @@ id: root
 
         anchors.fill: parent
         sourceComponent: showcaseview
+    }
+
+    Loader {
+    id: allgamesloader
+
+        focus: (root.state === "allgamesscreen")
+        active: opacity !== 0
+        opacity: focus ? 1 : 0
+        Behavior on opacity { PropertyAnimation { duration: transitionTime } }
+
+        anchors.fill: parent
+        sourceComponent: allgamesview
+        asynchronous: true
     }
 
     Loader  {
@@ -588,6 +902,36 @@ id: root
         anchors.fill: parent
         sourceComponent: launchgameview
         asynchronous: true
+    }
+
+    // Auto-return from the launch splash: once the app has been backgrounded (the game
+    // ran) and then comes back to the foreground, leave the splash and land back where
+    // we launched from. The "press any button" handler in LaunchGame stays as a fallback
+    // for devices where this app-state signal doesn't fire.
+    Connections {
+        target: Qt.application
+        onStateChanged: {
+            if (root.state !== "launchgamescreen") return;
+            if (Qt.application.state !== Qt.ApplicationActive)
+                root.launchSuspended = true;
+            else if (root.launchSuspended) {
+                root.launchSuspended = false;
+                previousScreen();
+            }
+        }
+    }
+
+    // Holds the launch splash on screen for launchSplashDelay ms, THEN starts the game.
+    // (The wait happens before the OS suspends Pegasus, so it's reliable.) Guarded so a
+    // back-press during the hold cancels the launch instead of starting it late.
+    Timer {
+        id: launchDelay
+        interval: launchSplashDelay
+        repeat: false
+        onTriggered: {
+            if (root.state === "launchgamescreen" && launchingGame)
+                launchingGame.launch();
+        }
     }
 
     Loader  {
@@ -661,6 +1005,12 @@ id: root
     }
 
     Component {
+    id: allgamesview
+
+        AllGamesMenu { focus: true }
+    }
+
+    Component {
     id: gameview
 
         GameView {
@@ -729,32 +1079,66 @@ id: root
             left: parent.left; right: parent.right; rightMargin: globalMargin
             bottom: parent.bottom
         }
-        visible: settings.HideButtonHelp === "No"
+        visible: settings.HideButtonHelp === "No" && root.state !== "launchgamescreen"
     }
 
     ///////////////////
     // SOUND EFFECTS //
     ///////////////////
+
+    // Master menu-sound volume: 0 when "Menu sounds" = No, else the Menu Volume
+    // level (0.1-1.0). SoundEffect.volume is capped at 1.0.
+    property real sfxVolume: {
+        if (settings.MenuSounds === "No") return 0.0;
+        var v = parseFloat(settings.MenuVolume);
+        return (isNaN(v) || v < 0) ? 1.0 : Math.min(v, 1.0);
+    }
+
+    // Startup chime — plays shortly after the theme loads (delay lets the audio
+    // engine come up so the first play isn't dropped). Respects the menu volume.
+    Timer {
+        interval: 450; running: true; repeat: false
+        onTriggered: { if (settings.StartupChime !== "No" && sfxVolume > 0) { sfxStartup.stop(); sfxStartup.play(); } }
+    }
+    SoundEffect {
+        id: sfxStartup
+        source: "assets/sfx/startup.wav"
+        volume: sfxVolume
+    }
     SoundEffect {
         id: sfxNav
         source: "assets/sfx/navigation.wav"
-        volume: 1.0
+        volume: sfxVolume
     }
 
     SoundEffect {
         id: sfxBack
         source: "assets/sfx/back.wav"
-        volume: 1.0
+        volume: sfxVolume
     }
 
     SoundEffect {
         id: sfxAccept
         source: "assets/sfx/accept.wav"
+        volume: sfxVolume
     }
 
     SoundEffect {
         id: sfxToggle
         source: "assets/sfx/toggle.wav"
+        volume: sfxVolume
+    }
+
+    SoundEffect {
+        id: sfxTabLeft
+        source: "assets/sfx/tab_left.wav"
+        volume: sfxVolume
+    }
+
+    SoundEffect {
+        id: sfxTabRight
+        source: "assets/sfx/tab_right.wav"
+        volume: sfxVolume
     }
     
 }
