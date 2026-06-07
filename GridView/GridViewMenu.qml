@@ -439,9 +439,12 @@ id: root
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: achievementsScreen(); }
-            Text {
+            Image {
                 anchors.centerIn: parent
-                text: "🏆"; font.pixelSize: vpx(18)
+                width: vpx(24); height: vpx(24)
+                sourceSize: Qt.size(vpx(24), vpx(24))
+                source: "../assets/images/trophy.svg"
+                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
                 opacity: achievementsbutton.focus ? 1 : 0.7
             }
         }
@@ -459,7 +462,9 @@ id: root
             }
             MouseArea { anchors.fill: parent; onClicked: settingsScreen(); }
             Image {
-                anchors { fill: parent; margins: vpx(10) }
+                anchors.centerIn: parent
+                width: vpx(24); height: vpx(24)
+                sourceSize: Qt.size(vpx(24), vpx(24))
                 source: "../assets/images/settingsicon.svg"
                 fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
             }
