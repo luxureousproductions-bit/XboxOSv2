@@ -17,7 +17,7 @@
 <img width="1920" height="1080" alt="Screenshot_20260607-105247" src="https://github.com/user-attachments/assets/a515aed5-e992-4cf3-8e4a-0168b5a9e13a" />
 - New settings and ui
 <img width="1920" height="1080" alt="Screenshot_20260607-105428" src="https://github.com/user-attachments/assets/74a4465d-a825-4be8-959a-d2e01ac53583" />
-- Discover classics and hidden hems and jump right in with the Discover page
+- Discover classics and hidden gems and jump right in with the Discover page
 
 
 
