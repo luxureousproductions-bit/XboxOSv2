@@ -631,17 +631,13 @@ id: root
                 onEntered: gv_homebutton.focus = true; onExited: gv_homebutton.focus = false;
                 onClicked: showcaseScreen();
             }
-            Canvas {
-                anchors { fill: parent; margins: vpx(6) }
-                onPaint: {
-                    var ctx = getContext("2d"); ctx.reset();
-                    var w = width, h = height;
-                    ctx.fillStyle = "white"; ctx.globalAlpha = gv_homebutton.focus ? 1.0 : 0.85;
-                    ctx.beginPath(); ctx.moveTo(w*0.5, 0); ctx.lineTo(w, h*0.5); ctx.lineTo(0, h*0.5); ctx.closePath(); ctx.fill();
-                    ctx.fillRect(w*0.1, h*0.5, w*0.8, h*0.5);
-                    ctx.clearRect(w*0.37, h*0.68, w*0.26, h*0.32);
-                }
-                Connections { target: gv_homebutton; onFocusChanged: parent.requestPaint() }
+            Image {
+                anchors.centerIn: parent
+                width: vpx(24); height: vpx(24)
+                sourceSize: Qt.size(vpx(24), vpx(24))
+                source: "../assets/images/icon_home.svg"
+                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+                opacity: parent.focus ? 1 : 0.7
             }
         }
 
