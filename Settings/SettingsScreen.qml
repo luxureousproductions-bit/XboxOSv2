@@ -598,7 +598,7 @@ id: root
             }
             height: vpx(28)
             width: height
-            source: "../assets/images/settingscog_outline.svg"
+            source: "../assets/images/settingsicon.svg"
             sourceSize: Qt.size(vpx(28), vpx(28))
             fillMode: Image.PreserveAspectFit
             smooth: true
