@@ -7,7 +7,8 @@
 <img width="1920" height="1080" alt="Screenshot_20260607-105012" src="https://github.com/user-attachments/assets/f5ba37a4-3a25-4c1e-8bd0-170d11568f3e" />
 
 - Crossfade background art, or use your own custom background:
-    - Place Background.png to assests/images/background
+    - Place Background.png to assests/images/backgrounds
+  
 <img width="1920" height="1080" alt="Screenshot_20260607-105541" src="https://github.com/user-attachments/assets/6aaac017-1e3e-4a6a-b012-5f011e6a010e" />
 <img width="1920" height="1080" alt="Screenshot_20260607-105234" src="https://github.com/user-attachments/assets/d09b55c9-39bc-43c4-a8b8-3d50c453311a" />
 - New Full Library section with advance filters
