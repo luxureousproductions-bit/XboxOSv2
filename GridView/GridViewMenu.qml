@@ -377,22 +377,13 @@ id: root
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: showcaseScreen(); }
-            Canvas {
-                anchors { fill: parent; margins: vpx(7) }
-                onPaint: {
-                    var ctx = getContext("2d"); ctx.reset();
-                    var w = width, h = height;
-                    ctx.fillStyle = "white";
-                    ctx.globalAlpha = homebutton.focus ? 1.0 : 0.85;
-                    ctx.beginPath();
-                    ctx.moveTo(w*0.5, h*0.05);
-                    ctx.lineTo(w*0.95, h*0.5);
-                    ctx.lineTo(w*0.05, h*0.5);
-                    ctx.closePath(); ctx.fill();
-                    ctx.fillRect(w*0.18, h*0.5, w*0.64, h*0.42);
-                    ctx.clearRect(w*0.42, h*0.62, w*0.16, h*0.30);
-                }
-                Connections { target: homebutton; onFocusChanged: parent.requestPaint() }
+            Image {
+                anchors.centerIn: parent
+                width: vpx(24); height: vpx(24)
+                sourceSize: Qt.size(vpx(24), vpx(24))
+                source: "../assets/images/icon_home.svg"
+                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+                opacity: homebutton.focus ? 1 : 0.7
             }
         }
 
