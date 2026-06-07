@@ -22,7 +22,7 @@ id: root
     
     readonly property var games: gamesFiltered
     function currentGame(index) { return api.allGames.get(gamesFiltered.mapToSource(index)) }
-    property int max: gamesFiltered.count
+    property int max: 15
 
     property bool omitApplication: false
     property bool omitEmulator: false
@@ -33,6 +33,10 @@ id: root
     property bool active: false
 
     property var randomIndices: {};
+
+    // The `max` value used for the current picks. Lets the showcase re-pick ONLY
+    // when the "Number of games showcased" count actually changed.
+    property int lastPickedMax: -1
 
     function refresh() {
         // Pick up to `max` random games, applying the application/emulator omit
@@ -61,7 +65,11 @@ id: root
             picked++;
         }
         randomIndices = indices;
+        lastPickedMax = max;
     }
+
+    // Re-pick only if the showcased count changed since the last refresh.
+    function maybeRefresh() { if (active && max !== lastPickedMax) refresh(); }
 
     // Eager seed only when armed at construction (the Showcase sets active:true).
     // Instances left inactive (e.g. GameView) do nothing here and arm on demand,
