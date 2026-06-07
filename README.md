@@ -35,6 +35,8 @@
 
 IMPORTANT: This is a fork of [gameOS](https://github.com/PlayingKarrde/gameOS/releases/latest) by the original and true UI God: Seth Powell. This theme further continues work from the XboxOS fork and now modernizes and refines the experience even more. The goal is to create a modern game launcher UI with quality-of-life improvements and additional media support.
 
+- Ideas and inspirations from of course the original gameOS and XboxOs by Seth Powell and Alfred Olvera respectively, Yan Miller Sleipnir theme, and MrJud AquaFlow. I am not a developer nor will ever pretend to be, this started as a tinkering project to make changes I wanted to see to a big project I thought others may also enjoy so I’m here sharing my end result here.
+
 ## Installation
 
 download latest release and extract it in your [Pegasus theme directory](http://pegasus-frontend.org/docs/user-guide/installing-themes/).
