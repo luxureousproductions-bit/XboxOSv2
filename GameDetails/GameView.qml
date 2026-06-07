@@ -721,7 +721,9 @@ id: root
                 onClicked: settingsScreen();
             }
             Image {
-                anchors { fill: parent; margins: vpx(7) }
+                anchors.centerIn: parent
+                width: vpx(24); height: vpx(24)
+                sourceSize: Qt.size(vpx(24), vpx(24))
                 source: "../assets/images/settingsicon.svg"; smooth: true; asynchronous: true
                 opacity: parent.focus ? 1 : 0.7
             }
@@ -785,7 +787,7 @@ id: root
         id: button5
 
             width: height
-            icon: "../assets/images/icon_ra.svg"
+            icon: "../assets/images/trophy.svg"
             iconPadding: vpx(16)
             height: parent.height
             selected: ListView.isCurrentItem && menu.focus
