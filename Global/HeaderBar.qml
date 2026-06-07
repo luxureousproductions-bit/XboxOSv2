@@ -472,7 +472,9 @@ id: root
                     color: theme.accent; visible: sl_settingsbutton.selected
                 }
                 Image {
-                    anchors { fill: parent; margins: vpx(10) }
+                    anchors.centerIn: parent
+                    width: vpx(24); height: vpx(24)
+                    sourceSize: Qt.size(vpx(24), vpx(24))
                     source: "../assets/images/settingsicon.svg"; smooth: true; asynchronous: true
                     opacity: parent.selected ? 1 : 0.7
                 }
@@ -489,9 +491,13 @@ id: root
                     anchors.fill: parent; radius: height/2
                     color: theme.accent; visible: sl_rabutton.selected
                 }
-                Text {
-                    anchors.centerIn: parent; text: "🏆"
-                    font.pixelSize: vpx(18); opacity: parent.selected ? 1 : 0.7
+                Image {
+                    anchors.centerIn: parent
+                    width: vpx(24); height: vpx(24)
+                    sourceSize: Qt.size(vpx(24), vpx(24))
+                    source: "../assets/images/trophy.svg"
+                    fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+                    opacity: parent.selected ? 1 : 0.7
                 }
                 Keys.onPressed: {
                     if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
