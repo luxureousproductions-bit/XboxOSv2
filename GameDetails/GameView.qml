@@ -1084,7 +1084,8 @@ id: root
     onActiveFocusChanged: {
         if (activeFocus) {
             currentHelpbarModel = gameviewHelpModel;
-            menu.focus = true;
+            content.currentIndex = 0;
+            content.focus = true;
             menu.currentIndex = 0;
         } else {
             screenshot.opacity = 1;
