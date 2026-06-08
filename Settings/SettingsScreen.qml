@@ -40,6 +40,10 @@ id: root
             setting: "No,Yes"
         }
         ListElement {
+            settingName: "Tile Halo"
+            setting: "Yes,No"
+        }
+        ListElement {
             settingName: "Enable mouse hover"
             setting: "No,Yes"
         }
