@@ -51,6 +51,46 @@ id: root
     // entering RA from GameView before Overview has ever been opened.
     property bool profileLoaded: false
 
+    // ── Credential check (Settings → Retro Achievements) ─────────────────
+    // verifyState: "idle" | "empty" | "checking" | "ok" | "bad" | "neterr"
+    property string verifyState: "idle"
+    property string verifyName:  ""
+    function verify() {
+        var u = api.memory.has("RA Username") ? ("" + api.memory.get("RA Username")) : "";
+        var k = api.memory.has("RA API Key")  ? ("" + api.memory.get("RA API Key"))  : "";
+        u = u.trim();
+        if (u === "" || k === "") { verifyState = "empty"; verifyName = ""; return; }
+        verifyState = "checking";
+        var url = "https://retroachievements.org/API/API_GetUserProfile.php?z=" + encodeURIComponent(u)
+                + "&y=" + encodeURIComponent(k) + "&u=" + encodeURIComponent(u);
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", url, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState !== XMLHttpRequest.DONE) return;
+            if (xhr.status === 200) {
+                try {
+                    var resp = JSON.parse(xhr.responseText);
+                    if (resp && resp.User && resp.User.length > 0) {
+                        verifyState = "ok";
+                        verifyName  = resp.User;
+                        // Credentials are good — populate the live profile/card too.
+                        reload();
+                        if (!profileLoaded) loadUserProfile();
+                    } else {
+                        verifyState = "bad"; verifyName = "";
+                    }
+                } catch (e) {
+                    verifyState = "bad"; verifyName = "";
+                }
+            } else if (xhr.status === 0) {
+                verifyState = "neterr";
+            } else {
+                verifyState = "bad"; verifyName = "";
+            }
+        };
+        xhr.send();
+    }
+
     // ── Pegasus shortName → RA console ID ────────────────────────────────
     readonly property var consoleMappings: ({
         // Nintendo handhelds
