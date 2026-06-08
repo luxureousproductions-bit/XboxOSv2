@@ -51,9 +51,11 @@ id: root
     }
 
     // Pick a discover game different from the current one
-    function discoverJump() {
+    function discoverJump(playSound) {
         if (gameList.length === 0) return;
-        playNav();
+        // Nav sound only on a physical press. Auto-advance (video end) passes
+        // false so cycling to the next video on its own stays silent.
+        if (playSound !== false) sfxNav.play();
         if (gameList.length === 1) return;
         var newIndex;
         do {
@@ -91,7 +93,7 @@ id: root
         // Auto-advance to the next discover game when the video finishes
         onStatusChanged: {
             if (status === MediaPlayer.EndOfMedia)
-                discoverJump();
+                discoverJump(false);   // auto-advance on video end: no nav sound
         }
     }
 
