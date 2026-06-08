@@ -936,7 +936,7 @@ id: root
             title: {
                 if (!game) return "";
                 if (publisherCollection.games.length === 0)
-                    return "More Recommended Games";
+                    return "Picked For You";
                 var pub = game.publisher || "";
                 var dev = game.developer || "";
                 var g = game.genreList.length > 0 ? game.genreList[0] : "";
