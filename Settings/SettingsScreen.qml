@@ -478,6 +478,8 @@ id: root
     property int    keyIndex:        0
     property int    keyCols:         10
     property int    memRevision:     0   // bump to refresh displayed values
+    // Only the two RA fields are text inputs, so an edit always means RA creds changed.
+    onMemRevisionChanged: cheevosData.verify()
 
     property var kbLower: [
         "1","2","3","4","5","6","7","8","9","0",
@@ -680,6 +682,10 @@ id: root
         }
         width: vpx(300)
         model: settingsArr
+        onCurrentIndexChanged: {
+            if (settingsArr[currentIndex] && settingsArr[currentIndex].pageName === "Retro Achievements")
+                cheevosData.verify();
+        }
         delegate: Component {
         id: pageDelegate
         
@@ -777,6 +783,32 @@ id: root
         opacity: 0.5
         radius: 0
         z: -1
+    }
+
+    // RetroAchievements credential status — only on the RA page.
+    Text {
+        id: raVerifyBanner
+        z: 2
+        visible: settingsArr[pagelist.currentIndex]
+                 && settingsArr[pagelist.currentIndex].pageName === "Retro Achievements"
+        anchors {
+            left: pagelist.right;  leftMargin: globalMargin + vpx(25)
+            right: parent.right;   rightMargin: vpx(25)
+            bottom: parent.bottom; bottomMargin: helpMargin + vpx(18)
+        }
+        wrapMode: Text.WordWrap
+        font.family: subtitleFont.name
+        font.pixelSize: vpx(18)
+        opacity: (cheevosData.verifyState === "idle") ? 0 : 1
+        color: cheevosData.verifyState === "ok"  ? "#5fd36b"
+             : cheevosData.verifyState === "bad" ? "#e06c6c"
+             : settingsTextColor
+        text: cheevosData.verifyState === "checking" ? "Checking credentials\u2026"
+            : cheevosData.verifyState === "ok"       ? ("\u2713  Verified \u2014 signed in as " + cheevosData.verifyName)
+            : cheevosData.verifyState === "bad"      ? "\u2717  Invalid username or API key"
+            : cheevosData.verifyState === "neterr"   ? "No network connection \u2014 try again"
+            : cheevosData.verifyState === "empty"    ? "Enter your username and API key above"
+            : ""
     }
 
     ListView {
