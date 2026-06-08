@@ -939,6 +939,30 @@ id: root
                 border.color: "#19FFFFFF"
                 anchors.verticalCenter: parent.verticalCenter
 
+                // Xbox-style focus glow, auto-matched to the current Color Layout accent.
+                // The white PNG supplies only the glow SHAPE (alpha); ColorOverlay recolors
+                // it to theme.accent, so it always matches the selected colour. Only the
+                // selected tile's overlay is visible, so a single shader renders at a time.
+                Image {
+                    id: focusHaloSrc
+                    source: "../assets/images/focus_halo.png"
+                    anchors.fill: parent
+                    anchors.margins: -(tile.width * 0.0714)
+                    smooth: true
+                    mipmap: false
+                    visible: false
+                }
+                ColorOverlay {
+                    id: focusHalo
+                    anchors.fill: focusHaloSrc
+                    source: focusHaloSrc
+                    color: theme.accent
+                    z: -1
+                    opacity: selected ? 0.95 : 0
+                    visible: opacity > 0
+                    Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                }
+
                 // ── HERO (index 0): resume / last-played screenshot + title ──
                 // heroBg + title bar share a single OpacityMask so the bar's BOTTOM
                 // corners follow the rounded tile edge while its TOP corners stay square.
