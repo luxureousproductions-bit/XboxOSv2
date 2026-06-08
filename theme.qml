@@ -69,6 +69,7 @@ id: root
             ShowcaseBackgroundOpacity:     api.memory.has("Showcase Background Opacity") ? api.memory.get("Showcase Background Opacity") : "0.55",
             ShowcaseArt:                   api.memory.has("Showcase Art") ? api.memory.get("Showcase Art") : "Fanart",
             HeroBoxArt:                    api.memory.has("Hero box art") ? api.memory.get("Hero box art") : "Fanart",
+            TileHalo:                      api.memory.has("Tile Halo") ? api.memory.get("Tile Halo") : "Yes",
             SystemSort:                    api.memory.has("System sort") ? api.memory.get("System sort") : "Alphabetical (A-Z)",
             ShowcaseColumns:               api.memory.has("Number of games showcased") ? api.memory.get("Number of games showcased") : "15",
             ShowcaseFeaturedCollection:    api.memory.has("Featured collection") ? api.memory.get("Featured collection") : "Favorites",
@@ -493,13 +494,13 @@ id: root
             text          = "#101010";
         }
 
-        var accent        = "#288928";   // default: Dark Green
+        var accent        = "#107C10";   // default: Dark Green (Xbox brand green)
 
         // ── Full color palette ───────────────────────────────────────────
         switch (settings.ColorLayout) {
             // Greens
-            case "Dark Green":    accent = "#288928"; break;
-            case "Light Green":   accent = "#65b032"; break;
+            case "Dark Green":    accent = "#107C10"; break;   // Xbox brand green (Pantone 362 C)
+            case "Light Green":   accent = "#9BF00B"; break;   // Xbox bright green
             case "Lime":          accent = "#86c440"; break;
             case "Mint":          accent = "#3eb489"; break;
             case "Sage":          accent = "#7d9e7a"; break;
@@ -575,7 +576,7 @@ id: root
             case "White":         accent = "#e8e8e8"; break;
             // Special: image-based palette using assets/images/colorspng/Gradient.png
             case "Gradient":      accent = "#c060c0"; break;
-            default:              accent = "#288928"; break;
+            default:              accent = "#107C10"; break;
         }
         return {
             main:          background,
