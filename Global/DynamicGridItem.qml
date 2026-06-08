@@ -89,6 +89,30 @@ id: root
         }
     }
 
+    // Focus glow — tied to the "Tile Halo" setting and the live Color Layout
+    // accent. Aspect-independent + shader-free: concentric accent rounded-rects
+    // that fade outward. Built only while the tile is selected (fades both ways),
+    // so it works on any tile shape and only the selected tile costs anything.
+    Item {
+        id: tileGlow
+        anchors.fill: container
+        z: -1
+        opacity: (selected && settings.TileHalo === "Yes") ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+        Repeater {
+            model: tileGlow.visible ? 8 : 0
+            Rectangle {
+                anchors.centerIn: parent
+                width:  parent.width  + (8 - index) * vpx(2)
+                height: parent.height + (8 - index) * vpx(2)
+                radius: vpx(6) + (8 - index) * vpx(1)
+                color: theme.accent
+                opacity: 0.07
+            }
+        }
+    }
+
     Item 
     {
     id: container
