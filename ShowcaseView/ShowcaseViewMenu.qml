@@ -947,7 +947,7 @@ id: root
                     id: focusHaloSrc
                     source: "../assets/images/focus_halo.png"
                     anchors.fill: parent
-                    anchors.margins: -(tile.width * 0.0714)
+                    anchors.margins: -(tile.width * 0.0614)
                     smooth: true
                     mipmap: false
                     visible: false
