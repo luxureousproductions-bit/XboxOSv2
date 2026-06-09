@@ -377,13 +377,22 @@ id: root
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: showcaseScreen(); }
-            Image {
-                anchors.centerIn: parent
-                width: vpx(24); height: vpx(24)
-                sourceSize: Qt.size(vpx(24), vpx(24))
-                source: "../assets/images/icon_home.svg"
-                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
-                opacity: homebutton.focus ? 1 : 0.7
+            Canvas {
+                anchors { fill: parent; margins: vpx(7) }
+                onPaint: {
+                    var ctx = getContext("2d"); ctx.reset();
+                    var w = width, h = height;
+                    ctx.fillStyle = "white";
+                    ctx.globalAlpha = homebutton.focus ? 1.0 : 0.85;
+                    ctx.beginPath();
+                    ctx.moveTo(w*0.5, h*0.05);
+                    ctx.lineTo(w*0.95, h*0.5);
+                    ctx.lineTo(w*0.05, h*0.5);
+                    ctx.closePath(); ctx.fill();
+                    ctx.fillRect(w*0.18, h*0.5, w*0.64, h*0.42);
+                    ctx.clearRect(w*0.42, h*0.62, w*0.16, h*0.30);
+                }
+                Connections { target: homebutton; onFocusChanged: parent.requestPaint() }
             }
         }
 
@@ -430,12 +439,9 @@ id: root
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: achievementsScreen(); }
-            Image {
+            Text {
                 anchors.centerIn: parent
-                width: vpx(24); height: vpx(24)
-                sourceSize: Qt.size(vpx(24), vpx(24))
-                source: "../assets/images/trophy.svg"
-                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+                text: "🏆"; font.pixelSize: vpx(18)
                 opacity: achievementsbutton.focus ? 1 : 0.7
             }
         }
@@ -453,9 +459,7 @@ id: root
             }
             MouseArea { anchors.fill: parent; onClicked: settingsScreen(); }
             Image {
-                anchors.centerIn: parent
-                width: vpx(24); height: vpx(24)
-                sourceSize: Qt.size(vpx(24), vpx(24))
+                anchors { fill: parent; margins: vpx(10) }
                 source: "../assets/images/settingsicon.svg"
                 fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
             }
@@ -552,7 +556,7 @@ id: root
             id: boxartdelegate
 
                 BoxArtGridItem {
-                    selected: GridView.isCurrentItem && gamegrid.focus
+                    selected: GridView.isCurrentItem && root.focus
                     gameData: modelData
                     artStyle: settings.GridThumbnail
 
@@ -577,9 +581,7 @@ id: root
                 DynamicGridItem {
                 id: dynamicdelegatecontainer
 
-                    selected: GridView.isCurrentItem && gamegrid.focus
-                    artMode: settings.GridArt
-                    showLogo: settings.GridGameLogo === "Yes"
+                    selected: GridView.isCurrentItem && root.focus
 
                     width:      GridView.view.cellWidth
                     height:     GridView.view.cellHeight - titleMargin
@@ -989,9 +991,10 @@ id: root
             // Play the sfx BEFORE the heavy model rebuild below; the helper does stop()+play()
             // so rapid cycling always restarts the sound instead of dropping the retrigger.
             playTabRight();
-            var ni = sortedColl.indexOf(currentCollectionIndex);
-            ni = (ni < 0) ? 0 : (ni + 1) % sortedColl.length;
-            currentCollectionIndex = sortedColl[ni];
+            if (currentCollectionIndex < api.collections.count-1)
+                currentCollectionIndex++;
+            else
+                currentCollectionIndex = 0;
 
             gamegrid.currentIndex = 0;
             sortedGames = null;
@@ -1002,9 +1005,10 @@ id: root
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
             playTabLeft();
-            var pi = sortedColl.indexOf(currentCollectionIndex);
-            pi = (pi < 0) ? 0 : (pi - 1 + sortedColl.length) % sortedColl.length;
-            currentCollectionIndex = sortedColl[pi];
+            if (currentCollectionIndex > 0)
+                currentCollectionIndex--;
+            else
+                currentCollectionIndex = api.collections.count-1;
 
             gamegrid.currentIndex = 0;
             sortedGames = null;
@@ -1027,5 +1031,12 @@ id: root
             currentHelpbarModel = gridviewHelpModel;
             gamegrid.focus = true;
         }
+    }
+
+    // Status cluster (clock / battery / wifi) — same look and same
+    // ShowClock/ShowBattery/ShowWifi settings as the home page.
+    StatusCluster {
+        anchors.fill: parent
+        z: 50
     }
 }
