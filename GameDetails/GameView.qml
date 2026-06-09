@@ -255,10 +255,8 @@ id: root
             publisherCollection.rebuild();
             // Refresh the recommended fallback only when the publisher/developer
             // list has no results (Option 2: skip the scan when not needed).
-            if (publisherCollection.games.length === 0) {
-                recommendedCollection.active = true;   // arm the proxy only when actually shown
+            if (publisherCollection.games.length === 0)
                 recommendedCollection.refresh();
-            }
 
             // Option B: genre – extract the correct genre token based on the
             // "More by Genre Display" setting, then trigger a rebuild.
@@ -489,7 +487,6 @@ id: root
         Loader {
             id: detailsContentLoader
             anchors.fill: parent
-            asynchronous: true
             active: detailsEverShown
             readonly property real headerH: header.height
             sourceComponent: Component {
@@ -625,21 +622,23 @@ id: root
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; content.focus = true; }
-                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; gv_discoverbutton.focus = true; }
-                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; gv_settingsbutton.focus = true; }
             }
             MouseArea {
                 anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
                 onEntered: gv_homebutton.focus = true; onExited: gv_homebutton.focus = false;
                 onClicked: showcaseScreen();
             }
-            Image {
-                anchors.centerIn: parent
-                width: vpx(24); height: vpx(24)
-                sourceSize: Qt.size(vpx(24), vpx(24))
-                source: "../assets/images/icon_home.svg"
-                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
-                opacity: parent.focus ? 1 : 0.7
+            Canvas {
+                anchors { fill: parent; margins: vpx(6) }
+                onPaint: {
+                    var ctx = getContext("2d"); ctx.reset();
+                    var w = width, h = height;
+                    ctx.fillStyle = "white"; ctx.globalAlpha = gv_homebutton.focus ? 1.0 : 0.85;
+                    ctx.beginPath(); ctx.moveTo(w*0.5, 0); ctx.lineTo(w, h*0.5); ctx.lineTo(0, h*0.5); ctx.closePath(); ctx.fill();
+                    ctx.fillRect(w*0.1, h*0.5, w*0.8, h*0.5);
+                    ctx.clearRect(w*0.37, h*0.68, w*0.26, h*0.32);
+                }
+                Connections { target: gv_homebutton; onFocusChanged: parent.requestPaint() }
             }
         }
 
@@ -666,8 +665,6 @@ id: root
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; content.focus = true; }
-                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; gv_settingsbutton.focus = true; }
-                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; gv_homebutton.focus = true; }
             }
             MouseArea {
                 anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
@@ -714,8 +711,6 @@ id: root
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; content.focus = true; }
-                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; gv_homebutton.focus = true; }
-                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; gv_discoverbutton.focus = true; }
             }
             MouseArea {
                 anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
@@ -723,9 +718,7 @@ id: root
                 onClicked: settingsScreen();
             }
             Image {
-                anchors.centerIn: parent
-                width: vpx(24); height: vpx(24)
-                sourceSize: Qt.size(vpx(24), vpx(24))
+                anchors { fill: parent; margins: vpx(7) }
                 source: "../assets/images/settingsicon.svg"; smooth: true; asynchronous: true
                 opacity: parent.focus ? 1 : 0.7
             }
@@ -773,15 +766,8 @@ id: root
                 var lower = (sepM ? sepM[1] : g).trim().toLowerCase();
                 return (lower === "application" || lower === "emulator") ? "Open" : "Play game";
             }
-            iconVisible: {
-                if (!game || game.genreList.length === 0) return true;
-                var g2 = game.genreList[0];
-                var m2 = g2.match(/^(.*?)\s*[\/,]\s*(.+)$/);
-                var low2 = (m2 ? m2[1] : g2).trim().toLowerCase();
-                return !(low2 === "application" || low2 === "emulator");
-            }
             height: parent.height
-            selected: ListView.isCurrentItem && menu.activeFocus
+            selected: ListView.isCurrentItem && menu.focus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated: 
                 if (selected) {
@@ -796,10 +782,10 @@ id: root
         id: button5
 
             width: height
-            icon: "../assets/images/trophy.svg"
-            iconPadding: vpx(22)
+            icon: "../assets/images/icon_ra.svg"
+            iconPadding: vpx(16)
             height: parent.height
-            selected: ListView.isCurrentItem && menu.activeFocus
+            selected: ListView.isCurrentItem && menu.focus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated:
                 if (selected) {
@@ -816,7 +802,7 @@ id: root
 
             icon: "../assets/images/icon_details.svg"
             height: parent.height
-            selected: ListView.isCurrentItem && menu.activeFocus
+            selected: ListView.isCurrentItem && menu.focus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated: 
                 if (selected) {
@@ -835,7 +821,7 @@ id: root
             //text: buttonText
             icon: favIcon
             height: parent.height
-            selected: ListView.isCurrentItem && menu.activeFocus
+            selected: ListView.isCurrentItem && menu.focus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated: 
                 if (selected) {
@@ -853,7 +839,7 @@ id: root
             //text: "Back"
             icon: "../assets/images/icon_back.svg"
             height: parent.height
-            selected: ListView.isCurrentItem && menu.activeFocus
+            selected: ListView.isCurrentItem && menu.focus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
             onActivated: 
                 if (selected) 
@@ -936,7 +922,7 @@ id: root
             title: {
                 if (!game) return "";
                 if (publisherCollection.games.length === 0)
-                    return "Picked For You";
+                    return "More Recommended Games";
                 var pub = game.publisher || "";
                 var dev = game.developer || "";
                 var g = game.genreList.length > 0 ? game.genreList[0] : "";
@@ -1063,11 +1049,6 @@ id: root
             event.accepted = true;
             settingsScreen();
         }
-        // LB / RB — jump straight up to the nav bar from the content area
-        if ((api.keys.isPrevPage(event) || api.keys.isNextPage(event)) && !event.isAutoRepeat) {
-            event.accepted = true;
-            if (content.activeFocus && !mediaScreen.visible) { gv_homebutton.focus = true; }
-        }
     }
 
     // Helpbar buttons
@@ -1087,7 +1068,7 @@ id: root
             button: "details"
         }
         ListElement {
-            name: "Select"
+            name: "Launch"
             button: "accept"
         }
     }
@@ -1095,13 +1076,21 @@ id: root
     onActiveFocusChanged: {
         if (activeFocus) {
             currentHelpbarModel = gameviewHelpModel;
-            content.currentIndex = 0;
-            content.focus = true;
+            menu.focus = true;
             menu.currentIndex = 0;
         } else {
             screenshot.opacity = 1;
             toggleVideo(false);
         }
+    }
+
+    // Status cluster (clock / battery / wifi) — same look and same
+    // ShowClock/ShowBattery/ShowWifi settings as the home page.
+    // Hidden while the fullscreen media viewer is open.
+    StatusCluster {
+        anchors.fill: parent
+        z: 50
+        visible: mediaScreen.opacity < 0.5
     }
 
 }
