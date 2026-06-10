@@ -239,6 +239,66 @@ id: root
         Behavior on opacity { PropertyAnimation { duration: 700 } }
     }
 
+    // ── System-tile page background (Randomize System Tile Fanart = "No") ──
+    // When a system tile is highlighted, the page background shows that
+    // system's own background art (the same image the tile uses) instead of a
+    // randomly picked game fanart. The resolver tries .png/.jpg/.jpeg/.webp;
+    // if no file exists for the system it falls back to a random game's
+    // fanart so the background never goes stale.
+    property bool sysTileBgActive: false
+    property var  sysBgFallbackColl: null
+
+    Image {
+    id: sysBgResolver
+        visible: false
+        asynchronous: true
+        property string basePath: ""
+        property var exts: [".png", ".jpg", ".jpeg", ".webp"]
+        property int extIdx: 0
+        property string resolved: ""
+        onBasePathChanged: {
+            extIdx = 0; resolved = "";
+            source = basePath !== "" ? (basePath + exts[0]) : "";
+        }
+        onStatusChanged: {
+            if (status === Image.Error) {
+                if (extIdx < exts.length - 1) {
+                    extIdx = extIdx + 1;          // try next extension
+                    source = basePath + exts[extIdx];
+                } else if (sysTileBgActive && sysBgFallbackColl && sysBgFallbackColl.games.count > 0) {
+                    // No background file for this system — random fanart fallback
+                    sysTileBgActive = false;
+                    highlightedGame = sysBgFallbackColl.games.get(Math.floor(Math.random() * sysBgFallbackColl.games.count));
+                }
+            } else if (status === Image.Ready) {
+                resolved = source;
+            }
+        }
+    }
+
+    // Page-background update for the top strip. idx 0 = hero; idx >= 1 = system tile.
+    function updateTopRowBackground(idx, resumeGame) {
+        if (settings.ShowcaseBackgroundArt !== "Yes") return;
+        if (idx <= 0) {
+            sysTileBgActive = false;
+            if (resumeGame) highlightedGame = resumeGame;
+            return;
+        }
+        var coll = api.collections.get(sortedColl[idx - 1]);
+        if (!coll) return;
+        if (settings.RandomizeSystemTileFanart === "Yes") {
+            // Original behavior: a randomly picked game's fanart from the system
+            sysTileBgActive = false;
+            if (coll.games.count > 0)
+                highlightedGame = coll.games.get(Math.floor(Math.random() * coll.games.count));
+        } else {
+            // Default: the system's own background art (matches the tile)
+            sysBgFallbackColl = coll;
+            sysTileBgActive   = true;
+            sysBgResolver.basePath = "../assets/images/systembackground/" + Utils.processPlatformName(coll.shortName);
+        }
+    }
+
     // Dim overlay so content stays readable
     Rectangle {
         anchors.fill: parent
@@ -250,6 +310,7 @@ id: root
     property bool bgToggle: false
     property string bgSource: {
         if (settings.ShowcaseBackgroundArt !== "Yes") return "";
+        if (sysTileBgActive && sysBgResolver.resolved !== "") return sysBgResolver.resolved;
         if (!highlightedGame) return "";
         return highlightedGame.assets.background || highlightedGame.assets.screenshots[0] || "";
     }
@@ -659,16 +720,10 @@ id: root
 
             onFocusChanged: { if (focus && platformlist.currentIndex < 0) platformlist.currentIndex = platformlist.savedIndex; }
             onSelectedChanged: {
-                if (selected && settings.ShowcaseBackgroundArt === "Yes") {
-                    if (platformlist.currentIndex <= 0) {
-                        if (platformlist.resumeGame) highlightedGame = platformlist.resumeGame;
-                    } else {
-                        var coll = api.collections.get(sortedColl[platformlist.currentIndex - 1]);
-                        if (coll && coll.games.count > 0) {
-                            var randomIdx = Math.floor(Math.random() * coll.games.count);
-                            highlightedGame = coll.games.get(randomIdx);
-                        }
-                    }
+                if (selected) {
+                    updateTopRowBackground(platformlist.currentIndex, platformlist.resumeGame);
+                } else {
+                    sysTileBgActive = false;   // leaving the top row — game rows take over
                 }
             }
 
@@ -713,35 +768,15 @@ id: root
                 if (currentIndex < 0) return;   // deselected (focus moved away) — leave the scroll position alone
                 // Align the list to whole-tile boundaries (same routine used on load).
                 alignToIndex(currentIndex);
-                // Update background fanart for the highlighted strip item
-                if (topRow.selected && settings.ShowcaseBackgroundArt === "Yes") {
-                    if (currentIndex <= 0) {
-                        if (resumeGame) highlightedGame = resumeGame;
-                    } else {
-                        var coll = api.collections.get(sortedColl[currentIndex - 1]);
-                        if (coll && coll.games.count > 0) {
-                            var randomIdx = Math.floor(Math.random() * coll.games.count);
-                            highlightedGame = coll.games.get(randomIdx);
-                        }
-                    }
-                }
+                // Update the page background for the highlighted strip item
+                if (topRow.selected) updateTopRowBackground(currentIndex, resumeGame);
             }
 
             property int savedIndex: collectionVisited ? (sortedColl.indexOf(currentCollectionIndex) + 1) : 0   // strip index (hero = 0); hero until a collection is opened
             onFocusChanged: {
                 if (focus) {
                     currentIndex = savedIndex;
-                    if (settings.ShowcaseBackgroundArt === "Yes") {
-                        if (currentIndex <= 0) {
-                            if (resumeGame) highlightedGame = resumeGame;
-                        } else {
-                            var coll = api.collections.get(sortedColl[currentIndex - 1]);
-                            if (coll && coll.games.count > 0) {
-                                var randomIdx = Math.floor(Math.random() * coll.games.count);
-                                highlightedGame = coll.games.get(randomIdx);
-                            }
-                        }
-                    }
+                    updateTopRowBackground(currentIndex, resumeGame);
                 } else {
                     savedIndex = currentIndex;
                     currentIndex = -1;
