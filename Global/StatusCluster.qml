@@ -54,7 +54,9 @@ Item {
         width: vpx(46)
         height: vpx(22)
         anchors {
-            right: sysTime.left; rightMargin: vpx(10)
+            // Reflow: if the clock is disabled, slide into its position
+            right: sysTime.visible ? sysTime.left : parent.right
+            rightMargin: sysTime.visible ? vpx(14) : vpx(25)
             verticalCenter: sysTime.verticalCenter
         }
         // Hide when no battery is present or setting is disabled
@@ -150,7 +152,12 @@ Item {
         height: vpx(20)
         visible: settings.ShowWifi !== "No"
         anchors {
-            right: batteryDisplay.left; rightMargin: vpx(8)
+            // Reflow: chain to the nearest enabled neighbour on the right,
+            // all the way to the screen edge if both are disabled
+            right: batteryDisplay.visible ? batteryDisplay.left
+                 : (sysTime.visible ? sysTime.left : parent.right)
+            rightMargin: batteryDisplay.visible ? vpx(14)
+                       : (sysTime.visible ? vpx(14) : vpx(25))
             bottom: sysTime.baseline
         }
 
