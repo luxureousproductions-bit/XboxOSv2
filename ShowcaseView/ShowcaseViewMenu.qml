@@ -246,6 +246,14 @@ id: root
     // if no file exists for the system it falls back to a random game's
     // fanart so the background never goes stale.
     property bool sysTileBgActive: false
+    // Returning to the hero or game rows must re-run the fanart crossfade even
+    // when bgSource doesn't change (re-assigning the same game emits no signal,
+    // so onBgSourceChanged alone would leave the system art stuck on screen).
+    // Sites that flip this off set highlightedGame FIRST (silent while active),
+    // so this lands directly on the final image in a single fade.
+    onSysTileBgActiveChanged: {
+        if (!sysTileBgActive) crossfadeTo(bgSource);
+    }
     property var  sysBgFallbackColl: null
 
     Image {
@@ -266,8 +274,8 @@ id: root
                 } else if (status === Image.Error && sysTileBgActive
                            && sysBgFallbackColl && sysBgFallbackColl.games.count > 0) {
                     // Known-missing background — random fanart fallback again
-                    sysTileBgActive = false;
                     highlightedGame = sysBgFallbackColl.games.get(Math.floor(Math.random() * sysBgFallbackColl.games.count));
+                    sysTileBgActive = false;
                 }
                 return;
             }
@@ -284,8 +292,8 @@ id: root
                     source = basePath + exts[extIdx];
                 } else if (sysTileBgActive && sysBgFallbackColl && sysBgFallbackColl.games.count > 0) {
                     // No background file for this system — random fanart fallback
-                    sysTileBgActive = false;
                     highlightedGame = sysBgFallbackColl.games.get(Math.floor(Math.random() * sysBgFallbackColl.games.count));
+                    sysTileBgActive = false;
                 }
             } else if (status === Image.Ready) {
                 // File is ready — NOW run the single clean crossfade to it
@@ -298,17 +306,17 @@ id: root
     function updateTopRowBackground(idx, resumeGame) {
         if (settings.ShowcaseBackgroundArt !== "Yes") return;
         if (idx <= 0) {
-            sysTileBgActive = false;
-            if (resumeGame) highlightedGame = resumeGame;
+            if (resumeGame) highlightedGame = resumeGame;   // silent while flag is on
+            sysTileBgActive = false;                        // handler runs the crossfade
             return;
         }
         var coll = api.collections.get(sortedColl[idx - 1]);
         if (!coll) return;
         if (settings.RandomizeSystemTileFanart === "Yes") {
             // Original behavior: a randomly picked game's fanart from the system
-            sysTileBgActive = false;
             if (coll.games.count > 0)
                 highlightedGame = coll.games.get(Math.floor(Math.random() * coll.games.count));
+            sysTileBgActive = false;   // handler runs the crossfade if needed
         } else {
             // Default: the system's own background art (matches the tile)
             sysBgFallbackColl = coll;
