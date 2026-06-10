@@ -255,9 +255,26 @@ id: root
         property string basePath: ""
         property var exts: [".png", ".jpg", ".jpeg", ".webp"]
         property int extIdx: 0
-        property string resolved: ""
+        // Request the background for a system. Re-requesting the system that's
+        // already resolved re-applies it instantly (returning from game rows);
+        // a new system starts the load chain and the page holds the current
+        // background until the file is ready.
+        function request(path) {
+            if (path === basePath) {
+                if (status === Image.Ready && sysTileBgActive) {
+                    crossfadeTo(source);
+                } else if (status === Image.Error && sysTileBgActive
+                           && sysBgFallbackColl && sysBgFallbackColl.games.count > 0) {
+                    // Known-missing background — random fanart fallback again
+                    sysTileBgActive = false;
+                    highlightedGame = sysBgFallbackColl.games.get(Math.floor(Math.random() * sysBgFallbackColl.games.count));
+                }
+                return;
+            }
+            basePath = path;   // onBasePathChanged kicks off the load chain
+        }
         onBasePathChanged: {
-            extIdx = 0; resolved = "";
+            extIdx = 0;
             source = basePath !== "" ? (basePath + exts[0]) : "";
         }
         onStatusChanged: {
@@ -271,7 +288,8 @@ id: root
                     highlightedGame = sysBgFallbackColl.games.get(Math.floor(Math.random() * sysBgFallbackColl.games.count));
                 }
             } else if (status === Image.Ready) {
-                resolved = source;
+                // File is ready — NOW run the single clean crossfade to it
+                if (sysTileBgActive) crossfadeTo(source);
             }
         }
     }
@@ -295,7 +313,7 @@ id: root
             // Default: the system's own background art (matches the tile)
             sysBgFallbackColl = coll;
             sysTileBgActive   = true;
-            sysBgResolver.basePath = "../assets/images/systembackground/" + Utils.processPlatformName(coll.shortName);
+            sysBgResolver.request("../assets/images/systembackground/" + Utils.processPlatformName(coll.shortName));
         }
     }
 
@@ -308,29 +326,42 @@ id: root
     }
 
     property bool bgToggle: false
+    property string lastBgShown: ""
     property string bgSource: {
         if (settings.ShowcaseBackgroundArt !== "Yes") return "";
-        if (sysTileBgActive && sysBgResolver.resolved !== "") return sysBgResolver.resolved;
         if (!highlightedGame) return "";
         return highlightedGame.assets.background || highlightedGame.assets.screenshots[0] || "";
     }
 
-    onBgSourceChanged: {
-        if (!bgSource) {
+    // Single crossfade driver, shared by the game-fanart path (via bgSource)
+    // and the system-tile background path (called by sysBgResolver only when
+    // the file is READY — so a tile step is always one clean fade, never a
+    // stale fanart flash while the image loads).
+    function crossfadeTo(src) {
+        if (src === lastBgShown) return;   // already showing it
+        lastBgShown = src;
+        if (!src) {
             bgImage1.opacity = 0;
             bgImage2.opacity = 0;
             return;
         }
         if (bgToggle) {
-            bgImage1.source = bgSource;
+            bgImage1.source = src;
             bgImage1.opacity = parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55;
             bgImage2.opacity = 0;
         } else {
-            bgImage2.source = bgSource;
+            bgImage2.source = src;
             bgImage2.opacity = parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55;
             bgImage1.opacity = 0;
         }
         bgToggle = !bgToggle;
+    }
+
+    onBgSourceChanged: {
+        // While a system tile drives the background, hold the current image
+        // until the resolver's file is ready (it calls crossfadeTo itself).
+        // An empty bgSource (background art turned off) always clears.
+        if (!sysTileBgActive || bgSource === "") crossfadeTo(bgSource);
     }
 
 
