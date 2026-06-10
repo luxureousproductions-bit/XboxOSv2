@@ -35,7 +35,7 @@ Item {
             right: parent.right; rightMargin: vpx(25)
         }
         color: "white"
-        font.pixelSize: vpx(18)
+        font.pixelSize: vpx(22)
         font.family: subtitleFont.name
         horizontalAlignment: Text.Right
         verticalAlignment: Text.AlignVCenter
@@ -58,7 +58,7 @@ Item {
         // Lightning bolt shown while charging
         Text {
             text: "\u26A1"
-            font.pixelSize: vpx(12)
+            font.pixelSize: vpx(16)
             color: "#64B5F6"
             verticalAlignment: Text.AlignVCenter
             anchors.verticalCenter: parent.verticalCenter
@@ -71,7 +71,7 @@ Item {
             text: pct + "%"
             // Turn red when critically low and not charging
             color: (pct <= 20 && !api.device.batteryCharging) ? "#EF5350" : "white"
-            font.pixelSize: vpx(16)
+            font.pixelSize: vpx(22)
             font.family: subtitleFont.name
             verticalAlignment: Text.AlignVCenter
             anchors.verticalCenter: parent.verticalCenter
