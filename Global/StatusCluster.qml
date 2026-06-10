@@ -29,16 +29,14 @@ Item {
             onTriggered: sysTime.set()
         }
 
-        height: vpx(40)
         anchors {
-            top: parent.top; topMargin: vpx(5)
+            top: parent.top; topMargin: vpx(12)
             right: parent.right; rightMargin: vpx(25)
         }
         color: "white"
         font.pixelSize: vpx(22)
         font.family: subtitleFont.name
         horizontalAlignment: Text.Right
-        verticalAlignment: Text.AlignVCenter
     }
 
     // Battery percentage display
@@ -50,7 +48,7 @@ Item {
         spacing: vpx(4)
         anchors {
             right: sysTime.left; rightMargin: vpx(10)
-            top: parent.top; topMargin: vpx(12)
+            top: sysTime.top
         }
         // Hide when no battery is present or setting is disabled
         visible: settings.ShowBattery !== "No" && batteryAvailable
@@ -89,7 +87,7 @@ Item {
         visible: settings.ShowWifi !== "No"
         anchors {
             right: batteryDisplay.left; rightMargin: vpx(8)
-            top: parent.top; topMargin: vpx(14)
+            bottom: sysTime.baseline
         }
 
         property bool online: false
