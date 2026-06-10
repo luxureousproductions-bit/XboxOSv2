@@ -8,6 +8,7 @@
 //   • Not found – shows the reason and two buttons: "View Overview" / "Go Back".
 
 import QtQuick 2.15
+import QtGraphicalEffects 1.15
 import "../Global"
 
 FocusScope {
@@ -81,18 +82,91 @@ id: root
     id: entryHeader
 
         anchors { top: parent.top; left: parent.left; right: parent.right }
-        height: vpx(75)
+        height: vpx(110)
 
-        Text {
+        // RA logo (matches the other RetroAchievements pages)
+        Image {
+        id: raLogo
             anchors {
-                left: parent.left; leftMargin: globalMargin
+                left: parent.left; leftMargin: vpx(5)
+                top: parent.top; bottom: parent.bottom
+                topMargin: vpx(4); bottomMargin: vpx(4)
+            }
+            width: height
+            source: "../assets/images/icon_ra.svg"
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            asynchronous: true
+            sourceSize { width: 96; height: 96 }
+        }
+
+        // Avatar + username + points + member since (same as the other RA pages)
+        Row {
+            anchors {
+                left: raLogo.right; leftMargin: vpx(12)
                 verticalCenter: parent.verticalCenter
             }
-            text: "Retro Achievements"
-            color: theme.text
-            font.family: titleFont.name
-            font.pixelSize: vpx(28)
-            font.bold: true
+            spacing: vpx(12)
+
+            // Circular avatar (OpacityMask clip) + accent ring
+            Item {
+                width: vpx(56); height: vpx(56)
+                visible: cheevosData.avatarUrl !== ""
+                Image {
+                id: raEntryAvatar
+                    anchors.fill: parent
+                    source: cheevosData.avatarUrl
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    asynchronous: true
+                    sourceSize { width: 64; height: 64 }
+                    layer.enabled: true
+                    layer.smooth: true
+                    layer.effect: OpacityMask {
+                        maskSource: Rectangle {
+                            width: raEntryAvatar.width; height: raEntryAvatar.height
+                            radius: width / 2
+                        }
+                    }
+                }
+                Rectangle {
+                    anchors.fill: parent
+                    color: "transparent"
+                    border.color: theme.accent
+                    border.width: vpx(2)
+                    radius: width / 2
+                }
+            }
+
+            Column {
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: vpx(2)
+                visible: cheevosData.raUserName !== ""
+
+                Text {
+                    text: cheevosData.raUserName
+                    color: theme.text
+                    font.family: titleFont.name
+                    font.pixelSize: vpx(24)
+                    font.bold: true
+                }
+                Text {
+                    text: cheevosData.pointsText
+                    color: theme.text
+                    font.family: bodyFont.name
+                    font.pixelSize: vpx(15)
+                    opacity: 0.65
+                    visible: cheevosData.raUserName !== ""
+                }
+                Text {
+                    text: cheevosData.memberText
+                    color: theme.text
+                    font.family: bodyFont.name
+                    font.pixelSize: vpx(13)
+                    opacity: 0.45
+                    visible: cheevosData.memberText !== ""
+                }
+            }
         }
 
         Rectangle {
