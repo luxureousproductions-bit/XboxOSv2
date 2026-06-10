@@ -39,40 +39,71 @@ Item {
         horizontalAlignment: Text.Right
     }
 
-    // Battery percentage display
-    Row {
+    // Battery — Xbox-dashboard-style icon: outlined body + terminal cap,
+    // proportional fill, and the charge bolt (charging) or percentage shown
+    // INSIDE the body. Plain Rectangles only — shader-free.
+    Item {
         id: batteryDisplay
 
         property bool batteryAvailable: !isNaN(api.device.batteryPercent) && api.device.batteryPercent >= 0
+        property int  pct: batteryAvailable ? Math.round(api.device.batteryPercent * 100) : 0
+        property bool charging: api.device.batteryCharging
+        // Fill: green while charging, red when critically low, white otherwise
+        property color fillColor: charging ? "#3DD13D" : (pct <= 20 ? "#EF5350" : "white")
 
-        spacing: vpx(4)
+        width: vpx(46)
+        height: vpx(22)
         anchors {
             right: sysTime.left; rightMargin: vpx(10)
-            top: sysTime.top
+            verticalCenter: sysTime.verticalCenter
         }
         // Hide when no battery is present or setting is disabled
         visible: settings.ShowBattery !== "No" && batteryAvailable
 
-        // Lightning bolt shown while charging
-        Text {
-            text: "\u26A1"
-            font.pixelSize: vpx(16)
-            color: "#64B5F6"
-            verticalAlignment: Text.AlignVCenter
-            anchors.verticalCenter: parent.verticalCenter
-            visible: api.device.batteryCharging
+        // Body outline
+        Rectangle {
+            id: batteryBody
+            anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+            width: parent.width - vpx(4)
+            radius: vpx(4)
+            color: "transparent"
+            border.color: "white"
+            border.width: vpx(2)
+
+            // Charge-level fill
+            Rectangle {
+                anchors { left: parent.left; top: parent.top; bottom: parent.bottom; margins: vpx(3) }
+                width: Math.max(0, (batteryBody.width - vpx(6)) * (batteryDisplay.pct / 100))
+                radius: vpx(2)
+                color: batteryDisplay.fillColor
+                opacity: 0.85
+                Behavior on width { NumberAnimation { duration: 300 } }
+            }
+
+            // Inside label: bolt while charging, percentage otherwise.
+            // Outlined so it stays readable over both fill and empty regions.
+            Text {
+                anchors.centerIn: parent
+                text: batteryDisplay.charging ? "\u26A1" : batteryDisplay.pct
+                color: "white"
+                style: Text.Outline
+                styleColor: Qt.rgba(0, 0, 0, 0.75)
+                font.pixelSize: vpx(12)
+                font.family: subtitleFont.name
+                font.bold: true
+            }
         }
 
-        Text {
-            property int pct: batteryDisplay.batteryAvailable
-                              ? Math.round(api.device.batteryPercent * 100) : 0
-            text: pct + "%"
-            // Turn red when critically low and not charging
-            color: (pct <= 20 && !api.device.batteryCharging) ? "#EF5350" : "white"
-            font.pixelSize: vpx(22)
-            font.family: subtitleFont.name
-            verticalAlignment: Text.AlignVCenter
-            anchors.verticalCenter: parent.verticalCenter
+        // Positive terminal cap
+        Rectangle {
+            anchors {
+                left: batteryBody.right; leftMargin: vpx(1)
+                verticalCenter: parent.verticalCenter
+            }
+            width: vpx(3)
+            height: parent.height * 0.45
+            radius: vpx(1)
+            color: "white"
         }
     }
 
