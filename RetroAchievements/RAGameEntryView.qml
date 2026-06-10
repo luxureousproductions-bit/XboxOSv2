@@ -312,4 +312,11 @@ id: root
         ListElement { name: "Back";   button: "cancel" }
         ListElement { name: "Select"; button: "accept" }
     }
+
+    // Status cluster (clock / battery / wifi) — same component and
+    // ShowClock/ShowBattery/ShowWifi settings as every other page.
+    StatusCluster {
+        anchors.fill: parent
+        z: 50
+    }
 }

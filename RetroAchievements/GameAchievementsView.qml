@@ -12,6 +12,7 @@
 //   • sourceSize on all network images
 
 import QtQuick 2.15
+import QtGraphicalEffects 1.15
 import "../Global"
 
 FocusScope {
@@ -106,14 +107,34 @@ id: root
             }
             spacing: vpx(12)
 
-            Image {
+            // Circular avatar (OpacityMask clip) + accent ring
+            Item {
                 width: vpx(56); height: vpx(56)
-                source: cheevosData.avatarUrl
-                fillMode: Image.PreserveAspectCrop
-                smooth: true
-                asynchronous: true
-                sourceSize { width: 64; height: 64 }
                 visible: cheevosData.avatarUrl !== ""
+                Image {
+                id: raGameAvatar
+                    anchors.fill: parent
+                    source: cheevosData.avatarUrl
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    asynchronous: true
+                    sourceSize { width: 64; height: 64 }
+                    layer.enabled: true
+                    layer.smooth: true
+                    layer.effect: OpacityMask {
+                        maskSource: Rectangle {
+                            width: raGameAvatar.width; height: raGameAvatar.height
+                            radius: width / 2
+                        }
+                    }
+                }
+                Rectangle {
+                    anchors.fill: parent
+                    color: "transparent"
+                    border.color: theme.accent
+                    border.width: vpx(2)
+                    radius: width / 2
+                }
             }
 
             Column {
@@ -146,8 +167,8 @@ id: root
             }
         }
 
-        // Shared status cluster (clock / battery / wifi) — the exact same
-        // component and ShowClock/ShowBattery/ShowWifi settings as every other page.
+        // Shared status cluster (clock / battery / wifi) — same component and
+        // ShowClock/ShowBattery/ShowWifi settings as every other page.
         StatusCluster {
             anchors.fill: parent
             z: 50
@@ -706,28 +727,28 @@ id: root
         // LB — cycle filter backward
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxToggle.play();
+            playToggle();
             cycleFilterBack();
             currentIndex = 0;
         }
         // RB — cycle filter forward
         if (api.keys.isNextPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxToggle.play();
+            playToggle();
             cycleFilterForward();
             currentIndex = 0;
         }
         // Y / Filters — cycle sort mode
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxToggle.play();
+            playToggle();
             cycleSort();
             currentIndex = 0;
         }
         // X / Details — refresh current game
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxAccept.play();
+            playAccept();
             if (cheevosData.currentGameDetails.Title !== "")
                 cheevosData.loadGameAchievements(cheevosData.currentGameID);
         }

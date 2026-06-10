@@ -11,6 +11,7 @@
 //   • sourceSize on all network images
 
 import QtQuick 2.15
+import QtGraphicalEffects 1.15
 import "../Global"
 
 FocusScope {
@@ -86,17 +87,27 @@ id: root
             }
             spacing: vpx(12)
 
-            Image {
+            // Circular avatar (OpacityMask clip) + accent ring
+            Item {
                 width: vpx(56); height: vpx(56)
-                source: cheevosData.avatarUrl
-                fillMode: Image.PreserveAspectCrop
-                smooth: true
-                asynchronous: true
-                sourceSize { width: 64; height: 64 }
                 visible: cheevosData.avatarUrl !== ""
-                // Clip to circle
-                layer.enabled: true
-                layer.effect: null
+                Image {
+                id: raOverviewAvatar
+                    anchors.fill: parent
+                    source: cheevosData.avatarUrl
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    asynchronous: true
+                    sourceSize { width: 64; height: 64 }
+                    layer.enabled: true
+                    layer.smooth: true
+                    layer.effect: OpacityMask {
+                        maskSource: Rectangle {
+                            width: raOverviewAvatar.width; height: raOverviewAvatar.height
+                            radius: width / 2
+                        }
+                    }
+                }
                 Rectangle {
                     anchors.fill: parent
                     color: "transparent"
@@ -137,8 +148,8 @@ id: root
             }
         }
 
-        // Shared status cluster (clock / battery / wifi) — the exact same
-        // component and ShowClock/ShowBattery/ShowWifi settings as every other page.
+        // Shared status cluster (clock / battery / wifi) — same component and
+        // ShowClock/ShowBattery/ShowWifi settings as every other page.
         StatusCluster {
             anchors.fill: parent
             z: 50
@@ -482,7 +493,7 @@ id: root
     Keys.onPressed: {
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxAccept.play();
+            playAccept();
             openSelectedGame();
         }
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
@@ -491,7 +502,7 @@ id: root
         }
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            sfxAccept.play();
+            playAccept();
             initialized = false;
             cheevosData.refreshAll();
         }
