@@ -80,17 +80,50 @@ Item {
                 Behavior on width { NumberAnimation { duration: 300 } }
             }
 
-            // Inside label: bolt while charging, percentage otherwise.
-            // Outlined so it stays readable over both fill and empty regions.
+            // Inside label: percentage (hidden while charging — the bolt
+            // takes its place). Outlined so it stays readable over both
+            // fill and empty regions.
             Text {
                 anchors.centerIn: parent
-                text: batteryDisplay.charging ? "\u26A1" : batteryDisplay.pct
+                visible: !batteryDisplay.charging
+                text: batteryDisplay.pct
                 color: "white"
                 style: Text.Outline
                 styleColor: Qt.rgba(0, 0, 0, 0.75)
                 font.pixelSize: vpx(12)
                 font.family: subtitleFont.name
                 font.bold: true
+            }
+
+            // Charging bolt — drawn on a Canvas so it's ALWAYS white. (The
+            // \u26A1 glyph renders as a fixed-color yellow emoji on Android
+            // and ignores Text.color entirely.)
+            Canvas {
+                id: chargeBolt
+                visible: batteryDisplay.charging
+                anchors.centerIn: parent
+                width: vpx(10)
+                height: vpx(14)
+                onVisibleChanged: requestPaint()
+                Component.onCompleted: requestPaint()
+                onPaint: {
+                    var ctx = getContext("2d");
+                    ctx.reset();
+                    var w = width, h = height;
+                    ctx.beginPath();
+                    ctx.moveTo(w * 0.62, 0);
+                    ctx.lineTo(w * 0.10, h * 0.58);
+                    ctx.lineTo(w * 0.44, h * 0.58);
+                    ctx.lineTo(w * 0.34, h);
+                    ctx.lineTo(w * 0.92, h * 0.40);
+                    ctx.lineTo(w * 0.52, h * 0.40);
+                    ctx.closePath();
+                    ctx.fillStyle = "white";
+                    ctx.strokeStyle = Qt.rgba(0, 0, 0, 0.6);
+                    ctx.lineWidth = 1;
+                    ctx.fill();
+                    ctx.stroke();
+                }
             }
         }
 
