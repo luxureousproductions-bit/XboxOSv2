@@ -252,7 +252,15 @@ id: root
     // Sites that flip this off set highlightedGame FIRST (silent while active),
     // so this lands directly on the final image in a single fade.
     onSysTileBgActiveChanged: {
-        if (!sysTileBgActive) crossfadeTo(bgSource);
+        if (!sysTileBgActive)
+            Qt.callLater(function() {
+                // Deferred one frame: the row that's taking over may set
+                // highlightedGame in this same event burst; running after it
+                // means exactly ONE crossfade, straight to the final image
+                // (two rapid calls would overwrite the still-visible layer
+                // and pop instead of fade).
+                if (!sysTileBgActive) crossfadeTo(bgSource);
+            });
     }
     property var  sysBgFallbackColl: null
 
@@ -760,7 +768,12 @@ id: root
             onFocusChanged: { if (focus && platformlist.currentIndex < 0) platformlist.currentIndex = platformlist.savedIndex; }
             onSelectedChanged: {
                 if (selected) {
-                    updateTopRowBackground(platformlist.currentIndex, platformlist.resumeGame);
+                    // currentIndex is -1 until platformlist takes focus (its
+                    // onFocusChanged restores the saved index and updates the
+                    // bg) — calling now would briefly route through the hero
+                    // branch and double-fire the crossfade.
+                    if (platformlist.currentIndex >= 0)
+                        updateTopRowBackground(platformlist.currentIndex, platformlist.resumeGame);
                 } else {
                     sysTileBgActive = false;   // leaving the top row — game rows take over
                 }
