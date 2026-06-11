@@ -216,7 +216,11 @@ id: root
         Behavior on opacity { PropertyAnimation { duration: 400 } }
     }
 
-    // Fanart / screenshot background with crossfade
+    // Fanart / screenshot background with crossfade. The fade is started by
+    // startBgFade() only once the file is FULLY DECODED (Image.Ready) —
+    // starting it at source-set time made slow files (large PNGs) pop in
+    // mid-fade while quick JPGs faded, which is why some art crossfaded
+    // and some didn't.
     Image {
     id: bgImage1
         anchors.fill: parent
@@ -225,7 +229,13 @@ id: root
         smooth: true
         opacity: 0
         z: 0
-        Behavior on opacity { PropertyAnimation { duration: 700 } }
+        property bool pendingFade: false
+        property bool animate: true
+        Behavior on opacity { enabled: bgImage1.animate; PropertyAnimation { duration: 700 } }
+        onStatusChanged: {
+            if (status === Image.Ready && pendingFade) startBgFade(bgImage1);
+            else if (status === Image.Error && pendingFade) { pendingFade = false; lastBgShown = ""; }
+        }
     }
 
     Image {
@@ -236,7 +246,102 @@ id: root
         smooth: true
         opacity: 0
         z: 0
-        Behavior on opacity { PropertyAnimation { duration: 700 } }
+        property bool pendingFade: false
+        property bool animate: true
+        Behavior on opacity { enabled: bgImage2.animate; PropertyAnimation { duration: 700 } }
+        onStatusChanged: {
+            if (status === Image.Ready && pendingFade) startBgFade(bgImage2);
+            else if (status === Image.Error && pendingFade) { pendingFade = false; lastBgShown = ""; }
+        }
+    }
+
+    // ── System-tile page background (Randomize System Tile Fanart = "No") ──
+    // When a system tile is highlighted, the page background shows that
+    // system's own background art (the same image the tile uses) instead of a
+    // randomly picked game fanart. The resolver tries .png/.jpg/.jpeg/.webp;
+    // if no file exists for the system it falls back to a random game's
+    // fanart so the background never goes stale.
+    property bool sysTileBgActive: false
+    // Returning to the hero or game rows must re-run the fanart crossfade even
+    // when bgSource doesn't change (re-assigning the same game emits no signal,
+    // so onBgSourceChanged alone would leave the system art stuck on screen).
+    // Sites that flip this off set highlightedGame FIRST (silent while active),
+    // so this lands directly on the final image in a single fade.
+    onSysTileBgActiveChanged: {
+        // The scheduler inside crossfadeTo collapses this with any same-frame
+        // fanart update from the row taking over — the last target wins, so
+        // ordering between this handler and the row's no longer matters.
+        if (!sysTileBgActive) crossfadeTo(bgSource);
+    }
+    property var  sysBgFallbackColl: null
+
+    Image {
+    id: sysBgResolver
+        visible: false
+        asynchronous: true
+        property string basePath: ""
+        property var exts: [".png", ".jpg", ".jpeg", ".webp"]
+        property int extIdx: 0
+        // Request the background for a system. Re-requesting the system that's
+        // already resolved re-applies it instantly (returning from game rows);
+        // a new system starts the load chain and the page holds the current
+        // background until the file is ready.
+        function request(path) {
+            if (path === basePath) {
+                if (status === Image.Ready && sysTileBgActive) {
+                    crossfadeTo(source);
+                } else if (status === Image.Error && sysTileBgActive
+                           && sysBgFallbackColl && sysBgFallbackColl.games.count > 0) {
+                    // Known-missing background — random fanart fallback again
+                    highlightedGame = sysBgFallbackColl.games.get(Math.floor(Math.random() * sysBgFallbackColl.games.count));
+                    sysTileBgActive = false;
+                }
+                return;
+            }
+            basePath = path;   // onBasePathChanged kicks off the load chain
+        }
+        onBasePathChanged: {
+            extIdx = 0;
+            source = basePath !== "" ? (basePath + exts[0]) : "";
+        }
+        onStatusChanged: {
+            if (status === Image.Error) {
+                if (extIdx < exts.length - 1) {
+                    extIdx = extIdx + 1;          // try next extension
+                    source = basePath + exts[extIdx];
+                } else if (sysTileBgActive && sysBgFallbackColl && sysBgFallbackColl.games.count > 0) {
+                    // No background file for this system — random fanart fallback
+                    highlightedGame = sysBgFallbackColl.games.get(Math.floor(Math.random() * sysBgFallbackColl.games.count));
+                    sysTileBgActive = false;
+                }
+            } else if (status === Image.Ready) {
+                // File is ready — NOW run the single clean crossfade to it
+                if (sysTileBgActive) crossfadeTo(source);
+            }
+        }
+    }
+
+    // Page-background update for the top strip. idx 0 = hero; idx >= 1 = system tile.
+    function updateTopRowBackground(idx, resumeGame) {
+        if (settings.ShowcaseBackgroundArt !== "Yes") return;
+        if (idx <= 0) {
+            if (resumeGame) highlightedGame = resumeGame;   // silent while flag is on
+            sysTileBgActive = false;                        // handler runs the crossfade
+            return;
+        }
+        var coll = api.collections.get(sortedColl[idx - 1]);
+        if (!coll) return;
+        if (settings.RandomizeSystemTileFanart === "Yes") {
+            // Original behavior: a randomly picked game's fanart from the system
+            if (coll.games.count > 0)
+                highlightedGame = coll.games.get(Math.floor(Math.random() * coll.games.count));
+            sysTileBgActive = false;   // handler runs the crossfade if needed
+        } else {
+            // Default: the system's own background art (matches the tile)
+            sysBgFallbackColl = coll;
+            sysTileBgActive   = true;
+            sysBgResolver.request("../assets/images/systembackground/" + Utils.processPlatformName(coll.shortName));
+        }
     }
 
     // Dim overlay so content stays readable
@@ -247,29 +352,73 @@ id: root
         z: 1
     }
 
-    property bool bgToggle: false
+    property string lastBgShown: ""
+    property string pendingBg: ""
+    property bool bgFlushQueued: false
+    property var bgShownImg: null     // the background layer currently on screen
     property string bgSource: {
         if (settings.ShowcaseBackgroundArt !== "Yes") return "";
         if (!highlightedGame) return "";
         return highlightedGame.assets.background || highlightedGame.assets.screenshots[0] || "";
     }
 
-    onBgSourceChanged: {
-        if (!bgSource) {
-            bgImage1.opacity = 0;
-            bgImage2.opacity = 0;
+    // Single crossfade driver — bulletproof version:
+    //  • All requests in one frame collapse to ONE fade (Qt.callLater, last
+    //    target wins) — an up-press fires several handlers, and the second
+    //    image-write used to land on the still-visible layer, swapping its
+    //    picture instantly instead of fading.
+    //  • The fade only starts once the file is READY, so slow-decoding art
+    //    (large PNGs) fades exactly like quick JPGs instead of popping in.
+    //  • Targets are normalized to strings so the duplicate-check can't be
+    //    defeated by url-vs-string comparison (resolver passes a QUrl).
+    //  • The on-screen layer is tracked explicitly (bgShownImg) and is never
+    //    written to; it stays untouched until the incoming file is ready.
+    function crossfadeTo(src) {
+        pendingBg = "" + src;          // normalize url → string
+        if (bgFlushQueued) return;     // a flush is already scheduled
+        bgFlushQueued = true;
+        Qt.callLater(flushBg);
+    }
+
+    function flushBg() {
+        bgFlushQueued = false;
+        var src = pendingBg;
+        if (src === lastBgShown) return;        // already showing / loading it
+        lastBgShown = src;
+        if (src === "") {
+            bgImage1.pendingFade = false; bgImage2.pendingFade = false;
+            bgImage1.opacity = 0; bgImage2.opacity = 0;
+            bgShownImg = null;
             return;
         }
-        if (bgToggle) {
-            bgImage1.source = bgSource;
-            bgImage1.opacity = parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55;
-            bgImage2.opacity = 0;
+        // Always write the layer that is NOT on screen
+        var incoming = (bgShownImg === bgImage1) ? bgImage2 : bgImage1;
+        incoming.pendingFade = true;
+        if ("" + incoming.source === src && incoming.status === Image.Ready) {
+            startBgFade(incoming);              // already cached — fade now
         } else {
-            bgImage2.source = bgSource;
-            bgImage2.opacity = parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55;
-            bgImage1.opacity = 0;
+            incoming.animate = false;           // snap hidden (no half-fade)
+            incoming.opacity = 0;
+            incoming.animate = true;
+            incoming.source = src;              // Image.Ready → startBgFade()
         }
-        bgToggle = !bgToggle;
+    }
+
+    function startBgFade(img) {
+        if (!img.pendingFade) return;
+        img.pendingFade = false;
+        var other = (img === bgImage1) ? bgImage2 : bgImage1;
+        other.pendingFade = false;
+        img.opacity = parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55;
+        other.opacity = 0;
+        bgShownImg = img;
+    }
+
+    onBgSourceChanged: {
+        // While a system tile drives the background, hold the current image
+        // until the resolver's file is ready (it calls crossfadeTo itself).
+        // An empty bgSource (background art turned off) always clears.
+        if (!sysTileBgActive || bgSource === "") crossfadeTo(bgSource);
     }
 
 
@@ -618,151 +767,11 @@ id: root
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
 		
-       Text {
-        id: sysTime
-
-            visible: settings.ShowClock !== "No"
-            // Direct binding — updates instantly when Show Clock setting changes
-            text: Qt.formatTime(new Date(), "h:mm AP")
-
-            function set() {
-                sysTime.text = Qt.formatTime(new Date(), "h:mm AP");
-            }
-
-            Timer {
-                id: textTimer
-                interval: 60000
-                repeat: true
-                running: true
-                triggeredOnStart: true
-                onTriggered: sysTime.set()
-            }
-
-            height: vpx(40)
-            anchors {
-                top: parent.top; topMargin: vpx(5)
-                right: parent.right; rightMargin: vpx(25)
-            }
-            color: "white"
-            font.pixelSize: vpx(18)
-            font.family: subtitleFont.name
-            horizontalAlignment: Text.Right
-            verticalAlignment: Text.AlignVCenter
-        }
-
-        // Battery percentage display
-        Row {
-        id: batteryDisplay
-
-            property bool batteryAvailable: !isNaN(api.device.batteryPercent) && api.device.batteryPercent >= 0
-
-            spacing: vpx(4)
-            anchors {
-                right: sysTime.left; rightMargin: vpx(10)
-                top: parent.top; topMargin: vpx(12)
-            }
-            // Hide when no battery is present or setting is disabled
-            visible: settings.ShowBattery !== "No" && batteryAvailable
-
-            // Lightning bolt shown while charging
-            Text {
-                text: "⚡"
-                font.pixelSize: vpx(12)
-                color: "#64B5F6"
-                verticalAlignment: Text.AlignVCenter
-                anchors.verticalCenter: parent.verticalCenter
-                visible: api.device.batteryCharging
-            }
-
-            Text {
-                property int pct: batteryDisplay.batteryAvailable
-                                  ? Math.round(api.device.batteryPercent * 100) : 0
-                text: pct + "%"
-                // Turn red when critically low and not charging
-                color: (pct <= 20 && !api.device.batteryCharging) ? "#EF5350" : "white"
-                font.pixelSize: vpx(16)
-                font.family: subtitleFont.name
-                verticalAlignment: Text.AlignVCenter
-                anchors.verticalCenter: parent.verticalCenter
-            }
-        }
-
-        // WiFi signal indicator — three concentric arcs drawn via Canvas.
-        // Connectivity is checked every 30 s with a HEAD request to 1.1.1.1;
-        // arcs show full-brightness when reachable, dimmed when offline.
-        Canvas {
-        id: wifiIndicator
-
-            width: vpx(26)
-            height: vpx(20)
-            visible: settings.ShowWifi !== "No"
-            anchors {
-                right: batteryDisplay.left; rightMargin: vpx(8)
-                top: parent.top; topMargin: vpx(14)
-            }
-
-            property bool online: false
-
-            Timer {
-                id: wifiTimer
-                interval: 30000
-                repeat: true
-                running: true
-                triggeredOnStart: true
-                onTriggered: {
-                    var xhr = new XMLHttpRequest();
-                    xhr.onreadystatechange = function() {
-                        if (xhr.readyState === XMLHttpRequest.DONE) {
-                            wifiIndicator.online = xhr.status >= 200 && xhr.status < 300;
-                        }
-                    };
-                    xhr.onerror = function() { wifiIndicator.online = false; };
-                    xhr.open("HEAD", "https://1.1.1.1", true);
-                    xhr.timeout = 5000;
-                    xhr.send();
-                }
-            }
-
-            onPaint: {
-                var ctx = getContext("2d");
-                ctx.reset();
-
-                var cx         = width / 2;
-                var cy         = height - vpx(1);           // arcs radiate upward from here
-                var outerR     = cy - vpx(2);               // largest radius fits within canvas
-                var startAngle = Math.PI * 1.25;            // 225° — upper-left
-                var endAngle   = Math.PI * 1.75;            // 315° — upper-right
-                var alpha      = online ? 0.9 : 0.3;
-
-                ctx.strokeStyle = "white";
-                ctx.lineCap     = "round";
-                ctx.globalAlpha = alpha;
-
-                // Outer arc
-                ctx.lineWidth = vpx(2);
-                ctx.beginPath();
-                ctx.arc(cx, cy, outerR, startAngle, endAngle, false);
-                ctx.stroke();
-
-                // Middle arc
-                ctx.beginPath();
-                ctx.arc(cx, cy, outerR * 0.64, startAngle, endAngle, false);
-                ctx.stroke();
-
-                // Inner arc
-                ctx.beginPath();
-                ctx.arc(cx, cy, outerR * 0.31, startAngle, endAngle, false);
-                ctx.stroke();
-
-                // Centre dot
-                ctx.fillStyle = "white";
-                ctx.beginPath();
-                ctx.arc(cx, cy, vpx(2), 0, Math.PI * 2, false);
-                ctx.fill();
-            }
-
-            onOnlineChanged: requestPaint()
-            Component.onCompleted: requestPaint()
+        // Shared status cluster (clock / battery / wifi) — the global component,
+        // identical to every other page. Self-anchors to this container's top-right.
+        StatusCluster {
+            anchors.fill: parent
+            z: 50
         }
     }
 
@@ -799,16 +808,15 @@ id: root
 
             onFocusChanged: { if (focus && platformlist.currentIndex < 0) platformlist.currentIndex = platformlist.savedIndex; }
             onSelectedChanged: {
-                if (selected && settings.ShowcaseBackgroundArt === "Yes") {
-                    if (platformlist.currentIndex <= 0) {
-                        if (platformlist.resumeGame) highlightedGame = platformlist.resumeGame;
-                    } else {
-                        var coll = api.collections.get(sortedColl[platformlist.currentIndex - 1]);
-                        if (coll && coll.games.count > 0) {
-                            var randomIdx = Math.floor(Math.random() * coll.games.count);
-                            highlightedGame = coll.games.get(randomIdx);
-                        }
-                    }
+                if (selected) {
+                    // currentIndex is -1 until platformlist takes focus (its
+                    // onFocusChanged restores the saved index and updates the
+                    // bg) — calling now would briefly route through the hero
+                    // branch and double-fire the crossfade.
+                    if (platformlist.currentIndex >= 0)
+                        updateTopRowBackground(platformlist.currentIndex, platformlist.resumeGame);
+                } else {
+                    sysTileBgActive = false;   // leaving the top row — game rows take over
                 }
             }
 
@@ -853,35 +861,15 @@ id: root
                 if (currentIndex < 0) return;   // deselected (focus moved away) — leave the scroll position alone
                 // Align the list to whole-tile boundaries (same routine used on load).
                 alignToIndex(currentIndex);
-                // Update background fanart for the highlighted strip item
-                if (topRow.selected && settings.ShowcaseBackgroundArt === "Yes") {
-                    if (currentIndex <= 0) {
-                        if (resumeGame) highlightedGame = resumeGame;
-                    } else {
-                        var coll = api.collections.get(sortedColl[currentIndex - 1]);
-                        if (coll && coll.games.count > 0) {
-                            var randomIdx = Math.floor(Math.random() * coll.games.count);
-                            highlightedGame = coll.games.get(randomIdx);
-                        }
-                    }
-                }
+                // Update the page background for the highlighted strip item
+                if (topRow.selected) updateTopRowBackground(currentIndex, resumeGame);
             }
 
             property int savedIndex: collectionVisited ? (sortedColl.indexOf(currentCollectionIndex) + 1) : 0   // strip index (hero = 0); hero until a collection is opened
             onFocusChanged: {
                 if (focus) {
                     currentIndex = savedIndex;
-                    if (settings.ShowcaseBackgroundArt === "Yes") {
-                        if (currentIndex <= 0) {
-                            if (resumeGame) highlightedGame = resumeGame;
-                        } else {
-                            var coll = api.collections.get(sortedColl[currentIndex - 1]);
-                            if (coll && coll.games.count > 0) {
-                                var randomIdx = Math.floor(Math.random() * coll.games.count);
-                                highlightedGame = coll.games.get(randomIdx);
-                            }
-                        }
-                    }
+                    updateTopRowBackground(currentIndex, resumeGame);
                 } else {
                     savedIndex = currentIndex;
                     currentIndex = -1;

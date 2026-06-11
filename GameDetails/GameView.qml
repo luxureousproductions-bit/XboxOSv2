@@ -1104,4 +1104,13 @@ id: root
         }
     }
 
+    // Status cluster (clock / battery / wifi) — same component and
+    // ShowClock/ShowBattery/ShowWifi settings as the home page.
+    // Hidden while the fullscreen media viewer is open.
+    StatusCluster {
+        anchors.fill: parent
+        z: 50
+        visible: mediaScreen.opacity < 0.5
+    }
+
 }

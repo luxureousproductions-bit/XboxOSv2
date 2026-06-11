@@ -175,6 +175,10 @@ id: root
             setting: "Yes,No"
         }
         ListElement {
+            settingName: "Randomize System Tile Fanart"
+            setting: "No,Yes"
+        }
+        ListElement {
             settingName: "Custom Background"
             setting: "No,Yes"
         }
@@ -859,13 +863,24 @@ id: root
                 // Optional friendly display label; storage key remains settingName
                 property string displayLabel: (typeof label !== 'undefined' && label !== "") ? label : settingName
 
+                // Greyed-out/inert state — "Randomize System Tile Fanart" only has
+                // an effect while the fanart background is showing, so it locks
+                // when Showcase Background Art is off or Custom Background is on.
+                property bool rowDisabled: {
+                    var _v = settingsList.settingsVersion;   // re-evaluate after any save
+                    if (settingName !== "Randomize System Tile Fanart") return false;
+                    var bgArt  = api.memory.has("Showcase Background Art") ? api.memory.get("Showcase Background Art") : "Yes";
+                    var custom = api.memory.has("Custom Background") ? api.memory.get("Custom Background") : "No";
+                    return bgArt === "No" || custom === "Yes";
+                }
+
                 // Text-input rows (RA credentials) skip the cycling logic
                 property bool isTextInput: inputType === "text"
                 property bool isEditing:   false
                 property string originalText: ""
 
                 function saveSetting() {
-                    if (isTextInput) return;
+                    if (isTextInput || rowDisabled) return;
                     api.memory.set(settingName + 'Index', savedIndex);
                     api.memory.set(settingName, settingList[savedIndex]);
                     // Mutual exclusion: fanart and custom background can't both be on
@@ -879,10 +894,13 @@ id: root
                         api.memory.set("Showcase Background ArtIndex", "1");
                         settingsList.settingsVersion++;
                     }
+                    // Either of these changing can lock/unlock the randomize row
+                    if (settingName === "Showcase Background Art" || settingName === "Custom Background")
+                        settingsList.settingsVersion++;
                 }
 
                 function nextSetting() {
-                    if (isTextInput) return;
+                    if (isTextInput || rowDisabled) return;
                     if (savedIndex != settingList.length -1)
                         savedIndex++;
                     else
@@ -890,7 +908,7 @@ id: root
                 }
 
                 function prevSetting() {
-                    if (isTextInput) return;
+                    if (isTextInput || rowDisabled) return;
                     if (savedIndex > 0)
                         savedIndex--;
                     else
@@ -934,7 +952,7 @@ id: root
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(22)
                     verticalAlignment: Text.AlignVCenter
-                    opacity: selected ? 1 : 0.2
+                    opacity: rowDisabled ? 0.12 : (selected ? 1 : 0.2)
 
                     width: contentWidth
                     height: itemheight
@@ -946,13 +964,13 @@ id: root
                 id: settingtext
 
                     visible: !isTextInput
-                    text: (selected ? "\u2039  " : "") + settingList[savedIndex].toUpperCase() + (selected ? "  \u203A" : "")
+                    text: (selected && !rowDisabled ? "\u2039  " : "") + settingList[savedIndex].toUpperCase() + (selected && !rowDisabled ? "  \u203A" : "")
                     font.bold: selected
                     color: settingsTextColor
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(22)
                     verticalAlignment: Text.AlignVCenter
-                    opacity: selected ? 1 : 0.2
+                    opacity: rowDisabled ? 0.12 : (selected ? 1 : 0.2)
 
                     height: itemheight
                     anchors {
@@ -1059,10 +1077,10 @@ id: root
 
                 // ── Input handling ────────────────────────────────────────
                 Keys.onRightPressed: {
-                    if (!isTextInput) { playToggle(); nextSetting(); saveSetting(); }
+                    if (!isTextInput && !rowDisabled) { playToggle(); nextSetting(); saveSetting(); }
                 }
                 Keys.onLeftPressed: {
-                    if (!isTextInput) { playToggle(); prevSetting(); saveSetting(); }
+                    if (!isTextInput && !rowDisabled) { playToggle(); prevSetting(); saveSetting(); }
                 }
 
                 Keys.onPressed: {
@@ -1073,7 +1091,7 @@ id: root
                             // Capture current saved value before opening editor
                             playAccept();
                             root.openEditor(settingName, (typeof masked !== 'undefined' && masked));
-                        } else {
+                        } else if (!rowDisabled) {
                             playToggle();
                             nextSetting();
                             saveSetting();
@@ -1097,7 +1115,7 @@ id: root
                             if (isTextInput) {
                                 playAccept();
                                 root.openEditor(settingName, (typeof masked !== 'undefined' && masked));
-                            } else {
+                            } else if (!rowDisabled) {
                                 playToggle();
                                 nextSetting();
                                 saveSetting();

@@ -1028,4 +1028,11 @@ id: root
             gamegrid.focus = true;
         }
     }
+
+    // Status cluster (clock / battery / wifi) — same component and
+    // ShowClock/ShowBattery/ShowWifi settings as the home page.
+    StatusCluster {
+        anchors.fill: parent
+        z: 50
+    }
 }

@@ -167,11 +167,11 @@ id: root
             }
         }
 
-        RAStatusBar {
-            anchors {
-                right: parent.right; rightMargin: vpx(10)
-                verticalCenter: parent.verticalCenter
-            }
+        // Shared status cluster (clock / battery / wifi) — same component and
+        // ShowClock/ShowBattery/ShowWifi settings as every other page.
+        StatusCluster {
+            anchors.fill: parent
+            z: 50
         }
 
         Rectangle {
