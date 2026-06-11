@@ -51,20 +51,32 @@ Item {
         // Fill: green while charging, red when critically low, white otherwise
         property color fillColor: charging ? "#3DD13D" : (pct <= 20 ? "#EF5350" : "white")
 
-        width: vpx(38)
-        height: vpx(16)
+        // Display style from the Advanced tab ("Show Battery Percentage"):
+        // "Battery Only" (icon), "Percentage Only" (text like the original
+        // layout), "Combined" (icon with the % inside). A legacy stored
+        // "Yes" maps to Battery Only.
+        property string mode: settings.ShowBattery === "Percentage Only" ? "Percentage Only"
+                            : settings.ShowBattery === "Combined" ? "Combined" : "Battery Only"
+
+        width: mode === "Percentage Only" ? pctRow.width : vpx(38)
+        height: mode === "Percentage Only" ? pctRow.height : vpx(16)
         anchors {
             // Reflow: if the clock is disabled, slide into its position
             right: sysTime.visible ? sysTime.left : parent.right
             rightMargin: sysTime.visible ? vpx(14) : vpx(25)
-            verticalCenter: sysTime.verticalCenter
+            // Icon modes centre on the clock; Percentage Only top-aligns to
+            // the clock (same font + size) so the digit bottoms share the
+            // same line as the clock and wifi
+            verticalCenter: mode === "Percentage Only" ? undefined : sysTime.verticalCenter
+            top: mode === "Percentage Only" ? sysTime.top : undefined
         }
         // Hide when no battery is present or setting is disabled
         visible: settings.ShowBattery !== "No" && batteryAvailable
 
-        // Body outline
+        // Body outline (icon modes only)
         Rectangle {
             id: batteryBody
+            visible: batteryDisplay.mode !== "Percentage Only"
             anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
             width: parent.width - vpx(4)
             radius: vpx(3)
@@ -82,13 +94,13 @@ Item {
                 Behavior on width { NumberAnimation { duration: 300 } }
             }
 
-            // Inside label: percentage (hidden while charging — the bolt
-            // takes its place). Outlined so it stays readable over both
+            // Inside label — Combined mode only (hidden while charging; the
+            // bolt takes its place). Outlined so it stays readable over both
             // fill and empty regions.
             Text {
                 anchors.centerIn: parent
-                visible: !batteryDisplay.charging
-                text: batteryDisplay.pct
+                visible: batteryDisplay.mode === "Combined" && !batteryDisplay.charging
+                text: batteryDisplay.pct + "%"
                 color: "white"
                 style: Text.Outline
                 styleColor: Qt.rgba(0, 0, 0, 0.75)
@@ -129,8 +141,9 @@ Item {
             }
         }
 
-        // Positive terminal cap
+        // Positive terminal cap (icon modes only)
         Rectangle {
+            visible: batteryDisplay.mode !== "Percentage Only"
             anchors {
                 left: batteryBody.right; leftMargin: vpx(1)
                 verticalCenter: parent.verticalCenter
@@ -140,6 +153,54 @@ Item {
             radius: vpx(1)
             color: "white"
         }
+
+        // Percentage Only — plain text like the pre-icon layout, in the
+        // clock's font and size so the digit bottoms line up with the clock
+        // (and the wifi icon, which sits on the clock's baseline).
+        Row {
+            id: pctRow
+            visible: batteryDisplay.mode === "Percentage Only"
+            spacing: vpx(5)
+            anchors { right: parent.right; top: parent.top }
+
+            // White charging bolt (Canvas — the \u26A1 glyph is a fixed
+            // yellow emoji on Android)
+            Canvas {
+                id: pctBolt
+                visible: batteryDisplay.charging
+                width: vpx(11)
+                height: vpx(15)
+                anchors.verticalCenter: parent.verticalCenter
+                onVisibleChanged: requestPaint()
+                Component.onCompleted: requestPaint()
+                onPaint: {
+                    var ctx = getContext("2d");
+                    ctx.reset();
+                    var w = width, h = height;
+                    ctx.beginPath();
+                    ctx.moveTo(w * 0.62, 0);
+                    ctx.lineTo(w * 0.10, h * 0.58);
+                    ctx.lineTo(w * 0.44, h * 0.58);
+                    ctx.lineTo(w * 0.34, h);
+                    ctx.lineTo(w * 0.92, h * 0.40);
+                    ctx.lineTo(w * 0.52, h * 0.40);
+                    ctx.closePath();
+                    ctx.fillStyle = "white";
+                    ctx.strokeStyle = Qt.rgba(0, 0, 0, 0.6);
+                    ctx.lineWidth = 1;
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            }
+
+            Text {
+                text: batteryDisplay.pct + "%"
+                // Turn red when critically low and not charging
+                color: (batteryDisplay.pct <= 20 && !batteryDisplay.charging) ? "#EF5350" : "white"
+                font.pixelSize: vpx(22)
+                font.family: subtitleFont.name
+            }
+        }
     }
 
     // WiFi signal indicator — three concentric arcs drawn via Canvas.
@@ -148,8 +209,8 @@ Item {
     Canvas {
         id: wifiIndicator
 
-        width: vpx(26)
-        height: vpx(20)
+        width: vpx(24)
+        height: vpx(18)
         visible: settings.ShowWifi !== "No"
         anchors {
             // Reflow: chain to the nearest enabled neighbour on the right,
@@ -162,6 +223,10 @@ Item {
         }
 
         property bool online: false
+        // Number of lit bars. Pegasus exposes no real wifi RSSI, so this is
+        // all-or-nothing (connected = 4, offline = 0). To approximate strength
+        // from ping latency later, set this to a 0-4 value in the Timer instead.
+        property int bars: online ? 4 : 0
 
         Timer {
             id: wifiTimer
@@ -187,40 +252,44 @@ Item {
             var ctx = getContext("2d");
             ctx.reset();
 
-            var cx         = width / 2;
-            var cy         = height - vpx(1);            // arcs radiate upward from here
-            var outerR     = cy - vpx(2);                // largest radius fits within canvas
-            var startAngle = Math.PI * 1.25;             // 225° — upper-left
-            var endAngle   = Math.PI * 1.75;             // 315° — upper-right
-            var alpha      = online ? 0.9 : 0.3;
+            var n   = 4;
+            var gap = width * 0.10;
+            var bw  = (width - gap * (n - 1)) / n;
+            var litCount = bars;
 
-            ctx.strokeStyle = "white";
-            ctx.lineCap     = "round";
-            ctx.globalAlpha = alpha;
-
-            // Outer arc
-            ctx.lineWidth = vpx(2);
-            ctx.beginPath();
-            ctx.arc(cx, cy, outerR, startAngle, endAngle, false);
-            ctx.stroke();
-
-            // Middle arc
-            ctx.beginPath();
-            ctx.arc(cx, cy, outerR * 0.64, startAngle, endAngle, false);
-            ctx.stroke();
-
-            // Inner arc
-            ctx.beginPath();
-            ctx.arc(cx, cy, outerR * 0.31, startAngle, endAngle, false);
-            ctx.stroke();
-
-            // Centre dot
+            // Ascending signal bars, bottom-aligned. Lit bars bright, the rest dim.
             ctx.fillStyle = "white";
-            ctx.beginPath();
-            ctx.arc(cx, cy, vpx(2), 0, Math.PI * 2, false);
-            ctx.fill();
+            for (var i = 0; i < n; i++) {
+                var bh = height * (0.40 + i * 0.20);     // 0.40, 0.60, 0.80, 1.00
+                var x  = i * (bw + gap);
+                var y  = height - bh;
+                ctx.globalAlpha = (i < litCount) ? 0.95 : 0.22;
+                ctx.fillRect(x, y, bw, bh);
+            }
+
+            // No connection: dim bars (already drawn) + a slash through the icon
+            if (!online) {
+                ctx.lineCap = "round";
+                // dark backing for contrast
+                ctx.globalAlpha = 0.6;
+                ctx.strokeStyle = Qt.rgba(0, 0, 0, 1);
+                ctx.lineWidth = vpx(3.5);
+                ctx.beginPath();
+                ctx.moveTo(vpx(1), height - vpx(1));
+                ctx.lineTo(width - vpx(1), vpx(1));
+                ctx.stroke();
+                // white slash on top
+                ctx.globalAlpha = 0.95;
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = vpx(1.6);
+                ctx.beginPath();
+                ctx.moveTo(vpx(1), height - vpx(1));
+                ctx.lineTo(width - vpx(1), vpx(1));
+                ctx.stroke();
+            }
         }
 
+        onBarsChanged: requestPaint()
         onOnlineChanged: requestPaint()
         Component.onCompleted: requestPaint()
     }
