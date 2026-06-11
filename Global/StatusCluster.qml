@@ -51,8 +51,8 @@ Item {
         // Fill: green while charging, red when critically low, white otherwise
         property color fillColor: charging ? "#3DD13D" : (pct <= 20 ? "#EF5350" : "white")
 
-        width: vpx(46)
-        height: vpx(22)
+        width: vpx(38)
+        height: vpx(16)
         anchors {
             // Reflow: if the clock is disabled, slide into its position
             right: sysTime.visible ? sysTime.left : parent.right
@@ -67,15 +67,15 @@ Item {
             id: batteryBody
             anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
             width: parent.width - vpx(4)
-            radius: vpx(4)
+            radius: vpx(3)
             color: "transparent"
             border.color: "white"
-            border.width: vpx(2)
+            border.width: vpx(1.5)
 
             // Charge-level fill
             Rectangle {
-                anchors { left: parent.left; top: parent.top; bottom: parent.bottom; margins: vpx(3) }
-                width: Math.max(0, (batteryBody.width - vpx(6)) * (batteryDisplay.pct / 100))
+                anchors { left: parent.left; top: parent.top; bottom: parent.bottom; margins: vpx(2.5) }
+                width: Math.max(0, (batteryBody.width - vpx(5)) * (batteryDisplay.pct / 100))
                 radius: vpx(2)
                 color: batteryDisplay.fillColor
                 opacity: 0.85
@@ -92,7 +92,7 @@ Item {
                 color: "white"
                 style: Text.Outline
                 styleColor: Qt.rgba(0, 0, 0, 0.75)
-                font.pixelSize: vpx(12)
+                font.pixelSize: vpx(10)
                 font.family: subtitleFont.name
                 font.bold: true
             }
@@ -104,8 +104,8 @@ Item {
                 id: chargeBolt
                 visible: batteryDisplay.charging
                 anchors.centerIn: parent
-                width: vpx(10)
-                height: vpx(14)
+                width: vpx(8)
+                height: vpx(11)
                 onVisibleChanged: requestPaint()
                 Component.onCompleted: requestPaint()
                 onPaint: {
