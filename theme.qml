@@ -117,7 +117,7 @@ id: root
             AllGamesScanlines:               api.memory.has("AllGames Show scanlines") ? api.memory.get("AllGames Show scanlines") : "No",
             AllGamesVideoAudio:              api.memory.has("All games menu video audio") ? api.memory.get("All games menu video audio") : "No",
             ShowWifi:                      api.memory.has("Show WiFi Indicator")     ? api.memory.get("Show WiFi Indicator")     : "Yes",
-            ShowBattery:                   api.memory.has("Show Battery Percentage") ? api.memory.get("Show Battery Percentage") : "Yes",
+            ShowBattery:                   api.memory.has("Show Battery Percentage") ? api.memory.get("Show Battery Percentage") : "Battery Only",
             ShowClock:                     api.memory.has("Show Clock")              ? api.memory.get("Show Clock")              : "Yes"
         }
     }
