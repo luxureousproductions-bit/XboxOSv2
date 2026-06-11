@@ -209,8 +209,8 @@ Item {
     Canvas {
         id: wifiIndicator
 
-        width: vpx(24)
-        height: vpx(18)
+        width: vpx(26)
+        height: vpx(20)
         visible: settings.ShowWifi !== "No"
         anchors {
             // Reflow: chain to the nearest enabled neighbour on the right,
@@ -223,10 +223,6 @@ Item {
         }
 
         property bool online: false
-        // Number of lit bars. Pegasus exposes no real wifi RSSI, so this is
-        // all-or-nothing (connected = 4, offline = 0). To approximate strength
-        // from ping latency later, set this to a 0-4 value in the Timer instead.
-        property int bars: online ? 4 : 0
 
         Timer {
             id: wifiTimer
@@ -252,44 +248,40 @@ Item {
             var ctx = getContext("2d");
             ctx.reset();
 
-            var n   = 4;
-            var gap = width * 0.10;
-            var bw  = (width - gap * (n - 1)) / n;
-            var litCount = bars;
+            var cx         = width / 2;
+            var cy         = height - vpx(1);            // arcs radiate upward from here
+            var outerR     = cy - vpx(2);                // largest radius fits within canvas
+            var startAngle = Math.PI * 1.25;             // 225° — upper-left
+            var endAngle   = Math.PI * 1.75;             // 315° — upper-right
+            var alpha      = online ? 0.9 : 0.3;
 
-            // Ascending signal bars, bottom-aligned. Lit bars bright, the rest dim.
+            ctx.strokeStyle = "white";
+            ctx.lineCap     = "round";
+            ctx.globalAlpha = alpha;
+
+            // Outer arc
+            ctx.lineWidth = vpx(2);
+            ctx.beginPath();
+            ctx.arc(cx, cy, outerR, startAngle, endAngle, false);
+            ctx.stroke();
+
+            // Middle arc
+            ctx.beginPath();
+            ctx.arc(cx, cy, outerR * 0.64, startAngle, endAngle, false);
+            ctx.stroke();
+
+            // Inner arc
+            ctx.beginPath();
+            ctx.arc(cx, cy, outerR * 0.31, startAngle, endAngle, false);
+            ctx.stroke();
+
+            // Centre dot
             ctx.fillStyle = "white";
-            for (var i = 0; i < n; i++) {
-                var bh = height * (0.40 + i * 0.20);     // 0.40, 0.60, 0.80, 1.00
-                var x  = i * (bw + gap);
-                var y  = height - bh;
-                ctx.globalAlpha = (i < litCount) ? 0.95 : 0.22;
-                ctx.fillRect(x, y, bw, bh);
-            }
-
-            // No connection: dim bars (already drawn) + a slash through the icon
-            if (!online) {
-                ctx.lineCap = "round";
-                // dark backing for contrast
-                ctx.globalAlpha = 0.6;
-                ctx.strokeStyle = Qt.rgba(0, 0, 0, 1);
-                ctx.lineWidth = vpx(3.5);
-                ctx.beginPath();
-                ctx.moveTo(vpx(1), height - vpx(1));
-                ctx.lineTo(width - vpx(1), vpx(1));
-                ctx.stroke();
-                // white slash on top
-                ctx.globalAlpha = 0.95;
-                ctx.strokeStyle = "white";
-                ctx.lineWidth = vpx(1.6);
-                ctx.beginPath();
-                ctx.moveTo(vpx(1), height - vpx(1));
-                ctx.lineTo(width - vpx(1), vpx(1));
-                ctx.stroke();
-            }
+            ctx.beginPath();
+            ctx.arc(cx, cy, vpx(2), 0, Math.PI * 2, false);
+            ctx.fill();
         }
 
-        onBarsChanged: requestPaint()
         onOnlineChanged: requestPaint()
         Component.onCompleted: requestPaint()
     }
