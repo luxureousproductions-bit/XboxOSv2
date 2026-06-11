@@ -216,7 +216,11 @@ id: root
         Behavior on opacity { PropertyAnimation { duration: 400 } }
     }
 
-    // Fanart / screenshot background with crossfade
+    // Fanart / screenshot background with crossfade. The fade is started by
+    // startBgFade() only once the file is FULLY DECODED (Image.Ready) —
+    // starting it at source-set time made slow files (large PNGs) pop in
+    // mid-fade while quick JPGs faded, which is why some art crossfaded
+    // and some didn't.
     Image {
     id: bgImage1
         anchors.fill: parent
@@ -225,7 +229,13 @@ id: root
         smooth: true
         opacity: 0
         z: 0
-        Behavior on opacity { PropertyAnimation { duration: 700 } }
+        property bool pendingFade: false
+        property bool animate: true
+        Behavior on opacity { enabled: bgImage1.animate; PropertyAnimation { duration: 700 } }
+        onStatusChanged: {
+            if (status === Image.Ready && pendingFade) startBgFade(bgImage1);
+            else if (status === Image.Error && pendingFade) { pendingFade = false; lastBgShown = ""; }
+        }
     }
 
     Image {
@@ -236,7 +246,13 @@ id: root
         smooth: true
         opacity: 0
         z: 0
-        Behavior on opacity { PropertyAnimation { duration: 700 } }
+        property bool pendingFade: false
+        property bool animate: true
+        Behavior on opacity { enabled: bgImage2.animate; PropertyAnimation { duration: 700 } }
+        onStatusChanged: {
+            if (status === Image.Ready && pendingFade) startBgFade(bgImage2);
+            else if (status === Image.Error && pendingFade) { pendingFade = false; lastBgShown = ""; }
+        }
     }
 
     // ── System-tile page background (Randomize System Tile Fanart = "No") ──
@@ -252,15 +268,10 @@ id: root
     // Sites that flip this off set highlightedGame FIRST (silent while active),
     // so this lands directly on the final image in a single fade.
     onSysTileBgActiveChanged: {
-        if (!sysTileBgActive)
-            Qt.callLater(function() {
-                // Deferred one frame: the row that's taking over may set
-                // highlightedGame in this same event burst; running after it
-                // means exactly ONE crossfade, straight to the final image
-                // (two rapid calls would overwrite the still-visible layer
-                // and pop instead of fade).
-                if (!sysTileBgActive) crossfadeTo(bgSource);
-            });
+        // The scheduler inside crossfadeTo collapses this with any same-frame
+        // fanart update from the row taking over — the last target wins, so
+        // ordering between this handler and the row's no longer matters.
+        if (!sysTileBgActive) crossfadeTo(bgSource);
     }
     property var  sysBgFallbackColl: null
 
@@ -341,36 +352,66 @@ id: root
         z: 1
     }
 
-    property bool bgToggle: false
     property string lastBgShown: ""
+    property string pendingBg: ""
+    property bool bgFlushQueued: false
+    property var bgShownImg: null     // the background layer currently on screen
     property string bgSource: {
         if (settings.ShowcaseBackgroundArt !== "Yes") return "";
         if (!highlightedGame) return "";
         return highlightedGame.assets.background || highlightedGame.assets.screenshots[0] || "";
     }
 
-    // Single crossfade driver, shared by the game-fanart path (via bgSource)
-    // and the system-tile background path (called by sysBgResolver only when
-    // the file is READY — so a tile step is always one clean fade, never a
-    // stale fanart flash while the image loads).
+    // Single crossfade driver — bulletproof version:
+    //  • All requests in one frame collapse to ONE fade (Qt.callLater, last
+    //    target wins) — an up-press fires several handlers, and the second
+    //    image-write used to land on the still-visible layer, swapping its
+    //    picture instantly instead of fading.
+    //  • The fade only starts once the file is READY, so slow-decoding art
+    //    (large PNGs) fades exactly like quick JPGs instead of popping in.
+    //  • Targets are normalized to strings so the duplicate-check can't be
+    //    defeated by url-vs-string comparison (resolver passes a QUrl).
+    //  • The on-screen layer is tracked explicitly (bgShownImg) and is never
+    //    written to; it stays untouched until the incoming file is ready.
     function crossfadeTo(src) {
-        if (src === lastBgShown) return;   // already showing it
+        pendingBg = "" + src;          // normalize url → string
+        if (bgFlushQueued) return;     // a flush is already scheduled
+        bgFlushQueued = true;
+        Qt.callLater(flushBg);
+    }
+
+    function flushBg() {
+        bgFlushQueued = false;
+        var src = pendingBg;
+        if (src === lastBgShown) return;        // already showing / loading it
         lastBgShown = src;
-        if (!src) {
-            bgImage1.opacity = 0;
-            bgImage2.opacity = 0;
+        if (src === "") {
+            bgImage1.pendingFade = false; bgImage2.pendingFade = false;
+            bgImage1.opacity = 0; bgImage2.opacity = 0;
+            bgShownImg = null;
             return;
         }
-        if (bgToggle) {
-            bgImage1.source = src;
-            bgImage1.opacity = parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55;
-            bgImage2.opacity = 0;
+        // Always write the layer that is NOT on screen
+        var incoming = (bgShownImg === bgImage1) ? bgImage2 : bgImage1;
+        incoming.pendingFade = true;
+        if ("" + incoming.source === src && incoming.status === Image.Ready) {
+            startBgFade(incoming);              // already cached — fade now
         } else {
-            bgImage2.source = src;
-            bgImage2.opacity = parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55;
-            bgImage1.opacity = 0;
+            incoming.animate = false;           // snap hidden (no half-fade)
+            incoming.opacity = 0;
+            incoming.animate = true;
+            incoming.source = src;              // Image.Ready → startBgFade()
         }
-        bgToggle = !bgToggle;
+    }
+
+    function startBgFade(img) {
+        if (!img.pendingFade) return;
+        img.pendingFade = false;
+        var other = (img === bgImage1) ? bgImage2 : bgImage1;
+        other.pendingFade = false;
+        img.opacity = parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55;
+        other.opacity = 0;
+        bgShownImg = img;
     }
 
     onBgSourceChanged: {
