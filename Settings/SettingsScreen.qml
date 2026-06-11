@@ -131,7 +131,7 @@ id: root
         }
         ListElement {
             settingName: "Show Battery Percentage"
-            setting: "Yes,No"
+            setting: "Battery Only,Percentage Only,Combined,No"
         }
         ListElement {
             settingName: "Show Clock"
