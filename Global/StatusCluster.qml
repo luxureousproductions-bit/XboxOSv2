@@ -15,11 +15,14 @@ Item {
         id: sysTime
 
         visible: settings.ShowClock !== "No"
-        text: Qt.formatTime(new Date(), "h:mm AP")
+        // 24hr = military style; anything else (12hr, legacy "Yes") = 12-hour
+        property string clockFormat: settings.ShowClock === "24hr" ? "HH:mm" : "h:mm AP"
+        text: Qt.formatTime(new Date(), clockFormat)
 
         function set() {
-            sysTime.text = Qt.formatTime(new Date(), "h:mm AP");
+            sysTime.text = Qt.formatTime(new Date(), clockFormat);
         }
+        onClockFormatChanged: set()
 
         Timer {
             interval: 60000
