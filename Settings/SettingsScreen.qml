@@ -131,11 +131,11 @@ id: root
         }
         ListElement {
             settingName: "Show Battery Percentage"
-            setting: "Yes,No"
+            setting: "Battery Only,Percentage Only,Combined,No"
         }
         ListElement {
             settingName: "Show Clock"
-            setting: "Yes,No"
+            setting: "12hr,24hr,No"
         }
         ListElement {
             settingName: "Launch screen delay"
