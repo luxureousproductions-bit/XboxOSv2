@@ -109,8 +109,10 @@ id: root
                 width:  parent.width  + (8 - index) * vpx(2)
                 height: parent.height + (8 - index) * vpx(2)
                 radius: vpx(6) + (8 - index) * vpx(1)
-                color: theme.accent
-                opacity: 0.07
+                color: "transparent"
+                border.color: theme.accent
+                border.width: vpx(2)
+                opacity: 0.10
             }
         }
     }
