@@ -78,6 +78,19 @@ id: root
         color: theme.main
     }
 
+    // Touch/click blocker — these RA pages are shown full-screen over whatever
+    // was on screen before; absorb pointer input so taps on empty areas can't
+    // fall through to the screen behind. Sits below all page content (declared
+    // after this), so the page's own controls still receive input on top.
+    MouseArea {
+        anchors.fill: parent
+        acceptedButtons: Qt.AllButtons
+        hoverEnabled: true
+        onPressed: mouse.accepted = true
+        onClicked: mouse.accepted = true
+        onReleased: mouse.accepted = true
+    }
+
     // ── Header: RA logo + avatar + name + points ─────────────────────────
     Item {
     id: brandHeader
