@@ -23,6 +23,20 @@ import "../utils.js" as Utils
 
 FocusScope {
 id: root
+
+    // Touch/click blocker — full-screen page shown over the previous screen;
+    // absorb pointer input so taps on empty areas can't fall through to it.
+    // z:-100 keeps it behind all page content (z>=0) but in front of the
+    // screen behind, so the page's own controls receive input first.
+    MouseArea {
+        anchors.fill: parent
+        z: -100
+        acceptedButtons: Qt.AllButtons
+        hoverEnabled: true
+        onPressed: mouse.accepted = true
+        onClicked: mouse.accepted = true
+        onReleased: mouse.accepted = true
+    }
     function gameActivated() {
         storedCollectionGameIndex = gamegrid.currentIndex
         gameDetails(list.currentGame(gamegrid.currentIndex));
