@@ -89,30 +89,33 @@ id: root
         }
     }
 
-    // Focus glow — tied to the "Tile Halo" setting and the live Color Layout
-    // accent. Aspect-independent + shader-free: concentric accent rounded-rects
-    // that fade outward. Built only while the tile is selected (fades both ways),
-    // so it works on any tile shape and only the selected tile costs anything.
-    Item {
+    // Focus glow — same asset, tint, and technique as the system tiles so it
+    // matches their look. The white PNG (transparent centre) gives the glow
+    // shape; ColorOverlay recolors it to the Color Layout accent. The
+    // transparent centre means it never tints a video playing behind the tile.
+    Image {
+        id: tileHaloSrc
+        // Size per-dimension (not a uniform width-based margin) so the glow's
+        // transparent centre matches the tile on ANY aspect — square, tall, or
+        // wide — with no gap. 1.1228 = 1 + 2*0.0614 keeps the same bleed as the
+        // system tiles.
+        anchors.centerIn: container
+        width:  container.width  * 1.1228
+        height: container.height * 1.1228
+        source: "../assets/images/focus_halo.png"
+        smooth: true
+        mipmap: false
+        visible: false
+    }
+    ColorOverlay {
         id: tileGlow
-        anchors.fill: container
+        anchors.fill: tileHaloSrc
+        source: tileHaloSrc
+        color: theme.accent
         z: -1
-        opacity: (selected && settings.TileHalo === "Yes") ? 1 : 0
+        opacity: (selected && settings.TileHalo === "Yes") ? 0.95 : 0
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-        Repeater {
-            model: tileGlow.visible ? 8 : 0
-            Rectangle {
-                anchors.centerIn: parent
-                width:  parent.width  + (8 - index) * vpx(2)
-                height: parent.height + (8 - index) * vpx(2)
-                radius: vpx(6) + (8 - index) * vpx(1)
-                color: "transparent"
-                border.color: theme.accent
-                border.width: vpx(2)
-                opacity: 0.10
-            }
-        }
     }
 
     Item 
