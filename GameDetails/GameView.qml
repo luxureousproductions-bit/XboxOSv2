@@ -374,6 +374,11 @@ id: root
     }
 
     // Clear logo
+    // Top state used by the logo/title/shadow. Keys off the list's actual top
+    // position (atYBeginning), not just currentIndex — so a mouse wheel or
+    // finger flick (which scrolls contentY without changing currentIndex) also
+    // hides the logo, matching controller behavior.
+    property bool logoAtTop: content.atYBeginning && content.currentIndex === 0 && detailsScreen.opacity === 0
     Image {
     id: logo
 
@@ -387,9 +392,9 @@ id: root
         sourceSize { width: 512; height: 512 }
         fillMode: Image.PreserveAspectFit
         asynchronous: true
-        opacity: (content.currentIndex !== 0 || detailsScreen.opacity !== 0) ? 0 : 1
+        opacity: logoAtTop ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 200 } }
-        z: (content.currentIndex == 0) ? 10 : -10
+        z: logoAtTop ? 10 : -10
         visible: settings.GameLogo === "Show"
     }
 
@@ -401,7 +406,7 @@ id: root
         anchors.fill: logo
         active: settings.GameLogo === "Show"
         readonly property Item shadowSource: logo
-        readonly property real shadowOpacity: (content.currentIndex !== 0 || detailsScreen.opacity !== 0) ? 0 : 0.4
+        readonly property real shadowOpacity: logoAtTop ? 0.4 : 0
         sourceComponent: Component {
             DropShadow {
                 anchors.fill: parent
@@ -440,7 +445,7 @@ id: root
         wrapMode: Text.WordWrap
         lineHeight: 0.8
         visible: logo.source === "" || settings.GameLogo === "Text only"
-        opacity: (content.currentIndex !== 0 || detailsScreen.opacity !== 0) ? 0 : 1
+        opacity: logoAtTop ? 1 : 0
     }
 
     // Gradient – plain Rectangle avoids the shader-compilation stall on first
@@ -1028,6 +1033,23 @@ id: root
             else { gv_homebutton.focus = true; }
         }
         Keys.onDownPressed: { playNav(); incrementCurrentIndex() }
+    }
+
+    // Touch/click blocker — while the fullscreen media viewer is open, absorb
+    // pointer input so taps that miss its controls can't fall through to the
+    // menu/buttons behind it. Sits just below mediaScreen in stacking order
+    // (declared right before it) and is only active while media is showing.
+    MouseArea {
+        id: mediaInputBlocker
+        anchors.fill: parent
+        enabled: mediaScreen.visible
+        visible: enabled
+        acceptedButtons: Qt.AllButtons
+        preventStealing: true
+        hoverEnabled: true
+        onPressed: mouse.accepted = true
+        onClicked: mouse.accepted = true
+        onReleased: mouse.accepted = true
     }
 
     MediaView {
