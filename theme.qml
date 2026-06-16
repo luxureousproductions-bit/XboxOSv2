@@ -591,7 +591,19 @@ id: root
         };
     }
 
-    
+    // ── White-background contrast flags ───────────────────────────────────
+    // When the page background is the light "White" color, chrome that is
+    // normally white (nav bar, status bar, library logo) should flip to black
+    // so it stays visible. theme.text already flips on its own for light
+    // backgrounds; these flags drive the hardcoded-white chrome.
+    //   whiteBackground          → AllGames, GridView, GameView, RA pages
+    //   showcaseWhiteBackground  → Showcase, but ONLY when no fanart/custom
+    //                              image is covering theme.main (otherwise the
+    //                              visible backdrop is the image, not white)
+    property bool whiteBackground: settings.ColorBackground === "White"
+    property bool showcaseWhiteBackground: whiteBackground
+                                           && settings.ShowcaseBackgroundArt === "No"
+                                           && settings.CustomBackground === "No"
 
     property real globalMargin: vpx(30)
     property real helpMargin: buttonbar.height
