@@ -59,33 +59,40 @@ id: root
         if (mode === "Screenshot") return shot || fan  || box  || "";
         return fan || shot || box || "";   // Fanart (default)
     }
-    property var collection1: getCollection(settings.ShowcaseCollection1, settings.ShowcaseCollection1_Thumbnail)
-    property var collection2: getCollection(settings.ShowcaseCollection2, settings.ShowcaseCollection2_Thumbnail)
-    property var collection3: getCollection(settings.ShowcaseCollection3, settings.ShowcaseCollection3_Thumbnail)
-    property var collection4: getCollection(settings.ShowcaseCollection4, settings.ShowcaseCollection4_Thumbnail)
-    property var collection5: getCollection(settings.ShowcaseCollection5, settings.ShowcaseCollection5_Thumbnail)
-    property var collection6: getCollection(settings.ShowcaseCollection6, settings.ShowcaseCollection6_Thumbnail)
+    property var collection1: getCollection(settings.ShowcaseCollection1, settings.ShowcaseCollection1_Thumbnail, settings.ShowcaseCollection1_Size, settings.ShowcaseCollection1_Ratio)
+    property var collection2: getCollection(settings.ShowcaseCollection2, settings.ShowcaseCollection2_Thumbnail, settings.ShowcaseCollection2_Size, settings.ShowcaseCollection2_Ratio)
+    property var collection3: getCollection(settings.ShowcaseCollection3, settings.ShowcaseCollection3_Thumbnail, settings.ShowcaseCollection3_Size, settings.ShowcaseCollection3_Ratio)
+    property var collection4: getCollection(settings.ShowcaseCollection4, settings.ShowcaseCollection4_Thumbnail, settings.ShowcaseCollection4_Size, settings.ShowcaseCollection4_Ratio)
+    property var collection5: getCollection(settings.ShowcaseCollection5, settings.ShowcaseCollection5_Thumbnail, settings.ShowcaseCollection5_Size, settings.ShowcaseCollection5_Ratio)
+    property var collection6: getCollection(settings.ShowcaseCollection6, settings.ShowcaseCollection6_Thumbnail, settings.ShowcaseCollection6_Size, settings.ShowcaseCollection6_Ratio)
 
-    function getCollection(collectionName, collectionThumbnail) {
+    function getCollection(collectionName, collectionThumbnail, collectionSize, collectionRatio) {
         var collection = {
             enabled: true,
         };
 
         var width = root.width - globalMargin * 2;
+        var ratio = parseFloat(collectionRatio) || 0.66;
+        // Size -> divisor. Square: Small 6 / Medium 5.5 / Large 5.
+        //                  Tall:   Small 8 / Medium 7   / Large 6.
+        //                  Wide:   Small 4 / Medium 3.5 / Large 3.
+        var sDiv  = (collectionSize === "Large") ? 5.0 : (collectionSize === "Medium" ? 5.5 : 6.0);
+        var tDiv  = (collectionSize === "Large") ? 6.0 : (collectionSize === "Medium" ? 7.0 : 8.0);
+        var wDiv  = (collectionSize === "Large") ? 3.0 : (collectionSize === "Medium" ? 3.5 : 4.0);
 
         switch (collectionThumbnail) {
             case "Square":
-                collection.itemWidth = (width / 6.0);
+                collection.itemWidth = (width / sDiv);
                 collection.itemHeight = collection.itemWidth;
                 break;
             case "Tall":
-                collection.itemWidth = (width / 8.0);
-                collection.itemHeight = collection.itemWidth / settings.TallRatio;
+                collection.itemWidth = (width / tDiv);
+                collection.itemHeight = collection.itemWidth / ratio;
                 break;
             case "Wide":
             default:
-                collection.itemWidth = (width / 4.0);
-                collection.itemHeight = collection.itemWidth * settings.WideRatio;
+                collection.itemWidth = (width / wDiv);
+                collection.itemHeight = collection.itemWidth * ratio;
                 break;
             
         }
