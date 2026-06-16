@@ -396,6 +396,8 @@ id: root
                 width: vpx(24); height: vpx(24)
                 sourceSize: Qt.size(vpx(24), vpx(24))
                 source: "../assets/images/icon_home.svg"
+                layer.enabled: whiteBackground
+                layer.effect: ColorOverlay { color: "black" }
                 fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
                 opacity: homebutton.focus ? 1 : 0.7
             }
@@ -420,13 +422,15 @@ id: root
                     var ctx = getContext("2d"); ctx.reset();
                     var cx = width/2, cy = height/2, r = Math.min(cx,cy)-1;
                     ctx.globalAlpha = discoverbutton.focus ? 1.0 : 0.85;
-                    ctx.strokeStyle = "white"; ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = navCol; ctx.lineWidth = 1.5;
                     ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
-                    ctx.fillStyle = "white";
+                    ctx.fillStyle = navCol;
                     ctx.beginPath(); ctx.moveTo(cx, cy-r*0.65); ctx.lineTo(cx+r*0.30, cy+r*0.10); ctx.lineTo(cx, cy+r*0.20); ctx.lineTo(cx-r*0.30, cy+r*0.10); ctx.closePath(); ctx.fill();
                     ctx.globalAlpha = 0.35;
                     ctx.beginPath(); ctx.moveTo(cx, cy+r*0.65); ctx.lineTo(cx-r*0.30, cy-r*0.10); ctx.lineTo(cx, cy-r*0.20); ctx.lineTo(cx+r*0.30, cy-r*0.10); ctx.closePath(); ctx.fill();
                 }
+                property string navCol: whiteBackground ? "black" : "white"
+                onNavColChanged: requestPaint()
                 Connections { target: discoverbutton; onFocusChanged: parent.requestPaint() }
             }
         }
@@ -449,6 +453,8 @@ id: root
                 width: vpx(24); height: vpx(24)
                 sourceSize: Qt.size(vpx(24), vpx(24))
                 source: "../assets/images/trophy.svg"
+                layer.enabled: whiteBackground
+                layer.effect: ColorOverlay { color: "black" }
                 fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
                 opacity: achievementsbutton.focus ? 1 : 0.7
             }
@@ -471,6 +477,8 @@ id: root
                 width: vpx(24); height: vpx(24)
                 sourceSize: Qt.size(vpx(24), vpx(24))
                 source: "../assets/images/settingsicon.svg"
+                layer.enabled: whiteBackground
+                layer.effect: ColorOverlay { color: "black" }
                 fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
             }
         }
@@ -479,7 +487,7 @@ id: root
         Text {
             text: "Home"
             anchors { top: homebutton.bottom; topMargin: vpx(3); horizontalCenter: homebutton.horizontalCenter }
-            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
             opacity: homebutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -487,7 +495,7 @@ id: root
         Text {
             text: "Discover"
             anchors { top: discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: discoverbutton.horizontalCenter }
-            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
             opacity: discoverbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -495,7 +503,7 @@ id: root
         Text {
             text: "RetroAchievements"
             anchors { top: achievementsbutton.bottom; topMargin: vpx(3); horizontalCenter: achievementsbutton.horizontalCenter }
-            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
             opacity: achievementsbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -503,7 +511,7 @@ id: root
         Text {
             text: "Settings"
             anchors { top: settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: settingsbutton.horizontalCenter }
-            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
             opacity: settingsbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -1048,5 +1056,6 @@ id: root
     StatusCluster {
         anchors.fill: parent
         z: 50
+        dark: whiteBackground
     }
 }
