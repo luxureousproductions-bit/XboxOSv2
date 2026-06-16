@@ -941,7 +941,7 @@ id: root
             width: root.width - vpx(70) - globalMargin
             height: itemHeight + vpx(60)
             itemWidth: (root.width - globalMargin * 2) / 3.0
-            itemHeight: itemWidth * settings.WideRatio
+            itemHeight: itemWidth * 0.68
 
             // Show recommended games when there are no publisher/developer results
             title: {
@@ -977,7 +977,7 @@ id: root
             width: root.width - vpx(70) - globalMargin
             height: itemHeight + vpx(60)
             itemWidth: (root.width - globalMargin * 2) / 5.0
-            itemHeight: itemWidth / settings.TallRatio
+            itemHeight: itemWidth / 0.66
 
             title: {
                 if (!game || game.genreList.length === 0) return "              ";
