@@ -487,7 +487,7 @@ id: root
     property var settingsArr: [generalPage, showcasePage, collectionsPage, gridPage, gamePage, allGamesPage, mediaCarouselPage, audioPage, advancedPage, raPage]
 
     property real itemheight: vpx(50)
-    property color settingsTextColor: theme.text
+    property color settingsTextColor: "white"   // locked white: the settings background is locked black, so text must never follow the Color Layout light/dark flip
 
     // ── On-screen keyboard for text fields (RA credentials) ───────────────
     // Fully controller-driven. NO native Android TextInput/IME (no blue box).
@@ -1084,7 +1084,7 @@ id: root
                         right: parent.right; rightMargin: vpx(25)
                         bottom: parent.bottom
                     }
-                    color: theme.text
+                    color: settingsTextColor
                     opacity: selected ? 0.1 : 0
                     height: vpx(1)
                 }
@@ -1175,7 +1175,7 @@ id: root
             Text {
             id: kbTitle
                 text: "Enter " + editSettingName
-                color: theme.text
+                color: settingsTextColor
                 font.family: titleFont.name; font.pixelSize: vpx(24); font.bold: true
                 anchors { top: parent.top; topMargin: vpx(18); left: parent.left; leftMargin: vpx(24) }
             }
@@ -1190,7 +1190,7 @@ id: root
                     anchors { left: parent.left; leftMargin: vpx(14); right: parent.right; rightMargin: vpx(14); verticalCenter: parent.verticalCenter }
                     text: editText === "" ? "Type\u2026"
                           : (editMasked ? Array(editText.length + 1).join("\u25CF") : editText)
-                    color: editText === "" ? Qt.rgba(1,1,1,0.4) : theme.text
+                    color: editText === "" ? Qt.rgba(1,1,1,0.4) : settingsTextColor
                     font.family: subtitleFont.name; font.pixelSize: vpx(20)
                     elide: Text.ElideRight
                 }
@@ -1216,7 +1216,7 @@ id: root
                             text: modelData === "SPACE" ? "\u2423"
                                   : (modelData === "DEL" ? "\u232B"
                                   : (modelData === "SHIFT" ? "\u21E7" : modelData))
-                            color: sel ? "white" : theme.text
+                            color: sel ? "white" : settingsTextColor
                             font.family: subtitleFont.name
                             font.pixelSize: (modelData.length > 1 && modelData !== "SHIFT" && modelData !== "SPACE" && modelData !== "DEL") ? vpx(11) : vpx(18)
                             font.bold: sel
@@ -1244,7 +1244,7 @@ id: root
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.t
-                            color: theme.text; opacity: 0.55
+                            color: settingsTextColor; opacity: 0.55
                             font.family: subtitleFont.name; font.pixelSize: vpx(15)
                         }
                     }
@@ -1252,7 +1252,7 @@ id: root
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "\u21E7 Shift    áé Accents"
-                    color: theme.text; opacity: 0.4
+                    color: settingsTextColor; opacity: 0.4
                     font.family: subtitleFont.name; font.pixelSize: vpx(13)
                 }
             }
