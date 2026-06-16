@@ -34,7 +34,7 @@ id: root
                 text: name
                 font.family: subtitleFont.name
                 font.pixelSize: vpx(16)
-                color: theme.text
+                color: theme.helpbarTextColor
                 height: parent.height
                 verticalAlignment: Text.AlignVCenter
             }
