@@ -339,6 +339,18 @@ id: root
         currentGame                 = api.allGames.get(api.memory.get('savedGame'));
         root.state                  = api.memory.get('savedState');
 
+        // savedState is "launchgamescreen" (the splash was on-screen at launch).
+        // On reload-type devices we land back on the splash, so redirect to the
+        // page we launched from (top of lastState) and drop it from the stack.
+        if (root.state === "launchgamescreen") {
+            if (lastState.length > 0) {
+                root.state = lastState[lastState.length - 1];
+                lastState.pop();
+            } else {
+                root.state = "showcasescreen";
+            }
+        }
+
         // Remove these from memory so as to not clog it up
         api.memory.unset('savedState');
         api.memory.unset('savedGame');
@@ -467,32 +479,26 @@ id: root
             background    = "#707070";
             gradientstart = "#00707070";
             gradientend   = "#FF707070";
-            text          = "#101010";
         } else if (settings.ColorBackground === "Silver") {
             background    = "#909090";
             gradientstart = "#00909090";
             gradientend   = "#FF909090";
-            text          = "#101010";
         } else if (settings.ColorBackground === "Light Blue") {
             background    = "#4a7aa0";
             gradientstart = "#004a7aa0";
             gradientend   = "#FF4a7aa0";
-            text          = "#101010";
         } else if (settings.ColorBackground === "Sage") {
             background    = "#6a8a6a";
             gradientstart = "#006a8a6a";
             gradientend   = "#FF6a8a6a";
-            text          = "#101010";
         } else if (settings.ColorBackground === "Tan") {
             background    = "#8a7a5a";
             gradientstart = "#008a7a5a";
             gradientend   = "#FF8a7a5a";
-            text          = "#101010";
         } else if (settings.ColorBackground === "Rose") {
             background    = "#a06070";
             gradientstart = "#00a06070";
             gradientend   = "#FFa06070";
-            text          = "#101010";
         } else if (settings.ColorBackground === "Gradient") {
             // theme.main becomes transparent so the root-level Gradient Image shows through.
             background    = "transparent";
@@ -1096,6 +1102,9 @@ id: root
     
     // Button help
     property var currentHelpbarModel
+    // Help bar text follows theme.text everywhere EXCEPT the settings page,
+    // whose background is locked black — there it stays light so it never vanishes.
+    property color helpbarTextColor: (root.state === "settingsscreen") ? "#ebebeb" : text
     ButtonHelpBar {
     id: buttonbar
 
