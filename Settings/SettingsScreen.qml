@@ -155,14 +155,6 @@ id: root
             settingName: "Launch screen delay"
             setting: "2.0,2.5,3.0,3.5,4.0,4.5,5.0,0.5,1.0,1.5"
         }
-        ListElement {
-            settingName: "Wide - Ratio"
-            setting: "0.68,0.69,0.70,0.71,0.72,0.73,0.74,0.75,0.76,0.77,0.78,0.79,0.80,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88,0.89,0.90,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.10,0.11,0.12,0.13,0.14,0.15,0.16,0.17,0.18,0.19,0.20,0.21,0.22,0.23,0.24,0.25,0.26,0.27,0.28,0.29,0.30,0.31,0.32,0.33,0.34,0.35,0.36,0.37,0.38,0.39,0.40,0.41,0.42,0.43,0.44,0.45,0.46,0.47,0.48,0.49,0.50,0.51,0.52,0.53,0.54,0.55,0.56,0.57,0.58,0.59,0.60,0.61,0.62,0.63,0.64,0.65,0.66,0.67"
-        }
-        ListElement {
-            settingName: "Tall - Ratio"
-            setting: "0.66,0.67,0.68,0.69,0.70,0.71,0.72,0.73,0.74,0.75,0.76,0.77,0.78,0.79,0.80,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88,0.89,0.90,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.10,0.11,0.12,0.13,0.14,0.15,0.16,0.17,0.18,0.19,0.20,0.21,0.22,0.23,0.24,0.25,0.26,0.27,0.28,0.29,0.30,0.31,0.32,0.33,0.34,0.35,0.36,0.37,0.38,0.39,0.40,0.41,0.42,0.43,0.44,0.45,0.46,0.47,0.48,0.49,0.50,0.51,0.52,0.53,0.54,0.55,0.56,0.57,0.58,0.59,0.60,0.61,0.62,0.63,0.64,0.65"
-        }
     }
 
     property var advancedPage: {
@@ -238,12 +230,28 @@ id: root
             setting: "Wide,Tall,Square"
         }
         ListElement {
+            settingName: "Collection 1 - Size"
+            setting: "Small,Medium,Large"
+        }
+        ListElement {
+            settingName: "Collection 1 - Ratio"
+            setting: "0.66,0.67,0.68,0.69,0.70,0.71,0.72,0.73,0.74,0.75,0.76,0.77,0.78,0.79,0.80,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88,0.89,0.90,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,0.50,0.51,0.52,0.53,0.54,0.55,0.56,0.57,0.58,0.59,0.60,0.61,0.62,0.63,0.64,0.65"
+        }
+        ListElement {
             settingName: "Collection 2"
             setting: "Most Played,Recommended,Top by Publisher,Top by Developer,Top by Genre,Top by Genre 2,None,Favorites,Recently Played"
         }
         ListElement {
             settingName: "Collection 2 - Thumbnail"
             setting: "Tall,Square,Wide"
+        }
+        ListElement {
+            settingName: "Collection 2 - Size"
+            setting: "Small,Medium,Large"
+        }
+        ListElement {
+            settingName: "Collection 2 - Ratio"
+            setting: "0.66,0.67,0.68,0.69,0.70,0.71,0.72,0.73,0.74,0.75,0.76,0.77,0.78,0.79,0.80,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88,0.89,0.90,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,0.50,0.51,0.52,0.53,0.54,0.55,0.56,0.57,0.58,0.59,0.60,0.61,0.62,0.63,0.64,0.65"
         }
         ListElement {
             settingName: "Collection 3"
@@ -254,12 +262,28 @@ id: root
             setting: "Wide,Tall,Square"
         }
         ListElement {
+            settingName: "Collection 3 - Size"
+            setting: "Small,Medium,Large"
+        }
+        ListElement {
+            settingName: "Collection 3 - Ratio"
+            setting: "0.66,0.67,0.68,0.69,0.70,0.71,0.72,0.73,0.74,0.75,0.76,0.77,0.78,0.79,0.80,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88,0.89,0.90,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,0.50,0.51,0.52,0.53,0.54,0.55,0.56,0.57,0.58,0.59,0.60,0.61,0.62,0.63,0.64,0.65"
+        }
+        ListElement {
             settingName: "Collection 4"
             setting: "Top by Genre,Top by Genre 2,Top by Developer,None,Favorites,Recently Played,Most Played,Recommended,Top by Publisher"
         }
         ListElement {
             settingName: "Collection 4 - Thumbnail"
             setting: "Tall,Square,Wide"
+        }
+        ListElement {
+            settingName: "Collection 4 - Size"
+            setting: "Small,Medium,Large"
+        }
+        ListElement {
+            settingName: "Collection 4 - Ratio"
+            setting: "0.66,0.67,0.68,0.69,0.70,0.71,0.72,0.73,0.74,0.75,0.76,0.77,0.78,0.79,0.80,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88,0.89,0.90,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,0.50,0.51,0.52,0.53,0.54,0.55,0.56,0.57,0.58,0.59,0.60,0.61,0.62,0.63,0.64,0.65"
         }
         ListElement {
             settingName: "Collection 5"
@@ -270,12 +294,28 @@ id: root
             setting: "Wide,Tall,Square"
         }
         ListElement {
+            settingName: "Collection 5 - Size"
+            setting: "Small,Medium,Large"
+        }
+        ListElement {
+            settingName: "Collection 5 - Ratio"
+            setting: "0.66,0.67,0.68,0.69,0.70,0.71,0.72,0.73,0.74,0.75,0.76,0.77,0.78,0.79,0.80,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88,0.89,0.90,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,0.50,0.51,0.52,0.53,0.54,0.55,0.56,0.57,0.58,0.59,0.60,0.61,0.62,0.63,0.64,0.65"
+        }
+        ListElement {
             settingName: "Collection 6"
             setting: "None,Favorites,Recently Played,Most Played,Recommended,Top by Publisher,Top by Developer,Top by Genre,Top by Genre 2"
         }
         ListElement {
             settingName: "Collection 6 - Thumbnail"
             setting: "Wide,Tall,Square"
+        }
+        ListElement {
+            settingName: "Collection 6 - Size"
+            setting: "Small,Medium,Large"
+        }
+        ListElement {
+            settingName: "Collection 6 - Ratio"
+            setting: "0.66,0.67,0.68,0.69,0.70,0.71,0.72,0.73,0.74,0.75,0.76,0.77,0.78,0.79,0.80,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88,0.89,0.90,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,0.50,0.51,0.52,0.53,0.54,0.55,0.56,0.57,0.58,0.59,0.60,0.61,0.62,0.63,0.64,0.65"
         }
 
     }
@@ -293,6 +333,10 @@ id: root
         ListElement {
             settingName: "Grid Thumbnail"
             setting: "Wide,Tall,Square"
+        }
+        ListElement {
+            settingName: "Grid Ratio"
+            setting: "0.66,0.67,0.68,0.69,0.70,0.71,0.72,0.73,0.74,0.75,0.76,0.77,0.78,0.79,0.80,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88,0.89,0.90,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,0.50,0.51,0.52,0.53,0.54,0.55,0.56,0.57,0.58,0.59,0.60,0.61,0.62,0.63,0.64,0.65"
         }
         ListElement {
             settingName: "Grid art"
@@ -882,10 +926,23 @@ id: root
                 // when Showcase Background Art is off or Custom Background is on.
                 property bool rowDisabled: {
                     var _v = settingsList.settingsVersion;   // re-evaluate after any save
-                    if (settingName !== "Randomize System Tile Fanart") return false;
-                    var bgArt  = api.memory.has("Showcase Background Art") ? api.memory.get("Showcase Background Art") : "Yes";
-                    var custom = api.memory.has("Custom Background") ? api.memory.get("Custom Background") : "No";
-                    return bgArt === "No" || custom === "Yes";
+                    if (settingName === "Randomize System Tile Fanart") {
+                        var bgArt  = api.memory.has("Showcase Background Art") ? api.memory.get("Showcase Background Art") : "Yes";
+                        var custom = api.memory.has("Custom Background") ? api.memory.get("Custom Background") : "No";
+                        return bgArt === "No" || custom === "Yes";
+                    }
+                    // A collection's Ratio row is inert when its shape is Square
+                    if (settingName.indexOf("Collection ") === 0 && settingName.indexOf(" - Ratio") !== -1) {
+                        var coll = settingName.replace(" - Ratio", "");
+                        var shp = api.memory.has(coll + " - Thumbnail") ? api.memory.get(coll + " - Thumbnail") : "Wide";
+                        return shp === "Square";
+                    }
+                    // Grid Ratio is inert when the grid shape is Square
+                    if (settingName === "Grid Ratio") {
+                        var gth = api.memory.has("Grid Thumbnail") ? api.memory.get("Grid Thumbnail") : "Wide";
+                        return gth === "Square";
+                    }
+                    return false;
                 }
 
                 // Text-input rows (RA credentials) skip the cycling logic
