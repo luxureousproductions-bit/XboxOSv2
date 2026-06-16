@@ -92,7 +92,7 @@ id: root
         opacity: 1
     }
 
-    // (Launch splash text removed — logo-only splash; any key still returns.)
+    // (Launch splash text removed — logo-only splash. Only B backs out, after a 1s delay.)
 
     // Helpbar buttons
     ListModel {
@@ -106,24 +106,63 @@ id: root
     
     onFocusChanged: { if (focus) currentHelpbarModel = launchGameHelpModel; }
 
-    // Input handling
+    // Input handling — ONLY the B / cancel button backs out, available the whole
+    // time the splash is up. Every other key is swallowed so nothing else can
+    // dismiss it.
     Keys.onPressed: {
-
-        // Back
-        if (api.keys.isCancel(event) && !event.isAutoRepeat) {
-            event.accepted = true;
+        event.accepted = true;
+        if (api.keys.isCancel(event) && !event.isAutoRepeat)
             previousScreen();
-        } else {
-            previousScreen();
-        }
     }
 
-    // Mouse/touch functionality
+    // Absorb touch/click so a tap can't dismiss the splash or fall through to
+    // anything behind it — only B backs out.
     MouseArea {
         anchors.fill: parent
         hoverEnabled: true
-        onClicked: {
-            previousScreen();
+        acceptedButtons: Qt.AllButtons
+        onPressed: mouse.accepted = true
+        onClicked: mouse.accepted = true
+        onReleased: mouse.accepted = true
+    }
+
+    // "B  Back" hint, bottom-right, matching the global help bar's glyph + label.
+    // Always visible while the splash is up (respects Hide Button Help).
+    Row {
+        id: backHint
+        spacing: 10
+        anchors {
+            right: parent.right; rightMargin: globalMargin
+            bottom: parent.bottom; bottomMargin: vpx(20)
         }
+        visible: settings.HideButtonHelp === "No"
+
+        Image {
+            source: "../assets/images/controller/" + cancelGlyph() + ".png"
+            width: vpx(30)
+            height: vpx(30)
+            asynchronous: true
+            anchors.verticalCenter: parent.verticalCenter
+        }
+        Text {
+            text: "Back"
+            font.family: subtitleFont.name
+            font.pixelSize: vpx(16)
+            color: theme.text
+            anchors.verticalCenter: parent.verticalCenter
+        }
+    }
+
+    // Resolve the controller glyph filename for the cancel/B button, the same
+    // way the help bar does (find the Gamepad mapping, use its hex key digit).
+    function cancelGlyph() {
+        var bm = api.keys.cancel;
+        for (var i = 0; i < bm.length; i++) {
+            if (bm[i].name().includes("Gamepad")) {
+                var v = bm[i].key.toString(16);
+                return v.substring(v.length - 1, v.length);
+            }
+        }
+        return "";
     }
 }
