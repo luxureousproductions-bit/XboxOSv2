@@ -405,5 +405,6 @@ id: root
     StatusCluster {
         anchors.fill: parent
         z: 50
+        dark: whiteBackground
     }
 }
