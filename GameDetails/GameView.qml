@@ -940,7 +940,7 @@ id: root
             focus: selected
             width: root.width - vpx(70) - globalMargin
             height: itemHeight + vpx(60)
-            itemWidth: (root.width - globalMargin * 2) / 4.0
+            itemWidth: (root.width - globalMargin * 2) / 3.0
             itemHeight: itemWidth * settings.WideRatio
 
             // Show recommended games when there are no publisher/developer results
@@ -976,7 +976,7 @@ id: root
             focus: selected
             width: root.width - vpx(70) - globalMargin
             height: itemHeight + vpx(60)
-            itemWidth: (root.width - globalMargin * 2) / 8.0
+            itemWidth: (root.width - globalMargin * 2) / 5.0
             itemHeight: itemWidth / settings.TallRatio
 
             title: {
