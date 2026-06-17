@@ -886,7 +886,7 @@ id: root
         delegate: settingsDelegate
         
         anchors {
-            top: header.bottom; bottom: parent.bottom; 
+            top: header.bottom; bottom: parent.bottom; bottomMargin: helpMargin
             left: pagelist.right; leftMargin: globalMargin
             right: parent.right; rightMargin: globalMargin
         }
