@@ -667,7 +667,7 @@ id: root
             Text {
             id: titleTxt
                 text: "Filters"
-                color: theme.text
+                color: "white"
                 font.family: titleFont.name; font.pixelSize: vpx(24); font.bold: true
                 anchors { top: parent.top; topMargin: vpx(18); left: parent.left; leftMargin: vpx(24) }
             }
@@ -687,14 +687,14 @@ id: root
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\uD83D\uDD0D"; font.pixelSize: vpx(15); width: vpx(22)
-                        color: theme.text; opacity: onRow ? 1 : 0.6
+                        color: "white"; opacity: onRow ? 1 : 0.6
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: searchActive
                               ? (searchTerm === "" ? "Type a name\u2026" : searchTerm)
                               : (searchTerm === "" ? "Name: (no filter)" : "Name: " + searchTerm)
-                        color: onRow ? theme.accent : theme.text
+                        color: onRow ? theme.accent : "white"
                         opacity: onRow ? 1 : 0.85
                         elide: Text.ElideRight
                         font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: onRow
@@ -712,14 +712,14 @@ id: root
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\u2630"; font.pixelSize: vpx(15); width: vpx(22)
-                        color: theme.text; opacity: onRow ? 1 : 0.6
+                        color: "white"; opacity: onRow ? 1 : 0.6
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(46); right: gvArrow.left; rightMargin: vpx(8); verticalCenter: parent.verticalCenter }
                         text: genreSelected.length === 0 ? "Genre: All"
                              : genreSelected.length === 1 ? "Genre: " + genreSelected[0]
                              : "Genre: " + genreSelected.length + " selected"
-                        color: onRow ? theme.accent : theme.text
+                        color: onRow ? theme.accent : "white"
                         opacity: onRow ? 1 : 0.85
                         elide: Text.ElideRight
                         font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: onRow
@@ -727,7 +727,7 @@ id: root
                     Text {
                         id: gvArrow
                         anchors { right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
-                        text: "\u25B8"; color: onRow ? theme.accent : theme.text
+                        text: "\u25B8"; color: onRow ? theme.accent : "white"
                         opacity: onRow ? 1 : 0.6; font.pixelSize: vpx(18)
                     }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 1; openGenrePicker(); } }
@@ -756,7 +756,7 @@ id: root
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: modelData
-                            color: (onRow || isSel) ? theme.accent : theme.text
+                            color: (onRow || isSel) ? theme.accent : "white"
                             opacity: onRow ? 1 : 0.85
                             elide: Text.ElideRight
                             font.family: subtitleFont.name; font.pixelSize: vpx(19); font.bold: onRow || isSel
@@ -788,7 +788,7 @@ id: root
                             Text {
                                 anchors { left: parent.left; leftMargin: vpx(46); verticalCenter: parent.verticalCenter }
                                 text: modelData.label
-                                color: active ? theme.accent : theme.text
+                                color: active ? theme.accent : "white"
                                 opacity: active ? 1 : 0.85
                                 font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: active
                             }
@@ -811,7 +811,7 @@ id: root
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(46); verticalCenter: parent.verticalCenter }
                             text: "Favorites only"
-                            color: showFavs ? theme.accent : theme.text
+                            color: showFavs ? theme.accent : "white"
                             opacity: showFavs ? 1 : 0.85
                             font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: showFavs
                         }
@@ -837,7 +837,7 @@ id: root
                             Text {
                                 anchors.centerIn: parent
                                 text: modelData === "SPACE" ? "\u2423" : (modelData === "DEL" ? "\u232B" : modelData)
-                                color: sel ? "white" : theme.text
+                                color: sel ? "white" : "white"
                                 font.family: subtitleFont.name
                                 font.pixelSize: wide ? vpx(12) : vpx(17)
                                 font.bold: sel
@@ -868,7 +868,7 @@ id: root
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.t
-                            color: theme.text; opacity: 0.55
+                            color: "white"; opacity: 0.55
                             font.family: subtitleFont.name; font.pixelSize: vpx(15)
                         }
                     }
