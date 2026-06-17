@@ -74,10 +74,10 @@ id: root
         var width = root.width - globalMargin * 2;
         var ratio = parseFloat(collectionRatio) || 0.66;
         // Size -> divisor. Square: Small 6 / Medium 5.5 / Large 5.
-        //                  Tall:   Small 8 / Medium 7   / Large 6.
+        //                  Tall:   Small 7 / Medium 6   / Large 5.
         //                  Wide:   Small 4 / Medium 3.5 / Large 3.
         var sDiv  = (collectionSize === "Large") ? 5.0 : (collectionSize === "Medium" ? 5.5 : 6.0);
-        var tDiv  = (collectionSize === "Large") ? 6.0 : (collectionSize === "Medium" ? 7.0 : 8.0);
+        var tDiv  = (collectionSize === "Large") ? 5.0 : (collectionSize === "Medium" ? 6.0 : 7.0);
         var wDiv  = (collectionSize === "Large") ? 3.0 : (collectionSize === "Medium" ? 3.5 : 4.0);
 
         switch (collectionThumbnail) {
