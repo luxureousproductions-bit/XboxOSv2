@@ -396,6 +396,8 @@ id: root
                 width: vpx(24); height: vpx(24)
                 sourceSize: Qt.size(vpx(24), vpx(24))
                 source: "../assets/images/icon_home.svg"
+                layer.enabled: whiteBackground
+                layer.effect: ColorOverlay { color: "black" }
                 fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
                 opacity: homebutton.focus ? 1 : 0.7
             }
@@ -420,13 +422,15 @@ id: root
                     var ctx = getContext("2d"); ctx.reset();
                     var cx = width/2, cy = height/2, r = Math.min(cx,cy)-1;
                     ctx.globalAlpha = discoverbutton.focus ? 1.0 : 0.85;
-                    ctx.strokeStyle = "white"; ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = navCol; ctx.lineWidth = 1.5;
                     ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
-                    ctx.fillStyle = "white";
+                    ctx.fillStyle = navCol;
                     ctx.beginPath(); ctx.moveTo(cx, cy-r*0.65); ctx.lineTo(cx+r*0.30, cy+r*0.10); ctx.lineTo(cx, cy+r*0.20); ctx.lineTo(cx-r*0.30, cy+r*0.10); ctx.closePath(); ctx.fill();
                     ctx.globalAlpha = 0.35;
                     ctx.beginPath(); ctx.moveTo(cx, cy+r*0.65); ctx.lineTo(cx-r*0.30, cy-r*0.10); ctx.lineTo(cx, cy-r*0.20); ctx.lineTo(cx+r*0.30, cy-r*0.10); ctx.closePath(); ctx.fill();
                 }
+                property string navCol: whiteBackground ? "black" : "white"
+                onNavColChanged: requestPaint()
                 Connections { target: discoverbutton; onFocusChanged: parent.requestPaint() }
             }
         }
@@ -449,6 +453,8 @@ id: root
                 width: vpx(24); height: vpx(24)
                 sourceSize: Qt.size(vpx(24), vpx(24))
                 source: "../assets/images/trophy.svg"
+                layer.enabled: whiteBackground
+                layer.effect: ColorOverlay { color: "black" }
                 fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
                 opacity: achievementsbutton.focus ? 1 : 0.7
             }
@@ -471,6 +477,8 @@ id: root
                 width: vpx(24); height: vpx(24)
                 sourceSize: Qt.size(vpx(24), vpx(24))
                 source: "../assets/images/settingsicon.svg"
+                layer.enabled: whiteBackground
+                layer.effect: ColorOverlay { color: "black" }
                 fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
             }
         }
@@ -479,7 +487,7 @@ id: root
         Text {
             text: "Home"
             anchors { top: homebutton.bottom; topMargin: vpx(3); horizontalCenter: homebutton.horizontalCenter }
-            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
             opacity: homebutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -487,7 +495,7 @@ id: root
         Text {
             text: "Discover"
             anchors { top: discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: discoverbutton.horizontalCenter }
-            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
             opacity: discoverbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -495,7 +503,7 @@ id: root
         Text {
             text: "RetroAchievements"
             anchors { top: achievementsbutton.bottom; topMargin: vpx(3); horizontalCenter: achievementsbutton.horizontalCenter }
-            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
             opacity: achievementsbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -503,7 +511,7 @@ id: root
         Text {
             text: "Settings"
             anchors { top: settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: settingsbutton.horizontalCenter }
-            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
             opacity: settingsbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -525,12 +533,13 @@ id: root
 
             property real cellHeightRatio: fakebox.paintedHeight / fakebox.paintedWidth
             property real savedCellHeight: {
+                var gridRatio = parseFloat(settings.GridRatio) || 0.66;
                 if (settings.GridThumbnail == "Tall") {
-                    return cellWidth / settings.TallRatio;
+                    return cellWidth / gridRatio;
                 } else if (settings.GridThumbnail == "Square") {
                     return cellWidth;
                 } else {
-                    return cellWidth * settings.WideRatio;
+                    return cellWidth * gridRatio;
                 }
             }
             property var sourceThumbnail: showBoxes ? "BoxArtGridItem.qml" : "../Global/DynamicGridItem.qml"
@@ -658,7 +667,7 @@ id: root
             Text {
             id: titleTxt
                 text: "Filters"
-                color: theme.text
+                color: "white"
                 font.family: titleFont.name; font.pixelSize: vpx(24); font.bold: true
                 anchors { top: parent.top; topMargin: vpx(18); left: parent.left; leftMargin: vpx(24) }
             }
@@ -678,14 +687,14 @@ id: root
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\uD83D\uDD0D"; font.pixelSize: vpx(15); width: vpx(22)
-                        color: theme.text; opacity: onRow ? 1 : 0.6
+                        color: "white"; opacity: onRow ? 1 : 0.6
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: searchActive
                               ? (searchTerm === "" ? "Type a name\u2026" : searchTerm)
                               : (searchTerm === "" ? "Name: (no filter)" : "Name: " + searchTerm)
-                        color: onRow ? theme.accent : theme.text
+                        color: "white"
                         opacity: onRow ? 1 : 0.85
                         elide: Text.ElideRight
                         font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: onRow
@@ -703,14 +712,14 @@ id: root
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\u2630"; font.pixelSize: vpx(15); width: vpx(22)
-                        color: theme.text; opacity: onRow ? 1 : 0.6
+                        color: "white"; opacity: onRow ? 1 : 0.6
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(46); right: gvArrow.left; rightMargin: vpx(8); verticalCenter: parent.verticalCenter }
                         text: genreSelected.length === 0 ? "Genre: All"
                              : genreSelected.length === 1 ? "Genre: " + genreSelected[0]
                              : "Genre: " + genreSelected.length + " selected"
-                        color: onRow ? theme.accent : theme.text
+                        color: "white"
                         opacity: onRow ? 1 : 0.85
                         elide: Text.ElideRight
                         font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: onRow
@@ -718,7 +727,7 @@ id: root
                     Text {
                         id: gvArrow
                         anchors { right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
-                        text: "\u25B8"; color: onRow ? theme.accent : theme.text
+                        text: "\u25B8"; color: "white"
                         opacity: onRow ? 1 : 0.6; font.pixelSize: vpx(18)
                     }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 1; openGenrePicker(); } }
@@ -742,12 +751,12 @@ id: root
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: isSel ? "\u2713" : "  "
-                            color: theme.accent; font.pixelSize: vpx(15); font.bold: true; width: vpx(22)
+                            color: "white"; font.pixelSize: vpx(15); font.bold: true; width: vpx(22)
                         }
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: modelData
-                            color: (onRow || isSel) ? theme.accent : theme.text
+                            color: "white"
                             opacity: onRow ? 1 : 0.85
                             elide: Text.ElideRight
                             font.family: subtitleFont.name; font.pixelSize: vpx(19); font.bold: onRow || isSel
@@ -773,13 +782,13 @@ id: root
                             Text {
                                 anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                                 text: active ? (orderBy === Qt.AscendingOrder ? "\u25B2" : "\u25BC") : "  "
-                                color: theme.accent; font.pixelSize: vpx(16); font.bold: true
+                                color: "white"; font.pixelSize: vpx(16); font.bold: true
                                 width: vpx(22)
                             }
                             Text {
                                 anchors { left: parent.left; leftMargin: vpx(46); verticalCenter: parent.verticalCenter }
                                 text: modelData.label
-                                color: active ? theme.accent : theme.text
+                                color: "white"
                                 opacity: active ? 1 : 0.85
                                 font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: active
                             }
@@ -796,13 +805,13 @@ id: root
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: showFavs ? "\u2713" : "  "
-                            color: theme.accent; font.pixelSize: vpx(16); font.bold: true
+                            color: "white"; font.pixelSize: vpx(16); font.bold: true
                             width: vpx(22)
                         }
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(46); verticalCenter: parent.verticalCenter }
                             text: "Favorites only"
-                            color: showFavs ? theme.accent : theme.text
+                            color: "white"
                             opacity: showFavs ? 1 : 0.85
                             font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: showFavs
                         }
@@ -828,7 +837,7 @@ id: root
                             Text {
                                 anchors.centerIn: parent
                                 text: modelData === "SPACE" ? "\u2423" : (modelData === "DEL" ? "\u232B" : modelData)
-                                color: sel ? "white" : theme.text
+                                color: sel ? "white" : "white"
                                 font.family: subtitleFont.name
                                 font.pixelSize: wide ? vpx(12) : vpx(17)
                                 font.bold: sel
@@ -859,7 +868,7 @@ id: root
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.t
-                            color: theme.text; opacity: 0.55
+                            color: "white"; opacity: 0.55
                             font.family: subtitleFont.name; font.pixelSize: vpx(15)
                         }
                     }
@@ -1048,5 +1057,6 @@ id: root
     StatusCluster {
         anchors.fill: parent
         z: 50
+        dark: whiteBackground
     }
 }

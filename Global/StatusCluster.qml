@@ -10,6 +10,12 @@ import QtQuick 2.15
 Item {
     id: statusCluster
 
+    // When true (set by a page with a white background), normally-white
+    // chrome flips to black so it stays visible. Status colors (charging
+    // green, low-battery red) and glyphs over the battery fill are left alone.
+    property bool dark: false
+    property color fg: dark ? "black" : "white"
+
     // Clock — top-right
     Text {
         id: sysTime
@@ -36,7 +42,7 @@ Item {
             top: parent.top; topMargin: vpx(12)
             right: parent.right; rightMargin: vpx(25)
         }
-        color: "white"
+        color: statusCluster.fg
         font.pixelSize: vpx(22)
         font.family: subtitleFont.name
         horizontalAlignment: Text.Right
@@ -52,7 +58,7 @@ Item {
         property int  pct: batteryAvailable ? Math.round(api.device.batteryPercent * 100) : 0
         property bool charging: api.device.batteryCharging
         // Fill: green while charging, red when critically low, white otherwise
-        property color fillColor: charging ? "#3DD13D" : (pct <= 20 ? "#EF5350" : "white")
+        property color fillColor: charging ? "#3DD13D" : (pct <= 20 ? "#EF5350" : statusCluster.fg)
 
         // Display style from the Advanced tab ("Show Battery Percentage"):
         // "Battery Only" (icon), "Percentage Only" (text like the original
@@ -84,7 +90,7 @@ Item {
             width: parent.width - vpx(4)
             radius: vpx(3)
             color: "transparent"
-            border.color: "white"
+            border.color: statusCluster.fg
             border.width: vpx(1.5)
 
             // Charge-level fill
@@ -122,6 +128,8 @@ Item {
                 width: vpx(8)
                 height: vpx(11)
                 onVisibleChanged: requestPaint()
+                property bool dk: statusCluster.dark
+                onDkChanged: requestPaint()
                 Component.onCompleted: requestPaint()
                 onPaint: {
                     var ctx = getContext("2d");
@@ -135,7 +143,7 @@ Item {
                     ctx.lineTo(w * 0.92, h * 0.40);
                     ctx.lineTo(w * 0.52, h * 0.40);
                     ctx.closePath();
-                    ctx.fillStyle = "white";
+                    ctx.fillStyle = statusCluster.dark ? "black" : "white";
                     ctx.strokeStyle = Qt.rgba(0, 0, 0, 0.6);
                     ctx.lineWidth = 1;
                     ctx.fill();
@@ -154,7 +162,7 @@ Item {
             width: vpx(3)
             height: parent.height * 0.45
             radius: vpx(1)
-            color: "white"
+            color: statusCluster.fg
         }
 
         // Percentage Only — plain text like the pre-icon layout, in the
@@ -175,6 +183,8 @@ Item {
                 height: vpx(15)
                 anchors.verticalCenter: parent.verticalCenter
                 onVisibleChanged: requestPaint()
+                property bool dk: statusCluster.dark
+                onDkChanged: requestPaint()
                 Component.onCompleted: requestPaint()
                 onPaint: {
                     var ctx = getContext("2d");
@@ -188,7 +198,7 @@ Item {
                     ctx.lineTo(w * 0.92, h * 0.40);
                     ctx.lineTo(w * 0.52, h * 0.40);
                     ctx.closePath();
-                    ctx.fillStyle = "white";
+                    ctx.fillStyle = statusCluster.dark ? "black" : "white";
                     ctx.strokeStyle = Qt.rgba(0, 0, 0, 0.6);
                     ctx.lineWidth = 1;
                     ctx.fill();
@@ -199,7 +209,7 @@ Item {
             Text {
                 text: batteryDisplay.pct + "%"
                 // Turn red when critically low and not charging
-                color: (batteryDisplay.pct <= 20 && !batteryDisplay.charging) ? "#EF5350" : "white"
+                color: (batteryDisplay.pct <= 20 && !batteryDisplay.charging) ? "#EF5350" : statusCluster.fg
                 font.pixelSize: vpx(22)
                 font.family: subtitleFont.name
             }
@@ -258,7 +268,7 @@ Item {
             var endAngle   = Math.PI * 1.75;             // 315° — upper-right
             var alpha      = online ? 0.9 : 0.3;
 
-            ctx.strokeStyle = "white";
+            ctx.strokeStyle = statusCluster.dark ? "black" : "white";
             ctx.lineCap     = "round";
             ctx.globalAlpha = alpha;
 
@@ -279,12 +289,14 @@ Item {
             ctx.stroke();
 
             // Centre dot
-            ctx.fillStyle = "white";
+            ctx.fillStyle = statusCluster.dark ? "black" : "white";
             ctx.beginPath();
             ctx.arc(cx, cy, vpx(2), 0, Math.PI * 2, false);
             ctx.fill();
         }
 
+        property bool dk: statusCluster.dark
+        onDkChanged: requestPaint()
         onOnlineChanged: requestPaint()
         Component.onCompleted: requestPaint()
     }

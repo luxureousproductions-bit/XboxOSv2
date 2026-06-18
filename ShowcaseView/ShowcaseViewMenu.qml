@@ -59,33 +59,40 @@ id: root
         if (mode === "Screenshot") return shot || fan  || box  || "";
         return fan || shot || box || "";   // Fanart (default)
     }
-    property var collection1: getCollection(settings.ShowcaseCollection1, settings.ShowcaseCollection1_Thumbnail)
-    property var collection2: getCollection(settings.ShowcaseCollection2, settings.ShowcaseCollection2_Thumbnail)
-    property var collection3: getCollection(settings.ShowcaseCollection3, settings.ShowcaseCollection3_Thumbnail)
-    property var collection4: getCollection(settings.ShowcaseCollection4, settings.ShowcaseCollection4_Thumbnail)
-    property var collection5: getCollection(settings.ShowcaseCollection5, settings.ShowcaseCollection5_Thumbnail)
-    property var collection6: getCollection(settings.ShowcaseCollection6, settings.ShowcaseCollection6_Thumbnail)
+    property var collection1: getCollection(settings.ShowcaseCollection1, settings.ShowcaseCollection1_Thumbnail, settings.ShowcaseCollection1_Size, settings.ShowcaseCollection1_Ratio)
+    property var collection2: getCollection(settings.ShowcaseCollection2, settings.ShowcaseCollection2_Thumbnail, settings.ShowcaseCollection2_Size, settings.ShowcaseCollection2_Ratio)
+    property var collection3: getCollection(settings.ShowcaseCollection3, settings.ShowcaseCollection3_Thumbnail, settings.ShowcaseCollection3_Size, settings.ShowcaseCollection3_Ratio)
+    property var collection4: getCollection(settings.ShowcaseCollection4, settings.ShowcaseCollection4_Thumbnail, settings.ShowcaseCollection4_Size, settings.ShowcaseCollection4_Ratio)
+    property var collection5: getCollection(settings.ShowcaseCollection5, settings.ShowcaseCollection5_Thumbnail, settings.ShowcaseCollection5_Size, settings.ShowcaseCollection5_Ratio)
+    property var collection6: getCollection(settings.ShowcaseCollection6, settings.ShowcaseCollection6_Thumbnail, settings.ShowcaseCollection6_Size, settings.ShowcaseCollection6_Ratio)
 
-    function getCollection(collectionName, collectionThumbnail) {
+    function getCollection(collectionName, collectionThumbnail, collectionSize, collectionRatio) {
         var collection = {
             enabled: true,
         };
 
         var width = root.width - globalMargin * 2;
+        var ratio = parseFloat(collectionRatio) || 0.66;
+        // Size -> divisor. Square: Small 6 / Medium 5.5 / Large 5.
+        //                  Tall:   Small 7 / Medium 6   / Large 5.
+        //                  Wide:   Small 4 / Medium 3.5 / Large 3.
+        var sDiv  = (collectionSize === "Large") ? 5.0 : (collectionSize === "Medium" ? 5.5 : 6.0);
+        var tDiv  = (collectionSize === "Large") ? 5.0 : (collectionSize === "Medium" ? 6.0 : 7.0);
+        var wDiv  = (collectionSize === "Large") ? 3.0 : (collectionSize === "Medium" ? 3.5 : 4.0);
 
         switch (collectionThumbnail) {
             case "Square":
-                collection.itemWidth = (width / 6.0);
+                collection.itemWidth = (width / sDiv);
                 collection.itemHeight = collection.itemWidth;
                 break;
             case "Tall":
-                collection.itemWidth = (width / 8.0);
-                collection.itemHeight = collection.itemWidth / settings.TallRatio;
+                collection.itemWidth = (width / tDiv);
+                collection.itemHeight = collection.itemWidth / ratio;
                 break;
             case "Wide":
             default:
-                collection.itemWidth = (width / 4.0);
-                collection.itemHeight = collection.itemWidth * settings.WideRatio;
+                collection.itemWidth = (width / wDiv);
+                collection.itemHeight = collection.itemWidth * ratio;
                 break;
             
         }
@@ -583,6 +590,8 @@ id: root
             Image {
                 anchors { fill: parent; margins: vpx(2) }
                 source: "../assets/images/gamesandapps.png"
+                layer.enabled: showcaseWhiteBackground
+                layer.effect: ColorOverlay { color: "black" }
                 fillMode: Image.PreserveAspectFit
                 smooth: true; asynchronous: true
                 opacity: homebutton.focus ? 1.0 : 0.85
@@ -630,13 +639,15 @@ id: root
                     var ctx = getContext("2d"); ctx.reset();
                     var cx = width/2, cy = height/2, r = Math.min(cx,cy)-1;
                     ctx.globalAlpha = discoverbutton.focus ? 1.0 : 0.85;
-                    ctx.strokeStyle = "white"; ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = navCol; ctx.lineWidth = 1.5;
                     ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
-                    ctx.fillStyle = "white";
+                    ctx.fillStyle = navCol;
                     ctx.beginPath(); ctx.moveTo(cx, cy-r*0.65); ctx.lineTo(cx+r*0.30, cy+r*0.10); ctx.lineTo(cx, cy+r*0.20); ctx.lineTo(cx-r*0.30, cy+r*0.10); ctx.closePath(); ctx.fill();
                     ctx.globalAlpha = 0.35;
                     ctx.beginPath(); ctx.moveTo(cx, cy+r*0.65); ctx.lineTo(cx-r*0.30, cy-r*0.10); ctx.lineTo(cx, cy-r*0.20); ctx.lineTo(cx+r*0.30, cy-r*0.10); ctx.closePath(); ctx.fill();
                 }
+                property string navCol: showcaseWhiteBackground ? "black" : "white"
+                onNavColChanged: requestPaint()
                 Connections { target: discoverbutton; onFocusChanged: parent.requestPaint() }
             }
         }
@@ -683,6 +694,8 @@ id: root
             width: vpx(24); height: vpx(24)
             sourceSize: Qt.size(vpx(24), vpx(24))
             source: "../assets/images/trophy.svg"
+            layer.enabled: showcaseWhiteBackground
+            layer.effect: ColorOverlay { color: "black" }
             fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
             anchors.centerIn: achievementsbutton
             opacity: achievementsbutton.focus ? 1 : 0.7
@@ -730,6 +743,8 @@ id: root
             anchors.centerIn: settingsbutton
             smooth: true; asynchronous: true
             source: "../assets/images/settingsicon.svg"
+            layer.enabled: showcaseWhiteBackground
+            layer.effect: ColorOverlay { color: "black" }
             opacity: root.focus ? 0.8 : 0.5
         }
 
@@ -737,7 +752,7 @@ id: root
         Text {
             text: "Full Library"
             anchors { top: homebutton.bottom; topMargin: vpx(3); horizontalCenter: homebutton.horizontalCenter }
-            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
             opacity: homebutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -745,7 +760,7 @@ id: root
         Text {
             text: "Discover"
             anchors { top: discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: discoverbutton.horizontalCenter }
-            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
             opacity: discoverbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -753,7 +768,7 @@ id: root
         Text {
             text: "RetroAchievements"
             anchors { top: achievementsbutton.bottom; topMargin: vpx(3); horizontalCenter: achievementsbutton.horizontalCenter }
-            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
             opacity: achievementsbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -761,7 +776,7 @@ id: root
         Text {
             text: "Settings"
             anchors { top: settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: settingsbutton.horizontalCenter }
-            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
             opacity: settingsbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -772,6 +787,7 @@ id: root
         StatusCluster {
             anchors.fill: parent
             z: 50
+            dark: showcaseWhiteBackground
         }
     }
 

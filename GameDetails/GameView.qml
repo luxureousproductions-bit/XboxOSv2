@@ -643,6 +643,8 @@ id: root
                 width: vpx(24); height: vpx(24)
                 sourceSize: Qt.size(vpx(24), vpx(24))
                 source: "../assets/images/icon_home.svg"
+                layer.enabled: whiteBackground
+                layer.effect: ColorOverlay { color: "black" }
                 fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
                 opacity: parent.focus ? 1 : 0.7
             }
@@ -685,13 +687,15 @@ id: root
                     var ctx = getContext("2d"); ctx.reset();
                     var cx = width/2, cy = height/2, r = Math.min(cx,cy)-1;
                     ctx.globalAlpha = gv_discoverbutton.focus ? 1.0 : 0.85;
-                    ctx.strokeStyle = "white"; ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = navCol; ctx.lineWidth = 1.5;
                     ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
-                    ctx.fillStyle = "white";
+                    ctx.fillStyle = navCol;
                     ctx.beginPath(); ctx.moveTo(cx, cy-r*0.65); ctx.lineTo(cx+r*0.30, cy+r*0.10); ctx.lineTo(cx, cy+r*0.20); ctx.lineTo(cx-r*0.30, cy+r*0.10); ctx.closePath(); ctx.fill();
                     ctx.globalAlpha = 0.35;
                     ctx.beginPath(); ctx.moveTo(cx, cy+r*0.65); ctx.lineTo(cx-r*0.30, cy-r*0.10); ctx.lineTo(cx, cy-r*0.20); ctx.lineTo(cx+r*0.30, cy-r*0.10); ctx.closePath(); ctx.fill();
                 }
+                property string navCol: whiteBackground ? "black" : "white"
+                onNavColChanged: requestPaint()
                 Connections { target: gv_discoverbutton; onFocusChanged: parent.requestPaint() }
             }
         }
@@ -732,6 +736,8 @@ id: root
                 width: vpx(24); height: vpx(24)
                 sourceSize: Qt.size(vpx(24), vpx(24))
                 source: "../assets/images/settingsicon.svg"; smooth: true; asynchronous: true
+                layer.enabled: whiteBackground
+                layer.effect: ColorOverlay { color: "black" }
                 opacity: parent.focus ? 1 : 0.7
             }
         }
@@ -740,7 +746,7 @@ id: root
         Text {
             text: "Home"
             anchors { top: gv_homebutton.bottom; topMargin: vpx(3); horizontalCenter: gv_homebutton.horizontalCenter }
-            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: titleFont.name; font.pixelSize: vpx(11); font.bold: true
             opacity: gv_homebutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -748,7 +754,7 @@ id: root
         Text {
             text: "Discover"
             anchors { top: gv_discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: gv_discoverbutton.horizontalCenter }
-            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: titleFont.name; font.pixelSize: vpx(11); font.bold: true
             opacity: gv_discoverbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -756,7 +762,7 @@ id: root
         Text {
             text: "Settings"
             anchors { top: gv_settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: gv_settingsbutton.horizontalCenter }
-            color: "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: titleFont.name; font.pixelSize: vpx(11); font.bold: true
             opacity: gv_settingsbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -934,8 +940,8 @@ id: root
             focus: selected
             width: root.width - vpx(70) - globalMargin
             height: itemHeight + vpx(60)
-            itemWidth: (root.width - globalMargin * 2) / 4.0
-            itemHeight: itemWidth * settings.WideRatio
+            itemWidth: (root.width - globalMargin * 2) / 3.0
+            itemHeight: itemWidth * 0.68
 
             // Show recommended games when there are no publisher/developer results
             title: {
@@ -970,8 +976,8 @@ id: root
             focus: selected
             width: root.width - vpx(70) - globalMargin
             height: itemHeight + vpx(60)
-            itemWidth: (root.width - globalMargin * 2) / 8.0
-            itemHeight: itemWidth / settings.TallRatio
+            itemWidth: (root.width - globalMargin * 2) / 5.0
+            itemHeight: itemWidth / 0.66
 
             title: {
                 if (!game || game.genreList.length === 0) return "              ";
@@ -1133,6 +1139,7 @@ id: root
         anchors.fill: parent
         z: 50
         visible: mediaScreen.opacity < 0.5
+        dark: whiteBackground
     }
 
 }

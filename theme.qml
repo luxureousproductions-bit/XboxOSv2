@@ -76,21 +76,32 @@ id: root
             ShowcaseFeaturedCollection:    api.memory.has("Featured collection") ? api.memory.get("Featured collection") : "Favorites",
             ShowcaseCollection1:           api.memory.has("Collection 1") ? api.memory.get("Collection 1") : "Recently Played",
             ShowcaseCollection1_Thumbnail: api.memory.has("Collection 1 - Thumbnail") ? api.memory.get("Collection 1 - Thumbnail") : "Wide",
+            ShowcaseCollection1_Size:      api.memory.has("Collection 1 - Size") ? api.memory.get("Collection 1 - Size") : "Small",
+            ShowcaseCollection1_Ratio:     api.memory.has("Collection 1 - Ratio") ? api.memory.get("Collection 1 - Ratio") : "0.66",
             ShowcaseCollection2:           api.memory.has("Collection 2") ? api.memory.get("Collection 2") : "Most Played",
             ShowcaseCollection2_Thumbnail: api.memory.has("Collection 2 - Thumbnail") ? api.memory.get("Collection 2 - Thumbnail") : "Tall",
+            ShowcaseCollection2_Size:      api.memory.has("Collection 2 - Size") ? api.memory.get("Collection 2 - Size") : "Small",
+            ShowcaseCollection2_Ratio:     api.memory.has("Collection 2 - Ratio") ? api.memory.get("Collection 2 - Ratio") : "0.66",
             ShowcaseCollection3:           api.memory.has("Collection 3") ? api.memory.get("Collection 3") : "Top by Publisher",
             ShowcaseCollection3_Thumbnail: api.memory.has("Collection 3 - Thumbnail") ? api.memory.get("Collection 3 - Thumbnail") : "Wide",
+            ShowcaseCollection3_Size:      api.memory.has("Collection 3 - Size") ? api.memory.get("Collection 3 - Size") : "Small",
+            ShowcaseCollection3_Ratio:     api.memory.has("Collection 3 - Ratio") ? api.memory.get("Collection 3 - Ratio") : "0.66",
             ShowcaseCollection4:           api.memory.has("Collection 4") ? api.memory.get("Collection 4") : "Top by Genre",
             ShowcaseCollection4_Thumbnail: api.memory.has("Collection 4 - Thumbnail") ? api.memory.get("Collection 4 - Thumbnail") : "Tall",
+            ShowcaseCollection4_Size:      api.memory.has("Collection 4 - Size") ? api.memory.get("Collection 4 - Size") : "Small",
+            ShowcaseCollection4_Ratio:     api.memory.has("Collection 4 - Ratio") ? api.memory.get("Collection 4 - Ratio") : "0.66",
             ShowcaseCollection5:           api.memory.has("Collection 5") ? api.memory.get("Collection 5") : "None",
             ShowcaseCollection5_Thumbnail: api.memory.has("Collection 5 - Thumbnail") ? api.memory.get("Collection 5 - Thumbnail") : "Wide",
+            ShowcaseCollection5_Size:      api.memory.has("Collection 5 - Size") ? api.memory.get("Collection 5 - Size") : "Small",
+            ShowcaseCollection5_Ratio:     api.memory.has("Collection 5 - Ratio") ? api.memory.get("Collection 5 - Ratio") : "0.66",
             ShowcaseCollection6:           api.memory.has("Collection 6") ? api.memory.get("Collection 6") : "None",
             ShowcaseCollection6_Thumbnail: api.memory.has("Collection 6 - Thumbnail") ? api.memory.get("Collection 6 - Thumbnail") : "Wide",
-            WideRatio:                     api.memory.has("Wide - Ratio") ? api.memory.get("Wide - Ratio") : "0.64",
+            ShowcaseCollection6_Size:      api.memory.has("Collection 6 - Size") ? api.memory.get("Collection 6 - Size") : "Small",
+            ShowcaseCollection6_Ratio:     api.memory.has("Collection 6 - Ratio") ? api.memory.get("Collection 6 - Ratio") : "0.66",
+            GridRatio:                     api.memory.has("Grid Ratio") ? api.memory.get("Grid Ratio") : "0.66",
             ColorBackground:               api.memory.has("Color Background") ? api.memory.get("Color Background") : "Black",
             XboxLogo:                      api.memory.has("Xbox Logo") ? api.memory.get("Xbox Logo") : "Logo1",
             LogoColorMatch:                api.memory.has("Logo Color Match") ? api.memory.get("Logo Color Match") : "No",
-            TallRatio:                     api.memory.has("Tall - Ratio") ? api.memory.get("Tall - Ratio") : "0.66",
             BoxArtStyle:                   api.memory.has("Box Art") ? api.memory.get("Box Art") : "2D",
             GameCounter:                   api.memory.has("Game Counter") ? api.memory.get("Game Counter") : "Yes",
             CarouselVideo:                 api.memory.has("Video") ? api.memory.get("Video") : "Yes",
@@ -328,6 +339,18 @@ id: root
         currentGame                 = api.allGames.get(api.memory.get('savedGame'));
         root.state                  = api.memory.get('savedState');
 
+        // savedState is "launchgamescreen" (the splash was on-screen at launch).
+        // On reload-type devices we land back on the splash, so redirect to the
+        // page we launched from (top of lastState) and drop it from the stack.
+        if (root.state === "launchgamescreen") {
+            if (lastState.length > 0) {
+                root.state = lastState[lastState.length - 1];
+                lastState.pop();
+            } else {
+                root.state = "showcasescreen";
+            }
+        }
+
         // Remove these from memory so as to not clog it up
         api.memory.unset('savedState');
         api.memory.unset('savedGame');
@@ -456,32 +479,26 @@ id: root
             background    = "#707070";
             gradientstart = "#00707070";
             gradientend   = "#FF707070";
-            text          = "#101010";
         } else if (settings.ColorBackground === "Silver") {
             background    = "#909090";
             gradientstart = "#00909090";
             gradientend   = "#FF909090";
-            text          = "#101010";
         } else if (settings.ColorBackground === "Light Blue") {
             background    = "#4a7aa0";
             gradientstart = "#004a7aa0";
             gradientend   = "#FF4a7aa0";
-            text          = "#101010";
         } else if (settings.ColorBackground === "Sage") {
             background    = "#6a8a6a";
             gradientstart = "#006a8a6a";
             gradientend   = "#FF6a8a6a";
-            text          = "#101010";
         } else if (settings.ColorBackground === "Tan") {
             background    = "#8a7a5a";
             gradientstart = "#008a7a5a";
             gradientend   = "#FF8a7a5a";
-            text          = "#101010";
         } else if (settings.ColorBackground === "Rose") {
             background    = "#a06070";
             gradientstart = "#00a06070";
             gradientend   = "#FFa06070";
-            text          = "#101010";
         } else if (settings.ColorBackground === "Gradient") {
             // theme.main becomes transparent so the root-level Gradient Image shows through.
             background    = "transparent";
@@ -591,7 +608,19 @@ id: root
         };
     }
 
-    
+    // ── White-background contrast flags ───────────────────────────────────
+    // When the page background is the light "White" color, chrome that is
+    // normally white (nav bar, status bar, library logo) should flip to black
+    // so it stays visible. theme.text already flips on its own for light
+    // backgrounds; these flags drive the hardcoded-white chrome.
+    //   whiteBackground          → AllGames, GridView, GameView, RA pages
+    //   showcaseWhiteBackground  → Showcase, but ONLY when no fanart/custom
+    //                              image is covering theme.main (otherwise the
+    //                              visible backdrop is the image, not white)
+    property bool whiteBackground: settings.ColorBackground === "White"
+    property bool showcaseWhiteBackground: whiteBackground
+                                           && settings.ShowcaseBackgroundArt === "No"
+                                           && settings.CustomBackground === "No"
 
     property real globalMargin: vpx(30)
     property real helpMargin: buttonbar.height
@@ -1073,6 +1102,9 @@ id: root
     
     // Button help
     property var currentHelpbarModel
+    // Help bar text follows theme.text everywhere EXCEPT the settings page,
+    // whose background is locked black — there it stays light so it never vanishes.
+    property color helpbarTextColor: (root.state === "settingsscreen") ? "#ebebeb" : text
     ButtonHelpBar {
     id: buttonbar
 
