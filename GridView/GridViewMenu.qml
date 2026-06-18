@@ -694,7 +694,7 @@ id: root
                         text: searchActive
                               ? (searchTerm === "" ? "Type a name\u2026" : searchTerm)
                               : (searchTerm === "" ? "Name: (no filter)" : "Name: " + searchTerm)
-                        color: onRow ? theme.accent : "white"
+                        color: "white"
                         opacity: onRow ? 1 : 0.85
                         elide: Text.ElideRight
                         font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: onRow
@@ -719,7 +719,7 @@ id: root
                         text: genreSelected.length === 0 ? "Genre: All"
                              : genreSelected.length === 1 ? "Genre: " + genreSelected[0]
                              : "Genre: " + genreSelected.length + " selected"
-                        color: onRow ? theme.accent : "white"
+                        color: "white"
                         opacity: onRow ? 1 : 0.85
                         elide: Text.ElideRight
                         font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: onRow
@@ -727,7 +727,7 @@ id: root
                     Text {
                         id: gvArrow
                         anchors { right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
-                        text: "\u25B8"; color: onRow ? theme.accent : "white"
+                        text: "\u25B8"; color: "white"
                         opacity: onRow ? 1 : 0.6; font.pixelSize: vpx(18)
                     }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 1; openGenrePicker(); } }
@@ -751,12 +751,12 @@ id: root
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: isSel ? "\u2713" : "  "
-                            color: theme.accent; font.pixelSize: vpx(15); font.bold: true; width: vpx(22)
+                            color: "white"; font.pixelSize: vpx(15); font.bold: true; width: vpx(22)
                         }
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: modelData
-                            color: (onRow || isSel) ? theme.accent : "white"
+                            color: "white"
                             opacity: onRow ? 1 : 0.85
                             elide: Text.ElideRight
                             font.family: subtitleFont.name; font.pixelSize: vpx(19); font.bold: onRow || isSel
@@ -782,13 +782,13 @@ id: root
                             Text {
                                 anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                                 text: active ? (orderBy === Qt.AscendingOrder ? "\u25B2" : "\u25BC") : "  "
-                                color: theme.accent; font.pixelSize: vpx(16); font.bold: true
+                                color: "white"; font.pixelSize: vpx(16); font.bold: true
                                 width: vpx(22)
                             }
                             Text {
                                 anchors { left: parent.left; leftMargin: vpx(46); verticalCenter: parent.verticalCenter }
                                 text: modelData.label
-                                color: active ? theme.accent : "white"
+                                color: "white"
                                 opacity: active ? 1 : 0.85
                                 font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: active
                             }
@@ -805,13 +805,13 @@ id: root
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: showFavs ? "\u2713" : "  "
-                            color: theme.accent; font.pixelSize: vpx(16); font.bold: true
+                            color: "white"; font.pixelSize: vpx(16); font.bold: true
                             width: vpx(22)
                         }
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(46); verticalCenter: parent.verticalCenter }
                             text: "Favorites only"
-                            color: showFavs ? theme.accent : "white"
+                            color: "white"
                             opacity: showFavs ? 1 : 0.85
                             font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: showFavs
                         }
