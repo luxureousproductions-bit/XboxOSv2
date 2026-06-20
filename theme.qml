@@ -68,7 +68,7 @@ id: root
             RandomizeSystemTileFanart:      api.memory.has("Randomize System Tile Fanart") ? api.memory.get("Randomize System Tile Fanart") : "No",
             CustomBackground:               api.memory.has("Custom Background") ? api.memory.get("Custom Background") : "No",
             ShowcaseBackgroundOpacity:     api.memory.has("Showcase Background Opacity") ? api.memory.get("Showcase Background Opacity") : "0.55",
-            ShowcaseArt:                   api.memory.has("Showcase Art") ? api.memory.get("Showcase Art") : "Fanart",
+            ShowcaseArt:                   api.memory.has("Showcase Collections Art") ? api.memory.get("Showcase Collections Art") : "Fanart",
             HeroBoxArt:                    api.memory.has("Hero box art") ? api.memory.get("Hero box art") : "Fanart",
             TileHalo:                      api.memory.has("Tile Halo") ? api.memory.get("Tile Halo") : "Yes",
             SystemSort:                    api.memory.has("System sort") ? api.memory.get("System sort") : "Alphabetical (A-Z)",
