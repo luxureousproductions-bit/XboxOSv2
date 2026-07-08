@@ -1427,6 +1427,7 @@ id: root
 
     ListView {
     id: mainList
+        z: 2   // above dim overlay (z:1) so tiles render at full brightness
         // When the nav bar is reached via the LB/RB shortcut we must NOT glide the
         // page to the top; remember the row so we can restore it on the way back.
         property bool navJump: false
