@@ -80,7 +80,7 @@ id: root
     Timer {
     id: fadescreenshot
 
-        interval: 1200
+        interval: 3000
         onTriggered: {
             if (settings.HideLogo == "Yes")
                 container.opacity = 0;
