@@ -763,8 +763,13 @@ id: root
         root.state = "raentryscreen";
     }
 
-    function discoverScreen() {
+    // Optional 'collection' scopes Discover to a single system (passed from
+    // GridView's Discover nav button). Omitted/null => whole-library Discover,
+    // same as every other entry point (Showcase, AllGames, GameView).
+    property var discoverContext: null
+    function discoverScreen(collection) {
         playAccept();
+        discoverContext = collection || null;
         lastState.push(state);
         root.state = "discoverscreen";
     }
@@ -1104,7 +1109,6 @@ id: root
     property var currentHelpbarModel
     // Help bar text follows theme.text everywhere EXCEPT the settings page,
     // whose background is locked black — there it stays light so it never vanishes.
-    property color helpbarTextColor: (root.state === "settingsscreen") ? "#ebebeb" : text
     ButtonHelpBar {
     id: buttonbar
 
