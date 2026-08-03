@@ -55,11 +55,14 @@ id: root
                               ? gameList[currentIndex] : null
 
     function buildList() {
-        var allGames = api.allGames.toVarArray();
+        // discoverContext (theme.qml root) is set by GridView's Discover button
+        // to the currently-viewed system's collection; every other entry point
+        // (Showcase, AllGames, GameView) leaves it null for whole-library.
+        var sourceGames = discoverContext ? discoverContext.games.toVarArray() : api.allGames.toVarArray();
         var withVideos = [];
-        for (var i = 0; i < allGames.length; i++) {
-            if (allGames[i].assets.video)
-                withVideos.push(allGames[i]);
+        for (var i = 0; i < sourceGames.length; i++) {
+            if (sourceGames[i].assets.video)
+                withVideos.push(sourceGames[i]);
         }
         gameList = withVideos;
     }
@@ -201,7 +204,9 @@ id: root
     Text {
         visible: gameList.length === 0
         anchors.centerIn: parent
-        text: "No game videos found.\nAdd videos to your game library to use Discover mode."
+        text: discoverContext
+              ? "No game videos found for " + discoverContext.name + ".\nAdd videos to this system's games to use Discover mode."
+              : "No game videos found.\nAdd videos to your game library to use Discover mode."
         color: theme.text
         opacity: 0.7
         font.family: subtitleFont.name
