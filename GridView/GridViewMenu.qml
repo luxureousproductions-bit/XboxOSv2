@@ -412,10 +412,10 @@ id: root
             Keys.onLeftPressed:  { playNav(); homebutton.focus = true; }
             Keys.onRightPressed: { playNav(); achievementsbutton.focus = true; }
             Keys.onPressed: {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(list.collection); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
             }
-            MouseArea { anchors.fill: parent; onClicked: discoverScreen(); }
+            MouseArea { anchors.fill: parent; onClicked: discoverScreen(list.collection); }
             Canvas {
                 anchors { fill: parent; margins: vpx(6) }
                 onPaint: {
