@@ -332,7 +332,7 @@ id: root
 
         ListElement {
             settingName: "Grid Thumbnail"
-            setting: "Wide,Tall,Square"
+            setting: "Wide,Tall,Square,Box Art"
         }
         ListElement {
             settingName: "Grid Ratio"
@@ -937,10 +937,18 @@ id: root
                         var shp = api.memory.has(coll + " - Thumbnail") ? api.memory.get(coll + " - Thumbnail") : "Wide";
                         return shp === "Square";
                     }
-                    // Grid Ratio is inert when the grid shape is Square
+                    // Grid Ratio is inert when the grid shape is Square or Box Art
+                    // (Box Art tiles use the box art's own native aspect ratio).
                     if (settingName === "Grid Ratio") {
                         var gth = api.memory.has("Grid Thumbnail") ? api.memory.get("Grid Thumbnail") : "Wide";
-                        return gth === "Square";
+                        return gth === "Square" || gth === "Box Art";
+                    }
+                    // Grid art / Grid Game Logo only apply to the Wide/Tall/Square
+                    // tile styles — Box Art tiles always show the box art itself,
+                    // so there's no art-source or logo-overlay choice to make.
+                    if (settingName === "Grid art" || settingName === "Grid Game Logo") {
+                        var gth2 = api.memory.has("Grid Thumbnail") ? api.memory.get("Grid Thumbnail") : "Wide";
+                        return gth2 === "Box Art";
                     }
                     return false;
                 }
