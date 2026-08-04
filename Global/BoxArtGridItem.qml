@@ -120,6 +120,18 @@ id: root
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
     }
+    // Subtle persistent glow for favorited tiles (not selected — the bright
+    // tileGlow above already covers that case).
+    ColorOverlay {
+        id: favGlow
+        anchors.fill: tileHaloSrc
+        source: tileHaloSrc
+        color: theme.accent
+        z: -1
+        opacity: (gameData && gameData.favorite && !selected) ? 0.35 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+    }
 
     Item 
     {
@@ -142,24 +154,28 @@ id: root
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.verticalCenter: parent.verticalCenter
 
-            Rectangle {
-            id: favicon
+        }
 
-                anchors { 
-                    right: parent.right; rightMargin: vpx(7); 
-                    top: parent.top; topMargin: vpx(7) 
-                }
-                width: vpx(20)
-                height: width
-                radius: width/2
-                color: theme.accent
-                visible: gameData.favorite
-                Image {
-                    source: "../assets/images/favicon.svg"
-                    asynchronous: true
-                    anchors.fill: parent
-                    anchors.margins: vpx(4)            
-                }
+        // Favorite heart — bottom-right corner of the tile. No title bar exists
+        // on box-art tiles to tie it to, so (unlike DynamicGridItem) this stays
+        // persistently visible whenever the game is favorited, matching the
+        // always-on border/glow treatment.
+        Item {
+        id: favicon
+
+            anchors {
+                right: container.right; rightMargin: vpx(7)
+                bottom: container.bottom; bottomMargin: vpx(7)
+            }
+            width: vpx(20)
+            height: width
+            visible: gameData && gameData.favorite
+            z: 5
+            Image {
+                source: "../assets/images/favicon.svg"
+                asynchronous: true
+                anchors.fill: parent
+                anchors.margins: vpx(4)   // matches the glyph size from the old circle-badge version
             }
         }
 
@@ -186,6 +202,17 @@ id: root
         }
 
         
+    }
+
+    // Thin persistent accent border for favorited tiles — always visible
+    // (not just on focus), so favorites stand out while scrolling past.
+    Rectangle {
+        id: favBorder
+        anchors.fill: container
+        color: "transparent"
+        border.width: vpx(2)
+        border.color: theme.accent
+        visible: gameData && gameData.favorite
     }
 
     Loader {
