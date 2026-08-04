@@ -295,7 +295,7 @@ id: root
     ListCollectionGames { id: list; }
 
     // Load settings
-    property bool showBoxes: settings.GridThumbnail === "Box Art" || settings.GridThumbnail === "3D Box"
+    property bool showBoxes: settings.GridThumbnail === "Box Art"
     property int numColumns: settings.GridColumns ? settings.GridColumns : 6
     property int titleMargin: settings.AlwaysShowTitles === "Yes" ? vpx(30) : 0
 
