@@ -791,14 +791,30 @@ id: root
         }
     }
 
+    // True only when every collection row is hidden (all 6 set to "None").
+    // Drives the spacer below so the hero/system row settles at the bottom
+    // of the screen instead of sitting up near the top with nothing below it.
+    property bool allCollectionsHidden: settings.ShowcaseCollection1 === "None"
+                                      && settings.ShowcaseCollection2 === "None"
+                                      && settings.ShowcaseCollection3 === "None"
+                                      && settings.ShowcaseCollection4 === "None"
+                                      && settings.ShowcaseCollection5 === "None"
+                                      && settings.ShowcaseCollection6 === "None"
+
     // Using an object model to build the list
     ObjectModel {
     id: mainModel
 
-        // Empty space — background fanart shows through (Xbox dashboard style)
+        // Empty space — background fanart shows through (Xbox dashboard style).
+        // When every collection is hidden, this grows to push the hero/system
+        // row down to the bottom of the screen instead of leaving it stranded
+        // near the top with empty space below it.
         Item {
             width: parent.width
-            height: vpx(360)
+            height: allCollectionsHidden
+                    ? Math.max(vpx(360), root.height - topRow.height - helpMargin)
+                    : vpx(360)
+            Behavior on height { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
         }
 
         // Collections list
