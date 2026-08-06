@@ -32,6 +32,10 @@ id: root
     ListAllGames    { id: listNone;        max: 0 }
     ListAllGames    { id: listAllGames;    max: settings.ShowcaseColumns }
     ListFavorites   { id: listFavorites;   max: settings.ShowcaseColumns }
+    // Uncapped — feeds the favorites carousel header, which pages through
+    // every favorited game (unlike the "Favorites" collection category above,
+    // which is deliberately capped to a normal row's worth of tiles).
+    ListFavorites   { id: listFavoritesAll }
     ListLastPlayed  { id: listLastPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
     ListMostPlayed  { id: listMostPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
     ListRecommended { id: listRecommended; active: true; max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
@@ -801,6 +805,20 @@ id: root
                                       && settings.ShowcaseCollection5 === "None"
                                       && settings.ShowcaseCollection6 === "None"
 
+    // Which collection slot (1-6) is the first one actually shown — the
+    // favorites carousel attaches to that row specifically, so it still
+    // appears first even if e.g. Collection 1 is set to None but
+    // Collection 2 has a category. 0 means none are visible.
+    property int firstVisibleCollectionSlot: {
+        if (settings.ShowcaseCollection1 !== "None") return 1;
+        if (settings.ShowcaseCollection2 !== "None") return 2;
+        if (settings.ShowcaseCollection3 !== "None") return 3;
+        if (settings.ShowcaseCollection4 !== "None") return 4;
+        if (settings.ShowcaseCollection5 !== "None") return 5;
+        if (settings.ShowcaseCollection6 !== "None") return 6;
+        return 0;
+    }
+
     // Using an object model to build the list
     ObjectModel {
     id: mainModel
@@ -1222,6 +1240,8 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
+            favoritesData: (settings.FavoritesBox !== "No" && firstVisibleCollectionSlot === 1) ? listFavoritesAll : null
+
             height: collection.height
 
             itemWidth: collection.itemWidth
@@ -1251,6 +1271,8 @@ id: root
 
             enabled: collection.enabled
             visible: collection.enabled
+
+            favoritesData: (settings.FavoritesBox !== "No" && firstVisibleCollectionSlot === 2) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1282,6 +1304,8 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
+            favoritesData: (settings.FavoritesBox !== "No" && firstVisibleCollectionSlot === 3) ? listFavoritesAll : null
+
             height: collection.height
 
             itemWidth: collection.itemWidth
@@ -1311,6 +1335,8 @@ id: root
 
             enabled: collection.enabled
             visible: collection.enabled
+
+            favoritesData: (settings.FavoritesBox !== "No" && firstVisibleCollectionSlot === 4) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1342,6 +1368,8 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
+            favoritesData: (settings.FavoritesBox !== "No" && firstVisibleCollectionSlot === 5) ? listFavoritesAll : null
+
             height: collection.height
 
             itemWidth: collection.itemWidth
@@ -1371,6 +1399,8 @@ id: root
 
             enabled: collection.enabled
             visible: collection.enabled
+
+            favoritesData: (settings.FavoritesBox !== "No" && firstVisibleCollectionSlot === 6) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1404,7 +1434,17 @@ id: root
         var list = null;
         if (mainList.currentIndex === 1) list = platformlist;
         else if (mainList.currentItem && mainList.currentItem.collectionList) list = mainList.currentItem.collectionList;
-        if (!list || !list.currentItem) return -1;
+        if (!list) return -1;
+        // Resting on the favorites carousel: currentIndex is -1 so there's no
+        // currentItem to measure. Report the header's own centre instead —
+        // without this the closest-column logic got no position, bailed out,
+        // and the destination row fell back to its stale savedIndex (jumping
+        // far right instead of straight down).
+        if (list.onFavoritesHeader !== undefined && list.onFavoritesHeader && list.headerItem) {
+            var h = list.headerItem;
+            return h.mapToItem(root, h.width / 2, 0).x;
+        }
+        if (!list.currentItem) return -1;
         var c = list.currentItem;
         return c.mapToItem(root, c.width / 2, 0).x;          // screen-x centre of current item
     }
@@ -1436,8 +1476,16 @@ id: root
             platformlist.savedIndex = navNearestIndex(platformlist, topRow.tileSz, platformlist.spacing, screenX, platformlist.count);
         } else {
             var it = mainList.itemAtIndex(destIndex);
-            if (it && it.collectionList)
+            if (it && it.collectionList) {
                 it.savedIndex = navNearestIndex(it.collectionList, it.itemWidth, it.collectionList.spacing, screenX, it.collectionList.count);
+                // Vertical nav lands on a tile column, so don't let a row that
+                // was last left resting on the favorites carousel restore onto
+                // it and ignore the column we came from.
+                if (it.collectionList.onFavoritesHeader !== undefined) {
+                    it.collectionList.savedOnHeader = false;
+                    it.collectionList.onFavoritesHeader = false;
+                }
+            }
         }
     }
 
