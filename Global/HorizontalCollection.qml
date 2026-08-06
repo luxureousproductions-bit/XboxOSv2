@@ -33,6 +33,50 @@ id: root
     property alias collectionList: collectionList
     property var search
 
+    // Favorites carousel — only the row ShowcaseViewMenu designates as the
+    // first-visible collection receives this; every other row leaves it null
+    // and behaves exactly as before.
+    property var favoritesData: null
+    property bool showFavoritesHeader: favoritesData !== null
+
+    // Paging state lives HERE (not inside FavoritesHeader) so key handling
+    // never depends on reaching into ListView.headerItem, which can be null.
+    property int favIndex: 0
+    readonly property int favCount: favoritesData ? favoritesData.games.count : 0
+    // When "Favorites Box Content" forces a Discover/slideshow mode the box
+    // isn't showing favourites, so there's nothing to page through — Left and
+    // Right must pass straight over it instead of scrolling unseen entries.
+    readonly property int favPageCount:
+        (settings.FavoritesBoxContent === "Discover Videos"
+      || settings.FavoritesBoxContent === "Fanart Slideshow") ? 0 : favCount
+    onFavCountChanged: { if (favIndex >= favCount) favIndex = Math.max(0, favCount - 1); }
+
+    // Cycles the favourites automatically whenever the carousel isn't the
+    // thing being browsed, so it reads as a slideshow at rest. Paused the
+    // moment focus lands on it so it can't move under the user's input.
+    Timer {
+        interval: 8000
+        repeat: true
+        running: showFavoritesHeader && favPageCount > 1
+                 && !(collectionList.focus && collectionList.onFavoritesHeader)
+        onTriggered: root.favIndex = (root.favIndex + 1) % root.favPageCount
+    }
+
+    // What Accept should act on while the carousel has focus. Favorites are
+    // resolved directly from favoritesData; the no-favorites video fallback
+    // is the one case that must come from the header item itself.
+    readonly property var favTargetGame: {
+        // Ask the header what it's DISPLAYING first — it already resolves the
+        // favourites / Discover / slideshow modes. Checking favCount first
+        // meant a forced Discover or slideshow view still opened the first
+        // favourite instead of the game actually on screen.
+        if (collectionList.headerItem && collectionList.headerItem.currentGame)
+            return collectionList.headerItem.currentGame;
+        // Header not built yet — only meaningful if favourites are pageable.
+        if (favPageCount > 0 && favoritesData) return favoritesData.currentGame(favIndex);
+        return null;
+    }
+
     signal activate(int activeIndex)
     signal activateSelected
     signal listHighlighted
@@ -83,26 +127,50 @@ id: root
         keyNavigationWraps: true
         
         property int savedIndex: 0
+        // True while focus is "resting" on the favorites carousel rather than
+        // any real tile. Only ever reachable when showFavoritesHeader is set.
+        property bool onFavoritesHeader: false
+        // Remembered across focus loss so returning to this row restores the
+        // carousel only if that's where you actually were (savedIndex alone
+        // can't tell the carousel apart from tile 0).
+        property bool savedOnHeader: false
+
         onFocusChanged: {
-            if (focus)
-                currentIndex = savedIndex;
-            else {
-                savedIndex = currentIndex;
+            if (focus) {
+                if (showFavoritesHeader && savedOnHeader) {
+                    onFavoritesHeader = true;
+                    currentIndex = -1;
+                    positionViewAtBeginning();
+                } else {
+                    onFavoritesHeader = false;
+                    currentIndex = savedIndex;
+                }
+            } else {
+                // While resting on the carousel currentIndex reads -1 — keep
+                // savedIndex pointing at a real tile so returning is sane.
+                savedOnHeader = onFavoritesHeader;
+                if (!onFavoritesHeader) savedIndex = currentIndex;
                 currentIndex = -1;
             }
-                
         }
 
-        currentIndex: focus ? savedIndex : -1
-        Component.onCompleted: positionViewAtIndex(savedIndex, ListView.Visible)
+        currentIndex: focus ? (onFavoritesHeader ? -1 : savedIndex) : -1
+        Component.onCompleted: {
+            if (showFavoritesHeader && savedIndex === 0) {
+                onFavoritesHeader = true;
+                savedOnHeader = true;
+            }
+            positionViewAtIndex(savedIndex, ListView.Visible);
+        }
 
         model: search.games ? search.games : api.allGames
         delegate: DynamicGridItem {
-            selected: ListView.isCurrentItem && collectionList.focus
+            selected: ListView.isCurrentItem && collectionList.focus && !collectionList.onFavoritesHeader
             width: itemWidth
             height: itemHeight
             
             onHighlighted: {
+                collectionList.onFavoritesHeader = false;
                 collectionList.savedIndex = index;
                 collectionList.currentIndex = index;
                 listHighlighted();
@@ -126,12 +194,90 @@ id: root
                 width: collectionList.cellWidth
                 height: collectionList.cellHeight
                 game: search ? search.currentGame(collectionList.currentIndex) : ""
-                selected: collectionList.focus
+                selected: collectionList.focus && !collectionList.onFavoritesHeader
             }
         }
 
-        Keys.onLeftPressed: { playNav(); collectionList.decrementCurrentIndex() }
-        Keys.onRightPressed: { playNav(); collectionList.incrementCurrentIndex() }
+        header: showFavoritesHeader ? favoritesHeaderComponent : null
+        Component {
+        id: favoritesHeaderComponent
+
+            FavoritesHeader {
+            id: favHeader
+                favoritesData: root.favoritesData
+                favIndex: root.favIndex
+                selected: collectionList.focus && collectionList.onFavoritesHeader
+                itemWidth: root.itemWidth
+                itemHeight: root.itemHeight
+            }
+        }
+
+        // Move focus onto the carousel and make sure it's actually scrolled
+        // into view — without this it stays parked off-screen to the left
+        // after the row has been scrolled rightward.
+        function enterFavoritesHeader() {
+            // Release the delegate we're leaving FIRST — it stays alive when
+            // it's still on screen (i.e. arriving via Left from tile 0) and
+            // would otherwise reclaim focus inside this FocusScope, swallowing
+            // Accept. Arriving from the right only worked because wrapping
+            // recycled that delegate.
+            if (collectionList.currentItem) collectionList.currentItem.focus = false;
+            onFavoritesHeader = true;
+            collectionList.currentIndex = -1;
+            collectionList.positionViewAtBeginning();
+            // Without this the delegate we just left can keep activeFocus, so
+            // Accept never reaches this ListView's Keys handler — that was the
+            // "A only works when I arrive from the left" bug.
+            collectionList.forceActiveFocus();
+        }
+
+        Keys.onLeftPressed: {
+            playNav();
+            if (onFavoritesHeader) {
+                // Already on the carousel: page through favorites, then wrap
+                // around to the LAST tile in the row once past the first one.
+                if (root.favIndex > 0) {
+                    root.favIndex -= 1;
+                } else {
+                    onFavoritesHeader = false;
+                    collectionList.currentIndex = collectionList.count - 1;
+                    collectionList.positionViewAtEnd();
+                }
+            } else if (showFavoritesHeader && collectionList.currentIndex === 0) {
+                collectionList.enterFavoritesHeader();
+            } else {
+                collectionList.decrementCurrentIndex();
+            }
+        }
+        Keys.onRightPressed: {
+            playNav();
+            if (onFavoritesHeader) {
+                // Page forward through favorites, then hand off to the row's
+                // first real tile once past the last one.
+                if (root.favIndex < root.favPageCount - 1) {
+                    root.favIndex += 1;
+                } else {
+                    onFavoritesHeader = false;
+                    collectionList.currentIndex = 0;
+                    collectionList.positionViewAtBeginning();
+                }
+            } else if (showFavoritesHeader && collectionList.currentIndex === collectionList.count - 1) {
+                // Wrapping off the last tile lands on the carousel rather than
+                // skipping straight past it back to tile 0.
+                collectionList.enterFavoritesHeader();
+            } else {
+                collectionList.incrementCurrentIndex();
+            }
+        }
+        Keys.onPressed: {
+            if (onFavoritesHeader && api.keys.isAccept(event) && !event.isAutoRepeat) {
+                event.accepted = true;
+                if (root.favTargetGame) {
+                    activateSelected();
+                    gameDetails(root.favTargetGame);
+                }
+            }
+        }
     }
 
 }
