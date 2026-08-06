@@ -58,9 +58,23 @@ id: root
             asynchronous: true
             //opacity: selected ? 1 : 0.2
             Behavior on opacity { NumberAnimation { duration: 100 } }
-            scale: selected ? 1.2 : 1
-            Behavior on scale { NumberAnimation { duration: 100 } }
-            
+            scale: (selected ? 1.2 : 1) * togglePop
+            Behavior on scale { enabled: !togglePopping; NumberAnimation { duration: 100 } }
+
+            // Pop bounce whenever the icon itself changes (e.g. favorite pin
+            // toggling between outline/filled) — kept as a separate multiplier
+            // so it doesn't fight the selected-state hover scale above.
+            property real togglePop: 1
+            property bool togglePopping: false
+            onSourceChanged: toggleBounce.restart()
+            SequentialAnimation {
+                id: toggleBounce
+                ScriptAction { script: buttonicon.togglePopping = true }
+                NumberAnimation { target: buttonicon; property: "togglePop"; to: 0.55; duration: 90; easing.type: Easing.OutCubic }
+                NumberAnimation { target: buttonicon; property: "togglePop"; to: 1.0; duration: 220; easing.type: Easing.OutBack; easing.overshoot: 4 }
+                ScriptAction { script: buttonicon.togglePopping = false }
+            }
+
             property real iconMargin: (buttonlabel.text === "") ? iconPadding / 2 : buttonMargin
             anchors { left: parent.left; leftMargin: visible ? iconMargin : 0 }
             //anchors.horizontalCenter: (buttonlabel.text === "") ? parent.horizontalCenter : parent.left
