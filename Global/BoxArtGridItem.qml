@@ -169,8 +169,12 @@ id: root
             }
             width: vpx(20)
             height: width
-            visible: gameData && gameData.favorite
+            opacity: (gameData && gameData.favorite) ? 1 : 0
+            visible: opacity > 0
+            scale: (gameData && gameData.favorite) ? 1 : 0.4
             z: 5
+            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+            Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutBack; easing.overshoot: 3 } }
             Image {
                 source: "../assets/images/favicon.svg"
                 asynchronous: true
