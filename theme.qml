@@ -64,6 +64,8 @@ id: root
             ShowScanlines:                 api.memory.has("Show scanlines") ? api.memory.get("Show scanlines") : "Yes",
             DetailsDefault:                api.memory.has("Default to full details") ? api.memory.get("Default to full details") : "No",
             LaunchScreenDelay:             api.memory.has("Launch screen delay") ? api.memory.get("Launch screen delay") : "0.6",
+            FavoritesBox:                  api.memory.has("Favorites Box") ? api.memory.get("Favorites Box") : "Yes",
+            FavoritesBoxContent:           api.memory.has("Favorites Box Content") ? api.memory.get("Favorites Box Content") : "Favorites",
             ShowcaseBackgroundArt:          api.memory.has("Showcase Background Art") ? api.memory.get("Showcase Background Art") : "Yes",
             RandomizeSystemTileFanart:      api.memory.has("Randomize System Tile Fanart") ? api.memory.get("Randomize System Tile Fanart") : "No",
             CustomBackground:               api.memory.has("Custom Background") ? api.memory.get("Custom Background") : "No",
