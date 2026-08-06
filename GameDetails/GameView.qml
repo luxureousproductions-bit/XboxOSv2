@@ -845,6 +845,7 @@ id: root
             property string buttonText: game && game.favorite ? "Unfavorite" : "Add favorite"
             //text: buttonText
             icon: favIcon
+            iconPadding: vpx(22)
             height: parent.height
             selected: ListView.isCurrentItem && menu.activeFocus
             onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
