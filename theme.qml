@@ -311,6 +311,18 @@ id: root
         launchDelay.restart();          // hold the splash, then launch (see launchDelay)
     }
 
+    // Launch from the RetroAchievements pages. Identical to launchGame() except
+    // the return target is rewritten to the Showcase: coming back into a
+    // stale achievements page (possibly for a game reached via search) isn't
+    // useful. lastState must be replaced BEFORE saveCurrentState() serializes it.
+    function launchGameFromRA(game) {
+        launchingGame = (game !== null) ? game : currentGame;
+        launchGameScreen();             // pushes the RA screen onto lastState
+        lastState = ["showcasescreen"];  // ...replaced: return to the Showcase
+        saveCurrentState(launchingGame);
+        launchDelay.restart();
+    }
+
     // Save current states for returning from game
     function saveCurrentState(game) {
         api.memory.set('savedState', root.state);
@@ -933,6 +945,10 @@ id: root
     Loader  {
     id: launchgameloader
 
+        // Declared before the RA loaders, so it needs an explicit z to sit on
+        // top of them — otherwise launching from the achievements page shows
+        // the RA page for the whole splash delay instead of the launch screen.
+        z: 100
         focus: (root.state === "launchgamescreen")
         active: opacity !== 0
         opacity: focus ? 1 : 0
