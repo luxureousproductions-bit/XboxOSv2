@@ -675,7 +675,7 @@ id: root
 
     ListModel {
     id: localHelpModel
-        ListElement { name: "Overview";  button: "accept"  }
+        ListElement { name: "Launch";    button: "accept"  }
         ListElement { name: "Refresh";   button: "details" }
         ListElement { name: "Sort";      button: "filters" }
         ListElement { name: "Back";      button: "cancel"  }
@@ -733,10 +733,10 @@ id: root
     }
 
     Keys.onPressed: {
-        // B — back to games list
+        // B — back to the RA overview. A second B there exits RA entirely.
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            previousScreen();
+            achievementsScreenFromGame();
         }
         // LB — cycle filter backward
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {
@@ -766,10 +766,23 @@ id: root
             if (cheevosData.currentGameDetails.Title !== "")
                 cheevosData.loadGameAchievements(cheevosData.currentGameID);
         }
-        // A — back to RA overview
+        // A — launch the game these achievements belong to, when a matching
+        // game exists locally. currentGame is used directly if it's already
+        // the right title (RA was entered from that game or via search);
+        // otherwise the library is searched by normalized title.
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            achievementsScreenFromGame();
+            var raTitle = cheevosData.currentGameDetails.Title || "";
+            var target  = null;
+            if (currentGame && raTitle !== ""
+                && cheevosData.normalizeTitle(currentGame.title) === cheevosData.normalizeTitle(raTitle))
+                target = currentGame;
+            if (!target)
+                target = cheevosData.findLocalGame(raTitle, cheevosData.currentGameDetails.ConsoleName || "");
+            if (target) {
+                playAccept();
+                launchGame(target);
+            }
         }
     }
 }

@@ -482,6 +482,7 @@ id: root
     ListModel {
     id: localHelpModel
         ListElement { name: "Details"; button: "accept"  }
+        ListElement { name: "Search";  button: "filters" }
         ListElement { name: "Refresh"; button: "details" }
         ListElement { name: "Back";    button: "cancel"  }
     }
@@ -495,16 +496,27 @@ id: root
     }
 
     // ── Key handling ─────────────────────────────────────────────────────
+    // While the search overlay is open it owns all input (it has focus), so
+    // these only ever run for the recently-played list underneath.
     Keys.onUpPressed: {
         event.accepted = true;
+        if (searchOverlay.open) return;
         if (gameList.currentIndex > 0) gameList.currentIndex--;
     }
     Keys.onDownPressed: {
         event.accepted = true;
+        if (searchOverlay.open) return;
         if (gameList.currentIndex < cheevosData.raRecentGames.count - 1)
             gameList.currentIndex++;
     }
     Keys.onPressed: {
+        // Y — open the library search
+        if (api.keys.isFilters(event) && !event.isAutoRepeat) {
+            event.accepted = true;
+            playAccept();
+            searchOverlay.openSearch();
+            return;
+        }
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
             playAccept();
@@ -519,6 +531,273 @@ id: root
             playAccept();
             initialized = false;
             cheevosData.refreshAll();
+        }
+    }
+
+    // ── Library search overlay ────────────────────────────────────────────
+    // Searches the LOCAL Pegasus library, then hands the chosen game to the
+    // existing RA pipeline: set currentGame -> raEntryScreen(). RAGameEntryView
+    // already resolves the RA game ID (console map + cached GetGameList +
+    // normalized title match) and navigates on to the achievements page, so
+    // nothing about that lookup is duplicated here.
+    FocusScope {
+    id: searchOverlay
+
+        property bool open: false
+        anchors.fill: parent
+        visible: open
+        focus: open
+        z: 200
+
+        property string query: ""
+        property var results: []
+
+        function openSearch() {
+            query = "";
+            results = [];
+            open = true;
+            resultList.currentIndex = 0;
+            keyRow.col = 0;
+            forceActiveFocus();
+        }
+        function closeSearch() {
+            open = false;
+            root.forceActiveFocus();
+        }
+
+        function runSearch() {
+            var q = query.toLowerCase().trim();
+            if (q === "") { results = []; return; }
+            var out = [];
+            for (var i = 0; i < api.allGames.count && out.length < 60; i++) {
+                var g = api.allGames.get(i);
+                if ((g.title || "").toLowerCase().indexOf(q) !== -1) out.push(g);
+            }
+            results = out;
+            resultList.currentIndex = 0;
+        }
+        onQueryChanged: runSearch()
+
+        // Chosen game -> existing RA lookup pipeline.
+        function chooseResult() {
+            if (results.length === 0) return;
+            var g = results[resultList.currentIndex];
+            if (!g) return;
+            playAccept();
+            currentGame = g;
+            closeSearch();
+            raEntryScreen();
+        }
+
+        // Full-bleed blocker so touches never reach the list underneath.
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.AllButtons
+            onPressed:  mouse.accepted = true
+            onClicked:  mouse.accepted = true
+            onReleased: mouse.accepted = true
+        }
+        Rectangle {
+            anchors.fill: parent
+            color: Qt.rgba(0, 0, 0, 0.92)
+        }
+
+        Text {
+            id: searchTitle
+            anchors { top: parent.top; topMargin: vpx(28); horizontalCenter: parent.horizontalCenter }
+            text: "SEARCH LIBRARY"
+            color: "white"
+            font.family: titleFont.name
+            font.pixelSize: vpx(26)
+            font.bold: true
+        }
+
+        // Query box
+        Rectangle {
+            id: queryBox
+            anchors { top: searchTitle.bottom; topMargin: vpx(14); horizontalCenter: parent.horizontalCenter }
+            width: parent.width * 0.6
+            height: vpx(44)
+            color: Qt.rgba(1, 1, 1, 0.10)
+            border.width: vpx(2)
+            border.color: theme.accent
+            Text {
+                anchors { left: parent.left; leftMargin: vpx(10); verticalCenter: parent.verticalCenter }
+                text: searchOverlay.query === "" ? "Type to search..." : searchOverlay.query
+                color: searchOverlay.query === "" ? Qt.rgba(1, 1, 1, 0.4) : "white"
+                font.family: subtitleFont.name
+                font.pixelSize: vpx(20)
+            }
+        }
+
+        // Results
+        ListView {
+            id: resultList
+            anchors {
+                top: queryBox.bottom; topMargin: vpx(14)
+                left: parent.left; leftMargin: vpx(60)
+                right: parent.right; rightMargin: vpx(60)
+            }
+            height: parent.height * 0.34
+            clip: true
+            model: searchOverlay.results
+            currentIndex: 0
+            delegate: Rectangle {
+                width: resultList.width
+                height: vpx(40)
+                color: ListView.isCurrentItem ? theme.accent : "transparent"
+                Text {
+                    anchors { left: parent.left; leftMargin: vpx(10); right: parent.right; rightMargin: vpx(10); verticalCenter: parent.verticalCenter }
+                    text: modelData ? modelData.title : ""
+                    color: "white"
+                    font.family: subtitleFont.name
+                    font.pixelSize: vpx(19)
+                    elide: Text.ElideRight
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: { resultList.currentIndex = index; searchOverlay.chooseResult(); }
+                }
+            }
+        }
+
+        Text {
+            anchors { top: resultList.top; horizontalCenter: parent.horizontalCenter }
+            visible: searchOverlay.query !== "" && searchOverlay.results.length === 0
+            text: "No games found"
+            color: Qt.rgba(1, 1, 1, 0.5)
+            font.family: subtitleFont.name
+            font.pixelSize: vpx(19)
+        }
+
+        // On-screen keyboard — controller-first, same idea as the All Games
+        // filter panel: a grid of keys navigated with the d-pad.
+        Column {
+        id: keyRow
+
+            property int row: 0
+            property int col: 0
+            readonly property var rows: [
+                "ABCDEFGHIJ",
+                "KLMNOPQRST",
+                "UVWXYZ0123",
+                "456789 -:!"
+            ]
+
+            anchors {
+                top: resultList.bottom; topMargin: vpx(16)
+                horizontalCenter: parent.horizontalCenter
+            }
+            spacing: vpx(6)
+
+            Repeater {
+                model: keyRow.rows.length
+                Row {
+                    property int rowIndex: index
+                    spacing: vpx(6)
+                    Repeater {
+                        model: keyRow.rows[rowIndex].length
+                        Rectangle {
+                            width: vpx(42); height: vpx(38)
+                            color: (keyRow.row === rowIndex && keyRow.col === index)
+                                   ? theme.accent : Qt.rgba(1, 1, 1, 0.08)
+                            Text {
+                                anchors.centerIn: parent
+                                text: keyRow.rows[rowIndex].charAt(index)
+                                color: "white"
+                                font.family: subtitleFont.name
+                                font.pixelSize: vpx(19)
+                                font.bold: true
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: {
+                                    keyRow.row = rowIndex; keyRow.col = index;
+                                    searchOverlay.query += keyRow.rows[rowIndex].charAt(index);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Local help bar for the overlay
+        Row {
+            anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: vpx(12) }
+            spacing: vpx(20)
+            Repeater {
+                model: searchHelpModel
+                delegate: Row {
+                    spacing: vpx(8)
+                    Image {
+                        source: "../assets/images/controller/" + buttonbar.processButtonArt(button) + ".png"
+                        width: vpx(30); height: vpx(30)
+                        asynchronous: true
+                        sourceSize { width: 48; height: 48 }
+                    }
+                    Text {
+                        text: name
+                        font.family: subtitleFont.name
+                        font.pixelSize: vpx(18)
+                        color: "white"
+                        height: vpx(30)
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                }
+            }
+        }
+        ListModel {
+        id: searchHelpModel
+            ListElement { name: "Type";   button: "accept"  }
+            ListElement { name: "Select"; button: "filters" }
+            ListElement { name: "Delete"; button: "details" }
+            ListElement { name: "Close";  button: "cancel"  }
+        }
+
+        Keys.onUpPressed:    { event.accepted = true; if (keyRow.row > 0) keyRow.row--; }
+        Keys.onDownPressed:  { event.accepted = true; if (keyRow.row < keyRow.rows.length - 1) keyRow.row++; }
+        Keys.onLeftPressed:  { event.accepted = true; if (keyRow.col > 0) keyRow.col--; }
+        Keys.onRightPressed: {
+            event.accepted = true;
+            if (keyRow.col < keyRow.rows[keyRow.row].length - 1) keyRow.col++;
+        }
+        Keys.onPressed: {
+            if (event.isAutoRepeat) return;
+            // A — type the highlighted character
+            if (api.keys.isAccept(event)) {
+                event.accepted = true;
+                searchOverlay.query += keyRow.rows[keyRow.row].charAt(keyRow.col);
+                return;
+            }
+            // Y — jump into the results and open the highlighted game
+            if (api.keys.isFilters(event)) {
+                event.accepted = true;
+                searchOverlay.chooseResult();
+                return;
+            }
+            // X — backspace
+            if (api.keys.isDetails(event)) {
+                event.accepted = true;
+                searchOverlay.query = searchOverlay.query.slice(0, -1);
+                return;
+            }
+            // LB / RB — move through the results without leaving the keyboard
+            if (api.keys.isPrevPage(event)) {
+                event.accepted = true;
+                if (resultList.currentIndex > 0) resultList.currentIndex--;
+                return;
+            }
+            if (api.keys.isNextPage(event)) {
+                event.accepted = true;
+                if (resultList.currentIndex < searchOverlay.results.length - 1) resultList.currentIndex++;
+                return;
+            }
+            // B — close
+            if (api.keys.isCancel(event)) {
+                event.accepted = true;
+                searchOverlay.closeSearch();
+            }
         }
     }
 }
