@@ -47,10 +47,10 @@ id: root
     readonly property var currentGame: (boxMode === "favorites") ? currentFavorite : fallbackGame
 
     // ── Which content the box is showing ──
-    // Settings > Pins > "Pin Box Content" selects what the box shows. Pins
+    // "Favorites Box Content" (Advanced) selects what the box shows. Favorites
     // still degrades gracefully when none are set: videos, else art slideshow.
     readonly property string boxMode: {
-        var m = settings.PinBoxContent;
+        var m = settings.FavoritesBoxContent;
         if (m === "Fanart Slideshow") return "art";
         if (m === "Discover Videos")  return useVideoFallback ? "video" : "art";
         if (favCount > 0)             return "favorites";       // Favorites mode
@@ -108,7 +108,7 @@ id: root
     }
     // Builds whichever list the current mode actually needs, once.
     function ensureFallbacks() {
-        var m = settings.PinBoxContent;
+        var m = settings.FavoritesBoxContent;
         if (m === "Fanart Slideshow") { buildArtList(); return; }
         if (m === "Discover Videos")  { if (!videosScanned) buildVideoList(); return; }
         if (favCount === 0 && !videosScanned) buildVideoList();   // Favorites w/ none set
@@ -242,46 +242,33 @@ id: root
                 opacity: selected ? 0.1 : 0.25
             }
 
-            // Game logo, centered — favourites mode.
-            Image {
-                id: favLogo
-                anchors.fill: parent
-                anchors.margins: frame.width / 10
-                anchors.bottomMargin: frame.width / 8
-                fillMode: Image.PreserveAspectFit
-                horizontalAlignment: Image.AlignHCenter
-                verticalAlignment: Image.AlignVCenter
-                asynchronous: true; smooth: true
-                source: (currentGame && currentGame.assets.logo) ? currentGame.assets.logo : ""
-                visible: boxMode === "favorites" && source != ""
-                opacity: selected ? 1 : 0.9
-                Behavior on opacity { NumberAnimation { duration: 200 } }
-            }
-
-            // Game logo, small in the bottom-right — Discover video / fanart
-            // slideshow modes, where the art is the subject and the logo is
-            // just a "what am I looking at" marker.
+            // Game logo. Pins and the fanart slideshow both sit bottom-CENTER;
+            // Discover keeps its bottom-RIGHT marker. Unused anchors are set
+            // to undefined so the two layouts don't fight each other.
             Image {
                 id: favCornerLogo
 
-                // Slideshow gets a larger, bottom-CENTER logo; Discover keeps
-                // the smaller bottom-right marker. Unused anchors are set to
-                // undefined so the two layouts don't fight each other.
+                // Tall tiles are narrow, so a width-based logo comes out tiny
+                // there — widen the fraction for Tall specifically.
+                readonly property bool isTall: frame.height > frame.width
+                readonly property bool bottomRight: boxMode === "video"
+
                 anchors {
-                    right: (boxMode === "art") ? undefined : parent.right
+                    right: bottomRight ? parent.right : undefined
                     rightMargin: vpx(8)
-                    horizontalCenter: (boxMode === "art") ? parent.horizontalCenter : undefined
+                    horizontalCenter: bottomRight ? undefined : parent.horizontalCenter
                     bottom: parent.bottom; bottomMargin: vpx(8)
                 }
-                width:  frame.width  * ((boxMode === "art") ? 0.46 : 0.30)
-                height: frame.height * ((boxMode === "art") ? 0.30 : 0.22)
+                width:  frame.width * (bottomRight ? (isTall ? 0.52 : 0.38)
+                                                   : (isTall ? 0.70 : 0.50))
+                height: frame.height * (bottomRight ? 0.26 : 0.30)
                 fillMode: Image.PreserveAspectFit
-                horizontalAlignment: (boxMode === "art") ? Image.AlignHCenter : Image.AlignRight
+                horizontalAlignment: bottomRight ? Image.AlignRight : Image.AlignHCenter
                 verticalAlignment: Image.AlignBottom
                 asynchronous: true; smooth: true
                 source: (currentGame && currentGame.assets.logo) ? currentGame.assets.logo : ""
-                visible: boxMode !== "favorites" && source != ""
-                opacity: selected ? 1 : 0.85
+                visible: source != ""
+                opacity: selected ? 1 : 0.9
                 Behavior on opacity { NumberAnimation { duration: 200 } }
             }
 
@@ -319,10 +306,10 @@ id: root
                     }
                     Text {
                         id: badgeText
-                        text: (boxMode === "favorites") ? "PINNED" : "DISCOVER"
+                        text: (boxMode === "favorites") ? "PINS" : "DISCOVER"
                         color: "white"
                         font.family: subtitleFont.name
-                        font.pixelSize: Math.max(vpx(13), tile.height * 0.062)
+                        font.pixelSize: Math.max(vpx(13), Math.min(tile.width, tile.height) * 0.062)
                         font.bold: true
                         anchors.verticalCenter: parent.verticalCenter
                     }
