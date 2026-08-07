@@ -781,7 +781,7 @@ id: root
                 target = cheevosData.findLocalGame(raTitle, cheevosData.currentGameDetails.ConsoleName || "");
             if (target) {
                 playAccept();
-                launchGame(target);
+                launchGameFromRA(target);
             }
         }
     }

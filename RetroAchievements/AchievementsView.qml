@@ -13,6 +13,7 @@
 import QtQuick 2.15
 import QtGraphicalEffects 1.15
 import "../Global"
+import "../utils.js" as Utils
 
 FocusScope {
 id: root
@@ -553,6 +554,7 @@ id: root
         property var results: []
 
         function openSearch() {
+            buildSearchIndex();
             query = "";
             results = [];
             open = true;
@@ -565,15 +567,42 @@ id: root
             root.forceActiveFocus();
         }
 
-        function runSearch() {
-            var q = query.toLowerCase().trim();
-            if (q === "") { results = []; return; }
-            var out = [];
-            for (var i = 0; i < api.allGames.count && out.length < 60; i++) {
+        // Matching runs on CheevosData's normalized form (drops articles,
+        // bracketed regions, punctuation), so "zelda 3" finds
+        // "The Legend of Zelda III (USA)" and "mario bros" ignores hyphens.
+        // Exact-prefix hits sort above mid-string hits.
+        property int totalMatches: 0
+
+        // Normalizing every title costs several regex passes each, so on a
+        // multi-thousand game library doing it per keystroke is far too slow.
+        // Build the normalized index once per session instead.
+        property var searchIndex: []
+        function buildSearchIndex() {
+            if (searchIndex.length > 0) return;
+            var idx = [];
+            for (var i = 0; i < api.allGames.count; i++) {
                 var g = api.allGames.get(i);
-                if ((g.title || "").toLowerCase().indexOf(q) !== -1) out.push(g);
+                idx.push({ game: g, norm: cheevosData.normalizeTitle(g.title || "") });
             }
-            results = out;
+            searchIndex = idx;
+        }
+
+        function runSearch() {
+            var raw = query.toLowerCase().trim();
+            if (raw === "") { results = []; totalMatches = 0; return; }
+            var q = cheevosData.normalizeTitle(raw);
+            if (q === "") q = raw;
+
+            var starts = [];
+            var contains = [];
+            for (var i = 0; i < searchIndex.length; i++) {
+                var at = searchIndex[i].norm.indexOf(q);
+                if (at === 0)      starts.push(searchIndex[i].game);
+                else if (at > 0)   contains.push(searchIndex[i].game);
+            }
+            var out = starts.concat(contains);
+            totalMatches = out.length;
+            results = out.slice(0, 80);
             resultList.currentIndex = 0;
         }
         onQueryChanged: runSearch()
@@ -644,21 +673,76 @@ id: root
             currentIndex: 0
             delegate: Rectangle {
                 width: resultList.width
-                height: vpx(40)
-                color: ListView.isCurrentItem ? theme.accent : "transparent"
+                height: vpx(58)
+                color: ListView.isCurrentItem ? theme.accent : Qt.rgba(1, 1, 1, 0.04)
+
+                // Box art thumbnail — falls back through the same asset order
+                // the tiles use, so a game without boxFront still shows art.
+                Rectangle {
+                    id: thumbFrame
+                    anchors { left: parent.left; leftMargin: vpx(8); verticalCenter: parent.verticalCenter }
+                    width: vpx(44); height: vpx(44)
+                    color: Qt.rgba(0, 0, 0, 0.35)
+                    Image {
+                        anchors.fill: parent
+                        anchors.margins: vpx(2)
+                        fillMode: Image.PreserveAspectFit
+                        asynchronous: true; smooth: true
+                        source: {
+                            if (!modelData) return "";
+                            var a = modelData.assets;
+                            return a.boxFront || a.background
+                                || ((a.screenshots && a.screenshots.length) ? a.screenshots[0] : "") || "";
+                        }
+                    }
+                }
+
                 Text {
-                    anchors { left: parent.left; leftMargin: vpx(10); right: parent.right; rightMargin: vpx(10); verticalCenter: parent.verticalCenter }
+                    anchors {
+                        left: thumbFrame.right; leftMargin: vpx(10)
+                        right: sysBadge.left;   rightMargin: vpx(8)
+                        verticalCenter: parent.verticalCenter
+                    }
                     text: modelData ? modelData.title : ""
                     color: "white"
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(19)
                     elide: Text.ElideRight
                 }
+
+                // System badge — the platform logo, which also disambiguates
+                // the same title appearing on multiple systems.
+                Image {
+                    id: sysBadge
+                    anchors { right: parent.right; rightMargin: vpx(10); verticalCenter: parent.verticalCenter }
+                    height: vpx(22)
+                    width: vpx(58)
+                    fillMode: Image.PreserveAspectFit
+                    horizontalAlignment: Image.AlignRight
+                    asynchronous: true; smooth: true
+                    opacity: 0.85
+                    source: (modelData && modelData.collections.count > 0)
+                            ? "../assets/images/logospng/"
+                              + Utils.processPlatformName(modelData.collections.get(0).shortName) + ".png"
+                            : ""
+                }
+
                 MouseArea {
                     anchors.fill: parent
                     onClicked: { resultList.currentIndex = index; searchOverlay.chooseResult(); }
                 }
             }
+        }
+
+        Text {
+            anchors { left: queryBox.right; leftMargin: vpx(12); verticalCenter: queryBox.verticalCenter }
+            visible: searchOverlay.query !== "" && searchOverlay.totalMatches > 0
+            text: searchOverlay.totalMatches
+                  + (searchOverlay.totalMatches === 1 ? " game" : " games")
+                  + (searchOverlay.totalMatches > searchOverlay.results.length ? " (showing 80)" : "")
+            color: Qt.rgba(1, 1, 1, 0.6)
+            font.family: subtitleFont.name
+            font.pixelSize: vpx(17)
         }
 
         Text {
