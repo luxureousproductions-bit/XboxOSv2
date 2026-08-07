@@ -588,10 +588,9 @@ id: root
             searchIndex = idx;
         }
 
-        // "Instant" filters as you type. "Results Page" waits for Y (Search),
-        // then shows an overview-styled list you navigate separately.
-        readonly property bool resultsPageMode: settings.SearchStyle === "Results Page"
-        property bool showingResults: false      // Results Page: on the list, not the keyboard
+        // Type a query, press Search (Y or the on-screen key), then browse the
+        // committed results list.
+        property bool showingResults: false      // on the results list, not the keyboard
 
         // Real RA progress for a local game, when it's in the recently-played
         // cache. Costs nothing — anything not there simply shows no bar, since
@@ -632,10 +631,7 @@ id: root
             results = out.slice(0, 80);
             resultList.currentIndex = 0;
         }
-        onQueryChanged: {
-            if (resultsPageMode) { showingResults = false; return; }
-            runSearch();
-        }
+        onQueryChanged: showingResults = false
 
         // Chosen game -> existing RA lookup pipeline.
         function chooseResult() {
@@ -699,7 +695,7 @@ id: root
             }
             // Results Page devotes the screen to the list once committed;
             // Instant keeps it compact above the keyboard.
-            height: (searchOverlay.resultsPageMode && searchOverlay.showingResults)
+            height: searchOverlay.showingResults
                     ? parent.height - y - vpx(60)
                     : parent.height * 0.34
             clip: true
@@ -707,18 +703,18 @@ id: root
             currentIndex: 0
             delegate: Rectangle {
                 width: resultList.width
-                height: (searchOverlay.resultsPageMode && searchOverlay.showingResults) ? vpx(76) : vpx(58)
+                height: searchOverlay.showingResults ? vpx(76) : vpx(58)
                 color: ListView.isCurrentItem ? theme.accent : Qt.rgba(1, 1, 1, 0.04)
 
                 // Box art thumbnail — falls back through the same asset order
                 // the tiles use, so a game without boxFront still shows art.
-                property var raProg: (searchOverlay.resultsPageMode && searchOverlay.showingResults)
+                property var raProg: searchOverlay.showingResults
                                      ? searchOverlay.raProgressFor(modelData) : null
 
                 Rectangle {
                     id: thumbFrame
                     anchors { left: parent.left; leftMargin: vpx(8); verticalCenter: parent.verticalCenter }
-                    width:  (searchOverlay.resultsPageMode && searchOverlay.showingResults) ? vpx(60) : vpx(44)
+                    width:  searchOverlay.showingResults ? vpx(60) : vpx(44)
                     height: width
                     color: Qt.rgba(0, 0, 0, 0.35)
                     Image {
@@ -756,7 +752,7 @@ id: root
                     // than triggering a lookup per row.
                     Text {
                         width: parent.width
-                        visible: searchOverlay.resultsPageMode && searchOverlay.showingResults
+                        visible: searchOverlay.showingResults
                         text: {
                             var p = parent.parent.raProg;
                             if (!p) return "";
@@ -777,8 +773,8 @@ id: root
                 Image {
                     id: sysBadge
                     anchors { right: parent.right; rightMargin: vpx(10); verticalCenter: parent.verticalCenter }
-                    height: vpx(22)
-                    width: vpx(58)
+                    height: vpx(34)
+                    width: vpx(86)
                     fillMode: Image.PreserveAspectFit
                     horizontalAlignment: Image.AlignRight
                     asynchronous: true; smooth: true
@@ -818,10 +814,25 @@ id: root
 
         // On-screen keyboard — controller-first, same idea as the All Games
         // filter panel: a grid of keys navigated with the d-pad.
+        // Accent frame around the keyboard — same treatment as the theme's
+        // other on-screen keyboards.
+        Rectangle {
+            anchors.fill: keyRow
+            anchors.margins: -vpx(12)
+            visible: keyRow.visible
+            color: Qt.rgba(0, 0, 0, 0.35)
+            radius: vpx(10)
+            border.color: theme.accent
+            border.width: vpx(3)
+            antialiasing: true
+        }
+
         Column {
         id: keyRow
 
-            visible: !(searchOverlay.resultsPageMode && searchOverlay.showingResults)
+            visible: !searchOverlay.showingResults
+            // Row index == rows.length addresses the SEARCH key below the grid.
+            readonly property int searchRow: rows.length
             property int row: 0
             property int col: 0
             readonly property var rows: [
@@ -867,6 +878,28 @@ id: root
                     }
                 }
             }
+
+            // SEARCH key — full-width row beneath the grid. Y does the same
+            // thing; this just makes it discoverable and touch-friendly.
+            Rectangle {
+                width: (vpx(42) * 10) + (vpx(6) * 9)     // spans the grid exactly
+                height: vpx(38)
+                color: (keyRow.row === keyRow.searchRow) ? theme.accent : Qt.rgba(1, 1, 1, 0.08)
+                border.color: theme.accent
+                border.width: (keyRow.row === keyRow.searchRow) ? 0 : vpx(2)
+                Text {
+                    anchors.centerIn: parent
+                    text: "SEARCH"
+                    color: "white"
+                    font.family: subtitleFont.name
+                    font.pixelSize: vpx(19)
+                    font.bold: true
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: { keyRow.row = keyRow.searchRow; searchOverlay.commitSearch(); }
+                }
+            }
         }
 
         // Local help bar for the overlay
@@ -876,16 +909,11 @@ id: root
             Repeater {
                 // Three prompt sets: Results Page list, Results Page keyboard,
                 // and Instant. Keeps the hints honest per mode.
-                model: (searchOverlay.resultsPageMode && searchOverlay.showingResults)
+                model: searchOverlay.showingResults
                        ? [ { n: "Open",   b: "accept" },
                            { n: "Back",   b: "cancel" } ]
-                       : searchOverlay.resultsPageMode
-                       ? [ { n: "Type",   b: "accept"  },
-                           { n: "Search", b: "filters" },
-                           { n: "Delete", b: "details" },
-                           { n: "Close",  b: "cancel"  } ]
                        : [ { n: "Type",   b: "accept"  },
-                           { n: "Open",   b: "filters" },
+                           { n: "Search", b: "filters" },
                            { n: "Delete", b: "details" },
                            { n: "Close",  b: "cancel"  } ]
                 delegate: Row {
@@ -912,7 +940,7 @@ id: root
         // On the Results Page the d-pad drives the list; otherwise the keyboard.
         Keys.onUpPressed: {
             event.accepted = true;
-            if (resultsPageMode && showingResults) {
+            if (showingResults) {
                 if (resultList.currentIndex > 0) resultList.currentIndex--;
                 return;
             }
@@ -920,27 +948,29 @@ id: root
         }
         Keys.onDownPressed: {
             event.accepted = true;
-            if (resultsPageMode && showingResults) {
+            if (showingResults) {
                 if (resultList.currentIndex < results.length - 1) resultList.currentIndex++;
                 return;
             }
-            if (keyRow.row < keyRow.rows.length - 1) keyRow.row++;
+            if (keyRow.row < keyRow.searchRow) keyRow.row++;
         }
         Keys.onLeftPressed: {
             event.accepted = true;
-            if (resultsPageMode && showingResults) return;
+            if (showingResults) return;
+            if (keyRow.row === keyRow.searchRow) return;      // single full-width key
             if (keyRow.col > 0) keyRow.col--;
         }
         Keys.onRightPressed: {
             event.accepted = true;
-            if (resultsPageMode && showingResults) return;
+            if (showingResults) return;
+            if (keyRow.row === keyRow.searchRow) return;      // single full-width key
             if (keyRow.col < keyRow.rows[keyRow.row].length - 1) keyRow.col++;
         }
         Keys.onPressed: {
             if (event.isAutoRepeat) return;
 
             // ── Results Page: the list has its own, simpler mapping ──
-            if (resultsPageMode && showingResults) {
+            if (showingResults) {
                 if (api.keys.isAccept(event)) {            // open highlighted game
                     event.accepted = true;
                     searchOverlay.chooseResult();
@@ -957,14 +987,14 @@ id: root
             // A — type the highlighted character
             if (api.keys.isAccept(event)) {
                 event.accepted = true;
-                searchOverlay.query += keyRow.rows[keyRow.row].charAt(keyRow.col);
+                if (keyRow.row === keyRow.searchRow) searchOverlay.commitSearch();
+                else searchOverlay.query += keyRow.rows[keyRow.row].charAt(keyRow.col);
                 return;
             }
-            // Y — Instant: open highlighted result. Results Page: run the search.
+            // Y — run the search (same as the on-screen SEARCH key)
             if (api.keys.isFilters(event)) {
                 event.accepted = true;
-                if (resultsPageMode) searchOverlay.commitSearch();
-                else                 searchOverlay.chooseResult();
+                searchOverlay.commitSearch();
                 return;
             }
             // X — backspace
