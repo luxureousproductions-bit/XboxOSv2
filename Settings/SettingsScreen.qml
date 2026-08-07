@@ -543,11 +543,6 @@ id: root
             masked:      true
             note:        "Web API key from retroachievements.org/settings"
         }
-        ListElement {
-            settingName: "Search Style"
-            setting:     "Instant,Results Page"
-            note:        "Instant filters as you type; Results Page lists matches after you press Search"
-        }
     }
 
     property var raPage: {
