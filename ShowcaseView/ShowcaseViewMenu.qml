@@ -1476,15 +1476,31 @@ id: root
             platformlist.savedIndex = navNearestIndex(platformlist, topRow.tileSz, platformlist.spacing, screenX, platformlist.count);
         } else {
             var it = mainList.itemAtIndex(destIndex);
-            if (it && it.collectionList) {
-                it.savedIndex = navNearestIndex(it.collectionList, it.itemWidth, it.collectionList.spacing, screenX, it.collectionList.count);
-                // Vertical nav lands on a tile column, so don't let a row that
-                // was last left resting on the favorites carousel restore onto
-                // it and ignore the column we came from.
-                if (it.collectionList.onFavoritesHeader !== undefined) {
-                    it.collectionList.savedOnHeader = false;
-                    it.collectionList.onFavoritesHeader = false;
-                }
+            if (!it || !it.collectionList) return;
+            var list = it.collectionList;
+            // A row carrying the favorites carousel has an extra slot before
+            // tile 0, so the plain column math lands one tile too far right.
+            // Offset by the header's extent, and treat a negative result as
+            // "that column IS the carousel" rather than clamping onto tile 0.
+            var hasHeader = it.showFavoritesHeader === true && list.headerItem;
+            var headerExtent = hasHeader ? (list.headerItem.width + list.spacing) : 0;
+            var unit = it.itemWidth + list.spacing;
+            if (unit <= 0) return;
+            var local = list.mapFromItem(root, screenX, 0).x;
+            var i = Math.round((list.contentX + local - headerExtent - it.itemWidth / 2) / unit);
+
+            if (hasHeader && i < 0) {
+                it.savedIndex = 0;
+                list.savedOnHeader = true;
+                list.onFavoritesHeader = true;
+                return;
+            }
+            if (i < 0) i = 0;
+            if (i > list.count - 1) i = list.count - 1;
+            it.savedIndex = i;
+            if (list.onFavoritesHeader !== undefined) {
+                list.savedOnHeader = false;
+                list.onFavoritesHeader = false;
             }
         }
     }
