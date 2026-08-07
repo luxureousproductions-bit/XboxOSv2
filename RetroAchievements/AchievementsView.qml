@@ -553,14 +553,21 @@ id: root
         property string query: ""
         property var results: []
 
-        function openSearch() {
-            buildSearchIndex();
+        // Clears the query and results and returns to the keyboard.
+        function resetSearch() {
             showingResults = false;
             query = "";
             results = [];
-            open = true;
+            totalMatches = 0;
             resultList.currentIndex = 0;
+            keyRow.row = 0;
             keyRow.col = 0;
+        }
+
+        function openSearch() {
+            buildSearchIndex();
+            resetSearch();
+            open = true;
             forceActiveFocus();
         }
         function closeSearch() {
@@ -695,9 +702,10 @@ id: root
             }
             // Results Page devotes the screen to the list once committed;
             // Instant keeps it compact above the keyboard.
+            visible: searchOverlay.showingResults
             height: searchOverlay.showingResults
                     ? parent.height - y - vpx(60)
-                    : parent.height * 0.34
+                    : 0
             clip: true
             model: searchOverlay.results
             currentIndex: 0
@@ -794,7 +802,7 @@ id: root
 
         Text {
             anchors { left: queryBox.right; leftMargin: vpx(12); verticalCenter: queryBox.verticalCenter }
-            visible: searchOverlay.query !== "" && searchOverlay.totalMatches > 0
+            visible: searchOverlay.showingResults && searchOverlay.totalMatches > 0
             text: searchOverlay.totalMatches
                   + (searchOverlay.totalMatches === 1 ? " game" : " games")
                   + (searchOverlay.totalMatches > searchOverlay.results.length ? " (showing 80)" : "")
@@ -805,7 +813,7 @@ id: root
 
         Text {
             anchors { top: resultList.top; horizontalCenter: parent.horizontalCenter }
-            visible: searchOverlay.query !== "" && searchOverlay.results.length === 0
+            visible: searchOverlay.showingResults && searchOverlay.results.length === 0
             text: "No games found"
             color: Qt.rgba(1, 1, 1, 0.5)
             font.family: subtitleFont.name
@@ -976,9 +984,9 @@ id: root
                     searchOverlay.chooseResult();
                     return;
                 }
-                if (api.keys.isCancel(event)) {            // back to the keyboard
+                if (api.keys.isCancel(event)) {            // back to a blank keyboard
                     event.accepted = true;
-                    showingResults = false;
+                    searchOverlay.resetSearch();
                     return;
                 }
                 return;
