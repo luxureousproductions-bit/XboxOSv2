@@ -555,6 +555,7 @@ id: root
 
         function openSearch() {
             buildSearchIndex();
+            showingResults = false;
             query = "";
             results = [];
             open = true;
@@ -587,6 +588,32 @@ id: root
             searchIndex = idx;
         }
 
+        // "Instant" filters as you type. "Results Page" waits for Y (Search),
+        // then shows an overview-styled list you navigate separately.
+        readonly property bool resultsPageMode: settings.SearchStyle === "Results Page"
+        property bool showingResults: false      // Results Page: on the list, not the keyboard
+
+        // Real RA progress for a local game, when it's in the recently-played
+        // cache. Costs nothing — anything not there simply shows no bar, since
+        // fetching per result would mean an API call per row.
+        function raProgressFor(g) {
+            if (!g) return null;
+            var n = cheevosData.normalizeTitle(g.title || "");
+            for (var i = 0; i < cheevosData.raRecentGames.count; i++) {
+                var e = cheevosData.raRecentGames.get(i);
+                if (cheevosData.normalizeTitle(e.Title) === n) return e;
+            }
+            return null;
+        }
+
+        function commitSearch() {
+            runSearch();
+            if (results.length > 0) {
+                showingResults = true;
+                resultList.currentIndex = 0;
+            }
+        }
+
         function runSearch() {
             var raw = query.toLowerCase().trim();
             if (raw === "") { results = []; totalMatches = 0; return; }
@@ -605,7 +632,10 @@ id: root
             results = out.slice(0, 80);
             resultList.currentIndex = 0;
         }
-        onQueryChanged: runSearch()
+        onQueryChanged: {
+            if (resultsPageMode) { showingResults = false; return; }
+            runSearch();
+        }
 
         // Chosen game -> existing RA lookup pipeline.
         function chooseResult() {
@@ -667,21 +697,29 @@ id: root
                 left: parent.left; leftMargin: vpx(60)
                 right: parent.right; rightMargin: vpx(60)
             }
-            height: parent.height * 0.34
+            // Results Page devotes the screen to the list once committed;
+            // Instant keeps it compact above the keyboard.
+            height: (searchOverlay.resultsPageMode && searchOverlay.showingResults)
+                    ? parent.height - y - vpx(60)
+                    : parent.height * 0.34
             clip: true
             model: searchOverlay.results
             currentIndex: 0
             delegate: Rectangle {
                 width: resultList.width
-                height: vpx(58)
+                height: (searchOverlay.resultsPageMode && searchOverlay.showingResults) ? vpx(76) : vpx(58)
                 color: ListView.isCurrentItem ? theme.accent : Qt.rgba(1, 1, 1, 0.04)
 
                 // Box art thumbnail — falls back through the same asset order
                 // the tiles use, so a game without boxFront still shows art.
+                property var raProg: (searchOverlay.resultsPageMode && searchOverlay.showingResults)
+                                     ? searchOverlay.raProgressFor(modelData) : null
+
                 Rectangle {
                     id: thumbFrame
                     anchors { left: parent.left; leftMargin: vpx(8); verticalCenter: parent.verticalCenter }
-                    width: vpx(44); height: vpx(44)
+                    width:  (searchOverlay.resultsPageMode && searchOverlay.showingResults) ? vpx(60) : vpx(44)
+                    height: width
                     color: Qt.rgba(0, 0, 0, 0.35)
                     Image {
                         anchors.fill: parent
@@ -697,17 +735,41 @@ id: root
                     }
                 }
 
-                Text {
+                Column {
                     anchors {
                         left: thumbFrame.right; leftMargin: vpx(10)
                         right: sysBadge.left;   rightMargin: vpx(8)
                         verticalCenter: parent.verticalCenter
                     }
-                    text: modelData ? modelData.title : ""
-                    color: "white"
-                    font.family: subtitleFont.name
-                    font.pixelSize: vpx(19)
-                    elide: Text.ElideRight
+                    spacing: vpx(3)
+
+                    Text {
+                        width: parent.width
+                        text: modelData ? modelData.title : ""
+                        color: "white"
+                        font.family: subtitleFont.name
+                        font.pixelSize: vpx(19)
+                        elide: Text.ElideRight
+                    }
+                    // Achievement progress, but only for games already in the
+                    // RA history cache — everything else stays blank rather
+                    // than triggering a lookup per row.
+                    Text {
+                        width: parent.width
+                        visible: searchOverlay.resultsPageMode && searchOverlay.showingResults
+                        text: {
+                            var p = parent.parent.raProg;
+                            if (!p) return "";
+                            if (p.NumPossibleAchievements > 0)
+                                return p.NumAchieved + " of " + p.NumPossibleAchievements + " achievements  ("
+                                       + Math.floor(p.NumAchieved * 100 / p.NumPossibleAchievements) + "%)";
+                            return "";
+                        }
+                        color: theme.accent
+                        font.family: subtitleFont.name
+                        font.pixelSize: vpx(15)
+                        elide: Text.ElideRight
+                    }
                 }
 
                 // System badge — the platform logo, which also disambiguates
@@ -759,6 +821,7 @@ id: root
         Column {
         id: keyRow
 
+            visible: !(searchOverlay.resultsPageMode && searchOverlay.showingResults)
             property int row: 0
             property int col: 0
             readonly property var rows: [
@@ -811,17 +874,30 @@ id: root
             anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: vpx(12) }
             spacing: vpx(20)
             Repeater {
-                model: searchHelpModel
+                // Three prompt sets: Results Page list, Results Page keyboard,
+                // and Instant. Keeps the hints honest per mode.
+                model: (searchOverlay.resultsPageMode && searchOverlay.showingResults)
+                       ? [ { n: "Open",   b: "accept" },
+                           { n: "Back",   b: "cancel" } ]
+                       : searchOverlay.resultsPageMode
+                       ? [ { n: "Type",   b: "accept"  },
+                           { n: "Search", b: "filters" },
+                           { n: "Delete", b: "details" },
+                           { n: "Close",  b: "cancel"  } ]
+                       : [ { n: "Type",   b: "accept"  },
+                           { n: "Open",   b: "filters" },
+                           { n: "Delete", b: "details" },
+                           { n: "Close",  b: "cancel"  } ]
                 delegate: Row {
                     spacing: vpx(8)
                     Image {
-                        source: "../assets/images/controller/" + buttonbar.processButtonArt(button) + ".png"
+                        source: "../assets/images/controller/" + buttonbar.processButtonArt(modelData.b) + ".png"
                         width: vpx(30); height: vpx(30)
                         asynchronous: true
                         sourceSize { width: 48; height: 48 }
                     }
                     Text {
-                        text: name
+                        text: modelData.n
                         font.family: subtitleFont.name
                         font.pixelSize: vpx(18)
                         color: "white"
@@ -831,33 +907,64 @@ id: root
                 }
             }
         }
-        ListModel {
-        id: searchHelpModel
-            ListElement { name: "Type";   button: "accept"  }
-            ListElement { name: "Select"; button: "filters" }
-            ListElement { name: "Delete"; button: "details" }
-            ListElement { name: "Close";  button: "cancel"  }
-        }
 
-        Keys.onUpPressed:    { event.accepted = true; if (keyRow.row > 0) keyRow.row--; }
-        Keys.onDownPressed:  { event.accepted = true; if (keyRow.row < keyRow.rows.length - 1) keyRow.row++; }
-        Keys.onLeftPressed:  { event.accepted = true; if (keyRow.col > 0) keyRow.col--; }
+
+        // On the Results Page the d-pad drives the list; otherwise the keyboard.
+        Keys.onUpPressed: {
+            event.accepted = true;
+            if (resultsPageMode && showingResults) {
+                if (resultList.currentIndex > 0) resultList.currentIndex--;
+                return;
+            }
+            if (keyRow.row > 0) keyRow.row--;
+        }
+        Keys.onDownPressed: {
+            event.accepted = true;
+            if (resultsPageMode && showingResults) {
+                if (resultList.currentIndex < results.length - 1) resultList.currentIndex++;
+                return;
+            }
+            if (keyRow.row < keyRow.rows.length - 1) keyRow.row++;
+        }
+        Keys.onLeftPressed: {
+            event.accepted = true;
+            if (resultsPageMode && showingResults) return;
+            if (keyRow.col > 0) keyRow.col--;
+        }
         Keys.onRightPressed: {
             event.accepted = true;
+            if (resultsPageMode && showingResults) return;
             if (keyRow.col < keyRow.rows[keyRow.row].length - 1) keyRow.col++;
         }
         Keys.onPressed: {
             if (event.isAutoRepeat) return;
+
+            // ── Results Page: the list has its own, simpler mapping ──
+            if (resultsPageMode && showingResults) {
+                if (api.keys.isAccept(event)) {            // open highlighted game
+                    event.accepted = true;
+                    searchOverlay.chooseResult();
+                    return;
+                }
+                if (api.keys.isCancel(event)) {            // back to the keyboard
+                    event.accepted = true;
+                    showingResults = false;
+                    return;
+                }
+                return;
+            }
+
             // A — type the highlighted character
             if (api.keys.isAccept(event)) {
                 event.accepted = true;
                 searchOverlay.query += keyRow.rows[keyRow.row].charAt(keyRow.col);
                 return;
             }
-            // Y — jump into the results and open the highlighted game
+            // Y — Instant: open highlighted result. Results Page: run the search.
             if (api.keys.isFilters(event)) {
                 event.accepted = true;
-                searchOverlay.chooseResult();
+                if (resultsPageMode) searchOverlay.commitSearch();
+                else                 searchOverlay.chooseResult();
                 return;
             }
             // X — backspace
