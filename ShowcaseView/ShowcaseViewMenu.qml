@@ -805,18 +805,21 @@ id: root
                                       && settings.ShowcaseCollection5 === "None"
                                       && settings.ShowcaseCollection6 === "None"
 
-    // Which collection slot (1-6) is the first one actually shown — the
-    // favorites carousel attaches to that row specifically, so it still
-    // appears first even if e.g. Collection 1 is set to None but
-    // Collection 2 has a category. 0 means none are visible.
-    property int firstVisibleCollectionSlot: {
-        if (settings.ShowcaseCollection1 !== "None") return 1;
-        if (settings.ShowcaseCollection2 !== "None") return 2;
-        if (settings.ShowcaseCollection3 !== "None") return 3;
-        if (settings.ShowcaseCollection4 !== "None") return 4;
-        if (settings.ShowcaseCollection5 !== "None") return 5;
-        if (settings.ShowcaseCollection6 !== "None") return 6;
-        return 0;
+    // Which collection slot (1-6) hosts the pin box, from Settings > Pins >
+    // "Pins to collection". If that collection is set to None the box simply
+    // doesn't appear — deliberately no fallback to another row, so the choice
+    // stays predictable.
+    property int pinBoxSlot: {
+        if (settings.PinBox === "No") return 0;
+        var slot = parseInt(settings.PinBoxCollection) || 1;
+        if (slot < 1 || slot > 6) return 0;
+        var chosen = slot === 1 ? settings.ShowcaseCollection1
+                   : slot === 2 ? settings.ShowcaseCollection2
+                   : slot === 3 ? settings.ShowcaseCollection3
+                   : slot === 4 ? settings.ShowcaseCollection4
+                   : slot === 5 ? settings.ShowcaseCollection5
+                   :              settings.ShowcaseCollection6;
+        return (chosen === "None") ? 0 : slot;
     }
 
     // Using an object model to build the list
@@ -1240,7 +1243,7 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (settings.FavoritesBox !== "No" && firstVisibleCollectionSlot === 1) ? listFavoritesAll : null
+            favoritesData: (pinBoxSlot === 1) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1272,7 +1275,7 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (settings.FavoritesBox !== "No" && firstVisibleCollectionSlot === 2) ? listFavoritesAll : null
+            favoritesData: (pinBoxSlot === 2) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1304,7 +1307,7 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (settings.FavoritesBox !== "No" && firstVisibleCollectionSlot === 3) ? listFavoritesAll : null
+            favoritesData: (pinBoxSlot === 3) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1336,7 +1339,7 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (settings.FavoritesBox !== "No" && firstVisibleCollectionSlot === 4) ? listFavoritesAll : null
+            favoritesData: (pinBoxSlot === 4) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1368,7 +1371,7 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (settings.FavoritesBox !== "No" && firstVisibleCollectionSlot === 5) ? listFavoritesAll : null
+            favoritesData: (pinBoxSlot === 5) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1400,7 +1403,7 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (settings.FavoritesBox !== "No" && firstVisibleCollectionSlot === 6) ? listFavoritesAll : null
+            favoritesData: (pinBoxSlot === 6) ? listFavoritesAll : null
 
             height: collection.height
 
