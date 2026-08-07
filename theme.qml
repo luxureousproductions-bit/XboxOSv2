@@ -63,7 +63,6 @@ id: root
             AllowVideoPreviewAudio:        api.memory.has("Video preview audio") ? api.memory.get("Video preview audio") : "No",
             ShowScanlines:                 api.memory.has("Show scanlines") ? api.memory.get("Show scanlines") : "Yes",
             DetailsDefault:                api.memory.has("Default to full details") ? api.memory.get("Default to full details") : "No",
-            SearchStyle:                   api.memory.has("Search Style") ? api.memory.get("Search Style") : "Instant",
             LaunchScreenDelay:             api.memory.has("Launch screen delay") ? api.memory.get("Launch screen delay") : "0.6",
             PinBox:                        api.memory.has("Pin Box") ? api.memory.get("Pin Box") : "Yes",
             PinBoxCollection:              api.memory.has("Pins to collection") ? api.memory.get("Pins to collection") : "1",
