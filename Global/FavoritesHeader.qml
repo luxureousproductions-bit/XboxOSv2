@@ -278,17 +278,20 @@ id: root
             Rectangle {
             id: favBadge
 
-                anchors { left: parent.left; top: parent.top; margins: vpx(8) }
+                anchors {
+                    left: parent.left; leftMargin: vpx(14)
+                    top: parent.top;   topMargin: vpx(13)
+                }
                 width: badgeRow.width + vpx(20)
                 height: badgeRow.height + vpx(10)
-                radius: 0                      // square corners — Xbox dashboard label style
+                radius: vpx(6)                 // softly rounded, per the Xbox dashboard
                 color: "#B3000000"
 
                 Row {
                 id: badgeRow
 
                     anchors.centerIn: parent
-                    spacing: vpx(2)
+                    spacing: vpx(6)
 
                     // Xbox-logo2.png is a 712x165 canvas whose sphere sits in
                     // the leftmost ~165px — the rest is empty transparency.
@@ -306,7 +309,9 @@ id: root
                     }
                     Text {
                         id: badgeText
-                        text: (boxMode === "favorites") ? "PINS" : "DISCOVER"
+                        text: (boxMode === "favorites") ? "PINS"
+                            : (boxMode === "art")         ? "GAME PASS"
+                            :                               "DISCOVER"
                         color: "white"
                         font.family: subtitleFont.name
                         font.pixelSize: Math.max(vpx(13), Math.min(tile.width, tile.height) * 0.062)
