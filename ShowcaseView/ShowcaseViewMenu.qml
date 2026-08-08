@@ -1139,13 +1139,27 @@ id: root
 
                 // System name bar (experiment) — appears on highlight with the system name
                 Rectangle {
+                id: sysNameBar
+
                     visible: !isHero && opacity > 0
                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                     height: Math.max(vpx(36), topRow.tileSz * 0.16, sysBarText.contentHeight + vpx(16))   // grows for 2-line names
-                    radius: vpx(12)
+                    radius: tile.radius
                     color: "#99000000"
                     opacity: (!isHero && (selected || settings.AlwaysShowTitles === "Yes")) ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 120 } }
+
+                    // A plain radius rounds all four corners, so the TOP two
+                    // curved inward as well — the hero/collection/grid bars get
+                    // theirs from an OpacityMask that only clips the bottom.
+                    // Squaring the top edge back off matches them without
+                    // needing a mask (and its FBO cost) on every system tile.
+                    Rectangle {
+                        anchors { left: parent.left; right: parent.right; top: parent.top }
+                        height: parent.radius
+                        color: parent.color
+                    }
+
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
                         id: sysBarText
@@ -1168,10 +1182,10 @@ id: root
                     // at the larger radius. Radius tracks tile.radius so the
                     // two can't drift apart again.
                     anchors.fill: parent
-                    anchors.margins: -vpx(1)
+                    anchors.margins: -vpx(3)
                     visible: selected && (isHero || sysBg.status === Image.Ready)
                     color: "transparent"
-                    radius: tile.radius + vpx(1)
+                    radius: tile.radius + vpx(3)
                     border.color: theme.accent
                     border.width: vpx(5)
                 }
@@ -1180,10 +1194,10 @@ id: root
                 Rectangle {
                     id: highlightPulse
                     anchors.fill: parent
-                    anchors.margins: -vpx(1)
+                    anchors.margins: -vpx(3)
                     visible: selected && settings.AnimateHighlight === "Yes"
                     color: "transparent"
-                    radius: tile.radius + vpx(1)
+                    radius: tile.radius + vpx(3)
                     border.color: "#ffffff"
                     border.width: vpx(5)
                     opacity: 0   // start invisible so it can't pop in at peak brightness
