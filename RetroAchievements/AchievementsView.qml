@@ -648,7 +648,7 @@ id: root
             playAccept();
             currentGame = g;
             closeSearch();
-            raEntryScreen();
+            raEntryScreenFromSearch();
         }
 
         // Full-bleed blocker so touches never reach the list underneath.
