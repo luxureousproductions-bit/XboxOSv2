@@ -216,7 +216,7 @@ id: root
         color: "transparent"
         border.width: vpx(2)
         border.color: theme.accent
-        visible: gameData && gameData.favorite
+        visible: gameData && gameData.favorite && settings.PinnedTileAccent !== "No"
     }
 
     Loader {
