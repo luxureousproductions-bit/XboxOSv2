@@ -66,6 +66,7 @@ id: root
             LaunchScreenDelay:             api.memory.has("Launch screen delay") ? api.memory.get("Launch screen delay") : "0.6",
             PinBox:                        api.memory.has("Pin Box") ? api.memory.get("Pin Box") : "Yes",
             PinBoxCollection:              api.memory.has("Pins to collection") ? api.memory.get("Pins to collection") : "1",
+            PinnedTileAccent:              api.memory.has("Pinned Tile Accent") ? api.memory.get("Pinned Tile Accent") : "Yes",
             PinBoxContent:                 api.memory.has("Pin Box Content") ? api.memory.get("Pin Box Content") : "Pins",
             ShowcaseBackgroundArt:          api.memory.has("Showcase Background Art") ? api.memory.get("Showcase Background Art") : "Yes",
             RandomizeSystemTileFanart:      api.memory.has("Randomize System Tile Fanart") ? api.memory.get("Randomize System Tile Fanart") : "No",
