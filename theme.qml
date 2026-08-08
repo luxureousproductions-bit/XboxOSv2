@@ -779,6 +779,16 @@ id: root
         root.state = "raentryscreen";
     }
 
+    // RA entry from the achievements search overlay. Deliberately does NOT
+    // push onto lastState: we're already on the RA overview, and B from the
+    // achievements page calls achievementsScreenFromGame() to return there
+    // directly. Pushing left a stale "achievementsscreen" on the stack, so the
+    // next B popped back onto the page you were already on and appeared to do
+    // nothing until a third press.
+    function raEntryScreenFromSearch() {
+        root.state = "raentryscreen";
+    }
+
     // Optional 'collection' scopes Discover to a single system (passed from
     // GridView's Discover nav button). Omitted/null => whole-library Discover,
     // same as every other entry point (Showcase, AllGames, GameView).
