@@ -335,6 +335,10 @@ id: root
             settingName: "Pin Box Content"
             setting: "Pins,Discover Videos,Fanart Slideshow"
         }
+        ListElement {
+            settingName: "Pinned Tile Accent"
+            setting: "Yes,No"
+        }
     }
 
     property var pinsPage: {
