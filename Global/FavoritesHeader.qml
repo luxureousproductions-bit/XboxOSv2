@@ -198,7 +198,7 @@ id: root
                 maskSource: Rectangle {
                     width: tile.width
                     height: tile.height
-                    radius: vpx(6)
+                    radius: vpx(12)
                 }
             }
 

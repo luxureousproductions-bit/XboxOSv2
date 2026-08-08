@@ -30,7 +30,7 @@ id: root
 
         anchors.fill: parent
         color: "transparent"
-        radius: vpx(6)
+        radius: vpx(12)
         border.color: theme.accent
         border.width: vpx(5)
         antialiasing: true
@@ -43,7 +43,7 @@ id: root
         anchors.fill: parent
         visible: settings.AnimateHighlight === "Yes"
         color: "transparent"
-        radius: vpx(6)
+        radius: vpx(12)
         border.color: "#ffffff"
         border.width: vpx(5)
         antialiasing: true

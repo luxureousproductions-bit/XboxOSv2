@@ -117,19 +117,6 @@ id: root
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
     }
-    // Subtle persistent glow for favorited tiles (not selected — the bright
-    // tileGlow above already covers that case). Same halo asset/accent tint,
-    // much dimmer, so favorites read as "special" while browsing past them.
-    ColorOverlay {
-        id: favGlow
-        anchors.fill: tileHaloSrc
-        source: tileHaloSrc
-        color: theme.accent
-        z: -1
-        opacity: (gameData && gameData.favorite && !selected) ? 0.35 : 0
-        visible: opacity > 0
-        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-    }
 
     Item 
     {
@@ -146,7 +133,7 @@ id: root
             maskSource: Rectangle {
                 width: container.width
                 height: container.height
-                radius: vpx(6)
+                radius: vpx(12)
             }
         }
 
@@ -162,12 +149,7 @@ id: root
             visible: opacity > 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
             Text {
-                anchors {
-                    left: parent.left; leftMargin: vpx(8)
-                    right: parent.right
-                    rightMargin: (gameData && gameData.favorite) ? (favicon.width + vpx(14)) : vpx(6)
-                    verticalCenter: parent.verticalCenter
-                }
+                anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
                 id: nameBarText
                 text: modelData ? modelData.title : ""
                 color: "white"; font.family: subtitleFont.name
@@ -176,31 +158,6 @@ id: root
                 maximumLineCount: 2
                 elide: Text.ElideRight
                 horizontalAlignment: Text.AlignLeft
-            }
-
-            // Favorite heart — lives inside the title bar, bottom-right corner.
-            // Fades in/out with the bar itself (child of titleBar => inherits
-            // its opacity), so it only ever shows alongside the title.
-            Item {
-            id: favicon
-
-                anchors {
-                    right: parent.right; rightMargin: vpx(8)
-                    bottom: parent.bottom; bottomMargin: vpx(8)
-                }
-                width: Math.min(titleBar.height * 0.55, vpx(26))
-                height: width
-                opacity: (gameData && gameData.favorite) ? 1 : 0
-                visible: opacity > 0
-                scale: (gameData && gameData.favorite) ? 1 : 0.4
-                Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutBack; easing.overshoot: 3 } }
-                Image {
-                    source: "../assets/images/favicon.svg"
-                    asynchronous: true
-                    anchors.fill: parent
-                    anchors.margins: parent.width / 6   // matches the glyph size from the old circle-badge version
-                }
             }
         }
 
@@ -257,18 +214,6 @@ id: root
             opacity: 0.1
         }
         
-    }
-
-    // Thin persistent accent border for favorited tiles — always visible
-    // (not just on focus), so favorites stand out while scrolling past.
-    Rectangle {
-        id: favBorder
-        anchors.fill: container
-        radius: vpx(6)
-        color: "transparent"
-        border.width: vpx(2)
-        border.color: theme.accent
-        visible: gameData && gameData.favorite
     }
 
     Loader {
@@ -330,6 +275,26 @@ id: root
         lineHeight: 0.8
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
+    }
+
+    Rectangle {
+    id: favicon
+
+        anchors { 
+            right: parent.right; rightMargin: vpx(10); 
+            top: parent.top; topMargin: vpx(10) 
+        }
+        width: parent.width / 12
+        height: width
+        radius: width/2
+        color: theme.accent
+        visible: gameData.favorite
+        Image {
+            source: "../assets/images/favicon.svg"
+            asynchronous: true
+            anchors.fill: parent
+            anchors.margins: parent.width / 6
+        }
     }
 
     Loader {
