@@ -126,7 +126,7 @@ id: root
         source: tileHaloSrc
         color: theme.accent
         z: -1
-        opacity: (gameData && gameData.favorite && !selected) ? 0.35 : 0
+        opacity: (gameData && gameData.favorite && !selected && settings.PinnedTileAccent !== "No") ? 0.35 : 0
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
     }
