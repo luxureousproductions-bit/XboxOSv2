@@ -958,7 +958,7 @@ id: root
                 }
                 width: topRow.tileSz
                 height: topRow.tileSz
-                radius: vpx(6)
+                radius: vpx(12)
                 color: selected ? theme.accent : theme.secondary
                 Behavior on color { ColorAnimation { duration: 180; easing.type: Easing.OutCubic } }
                 // Grow from the bottom edge so the bottom stays put. The first (hero) tile
@@ -1142,7 +1142,7 @@ id: root
                     visible: !isHero && opacity > 0
                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                     height: Math.max(vpx(36), topRow.tileSz * 0.16, sysBarText.contentHeight + vpx(16))   // grows for 2-line names
-                    radius: vpx(6)
+                    radius: vpx(12)
                     color: "#99000000"
                     opacity: (!isHero && (selected || settings.AlwaysShowTitles === "Yes")) ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 120 } }
@@ -1165,7 +1165,7 @@ id: root
                     anchors.fill: parent
                     visible: selected && (isHero || sysBg.status === Image.Ready)
                     color: "transparent"
-                    radius: vpx(6)
+                    radius: vpx(12)
                     border.color: theme.accent
                     border.width: vpx(5)
                 }
@@ -1176,7 +1176,7 @@ id: root
                     anchors.fill: parent
                     visible: selected && settings.AnimateHighlight === "Yes"
                     color: "transparent"
-                    radius: vpx(6)
+                    radius: vpx(12)
                     border.color: "#ffffff"
                     border.width: vpx(5)
                     opacity: 0   // start invisible so it can't pop in at peak brightness
