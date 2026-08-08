@@ -1162,10 +1162,16 @@ id: root
                 // Accent frame: hero when selected; platform when selected AND system background loaded
                 // (platforms without a background keep the current accent-fill look instead)
                 Rectangle {
+                    // Overhang by a pixel: sharing the tile's exact bounds left
+                    // the tile's antialiased corner peeking outside the frame,
+                    // which reads as the old square-ish corner poking through
+                    // at the larger radius. Radius tracks tile.radius so the
+                    // two can't drift apart again.
                     anchors.fill: parent
+                    anchors.margins: -vpx(1)
                     visible: selected && (isHero || sysBg.status === Image.Ready)
                     color: "transparent"
-                    radius: vpx(12)
+                    radius: tile.radius + vpx(1)
                     border.color: theme.accent
                     border.width: vpx(5)
                 }
@@ -1174,9 +1180,10 @@ id: root
                 Rectangle {
                     id: highlightPulse
                     anchors.fill: parent
+                    anchors.margins: -vpx(1)
                     visible: selected && settings.AnimateHighlight === "Yes"
                     color: "transparent"
-                    radius: vpx(12)
+                    radius: tile.radius + vpx(1)
                     border.color: "#ffffff"
                     border.width: vpx(5)
                     opacity: 0   // start invisible so it can't pop in at peak brightness
