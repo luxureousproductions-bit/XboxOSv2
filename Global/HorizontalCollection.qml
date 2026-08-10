@@ -43,12 +43,12 @@ id: root
     // never depends on reaching into ListView.headerItem, which can be null.
     property int favIndex: 0
     readonly property int favCount: favoritesData ? favoritesData.games.count : 0
-    // When "Pin Box Content" forces a Discover/slideshow mode the box
+    // When "Featured Box Content" forces a Discover/slideshow mode the box
     // isn't showing favourites, so there's nothing to page through — Left and
     // Right must pass straight over it instead of scrolling unseen entries.
     readonly property int favPageCount:
-        (settings.PinBoxContent === "Discover Videos"
-      || settings.PinBoxContent === "Fanart Slideshow") ? 0 : favCount
+        (settings.FeaturedBoxContent === "Discover Videos"
+      || settings.FeaturedBoxContent === "Fanart Slideshow") ? 0 : favCount
     onFavCountChanged: { if (favIndex >= favCount) favIndex = Math.max(0, favCount - 1); }
 
     // Cycles the favourites automatically whenever the carousel isn't the

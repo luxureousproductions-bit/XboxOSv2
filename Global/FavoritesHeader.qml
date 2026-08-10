@@ -47,10 +47,10 @@ id: root
     readonly property var currentGame: (boxMode === "favorites") ? currentFavorite : fallbackGame
 
     // ── Which content the box is showing ──
-    // Settings > Pins > "Pin Box Content" selects what the box shows. Pins
+    // Settings > Featured > "Featured Box Content" selects what it shows. Favorites
     // still degrades gracefully when none are set: videos, else art slideshow.
     readonly property string boxMode: {
-        var m = settings.PinBoxContent;
+        var m = settings.FeaturedBoxContent;
         if (m === "Fanart Slideshow") return "art";
         if (m === "Discover Videos")  return useVideoFallback ? "video" : "art";
         if (favCount > 0)             return "favorites";       // Favorites mode
@@ -108,7 +108,7 @@ id: root
     }
     // Builds whichever list the current mode actually needs, once.
     function ensureFallbacks() {
-        var m = settings.PinBoxContent;
+        var m = settings.FeaturedBoxContent;
         if (m === "Fanart Slideshow") { buildArtList(); return; }
         if (m === "Discover Videos")  { if (!videosScanned) buildVideoList(); return; }
         if (favCount === 0 && !videosScanned) buildVideoList();   // Favorites w/ none set
@@ -309,7 +309,7 @@ id: root
                     }
                     Text {
                         id: badgeText
-                        text: (boxMode === "favorites") ? "PINS"
+                        text: (boxMode === "favorites") ? "FAVORITES"
                             : (boxMode === "art")         ? "GAME PASS"
                             :                               "DISCOVER"
                         color: "white"
