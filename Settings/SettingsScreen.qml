@@ -321,10 +321,10 @@ id: root
     }
 
     ListModel {
-        id: pinsSettingsModel
+        id: featuredSettingsModel
 
         ListElement {
-            settingName: "Pin Box"
+            settingName: "Featured Box"
             setting: "Yes,No"
         }
         ListElement {
@@ -332,19 +332,19 @@ id: root
             setting: "1,2,3,4,5,6"
         }
         ListElement {
-            settingName: "Pin Box Content"
-            setting: "Pins,Discover Videos,Fanart Slideshow"
+            settingName: "Featured Box Content"
+            setting: "Favorites,Discover Videos,Fanart Slideshow"
         }
         ListElement {
-            settingName: "Pinned Tile Accent"
+            settingName: "Favorited Tile Accent"
             setting: "Yes,No"
         }
     }
 
-    property var pinsPage: {
+    property var featuredPage: {
         return {
-            pageName: "Pins",
-            listmodel: pinsSettingsModel
+            pageName: "Featured",
+            listmodel: featuredSettingsModel
         }
     }
 
@@ -556,7 +556,7 @@ id: root
         }
     }
 
-    property var settingsArr: [generalPage, showcasePage, collectionsPage, pinsPage, gridPage, gamePage, allGamesPage, mediaCarouselPage, audioPage, advancedPage, raPage]
+    property var settingsArr: [generalPage, showcasePage, collectionsPage, featuredPage, gridPage, gamePage, allGamesPage, mediaCarouselPage, audioPage, advancedPage, raPage]
 
     property real itemheight: vpx(50)
     property color settingsTextColor: "white"   // locked white: the settings background is locked black, so text must never follow the Color Layout light/dark flip
