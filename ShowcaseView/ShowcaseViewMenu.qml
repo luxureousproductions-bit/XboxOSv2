@@ -1137,28 +1137,37 @@ id: root
                     verticalAlignment: Text.AlignVCenter
                 }
 
-                // System name bar (experiment) — appears on highlight with the system name
-                Rectangle {
-                id: sysNameBar
+                // System name bar — appears on highlight with the system name,
+                // masked exactly like the hero box's.
+                // A radius on the bar itself rounds all four corners, and a
+                // cover strip can't fix it either — the bar is translucent, so
+                // anything laid over it just stacks alpha and the curve still
+                // shows through. Masking a tile-shaped rounded rect is the only
+                // way to get square top corners with a rounded bottom, which is
+                // what the hero/collection/grid bars already do.
+                Item {
+                id: sysNameBarClip
 
-                    visible: !isHero && opacity > 0
-                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                    height: Math.max(vpx(36), topRow.tileSz * 0.16, sysBarText.contentHeight + vpx(16))   // grows for 2-line names
-                    radius: tile.radius
-                    color: "#99000000"
-                    opacity: (!isHero && (selected || settings.AlwaysShowTitles === "Yes")) ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 120 } }
-
-                    // A plain radius rounds all four corners, so the TOP two
-                    // curved inward as well — the hero/collection/grid bars get
-                    // theirs from an OpacityMask that only clips the bottom.
-                    // Squaring the top edge back off matches them without
-                    // needing a mask (and its FBO cost) on every system tile.
-                    Rectangle {
-                        anchors { left: parent.left; right: parent.right; top: parent.top }
-                        height: parent.radius
-                        color: parent.color
+                    anchors.fill: parent
+                    visible: !isHero && sysNameBar.opacity > 0
+                    // Only pay for the FBO while the bar is actually showing.
+                    layer.enabled: visible
+                    layer.effect: OpacityMask {
+                        maskSource: Rectangle {
+                            width: tile.width
+                            height: tile.height
+                            radius: tile.radius
+                        }
                     }
+
+                    Rectangle {
+                    id: sysNameBar
+
+                        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                        height: Math.max(vpx(36), topRow.tileSz * 0.16, sysBarText.contentHeight + vpx(16))   // grows for 2-line names
+                        color: "#99000000"
+                        opacity: (!isHero && (selected || settings.AlwaysShowTitles === "Yes")) ? 1 : 0
+                        Behavior on opacity { NumberAnimation { duration: 120 } }
 
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
@@ -1170,6 +1179,7 @@ id: root
                         maximumLineCount: 2
                         elide: Text.ElideRight
                         horizontalAlignment: Text.AlignLeft
+                    }
                     }
                 }
 
