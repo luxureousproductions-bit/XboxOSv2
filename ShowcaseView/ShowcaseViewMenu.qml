@@ -809,9 +809,9 @@ id: root
     // "Pins to collection". If that collection is set to None the box simply
     // doesn't appear — deliberately no fallback to another row, so the choice
     // stays predictable.
-    property int pinBoxSlot: {
-        if (settings.PinBox === "No") return 0;
-        var slot = parseInt(settings.PinBoxCollection) || 1;
+    property int featuredBoxSlot: {
+        if (settings.FeaturedBox === "No") return 0;
+        var slot = parseInt(settings.FeaturedBoxCollection) || 1;
         if (slot < 1 || slot > 6) return 0;
         var chosen = slot === 1 ? settings.ShowcaseCollection1
                    : slot === 2 ? settings.ShowcaseCollection2
@@ -1274,7 +1274,7 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (pinBoxSlot === 1) ? listFavoritesAll : null
+            favoritesData: (featuredBoxSlot === 1) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1306,7 +1306,7 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (pinBoxSlot === 2) ? listFavoritesAll : null
+            favoritesData: (featuredBoxSlot === 2) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1338,7 +1338,7 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (pinBoxSlot === 3) ? listFavoritesAll : null
+            favoritesData: (featuredBoxSlot === 3) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1370,7 +1370,7 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (pinBoxSlot === 4) ? listFavoritesAll : null
+            favoritesData: (featuredBoxSlot === 4) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1402,7 +1402,7 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (pinBoxSlot === 5) ? listFavoritesAll : null
+            favoritesData: (featuredBoxSlot === 5) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1434,7 +1434,7 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (pinBoxSlot === 6) ? listFavoritesAll : null
+            favoritesData: (featuredBoxSlot === 6) ? listFavoritesAll : null
 
             height: collection.height
 
