@@ -85,7 +85,7 @@ id: root
         id: buttonlabel
 
             font.family: subtitleFont.name
-            font.pixelSize: vpx(18)
+            font.pixelSize: fpx(18)
             font.bold: true
             color: theme.text
             //opacity: selected ? 1 : 0.2

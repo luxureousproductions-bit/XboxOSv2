@@ -437,7 +437,7 @@ id: root
         
         color: theme.text
         font.family: titleFont.name
-        font.pixelSize: vpx(80)
+        font.pixelSize: fpx(80)
         font.bold: true
         horizontalAlignment: Text.AlignHLeft
         verticalAlignment: Text.AlignVCenter
@@ -591,7 +591,7 @@ id: root
             
             color: theme.text
             font.family: titleFont.name
-            font.pixelSize: vpx(30)
+            font.pixelSize: fpx(30)
             font.bold: true
             horizontalAlignment: Text.AlignHLeft
             verticalAlignment: Text.AlignVCenter
@@ -747,7 +747,7 @@ id: root
             text: "Home"
             anchors { top: gv_homebutton.bottom; topMargin: vpx(3); horizontalCenter: gv_homebutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: titleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: titleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: gv_homebutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
@@ -755,7 +755,7 @@ id: root
             text: "Discover"
             anchors { top: gv_discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: gv_discoverbutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: titleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: titleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: gv_discoverbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
@@ -763,7 +763,7 @@ id: root
             text: "Settings"
             anchors { top: gv_settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: gv_settingsbutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: titleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: titleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: gv_settingsbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
