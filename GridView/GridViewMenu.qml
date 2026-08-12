@@ -320,7 +320,7 @@ id: root
             font.hintingPreference: Font.PreferNoHinting
             font.family: titleFont.name
             font.capitalization: Font.AllUppercase
-            font.pixelSize: vpx(200)
+            font.pixelSize: fpx(200)
             color: "white"
             anchors.centerIn: parent
         }
@@ -365,7 +365,7 @@ id: root
             anchors { top: parent.top; topMargin: vpx(8); left: parent.left; leftMargin: globalMargin; right: homebutton.left; rightMargin: vpx(20) }
             height: vpx(50)
             text: list.collection ? list.collection.name : ""
-            color: theme.text; font.family: titleFont.name; font.pixelSize: vpx(30); font.bold: true
+            color: theme.text; font.family: titleFont.name; font.pixelSize: fpx(30); font.bold: true
             verticalAlignment: Text.AlignVCenter
             elide: Text.ElideRight
             visible: platformlogo.status !== Image.Ready
@@ -374,7 +374,7 @@ id: root
         Text {
             anchors { left: parent.left; leftMargin: globalMargin; top: platformlogo.bottom; topMargin: vpx(2) }
             text: list.games.count + " games"
-            color: theme.text; opacity: 0.7; font.family: subtitleFont.name; font.pixelSize: vpx(17)
+            color: theme.text; opacity: 0.7; font.family: subtitleFont.name; font.pixelSize: fpx(17)
             visible: settings.GameCounter !== "No"
         }
 
@@ -488,7 +488,7 @@ id: root
             text: "Home"
             anchors { top: homebutton.bottom; topMargin: vpx(3); horizontalCenter: homebutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: homebutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
@@ -496,7 +496,7 @@ id: root
             text: "Discover"
             anchors { top: discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: discoverbutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: discoverbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
@@ -504,7 +504,7 @@ id: root
             text: "RetroAchievements"
             anchors { top: achievementsbutton.bottom; topMargin: vpx(3); horizontalCenter: achievementsbutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: achievementsbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
@@ -512,7 +512,7 @@ id: root
             text: "Settings"
             anchors { top: settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: settingsbutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: settingsbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
@@ -668,7 +668,7 @@ id: root
             id: titleTxt
                 text: "Filters"
                 color: "white"
-                font.family: titleFont.name; font.pixelSize: vpx(24); font.bold: true
+                font.family: titleFont.name; font.pixelSize: fpx(24); font.bold: true
                 anchors { top: parent.top; topMargin: vpx(18); left: parent.left; leftMargin: vpx(24) }
             }
 
@@ -686,7 +686,7 @@ id: root
 
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
-                        text: "\uD83D\uDD0D"; font.pixelSize: vpx(15); width: vpx(22)
+                        text: "\uD83D\uDD0D"; font.pixelSize: fpx(15); width: vpx(22)
                         color: "white"; opacity: onRow ? 1 : 0.6
                     }
                     Text {
@@ -697,7 +697,7 @@ id: root
                         color: "white"
                         opacity: onRow ? 1 : 0.85
                         elide: Text.ElideRight
-                        font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: onRow
+                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: onRow
                     }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 0; activateSearch(); } }
                 }
@@ -711,7 +711,7 @@ id: root
 
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
-                        text: "\u2630"; font.pixelSize: vpx(15); width: vpx(22)
+                        text: "\u2630"; font.pixelSize: fpx(15); width: vpx(22)
                         color: "white"; opacity: onRow ? 1 : 0.6
                     }
                     Text {
@@ -722,13 +722,13 @@ id: root
                         color: "white"
                         opacity: onRow ? 1 : 0.85
                         elide: Text.ElideRight
-                        font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: onRow
+                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: onRow
                     }
                     Text {
                         id: gvArrow
                         anchors { right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\u25B8"; color: "white"
-                        opacity: onRow ? 1 : 0.6; font.pixelSize: vpx(18)
+                        opacity: onRow ? 1 : 0.6; font.pixelSize: fpx(18)
                     }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 1; openGenrePicker(); } }
                 }
@@ -751,7 +751,7 @@ id: root
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: isSel ? "\u2713" : "  "
-                            color: "white"; font.pixelSize: vpx(15); font.bold: true; width: vpx(22)
+                            color: "white"; font.pixelSize: fpx(15); font.bold: true; width: vpx(22)
                         }
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
@@ -759,7 +759,7 @@ id: root
                             color: "white"
                             opacity: onRow ? 1 : 0.85
                             elide: Text.ElideRight
-                            font.family: subtitleFont.name; font.pixelSize: vpx(19); font.bold: onRow || isSel
+                            font.family: subtitleFont.name; font.pixelSize: fpx(19); font.bold: onRow || isSel
                         }
                         MouseArea { anchors.fill: parent; onClicked: { genrePickerIndex = index; toggleGenre(modelData); } }
                     }
@@ -782,7 +782,7 @@ id: root
                             Text {
                                 anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                                 text: active ? (orderBy === Qt.AscendingOrder ? "\u25B2" : "\u25BC") : "  "
-                                color: "white"; font.pixelSize: vpx(16); font.bold: true
+                                color: "white"; font.pixelSize: fpx(16); font.bold: true
                                 width: vpx(22)
                             }
                             Text {
@@ -790,7 +790,7 @@ id: root
                                 text: modelData.label
                                 color: "white"
                                 opacity: active ? 1 : 0.85
-                                font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: active
+                                font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: active
                             }
                             MouseArea { anchors.fill: parent; onClicked: { filterRow = index + 2; selectSort(modelData.idx); } }
                         }
@@ -805,7 +805,7 @@ id: root
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: showFavs ? "\u2713" : "  "
-                            color: "white"; font.pixelSize: vpx(16); font.bold: true
+                            color: "white"; font.pixelSize: fpx(16); font.bold: true
                             width: vpx(22)
                         }
                         Text {
@@ -813,7 +813,7 @@ id: root
                             text: "Favorites only"
                             color: "white"
                             opacity: showFavs ? 1 : 0.85
-                            font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: showFavs
+                            font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: showFavs
                         }
                         MouseArea { anchors.fill: parent; onClicked: { filterRow = sortFields.length + 2; showFavs = !showFavs; gamegrid.currentIndex = 0; sortedGames = null; } }
                     }
@@ -839,7 +839,7 @@ id: root
                                 text: modelData === "SPACE" ? "\u2423" : (modelData === "DEL" ? "\u232B" : modelData)
                                 color: sel ? "white" : "white"
                                 font.family: subtitleFont.name
-                                font.pixelSize: wide ? vpx(12) : vpx(17)
+                                font.pixelSize: wide ? fpx(12) : fpx(17)
                                 font.bold: sel
                             }
                             MouseArea { anchors.fill: parent; onClicked: { keyIndex = index; pressKey(modelData); } }
@@ -869,7 +869,7 @@ id: root
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.t
                             color: "white"; opacity: 0.55
-                            font.family: subtitleFont.name; font.pixelSize: vpx(15)
+                            font.family: subtitleFont.name; font.pixelSize: fpx(15)
                         }
                     }
                 }
