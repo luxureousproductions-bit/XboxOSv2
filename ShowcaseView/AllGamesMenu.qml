@@ -994,7 +994,10 @@ id: root
         Keys.onLeftPressed: {
             event.accepted = true;
             playNav();
-            currentIndex = Math.max(0, currentIndex - skipnum);
+            // Page up by skipnum, but wrap to the END of the list when already
+            // sitting on the first game (Up still reaches the nav buttons).
+            if (currentIndex === 0) currentIndex = count - 1;
+            else currentIndex = Math.max(0, currentIndex - skipnum);
         }
         Keys.onRightPressed: {
             event.accepted = true;
@@ -1341,7 +1344,7 @@ id: root
                         model: keyboardKeys
                         Rectangle {
                             width: (fieldCol.width - (keyCols - 1) * vpx(4)) / keyCols
-                            height: vpx(42); radius: vpx(4)
+                            height: vpx(52); radius: vpx(4)
                             property bool sel: keyIndex === index
                             property bool wide: modelData.length > 1 && modelData !== "SPACE" && modelData !== "DEL"
                             color: sel ? theme.accent : Qt.rgba(1,1,1,0.08)
@@ -1365,7 +1368,7 @@ id: root
                 spacing: vpx(22)
 
                 Repeater {
-                    model: searchActive    ? [ {a:"accept",t:"Type"},   {a:"cancel",t:"Done"} ]
+                    model: searchActive    ? [ {a:"accept",t:"Type"}, {a:"details",t:"Delete"}, {a:"filters",t:"Done"}, {a:"cancel",t:"Close"} ]
                          : genrePickerOpen  ? [ {a:"accept",t:"Toggle"}, {a:"cancel",t:"Done"} ]
                          : systemPickerOpen ? [ {a:"accept",t:"Select"}, {a:"cancel",t:"Back"} ]
                          :                    [ {a:"accept",t:"Select"}, {a:"details",t:"Clear all"}, {a:"cancel",t:"Close"} ]
@@ -1417,8 +1420,12 @@ id: root
         Keys.onPressed: {
             if (searchActive) {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey(keyboardKeys[keyIndex]); }
+                // X = backspace, Y = done. X used to close the keyboard, which
+                // is now Y's job so a delete shortcut is always to hand.
+                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey("DEL"); }
+                if (api.keys.isFilters(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey("OK"); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); searchActive = false; }
-                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); searchActive = false; }
+
                 return;
             }
             if (genrePickerOpen) {
