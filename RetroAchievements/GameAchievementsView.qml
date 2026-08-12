@@ -159,21 +159,21 @@ id: root
                     text: cheevosData.raUserName
                     color: theme.text
                     font.family: titleFont.name
-                    font.pixelSize: vpx(24)
+                    font.pixelSize: fpx(24)
                     font.bold: true
                 }
                 Text {
                     text: cheevosData.pointsText
                     color: theme.text
                     font.family: bodyFont.name
-                    font.pixelSize: vpx(15)
+                    font.pixelSize: fpx(15)
                     opacity: 0.65
                 }
                 Text {
                     text: cheevosData.memberText
                     color: theme.text
                     font.family: bodyFont.name
-                    font.pixelSize: vpx(13)
+                    font.pixelSize: fpx(13)
                     opacity: 0.45
                     visible: cheevosData.memberText !== ""
                 }
@@ -247,7 +247,7 @@ id: root
                     return p >= 100 ? "#FFD700" : theme.accent;
                 }
                 font.family: titleFont.name
-                font.pixelSize: vpx(40)
+                font.pixelSize: fpx(40)
                 font.bold: true
                 horizontalAlignment: Text.AlignRight
                 anchors.right: parent.right
@@ -260,7 +260,7 @@ id: root
                 }
                 color: theme.text
                 font.family: subtitleFont.name
-                font.pixelSize: vpx(17)
+                font.pixelSize: fpx(17)
                 font.bold: true
                 opacity: 0.75
                 horizontalAlignment: Text.AlignRight
@@ -283,7 +283,7 @@ id: root
                 text: cheevosData.currentGameDetails.Title
                 color: theme.text
                 font.family: titleFont.name
-                font.pixelSize: vpx(26)
+                font.pixelSize: fpx(26)
                 font.bold: true
                 elide: Text.ElideRight
                 width: parent.width
@@ -292,7 +292,7 @@ id: root
                 text: cheevosData.currentGameDetails.ConsoleName
                 color: theme.text
                 font.family: subtitleFont.name
-                font.pixelSize: vpx(17)
+                font.pixelSize: fpx(17)
                 font.bold: true
                 opacity: 0.65
                 elide: Text.ElideRight
@@ -362,7 +362,7 @@ id: root
                         text: modelData.label + " (" + modelData.count + ")"
                         color: theme.text
                         font.family: subtitleFont.name
-                        font.pixelSize: vpx(14)
+                        font.pixelSize: fpx(14)
                         font.bold: active
                     }
                 }
@@ -378,7 +378,7 @@ id: root
                 text: "Sort:"
                 color: theme.text
                 font.family: subtitleFont.name
-                font.pixelSize: vpx(14)
+                font.pixelSize: fpx(14)
                 opacity: 0.55
                 anchors.verticalCenter: parent.verticalCenter
             }
@@ -408,7 +408,7 @@ id: root
                         text: modelData.label
                         color: theme.text
                         font.family: subtitleFont.name
-                        font.pixelSize: vpx(13)
+                        font.pixelSize: fpx(13)
                         font.bold: active
                     }
                 }
@@ -455,7 +455,7 @@ id: root
             text:    cheevosData.statusText || "No achievements to show"
             color:   theme.text
             font.family: bodyFont.name
-            font.pixelSize: vpx(18)
+            font.pixelSize: fpx(18)
             opacity: 0.5
         }
 
@@ -518,7 +518,7 @@ id: root
                         }
                         color: isEarned ? theme.accent : theme.text
                         font.family:    subtitleFont.name
-                        font.pixelSize: vpx(17)
+                        font.pixelSize: fpx(17)
                         font.bold:      true
                         horizontalAlignment: Text.AlignRight
                         width: parent.width
@@ -530,7 +530,7 @@ id: root
                         text: root.rarityLabel(ach.Rarity)
                         color: root.rarityColor(ach.Rarity)
                         font.family:    bodyFont.name
-                        font.pixelSize: vpx(12)
+                        font.pixelSize: fpx(12)
                         horizontalAlignment: Text.AlignRight
                         width: parent.width
                         opacity: isSelected ? 0.95 : 0.6
@@ -542,7 +542,7 @@ id: root
                         text: root.earnedText(ach.DateEarned)
                         color: theme.text
                         font.family:    bodyFont.name
-                        font.pixelSize: vpx(13)
+                        font.pixelSize: fpx(13)
                         horizontalAlignment: Text.AlignRight
                         width: parent.width
                         wrapMode: Text.WordWrap
@@ -569,7 +569,7 @@ id: root
                             text:  ach.Title
                             color: theme.text
                             font.family:    titleFont.name
-                            font.pixelSize: vpx(19)
+                            font.pixelSize: fpx(19)
                             font.bold:      true
                             elide: Text.ElideRight
                             width: parent.width - (hcPill.visible ? hcPill.width + vpx(6) : 0)
@@ -591,7 +591,7 @@ id: root
                                 text:  "HC"
                                 color: theme.text
                                 font.family:    bodyFont.name
-                                font.pixelSize: vpx(9)
+                                font.pixelSize: fpx(9)
                                 font.bold:      true
                             }
                         }
@@ -601,7 +601,7 @@ id: root
                         text:  ach.Description
                         color: theme.text
                         font.family:    bodyFont.name
-                        font.pixelSize: vpx(14)
+                        font.pixelSize: fpx(14)
                         elide: Text.ElideRight
                         width: parent.width
                         opacity: isEarned
@@ -637,7 +637,7 @@ id: root
         text: (root.currentIndex + 1) + " of " + root.displayList.length
         color: theme.text
         font.family: bodyFont.name
-        font.pixelSize: vpx(20)
+        font.pixelSize: fpx(20)
         font.bold: true
         opacity: 0.75
     }
@@ -664,7 +664,7 @@ id: root
                 Text {
                     text: name
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(19)
+                    font.pixelSize: fpx(19)
                     color: theme.text
                     height: vpx(32)
                     verticalAlignment: Text.AlignVCenter

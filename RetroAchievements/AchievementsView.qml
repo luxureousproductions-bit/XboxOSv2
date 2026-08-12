@@ -140,14 +140,14 @@ id: root
                     text: cheevosData.raUserName
                     color: theme.text
                     font.family: titleFont.name
-                    font.pixelSize: vpx(24)
+                    font.pixelSize: fpx(24)
                     font.bold: true
                 }
                 Text {
                     text: cheevosData.pointsText
                     color: theme.text
                     font.family: bodyFont.name
-                    font.pixelSize: vpx(15)
+                    font.pixelSize: fpx(15)
                     opacity: 0.65
                     visible: cheevosData.raUserName !== ""
                 }
@@ -155,7 +155,7 @@ id: root
                     text: cheevosData.memberText
                     color: theme.text
                     font.family: bodyFont.name
-                    font.pixelSize: vpx(13)
+                    font.pixelSize: fpx(13)
                     opacity: 0.45
                     visible: cheevosData.memberText !== ""
                 }
@@ -194,7 +194,7 @@ id: root
                 + "Get your API key at: retroachievements.org/settings"
             color: theme.text
             font.family: bodyFont.name
-            font.pixelSize: vpx(18)
+            font.pixelSize: fpx(18)
             opacity: 0.5
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
@@ -245,7 +245,7 @@ id: root
             text:    cheevosData.statusText || "No recently played games"
             color:   theme.text
             font.family: bodyFont.name
-            font.pixelSize: vpx(18)
+            font.pixelSize: fpx(18)
             opacity: 0.5
         }
 
@@ -311,7 +311,7 @@ id: root
                             return theme.text;
                         }
                         font.family:    titleFont.name
-                        font.pixelSize: vpx(26)
+                        font.pixelSize: fpx(26)
                         font.bold:      true
                         horizontalAlignment: Text.AlignRight
                         width: parent.width
@@ -325,7 +325,7 @@ id: root
                               : "No cheevos"
                         color: theme.text
                         font.family:    bodyFont.name
-                        font.pixelSize: vpx(13)
+                        font.pixelSize: fpx(13)
                         horizontalAlignment: Text.AlignRight
                         width: parent.width
                         opacity: isSelected ? 0.75 : 0.45
@@ -345,7 +345,7 @@ id: root
                         text: Title
                         color: theme.text
                         font.family:    titleFont.name
-                        font.pixelSize: vpx(21)
+                        font.pixelSize: fpx(21)
                         font.bold:      true
                         elide: Text.ElideRight
                         width: parent.width
@@ -362,7 +362,7 @@ id: root
                             text: ConsoleName
                             color: theme.text
                             font.family:    subtitleFont.name
-                            font.pixelSize: vpx(15)
+                            font.pixelSize: fpx(15)
                             font.bold:      true
                             opacity: isSelected ? 0.9 : 0.55
                             elide: Text.ElideRight
@@ -374,7 +374,7 @@ id: root
                             text: root.lastPlayedText(LastPlayed)
                             color: theme.text
                             font.family:    bodyFont.name
-                            font.pixelSize: vpx(14)
+                            font.pixelSize: fpx(14)
                             opacity: isSelected ? 0.75 : 0.4
                             elide: Text.ElideRight
                             width: parent.width * 0.45
@@ -444,7 +444,7 @@ id: root
         text: (gameList.currentIndex + 1) + " of " + cheevosData.raRecentGames.count
         color: theme.text
         font.family: bodyFont.name
-        font.pixelSize: vpx(20)
+        font.pixelSize: fpx(20)
         font.bold: true
         opacity: 0.75
     }
@@ -471,7 +471,7 @@ id: root
                 Text {
                     text: name
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(20)
+                    font.pixelSize: fpx(20)
                     color: theme.text
                     height: vpx(32)
                     verticalAlignment: Text.AlignVCenter
@@ -670,7 +670,7 @@ id: root
             text: "SEARCH LIBRARY"
             color: "white"
             font.family: titleFont.name
-            font.pixelSize: vpx(26)
+            font.pixelSize: fpx(26)
             font.bold: true
         }
 
@@ -688,7 +688,7 @@ id: root
                 text: searchOverlay.query === "" ? "Type to search..." : searchOverlay.query
                 color: searchOverlay.query === "" ? Qt.rgba(1, 1, 1, 0.4) : "white"
                 font.family: subtitleFont.name
-                font.pixelSize: vpx(20)
+                font.pixelSize: fpx(20)
             }
         }
 
@@ -752,7 +752,7 @@ id: root
                         text: modelData ? modelData.title : ""
                         color: "white"
                         font.family: subtitleFont.name
-                        font.pixelSize: vpx(19)
+                        font.pixelSize: fpx(19)
                         elide: Text.ElideRight
                     }
                     // Achievement progress, but only for games already in the
@@ -771,7 +771,7 @@ id: root
                         }
                         color: theme.accent
                         font.family: subtitleFont.name
-                        font.pixelSize: vpx(15)
+                        font.pixelSize: fpx(15)
                         elide: Text.ElideRight
                     }
                 }
@@ -808,7 +808,7 @@ id: root
                   + (searchOverlay.totalMatches > searchOverlay.results.length ? " (showing 80)" : "")
             color: Qt.rgba(1, 1, 1, 0.6)
             font.family: subtitleFont.name
-            font.pixelSize: vpx(17)
+            font.pixelSize: fpx(17)
         }
 
         Text {
@@ -817,7 +817,7 @@ id: root
             text: "No games found"
             color: Qt.rgba(1, 1, 1, 0.5)
             font.family: subtitleFont.name
-            font.pixelSize: vpx(19)
+            font.pixelSize: fpx(19)
         }
 
         // On-screen keyboard — controller-first, same idea as the All Games
@@ -872,7 +872,7 @@ id: root
                                 text: keyRow.rows[rowIndex].charAt(index)
                                 color: "white"
                                 font.family: subtitleFont.name
-                                font.pixelSize: vpx(19)
+                                font.pixelSize: fpx(19)
                                 font.bold: true
                             }
                             MouseArea {
@@ -900,7 +900,7 @@ id: root
                     text: "SEARCH"
                     color: "white"
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(19)
+                    font.pixelSize: fpx(19)
                     font.bold: true
                 }
                 MouseArea {
@@ -935,7 +935,7 @@ id: root
                     Text {
                         text: modelData.n
                         font.family: subtitleFont.name
-                        font.pixelSize: vpx(18)
+                        font.pixelSize: fpx(18)
                         color: "white"
                         height: vpx(30)
                         verticalAlignment: Text.AlignVCenter
