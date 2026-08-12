@@ -66,6 +66,7 @@ id: root
             LaunchScreenDelay:             api.memory.has("Launch screen delay") ? api.memory.get("Launch screen delay") : "0.6",
             FeaturedBox:                   api.memory.has("Featured Box") ? api.memory.get("Featured Box") : "Yes",
             FeaturedBoxCollection:         api.memory.has("Pins to collection") ? api.memory.get("Pins to collection") : "1",
+            UiScale:                       api.memory.has("UI Scale") ? api.memory.get("UI Scale") : "1.0",
             FavoritedTileAccent:           api.memory.has("Favorited Tile Accent") ? api.memory.get("Favorited Tile Accent") : "Yes",
             FeaturedBoxContent:            api.memory.has("Featured Box Content") ? api.memory.get("Featured Box Content") : "Favorites",
             ShowcaseBackgroundArt:          api.memory.has("Showcase Background Art") ? api.memory.get("Showcase Background Art") : "Yes",
@@ -639,6 +640,14 @@ id: root
                                            && settings.CustomBackground === "No"
 
     property real globalMargin: vpx(30)
+
+    // ── UI text scaling ──────────────────────────────────────────────────
+    // vpx() is Pegasus's resolution scaler. fpx() layers the user's "UI Scale"
+    // setting on top and is used for FONT SIZES ONLY — tiles, margins and
+    // icons stay on vpx() so layouts tuned at 1.0 can't overflow. Resolves by
+    // bare name in child screens and Global/ components, exactly like vpx().
+    property real uiScale: parseFloat(settings.UiScale) || 1.0
+    function fpx(n) { return vpx(n) * uiScale; }
     property real helpMargin: buttonbar.height
     property int transitionTime: 100
 
