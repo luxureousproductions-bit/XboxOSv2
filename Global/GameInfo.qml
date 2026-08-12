@@ -37,7 +37,7 @@ id: infocontainer
         
         color: theme.text
         font.family: titleFont.name
-        font.pixelSize: vpx(44)
+        font.pixelSize: fpx(44)
         font.bold: true
         horizontalAlignment: Text.AlignHLeft
         verticalAlignment: Text.AlignVCenter
@@ -66,7 +66,7 @@ id: infocontainer
             id: publisherlabel
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                 text: "Publisher: "
-                font.pixelSize: vpx(16)
+                font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 font.bold: true
                 color: theme.accent
@@ -74,7 +74,7 @@ id: infocontainer
             Text {
                 anchors { left: publisherlabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                 text: gameData ? (gameData.publisher || "") : ""
-                font.pixelSize: vpx(16)
+                font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 color: theme.text
                 elide: Text.ElideRight
@@ -97,7 +97,7 @@ id: infocontainer
             id: developerlabel
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                 text: "Developer: "
-                font.pixelSize: vpx(16)
+                font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 font.bold: true
                 color: theme.accent
@@ -105,7 +105,7 @@ id: infocontainer
             Text {
                 anchors { left: developerlabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                 text: gameData ? (gameData.developer || "") : ""
-                font.pixelSize: vpx(16)
+                font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 color: theme.text
                 elide: Text.ElideRight
@@ -128,7 +128,7 @@ id: infocontainer
             id: playerslabel
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                 text: "Players: "
-                font.pixelSize: vpx(16)
+                font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 font.bold: true
                 color: theme.accent
@@ -136,7 +136,7 @@ id: infocontainer
             Text {
                 anchors { left: playerslabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                 text: gameData ? gameData.players : ""
-                font.pixelSize: vpx(16)
+                font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 color: theme.text
                 elide: Text.ElideRight
@@ -166,7 +166,7 @@ id: infocontainer
             id: genrelabel
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                 text: "Genre: "
-                font.pixelSize: vpx(16)
+                font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 font.bold: true
                 color: theme.accent
@@ -174,7 +174,7 @@ id: infocontainer
             Text {
                 anchors { left: genrelabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                 text: gameData ? gameData.genre : ""
-                font.pixelSize: vpx(16)
+                font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 color: theme.text
                 elide: Text.ElideRight
@@ -197,7 +197,7 @@ id: infocontainer
             id: releaselabel
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                 text: "Released: "
-                font.pixelSize: vpx(16)
+                font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 font.bold: true
                 color: theme.accent
@@ -211,7 +211,7 @@ id: infocontainer
                         return ("0" + m).slice(-2) + "/" + ("0" + dd).slice(-2) + "/" + gameData.releaseYear;
                     return String(gameData.releaseYear);
                 }
-                font.pixelSize: vpx(16)
+                font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 color: theme.text
                 elide: Text.ElideRight
@@ -234,7 +234,7 @@ id: infocontainer
             id: ratinglabel
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                 text: "Rating: "
-                font.pixelSize: vpx(16)
+                font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 font.bold: true
                 color: theme.accent
@@ -243,7 +243,7 @@ id: infocontainer
                 property real processedRating: gameData ? Math.round(gameData.rating * 100) / 10 : 0
                 anchors { left: ratinglabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                 text: gameData && gameData.rating > 0 ? (steam ? processedRating * 5 : processedRating) : ""
-                font.pixelSize: vpx(16)
+                font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 color: theme.text
                 elide: Text.ElideRight
@@ -273,7 +273,7 @@ id: infocontainer
             id: lastplayedlabel
                 anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                 text: "Last Played: "
-                font.pixelSize: vpx(16)
+                font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 font.bold: true
                 color: theme.accent
@@ -285,7 +285,7 @@ id: infocontainer
                     var d = gameData.lastPlayed;
                     return ("0" + (d.getMonth() + 1)).slice(-2) + "/" + ("0" + d.getDate()).slice(-2) + "/" + d.getFullYear();
                 }
-                font.pixelSize: vpx(16)
+                font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 color: theme.text
                 elide: Text.ElideRight
@@ -308,7 +308,7 @@ id: infocontainer
         Text {
             width: parent.width
             text: gameData && (gameData.summary || gameData.description) ? gameData.description || gameData.summary : "No description available"
-            font.pixelSize: vpx(16)
+            font.pixelSize: fpx(16)
             font.family: bodyFont.name
             color: theme.text
             elide: Text.ElideRight

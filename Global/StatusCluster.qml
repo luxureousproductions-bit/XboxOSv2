@@ -43,7 +43,7 @@ Item {
             right: parent.right; rightMargin: vpx(25)
         }
         color: statusCluster.fg
-        font.pixelSize: vpx(22)
+        font.pixelSize: fpx(22)
         font.family: subtitleFont.name
         horizontalAlignment: Text.Right
     }
@@ -113,7 +113,7 @@ Item {
                 color: "white"
                 style: Text.Outline
                 styleColor: Qt.rgba(0, 0, 0, 0.75)
-                font.pixelSize: vpx(10)
+                font.pixelSize: fpx(10)
                 font.family: subtitleFont.name
                 font.bold: true
             }
@@ -210,7 +210,7 @@ Item {
                 text: batteryDisplay.pct + "%"
                 // Turn red when critically low and not charging
                 color: (batteryDisplay.pct <= 20 && !batteryDisplay.charging) ? "#EF5350" : statusCluster.fg
-                font.pixelSize: vpx(22)
+                font.pixelSize: fpx(22)
                 font.family: subtitleFont.name
             }
         }

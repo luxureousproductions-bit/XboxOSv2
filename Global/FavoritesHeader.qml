@@ -314,7 +314,7 @@ id: root
                             :                               "DISCOVER"
                         color: "white"
                         font.family: subtitleFont.name
-                        font.pixelSize: Math.max(vpx(13), Math.min(tile.width, tile.height) * 0.062)
+                        font.pixelSize: Math.max(fpx(13), Math.min(tile.width, tile.height) * 0.062)
                         font.bold: true
                         anchors.verticalCenter: parent.verticalCenter
                     }

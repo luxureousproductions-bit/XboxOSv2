@@ -264,7 +264,7 @@ id: root
         color: "white"
         scale: selected ? 1.1 : 1
         Behavior on opacity { NumberAnimation { duration: 100 } }
-        font.pixelSize: vpx(18)
+        font.pixelSize: fpx(18)
         font.family: subtitleFont.name
         font.bold: true
         style: Text.Outline; styleColor: theme.main

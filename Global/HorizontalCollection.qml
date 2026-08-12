@@ -86,7 +86,7 @@ id: root
 
         text: collectionData.name
         font.family: subtitleFont.name
-        font.pixelSize: vpx(18)
+        font.pixelSize: fpx(18)
         font.bold: true
         color: theme.text
         opacity: root.focus ? 1 : 0.2
