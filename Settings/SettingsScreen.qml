@@ -850,8 +850,18 @@ id: root
             }
         } 
 
-        Keys.onUpPressed: { playNav(); decrementCurrentIndex() }
-        Keys.onDownPressed: { playNav(); incrementCurrentIndex() }
+        // Wrap around both ends of the page list (General <-> Retro Achievements)
+        // instead of dead-ending at the first/last entry.
+        Keys.onUpPressed: {
+            playNav();
+            if (currentIndex === 0) currentIndex = count - 1;
+            else decrementCurrentIndex();
+        }
+        Keys.onDownPressed: {
+            playNav();
+            if (currentIndex === count - 1) currentIndex = 0;
+            else incrementCurrentIndex();
+        }
         Keys.onPressed: {
             // Accept
             if (api.keys.isAccept(event) && !event.isAutoRepeat) {
@@ -1361,6 +1371,9 @@ id: root
         Keys.onRightPressed: { playNav(); if ((keyIndex % keyCols) !== (keyCols - 1) && keyIndex < keyboardKeys.length - 1) keyIndex++; }
         Keys.onPressed: {
             if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey(keyboardKeys[keyIndex]); }
+            // X = backspace, Y = commit, matching the filter keyboards.
+            if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey("DEL"); }
+            if (api.keys.isFilters(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey("OK"); }
             if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); closeEditor(); }
         }
     }
