@@ -58,6 +58,10 @@ id: root
             setting: "Yes,No"
         }
         ListElement {
+            settingName: "Favorited Tile Accent"
+            setting: "Yes,No"
+        }
+        ListElement {
             settingName: "Enable mouse hover"
             setting: "No,Yes"
         }
@@ -154,6 +158,10 @@ id: root
         ListElement {
             settingName: "Launch screen delay"
             setting: "2.0,2.5,3.0,3.5,4.0,4.5,5.0,0.5,1.0,1.5"
+        }
+        ListElement {
+            settingName: "UI Scale"
+            setting: "1.0,1.1,1.25,1.4,1.5"
         }
     }
 
@@ -334,10 +342,6 @@ id: root
         ListElement {
             settingName: "Featured Box Content"
             setting: "Favorites,Discover Videos,Fanart Slideshow"
-        }
-        ListElement {
-            settingName: "Favorited Tile Accent"
-            setting: "Yes,No"
         }
     }
 
