@@ -639,12 +639,12 @@ id: root
                     Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
                     Text { id: agPubLabel
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                        text: "Publisher: "; font.pixelSize: vpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
+                        text: "Publisher: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
                     Text {
                         anchors { left: agPubLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: currentGame && currentGame.publisher ? currentGame.publisher : "—"
-                        font.pixelSize: vpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
                     }
                 }
                 Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
@@ -652,12 +652,12 @@ id: root
                     Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
                     Text { id: agDevLabel
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                        text: "Developer: "; font.pixelSize: vpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
+                        text: "Developer: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
                     Text {
                         anchors { left: agDevLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: currentGame && currentGame.developer ? currentGame.developer : "—"
-                        font.pixelSize: vpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
                     }
                 }
                 Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
@@ -665,12 +665,12 @@ id: root
                     Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
                     Text { id: agPlayersLabel
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                        text: "Players: "; font.pixelSize: vpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
+                        text: "Players: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
                     Text {
                         anchors { left: agPlayersLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: currentGame && currentGame.players > 0 ? currentGame.players : "—"
-                        font.pixelSize: vpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
                     }
                 }
             }
@@ -685,12 +685,12 @@ id: root
                     Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
                     Text { id: agGenreLabel
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                        text: "Genre: "; font.pixelSize: vpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
+                        text: "Genre: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
                     Text {
                         anchors { left: agGenreLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: currentGame && currentGame.genre ? currentGame.genre : "—"
-                        font.pixelSize: vpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
                     }
                 }
                 Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
@@ -698,12 +698,12 @@ id: root
                     Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
                     Text { id: agRelLabel
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                        text: "Released: "; font.pixelSize: vpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
+                        text: "Released: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
                     Text {
                         anchors { left: agRelLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: fmtReleaseDate(currentGame)
-                        font.pixelSize: vpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
                     }
                 }
                 Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
@@ -711,12 +711,12 @@ id: root
                     Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
                     Text { id: agRatingLabel
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                        text: "Rating: "; font.pixelSize: vpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
+                        text: "Rating: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
                     Text {
                         anchors { left: agRatingLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: currentGame && currentGame.rating > 0 ? (currentGame.rating * 10).toFixed(1) : "—"
-                        font.pixelSize: vpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
                     }
                 }
             }
@@ -731,12 +731,12 @@ id: root
                     Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
                     Text { id: agLastLabel
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                        text: "Last Played: "; font.pixelSize: vpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
+                        text: "Last Played: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
                     Text {
                         anchors { left: agLastLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: fmtLastPlayed(currentGame)
-                        font.pixelSize: vpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
                     }
                 }
             }
@@ -775,13 +775,13 @@ id: root
         Text {
             anchors { left: libIcon.right; leftMargin: vpx(12); verticalCenter: libIcon.verticalCenter }
             text: "My Games & Apps"
-            color: theme.text; font.family: titleFont.name; font.pixelSize: vpx(24); font.bold: true
+            color: theme.text; font.family: titleFont.name; font.pixelSize: fpx(24); font.bold: true
         }
         // Game counter sits directly below the title row (no longer crowding it)
         Text {
             anchors { left: parent.left; leftMargin: globalMargin; top: libIcon.bottom; topMargin: vpx(2) }
             text: displayModel.count + " games"
-            color: theme.text; opacity: 0.7; font.family: subtitleFont.name; font.pixelSize: vpx(15)
+            color: theme.text; opacity: 0.7; font.family: subtitleFont.name; font.pixelSize: fpx(15)
         }
 
         // Current game's system logo (top-right), updates while scrolling the list
@@ -915,7 +915,7 @@ id: root
             text: "Home"
             anchors { top: homebutton.bottom; topMargin: vpx(3); horizontalCenter: homebutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: homebutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
@@ -923,7 +923,7 @@ id: root
             text: "Discover"
             anchors { top: discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: discoverbutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: discoverbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
@@ -931,7 +931,7 @@ id: root
             text: "RetroAchievements"
             anchors { top: achievementsbutton.bottom; topMargin: vpx(3); horizontalCenter: achievementsbutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: achievementsbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
@@ -939,7 +939,7 @@ id: root
             text: "Settings"
             anchors { top: settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: settingsbutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: settingsbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
@@ -1048,7 +1048,7 @@ id: root
                     TextMetrics {
                         id: titleMetrics
                         font.family: subtitleFont.name
-                        font.pixelSize: vpx(25)
+                        font.pixelSize: fpx(25)
                         font.bold: true
                         text: modelData.title
                     }
@@ -1058,7 +1058,7 @@ id: root
                         height: titleClip.height
                         color: selected ? "white" : theme.text
                         font.family: subtitleFont.name
-                        font.pixelSize: selected ? vpx(25) : vpx(19)
+                        font.pixelSize: selected ? fpx(25) : fpx(19)
                         font.bold: selected
                         verticalAlignment: Text.AlignVCenter
                         opacity: selected ? 1 : 0.28
@@ -1113,7 +1113,7 @@ id: root
             id: titleTxt
                 text: "Filters"
                 color: "white"
-                font.family: titleFont.name; font.pixelSize: vpx(24); font.bold: true
+                font.family: titleFont.name; font.pixelSize: fpx(24); font.bold: true
                 anchors { top: parent.top; topMargin: vpx(18); left: parent.left; leftMargin: vpx(24) }
             }
 
@@ -1131,7 +1131,7 @@ id: root
 
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
-                        text: "\uD83D\uDD0D"; font.pixelSize: vpx(15); width: vpx(22)
+                        text: "\uD83D\uDD0D"; font.pixelSize: fpx(15); width: vpx(22)
                         color: "white"; opacity: onRow ? 1 : 0.6
                     }
                     Text {
@@ -1142,7 +1142,7 @@ id: root
                         color: "white"
                         opacity: onRow ? 1 : 0.85
                         elide: Text.ElideRight
-                        font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: onRow
+                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: onRow
                     }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 0; activateSearch(); } }
                 }
@@ -1156,7 +1156,7 @@ id: root
 
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
-                        text: "\u2630"; font.pixelSize: vpx(15); width: vpx(22)
+                        text: "\u2630"; font.pixelSize: fpx(15); width: vpx(22)
                         color: "white"; opacity: onRow ? 1 : 0.6
                     }
                     Text {
@@ -1167,13 +1167,13 @@ id: root
                         color: "white"
                         opacity: onRow ? 1 : 0.85
                         elide: Text.ElideRight
-                        font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: onRow
+                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: onRow
                     }
                     Text {
                         id: arrow
                         anchors { right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\u25B8"; color: "white"
-                        opacity: onRow ? 1 : 0.6; font.pixelSize: vpx(18)
+                        opacity: onRow ? 1 : 0.6; font.pixelSize: fpx(18)
                     }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 1; openGenrePicker(); } }
                 }
@@ -1196,7 +1196,7 @@ id: root
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: isSel ? "\u2713" : "  "
-                            color: "white"; font.pixelSize: vpx(15); font.bold: true; width: vpx(22)
+                            color: "white"; font.pixelSize: fpx(15); font.bold: true; width: vpx(22)
                         }
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
@@ -1204,7 +1204,7 @@ id: root
                             color: "white"
                             opacity: onRow ? 1 : 0.85
                             elide: Text.ElideRight
-                            font.family: subtitleFont.name; font.pixelSize: vpx(19); font.bold: onRow || isSel
+                            font.family: subtitleFont.name; font.pixelSize: fpx(19); font.bold: onRow || isSel
                         }
                         MouseArea { anchors.fill: parent; onClicked: { genrePickerIndex = index; toggleGenre(modelData); } }
                     }
@@ -1219,7 +1219,7 @@ id: root
 
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
-                        text: "\u25A4"; font.pixelSize: vpx(15); width: vpx(22)
+                        text: "\u25A4"; font.pixelSize: fpx(15); width: vpx(22)
                         color: "white"; opacity: onRow ? 1 : 0.6
                     }
                     Text {
@@ -1228,13 +1228,13 @@ id: root
                         color: "white"
                         opacity: onRow ? 1 : 0.85
                         elide: Text.ElideRight
-                        font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: onRow
+                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: onRow
                     }
                     Text {
                         id: sysArrow
                         anchors { right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\u25B8"; color: "white"
-                        opacity: onRow ? 1 : 0.6; font.pixelSize: vpx(18)
+                        opacity: onRow ? 1 : 0.6; font.pixelSize: fpx(18)
                     }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 2; openSystemPicker(); } }
                 }
@@ -1256,7 +1256,7 @@ id: root
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: isSel ? "\u2713" : "  "
-                            color: "white"; font.pixelSize: vpx(15); font.bold: true; width: vpx(22)
+                            color: "white"; font.pixelSize: fpx(15); font.bold: true; width: vpx(22)
                         }
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
@@ -1264,7 +1264,7 @@ id: root
                             color: "white"
                             opacity: onRow ? 1 : 0.85
                             elide: Text.ElideRight
-                            font.family: subtitleFont.name; font.pixelSize: vpx(19); font.bold: onRow || isSel
+                            font.family: subtitleFont.name; font.pixelSize: fpx(19); font.bold: onRow || isSel
                         }
                         MouseArea { anchors.fill: parent; onClicked: { systemPickerIndex = index; selectSystem(modelData); } }
                     }
@@ -1287,7 +1287,7 @@ id: root
                             Text {
                                 anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                                 text: active ? (sortDir === Qt.AscendingOrder ? "\u25B2" : "\u25BC") : "  "
-                                color: "white"; font.pixelSize: vpx(16); font.bold: true
+                                color: "white"; font.pixelSize: fpx(16); font.bold: true
                                 width: vpx(22)
                             }
                             Text {
@@ -1295,7 +1295,7 @@ id: root
                                 text: modelData.label
                                 color: "white"
                                 opacity: active ? 1 : 0.85
-                                font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: active
+                                font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: active
                             }
                             MouseArea { anchors.fill: parent; onClicked: { filterRow = index + 3; selectSort(modelData.key); } }
                         }
@@ -1316,7 +1316,7 @@ id: root
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: favsOnly ? "\u2713" : "  "
-                            color: "white"; font.pixelSize: vpx(16); font.bold: true
+                            color: "white"; font.pixelSize: fpx(16); font.bold: true
                             width: vpx(22)
                         }
                         Text {
@@ -1324,7 +1324,7 @@ id: root
                             text: "Favorites only"
                             color: "white"
                             opacity: favsOnly ? 1 : 0.85
-                            font.family: subtitleFont.name; font.pixelSize: vpx(20); font.bold: favsOnly
+                            font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: favsOnly
                         }
                         MouseArea { anchors.fill: parent; onClicked: { filterRow = sortFields.length + 3; favsOnly = !favsOnly; gamelist.currentIndex = 0; } }
                     }
@@ -1350,7 +1350,7 @@ id: root
                                 text: modelData === "SPACE" ? "\u2423" : (modelData === "DEL" ? "\u232B" : modelData)
                                 color: sel ? "white" : "white"
                                 font.family: subtitleFont.name
-                                font.pixelSize: wide ? vpx(12) : vpx(17)
+                                font.pixelSize: wide ? fpx(12) : fpx(17)
                                 font.bold: sel
                             }
                             MouseArea { anchors.fill: parent; onClicked: { keyIndex = index; pressKey(modelData); } }
@@ -1381,7 +1381,7 @@ id: root
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.t
                             color: "white"; opacity: 0.55
-                            font.family: subtitleFont.name; font.pixelSize: vpx(15)
+                            font.family: subtitleFont.name; font.pixelSize: fpx(15)
                         }
                     }
                 }

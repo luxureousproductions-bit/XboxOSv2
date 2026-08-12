@@ -524,14 +524,14 @@ id: root
                         text: cheevosData.raUserName
                         color: theme.text
                         font.family: subtitleFont.name
-                        font.pixelSize: vpx(17); font.bold: true
+                        font.pixelSize: fpx(17); font.bold: true
                         elide: Text.ElideRight
                     }
                     Text {
                         text: cheevosData.pointsText
                         color: theme.text
                         font.family: subtitleFont.name
-                        font.pixelSize: vpx(12)
+                        font.pixelSize: fpx(12)
                         opacity: 0.7
                         visible: cheevosData.pointsText !== ""
                     }
@@ -539,7 +539,7 @@ id: root
                         text: cheevosData.memberText
                         color: theme.text
                         font.family: subtitleFont.name
-                        font.pixelSize: vpx(10)
+                        font.pixelSize: fpx(10)
                         opacity: 0.5
                         visible: cheevosData.memberText !== ""
                     }
@@ -553,7 +553,7 @@ id: root
                 color: theme.text
                 opacity: 0.4
                 font.family: subtitleFont.name
-                font.pixelSize: vpx(13)
+                font.pixelSize: fpx(13)
                 visible: cheevosData.raUserName === ""
             }
         }
@@ -757,7 +757,7 @@ id: root
             text: "Full Library"
             anchors { top: homebutton.bottom; topMargin: vpx(3); horizontalCenter: homebutton.horizontalCenter }
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: homebutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
@@ -765,7 +765,7 @@ id: root
             text: "Discover"
             anchors { top: discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: discoverbutton.horizontalCenter }
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: discoverbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
@@ -773,7 +773,7 @@ id: root
             text: "RetroAchievements"
             anchors { top: achievementsbutton.bottom; topMargin: vpx(3); horizontalCenter: achievementsbutton.horizontalCenter }
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: achievementsbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
@@ -781,7 +781,7 @@ id: root
             text: "Settings"
             anchors { top: settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: settingsbutton.horizontalCenter }
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: settingsbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
@@ -1064,7 +1064,7 @@ id: root
                             id: heroBarText
                             text: platformlist.resumeGame ? platformlist.resumeGame.title : ""
                             color: "white"; font.family: subtitleFont.name
-                            font.pixelSize: Math.max(vpx(11), topRow.tileSz * 0.05); font.bold: true
+                            font.pixelSize: Math.max(fpx(11), topRow.tileSz * 0.05); font.bold: true
                             wrapMode: Text.WordWrap
                             maximumLineCount: 2
                             elide: Text.ElideRight
@@ -1126,7 +1126,7 @@ id: root
                     anchors { fill: parent; margins: vpx(10) }
                     color: theme.text
                     opacity: selected ? 1 : 0.2
-                    font.pixelSize: vpx(18)
+                    font.pixelSize: fpx(18)
                     font.family: subtitleFont.name
                     font.bold: true
                     style: Text.Outline; styleColor: theme.main
@@ -1174,7 +1174,7 @@ id: root
                         id: sysBarText
                         text: coll ? coll.name : ""
                         color: "white"; font.family: subtitleFont.name
-                        font.pixelSize: Math.max(vpx(11), topRow.tileSz * 0.05); font.bold: true
+                        font.pixelSize: Math.max(fpx(11), topRow.tileSz * 0.05); font.bold: true
                         wrapMode: Text.WordWrap
                         maximumLineCount: 2
                         elide: Text.ElideRight
