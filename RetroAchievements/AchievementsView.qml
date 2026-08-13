@@ -781,8 +781,8 @@ id: root
                 Image {
                     id: sysBadge
                     anchors { right: parent.right; rightMargin: vpx(10); verticalCenter: parent.verticalCenter }
-                    height: vpx(34)
-                    width: vpx(86)
+                    height: vpx(46)
+                    width: vpx(116)
                     fillMode: Image.PreserveAspectFit
                     horizontalAlignment: Image.AlignRight
                     asynchronous: true; smooth: true
@@ -843,12 +843,41 @@ id: root
             readonly property int searchRow: rows.length
             property int row: 0
             property int col: 0
-            readonly property var rows: [
-                "ABCDEFGHIJ",
-                "KLMNOPQRST",
-                "UVWXYZ0123",
-                "456789 -:!"
+            // Three pages. Arrays (not strings) so multi-character keys like
+            // SPACE and the page switches can share the grid.
+            property int page: 0        // 0 letters, 1 symbols, 2 accents
+            readonly property var pages: [
+                [ ["A","B","C","D","E","F","G","H","I","J"],
+                  ["K","L","M","N","O","P","Q","R","S","T"],
+                  ["U","V","W","X","Y","Z","0","1","2","3"],
+                  ["4","5","6","7","8","9","SPACE","DEL","&12","áé"] ],
+
+                [ ["!","?",".",",",":",";","'","\"","-","_"],
+                  ["(",")","[","]","{","}","<",">","/","\\"],
+                  ["@","#","$","%","&","*","+","=","~","|"],
+                  ["^","`","°","·","¡","¿","SPACE","DEL","ABC","áé"] ],
+
+                [ ["À","Á","Â","Ã","Ä","Å","Æ","Ç","È","É"],
+                  ["Ê","Ë","Ì","Í","Î","Ï","Ñ","Ò","Ó","Ô"],
+                  ["Õ","Ö","Ø","Ù","Ú","Û","Ü","Ý","ß","Œ"],
+                  ["á","é","í","ó","ú","ñ","SPACE","DEL","ABC","&12"] ]
             ]
+            readonly property var rows: pages[page]
+
+            // Type a key, or act on it when it's a command.
+            function press(k) {
+                if (k === "ABC")   { page = 0; clampCol(); return; }
+                if (k === "&12")   { page = 1; clampCol(); return; }
+                if (k === "áé")    { page = 2; clampCol(); return; }
+                if (k === "SPACE") { searchOverlay.query += " "; return; }
+                if (k === "DEL")   { searchOverlay.query = searchOverlay.query.slice(0, -1); return; }
+                searchOverlay.query += k;
+            }
+            // Keep the cursor inside the row after a page switch.
+            function clampCol() {
+                var len = rows[row].length;
+                if (col > len - 1) col = len - 1;
+            }
 
             anchors {
                 top: resultList.bottom; topMargin: vpx(16)
@@ -864,22 +893,27 @@ id: root
                     Repeater {
                         model: keyRow.rows[rowIndex].length
                         Rectangle {
+                            property string key: keyRow.rows[rowIndex][index]
+                            property bool isCmd: key.length > 1
                             width: vpx(42); height: vpx(38)
                             color: (keyRow.row === rowIndex && keyRow.col === index)
                                    ? theme.accent : Qt.rgba(1, 1, 1, 0.08)
                             Text {
                                 anchors.centerIn: parent
-                                text: keyRow.rows[rowIndex].charAt(index)
+                                text: key === "SPACE" ? "\u2423"
+                                      : (key === "DEL" ? "\u232B" : key)
                                 color: "white"
                                 font.family: subtitleFont.name
-                                font.pixelSize: fpx(19)
+                                // Page-switch labels are 3 chars wide, so drop
+                                // their size to fit the same key cell.
+                                font.pixelSize: (isCmd && key !== "SPACE" && key !== "DEL") ? fpx(13) : fpx(19)
                                 font.bold: true
                             }
                             MouseArea {
                                 anchors.fill: parent
                                 onClicked: {
                                     keyRow.row = rowIndex; keyRow.col = index;
-                                    searchOverlay.query += keyRow.rows[rowIndex].charAt(index);
+                                    keyRow.press(key);
                                 }
                             }
                         }
@@ -996,7 +1030,7 @@ id: root
             if (api.keys.isAccept(event)) {
                 event.accepted = true;
                 if (keyRow.row === keyRow.searchRow) searchOverlay.commitSearch();
-                else searchOverlay.query += keyRow.rows[keyRow.row].charAt(keyRow.col);
+                else keyRow.press(keyRow.rows[keyRow.row][keyRow.col]);
                 return;
             }
             // Y — run the search (same as the on-screen SEARCH key)
