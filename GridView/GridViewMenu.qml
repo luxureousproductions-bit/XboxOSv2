@@ -640,7 +640,18 @@ id: root
                     moveCurrentIndexUp();
                 }
             }
-            Keys.onDownPressed:     { playNav(); moveCurrentIndexDown() }
+            Keys.onDownPressed: {
+                playNav();
+                // From the last row, wrap to the FIRST row in the same column
+                // rather than dead-ending. The last row is often partial, so
+                // "last row" means anything with no full row beneath it.
+                var lastRowStart = Math.floor((count - 1) / numColumns) * numColumns;
+                if (currentIndex >= lastRowStart) {
+                    currentIndex = currentIndex % numColumns;
+                } else {
+                    moveCurrentIndexDown();
+                }
+            }
             Keys.onLeftPressed: {
                 playNav();
                 // Wrap to the last tile when on the very first one (Up still
@@ -648,7 +659,12 @@ id: root
                 if (currentIndex === 0) currentIndex = count - 1;
                 else moveCurrentIndexLeft();
             }
-            Keys.onRightPressed:    { playNav(); moveCurrentIndexRight() }
+            Keys.onRightPressed: {
+                playNav();
+                // Wrap to the first tile from the very last one.
+                if (currentIndex === count - 1) currentIndex = 0;
+                else moveCurrentIndexRight();
+            }
         }
 
     }
