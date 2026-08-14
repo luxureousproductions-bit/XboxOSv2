@@ -73,9 +73,11 @@ id: root
         id: videocomponent
 
             anchors.fill: parent
-            anchors.margins: vpx(2)   // inset so the square video's corners stay inside the
-                                      // rounded tile (radius vpx6); keeps corners from poking
-                                      // without masking the video (low-end GPU safe)
+            anchors.margins: vpx(2)   // Meets the selection frame's INNER edge exactly:
+                                      // the frame overhangs -3 and is 5 wide, so its inner
+                                      // edge sits +2 in. The video's square corners are then
+                                      // hidden beneath the ring — no gap, and no masking of
+                                      // the VideoOutput (which renders black on weak GPUs).
             source: game.assets.videoList.length ? game.assets.videoList[0] : ""
             fillMode: VideoOutput.PreserveAspectCrop
             muted: settings.AllowThumbVideoAudio === "No"

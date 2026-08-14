@@ -470,6 +470,36 @@ id: root
             .trim();
     }
 
+    // ── Reverse lookup: RA game title → local Pegasus game ────────────────
+    // Used by the achievements page to launch what you're viewing. Matches on
+    // the same normalized form as the RA lookup, and prefers a game whose
+    // collection maps to the expected RA console so same-named titles on
+    // different systems don't get crossed.
+    function findLocalGame(raTitle, consoleName) {
+        if (!raTitle) return null;
+        var want = normalizeTitle(raTitle);
+        if (want === "") return null;
+
+        var wantConsole = (consoleName || "").toLowerCase();
+        var loose = null;
+
+        for (var i = 0; i < api.allGames.count; i++) {
+            var g = api.allGames.get(i);
+            if (normalizeTitle(g.title) !== want) continue;
+            if (!loose) loose = g;                     // first title match, any system
+            if (wantConsole === "") return g;
+
+            // Prefer the copy whose collection maps to this RA console.
+            for (var c = 0; c < g.collections.count; c++) {
+                var sn = (g.collections.get(c).shortName || "").toLowerCase();
+                var mappedId = consoleMappings[sn] || 0;
+                if (mappedId > 0 && mappedId === (consoleMappings[wantConsole] || -1))
+                    return g;
+            }
+        }
+        return loose;
+    }
+
     // ── Game list search (two-pass exact + prefix) ────────────────────────
     function findGameInList(title, data) {
         var norm = normalizeTitle(title);

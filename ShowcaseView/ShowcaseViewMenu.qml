@@ -32,6 +32,10 @@ id: root
     ListAllGames    { id: listNone;        max: 0 }
     ListAllGames    { id: listAllGames;    max: settings.ShowcaseColumns }
     ListFavorites   { id: listFavorites;   max: settings.ShowcaseColumns }
+    // Uncapped — feeds the favorites carousel header, which pages through
+    // every favorited game (unlike the "Favorites" collection category above,
+    // which is deliberately capped to a normal row's worth of tiles).
+    ListFavorites   { id: listFavoritesAll }
     ListLastPlayed  { id: listLastPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
     ListMostPlayed  { id: listMostPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
     ListRecommended { id: listRecommended; active: true; max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
@@ -520,14 +524,14 @@ id: root
                         text: cheevosData.raUserName
                         color: theme.text
                         font.family: subtitleFont.name
-                        font.pixelSize: vpx(17); font.bold: true
+                        font.pixelSize: fpx(17); font.bold: true
                         elide: Text.ElideRight
                     }
                     Text {
                         text: cheevosData.pointsText
                         color: theme.text
                         font.family: subtitleFont.name
-                        font.pixelSize: vpx(12)
+                        font.pixelSize: fpx(12)
                         opacity: 0.7
                         visible: cheevosData.pointsText !== ""
                     }
@@ -535,7 +539,7 @@ id: root
                         text: cheevosData.memberText
                         color: theme.text
                         font.family: subtitleFont.name
-                        font.pixelSize: vpx(10)
+                        font.pixelSize: fpx(10)
                         opacity: 0.5
                         visible: cheevosData.memberText !== ""
                     }
@@ -549,7 +553,7 @@ id: root
                 color: theme.text
                 opacity: 0.4
                 font.family: subtitleFont.name
-                font.pixelSize: vpx(13)
+                font.pixelSize: fpx(13)
                 visible: cheevosData.raUserName === ""
             }
         }
@@ -753,7 +757,7 @@ id: root
             text: "Full Library"
             anchors { top: homebutton.bottom; topMargin: vpx(3); horizontalCenter: homebutton.horizontalCenter }
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: homebutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
@@ -761,7 +765,7 @@ id: root
             text: "Discover"
             anchors { top: discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: discoverbutton.horizontalCenter }
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: discoverbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
@@ -769,7 +773,7 @@ id: root
             text: "RetroAchievements"
             anchors { top: achievementsbutton.bottom; topMargin: vpx(3); horizontalCenter: achievementsbutton.horizontalCenter }
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: achievementsbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
@@ -777,7 +781,7 @@ id: root
             text: "Settings"
             anchors { top: settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: settingsbutton.horizontalCenter }
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
-            font.family: subtitleFont.name; font.pixelSize: vpx(11); font.bold: true
+            font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: settingsbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
@@ -800,6 +804,23 @@ id: root
                                       && settings.ShowcaseCollection4 === "None"
                                       && settings.ShowcaseCollection5 === "None"
                                       && settings.ShowcaseCollection6 === "None"
+
+    // Which collection slot (1-6) hosts the pin box, from Settings > Pins >
+    // "Pins to collection". If that collection is set to None the box simply
+    // doesn't appear — deliberately no fallback to another row, so the choice
+    // stays predictable.
+    property int featuredBoxSlot: {
+        if (settings.FeaturedBox === "No") return 0;
+        var slot = parseInt(settings.FeaturedBoxCollection) || 1;
+        if (slot < 1 || slot > 6) return 0;
+        var chosen = slot === 1 ? settings.ShowcaseCollection1
+                   : slot === 2 ? settings.ShowcaseCollection2
+                   : slot === 3 ? settings.ShowcaseCollection3
+                   : slot === 4 ? settings.ShowcaseCollection4
+                   : slot === 5 ? settings.ShowcaseCollection5
+                   :              settings.ShowcaseCollection6;
+        return (chosen === "None") ? 0 : slot;
+    }
 
     // Using an object model to build the list
     ObjectModel {
@@ -937,7 +958,7 @@ id: root
                 }
                 width: topRow.tileSz
                 height: topRow.tileSz
-                radius: vpx(6)
+                radius: vpx(12)
                 color: selected ? theme.accent : theme.secondary
                 Behavior on color { ColorAnimation { duration: 180; easing.type: Easing.OutCubic } }
                 // Grow from the bottom edge so the bottom stays put. The first (hero) tile
@@ -1043,7 +1064,7 @@ id: root
                             id: heroBarText
                             text: platformlist.resumeGame ? platformlist.resumeGame.title : ""
                             color: "white"; font.family: subtitleFont.name
-                            font.pixelSize: Math.max(vpx(11), topRow.tileSz * 0.05); font.bold: true
+                            font.pixelSize: Math.max(fpx(11), topRow.tileSz * 0.05); font.bold: true
                             wrapMode: Text.WordWrap
                             maximumLineCount: 2
                             elide: Text.ElideRight
@@ -1105,7 +1126,7 @@ id: root
                     anchors { fill: parent; margins: vpx(10) }
                     color: theme.text
                     opacity: selected ? 1 : 0.2
-                    font.pixelSize: vpx(18)
+                    font.pixelSize: fpx(18)
                     font.family: subtitleFont.name
                     font.bold: true
                     style: Text.Outline; styleColor: theme.main
@@ -1116,35 +1137,65 @@ id: root
                     verticalAlignment: Text.AlignVCenter
                 }
 
-                // System name bar (experiment) — appears on highlight with the system name
-                Rectangle {
-                    visible: !isHero && opacity > 0
-                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                    height: Math.max(vpx(36), topRow.tileSz * 0.16, sysBarText.contentHeight + vpx(16))   // grows for 2-line names
-                    radius: vpx(6)
-                    color: "#99000000"
-                    opacity: (!isHero && (selected || settings.AlwaysShowTitles === "Yes")) ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 120 } }
+                // System name bar — appears on highlight with the system name,
+                // masked exactly like the hero box's.
+                // A radius on the bar itself rounds all four corners, and a
+                // cover strip can't fix it either — the bar is translucent, so
+                // anything laid over it just stacks alpha and the curve still
+                // shows through. Masking a tile-shaped rounded rect is the only
+                // way to get square top corners with a rounded bottom, which is
+                // what the hero/collection/grid bars already do.
+                Item {
+                id: sysNameBarClip
+
+                    anchors.fill: parent
+                    visible: !isHero && sysNameBar.opacity > 0
+                    // Only pay for the FBO while the bar is actually showing.
+                    layer.enabled: visible
+                    layer.effect: OpacityMask {
+                        maskSource: Rectangle {
+                            width: tile.width
+                            height: tile.height
+                            radius: tile.radius
+                        }
+                    }
+
+                    Rectangle {
+                    id: sysNameBar
+
+                        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                        height: Math.max(vpx(36), topRow.tileSz * 0.16, sysBarText.contentHeight + vpx(16))   // grows for 2-line names
+                        color: "#99000000"
+                        opacity: (!isHero && (selected || settings.AlwaysShowTitles === "Yes")) ? 1 : 0
+                        Behavior on opacity { NumberAnimation { duration: 120 } }
+
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
                         id: sysBarText
                         text: coll ? coll.name : ""
                         color: "white"; font.family: subtitleFont.name
-                        font.pixelSize: Math.max(vpx(11), topRow.tileSz * 0.05); font.bold: true
+                        font.pixelSize: Math.max(fpx(11), topRow.tileSz * 0.05); font.bold: true
                         wrapMode: Text.WordWrap
                         maximumLineCount: 2
                         elide: Text.ElideRight
                         horizontalAlignment: Text.AlignLeft
+                    }
                     }
                 }
 
                 // Accent frame: hero when selected; platform when selected AND system background loaded
                 // (platforms without a background keep the current accent-fill look instead)
                 Rectangle {
+                    // Overhang by a pixel: sharing the tile's exact bounds left
+                    // the tile's antialiased corner peeking outside the frame,
+                    // which reads as the old square-ish corner poking through
+                    // at the larger radius. Radius tracks tile.radius so the
+                    // two can't drift apart again.
                     anchors.fill: parent
+                    anchors.margins: -vpx(3)
                     visible: selected && (isHero || sysBg.status === Image.Ready)
                     color: "transparent"
-                    radius: vpx(6)
+                    radius: tile.radius + vpx(3)
                     border.color: theme.accent
                     border.width: vpx(5)
                 }
@@ -1153,9 +1204,10 @@ id: root
                 Rectangle {
                     id: highlightPulse
                     anchors.fill: parent
+                    anchors.margins: -vpx(3)
                     visible: selected && settings.AnimateHighlight === "Yes"
                     color: "transparent"
-                    radius: vpx(6)
+                    radius: tile.radius + vpx(3)
                     border.color: "#ffffff"
                     border.width: vpx(5)
                     opacity: 0   // start invisible so it can't pop in at peak brightness
@@ -1222,6 +1274,8 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
+            favoritesData: (featuredBoxSlot === 1) ? listFavoritesAll : null
+
             height: collection.height
 
             itemWidth: collection.itemWidth
@@ -1251,6 +1305,8 @@ id: root
 
             enabled: collection.enabled
             visible: collection.enabled
+
+            favoritesData: (featuredBoxSlot === 2) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1282,6 +1338,8 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
+            favoritesData: (featuredBoxSlot === 3) ? listFavoritesAll : null
+
             height: collection.height
 
             itemWidth: collection.itemWidth
@@ -1311,6 +1369,8 @@ id: root
 
             enabled: collection.enabled
             visible: collection.enabled
+
+            favoritesData: (featuredBoxSlot === 4) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1342,6 +1402,8 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
+            favoritesData: (featuredBoxSlot === 5) ? listFavoritesAll : null
+
             height: collection.height
 
             itemWidth: collection.itemWidth
@@ -1371,6 +1433,8 @@ id: root
 
             enabled: collection.enabled
             visible: collection.enabled
+
+            favoritesData: (featuredBoxSlot === 6) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1404,7 +1468,17 @@ id: root
         var list = null;
         if (mainList.currentIndex === 1) list = platformlist;
         else if (mainList.currentItem && mainList.currentItem.collectionList) list = mainList.currentItem.collectionList;
-        if (!list || !list.currentItem) return -1;
+        if (!list) return -1;
+        // Resting on the favorites carousel: currentIndex is -1 so there's no
+        // currentItem to measure. Report the header's own centre instead —
+        // without this the closest-column logic got no position, bailed out,
+        // and the destination row fell back to its stale savedIndex (jumping
+        // far right instead of straight down).
+        if (list.onFavoritesHeader !== undefined && list.onFavoritesHeader && list.headerItem) {
+            var h = list.headerItem;
+            return h.mapToItem(root, h.width / 2, 0).x;
+        }
+        if (!list.currentItem) return -1;
         var c = list.currentItem;
         return c.mapToItem(root, c.width / 2, 0).x;          // screen-x centre of current item
     }
@@ -1436,8 +1510,32 @@ id: root
             platformlist.savedIndex = navNearestIndex(platformlist, topRow.tileSz, platformlist.spacing, screenX, platformlist.count);
         } else {
             var it = mainList.itemAtIndex(destIndex);
-            if (it && it.collectionList)
-                it.savedIndex = navNearestIndex(it.collectionList, it.itemWidth, it.collectionList.spacing, screenX, it.collectionList.count);
+            if (!it || !it.collectionList) return;
+            var list = it.collectionList;
+            // A row carrying the favorites carousel has an extra slot before
+            // tile 0, so the plain column math lands one tile too far right.
+            // Offset by the header's extent, and treat a negative result as
+            // "that column IS the carousel" rather than clamping onto tile 0.
+            var hasHeader = it.showFavoritesHeader === true && list.headerItem;
+            var headerExtent = hasHeader ? (list.headerItem.width + list.spacing) : 0;
+            var unit = it.itemWidth + list.spacing;
+            if (unit <= 0) return;
+            var local = list.mapFromItem(root, screenX, 0).x;
+            var i = Math.round((list.contentX + local - headerExtent - it.itemWidth / 2) / unit);
+
+            if (hasHeader && i < 0) {
+                it.savedIndex = 0;
+                list.savedOnHeader = true;
+                list.onFavoritesHeader = true;
+                return;
+            }
+            if (i < 0) i = 0;
+            if (i > list.count - 1) i = list.count - 1;
+            it.savedIndex = i;
+            if (list.onFavoritesHeader !== undefined) {
+                list.savedOnHeader = false;
+                list.onFavoritesHeader = false;
+            }
         }
     }
 

@@ -138,7 +138,7 @@ id: root
         text: currentGame ? currentGame.title : ""
         color: theme.text
         font.family: subtitleFont.name
-        font.pixelSize: vpx(28)
+        font.pixelSize: fpx(28)
         font.bold: true
         style: Text.Outline
         styleColor: "#80000000"
@@ -195,7 +195,7 @@ id: root
             color: theme.text
             opacity: 0.7
             font.family: subtitleFont.name
-            font.pixelSize: vpx(18)
+            font.pixelSize: fpx(18)
             visible: systemLogo.status === Image.Error || systemLogo.shortName === ""
         }
     }
@@ -210,7 +210,7 @@ id: root
         color: theme.text
         opacity: 0.7
         font.family: subtitleFont.name
-        font.pixelSize: vpx(20)
+        font.pixelSize: fpx(20)
         horizontalAlignment: Text.AlignHCenter
         wrapMode: Text.WordWrap
         width: parent.width * 0.7

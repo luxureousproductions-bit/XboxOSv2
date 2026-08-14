@@ -29,8 +29,10 @@ id: root
     id: border
 
         anchors.fill: parent
+        anchors.margins: -vpx(3)   // overhang so the tile's antialiased corner
+                                   // can't peek outside the frame
         color: "transparent"
-        radius: vpx(6)
+        radius: vpx(15)
         border.color: theme.accent
         border.width: vpx(5)
         antialiasing: true
@@ -41,9 +43,10 @@ id: root
     id: highlightPulse
 
         anchors.fill: parent
+        anchors.margins: -vpx(3)
         visible: settings.AnimateHighlight === "Yes"
         color: "transparent"
-        radius: vpx(6)
+        radius: vpx(15)
         border.color: "#ffffff"
         border.width: vpx(5)
         antialiasing: true

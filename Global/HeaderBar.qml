@@ -118,7 +118,7 @@ id: root
             
             color: theme.text
             font.family: titleFont.name
-            font.pixelSize: vpx(30)
+            font.pixelSize: fpx(30)
             font.bold: true
             horizontalAlignment: Text.AlignHLeft
             verticalAlignment: Text.AlignVCenter
@@ -199,7 +199,7 @@ id: root
                             verticalAlignment: Text.AlignVCenter
                             color: theme.text
                             font.family: subtitleFont.name
-                            font.pixelSize: vpx(18)
+                            font.pixelSize: fpx(18)
                             clip: true
                             text: searchTerm
                             selectionColor: theme.accent
@@ -229,7 +229,7 @@ id: root
                     color: theme.text
                     opacity: 0.6
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(13)
+                    font.pixelSize: fpx(13)
                     anchors {
                         right: parent.right; rightMargin: vpx(12)
                         verticalCenter: parent.verticalCenter
@@ -277,7 +277,7 @@ id: root
                                 text: modelData
                                 color: theme.text
                                 font.family: subtitleFont.name
-                                font.pixelSize: vpx(16)
+                                font.pixelSize: fpx(16)
                                 font.bold: modelData === searchMode
                                 anchors.centerIn: parent
                             }
@@ -373,7 +373,7 @@ id: root
                                     
                     color: theme.text
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(18)
+                    font.pixelSize: fpx(18)
                     anchors.centerIn: parent
                     elide: Text.ElideRight
                 }
@@ -410,7 +410,7 @@ id: root
                                     
                     color: theme.text
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(18)
+                    font.pixelSize: fpx(18)
                     anchors.centerIn: parent
                     elide: Text.ElideRight
                 }
@@ -448,7 +448,7 @@ id: root
                                     
                     color: theme.text
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(18)
+                    font.pixelSize: fpx(18)
                     anchors.centerIn: parent
                     elide: Text.ElideRight
                 }
@@ -583,7 +583,7 @@ id: root
             color: theme.text
             opacity: 0.7
             font.family: subtitleFont.name
-            font.pixelSize: vpx(18)
+            font.pixelSize: fpx(18)
             font.bold: true
             visible: settings.GameCounter !== "No"
         }

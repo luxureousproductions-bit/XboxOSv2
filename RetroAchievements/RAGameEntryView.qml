@@ -160,14 +160,14 @@ id: root
                     text: cheevosData.raUserName
                     color: theme.text
                     font.family: titleFont.name
-                    font.pixelSize: vpx(24)
+                    font.pixelSize: fpx(24)
                     font.bold: true
                 }
                 Text {
                     text: cheevosData.pointsText
                     color: theme.text
                     font.family: bodyFont.name
-                    font.pixelSize: vpx(15)
+                    font.pixelSize: fpx(15)
                     opacity: 0.65
                     visible: cheevosData.raUserName !== ""
                 }
@@ -175,7 +175,7 @@ id: root
                     text: cheevosData.memberText
                     color: theme.text
                     font.family: bodyFont.name
-                    font.pixelSize: vpx(13)
+                    font.pixelSize: fpx(13)
                     opacity: 0.45
                     visible: cheevosData.memberText !== ""
                 }
@@ -214,7 +214,7 @@ id: root
                 text:  currentGame ? currentGame.title : ""
                 color: theme.text
                 font.family:    subtitleFont.name
-                font.pixelSize: vpx(22)
+                font.pixelSize: fpx(22)
                 font.bold: true
                 opacity: 0.9
             }
@@ -223,7 +223,7 @@ id: root
                 text:  currentGame ? currentGame.collections.get(0).shortName : ""
                 color: theme.text
                 font.family:    bodyFont.name
-                font.pixelSize: vpx(14)
+                font.pixelSize: fpx(14)
                 opacity: 0.5
             }
         }
@@ -240,7 +240,7 @@ id: root
             text:  "Checking Retro Achievements..."
             color: theme.text
             font.family:    bodyFont.name
-            font.pixelSize: vpx(18)
+            font.pixelSize: fpx(18)
             opacity: 0.6
 
             SequentialAnimation on opacity {
@@ -269,7 +269,7 @@ id: root
                       : "No Retro Achievements available for this game"
                 color: theme.text
                 font.family:    bodyFont.name
-                font.pixelSize: vpx(18)
+                font.pixelSize: fpx(18)
                 opacity: 0.6
                 horizontalAlignment: Text.AlignHCenter
                 wrapMode: Text.WordWrap
@@ -304,7 +304,7 @@ id: root
                         text:  "View Overview"
                         color: theme.text
                         font.family:    subtitleFont.name
-                        font.pixelSize: vpx(16)
+                        font.pixelSize: fpx(16)
                         font.bold: true
                     }
 
@@ -335,7 +335,7 @@ id: root
                         text:  "Go Back"
                         color: theme.text
                         font.family:    subtitleFont.name
-                        font.pixelSize: vpx(16)
+                        font.pixelSize: fpx(16)
                         font.bold: true
                     }
 

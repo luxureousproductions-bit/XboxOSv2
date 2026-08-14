@@ -147,7 +147,7 @@ id: root
         Text {
             text: "Back"
             font.family: subtitleFont.name
-            font.pixelSize: vpx(16)
+            font.pixelSize: fpx(16)
             color: theme.text
             anchors.verticalCenter: parent.verticalCenter
         }

@@ -126,7 +126,7 @@ id: root
         source: tileHaloSrc
         color: theme.accent
         z: -1
-        opacity: (gameData && gameData.favorite && !selected) ? 0.35 : 0
+        opacity: (gameData && gameData.favorite && !selected && settings.FavoritedTileAccent !== "No") ? 0.35 : 0
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
     }
@@ -146,7 +146,7 @@ id: root
             maskSource: Rectangle {
                 width: container.width
                 height: container.height
-                radius: vpx(6)
+                radius: vpx(12)
             }
         }
 
@@ -171,7 +171,7 @@ id: root
                 id: nameBarText
                 text: modelData ? modelData.title : ""
                 color: "white"; font.family: subtitleFont.name
-                font.pixelSize: Math.max(vpx(13), container.height * 0.05, container.width * 0.05); font.bold: true
+                font.pixelSize: Math.max(fpx(13), container.height * 0.05, container.width * 0.05); font.bold: true
                 wrapMode: Text.WordWrap
                 maximumLineCount: 2
                 elide: Text.ElideRight
@@ -260,11 +260,11 @@ id: root
     Rectangle {
         id: favBorder
         anchors.fill: container
-        radius: vpx(6)
+        radius: vpx(12)
         color: "transparent"
         border.width: vpx(2)
         border.color: theme.accent
-        visible: gameData && gameData.favorite
+        visible: gameData && gameData.favorite && settings.FavoritedTileAccent !== "No"
     }
 
     Loader {
@@ -315,7 +315,7 @@ id: root
         color: "white"
         scale: selected ? 1.1 : 1
         Behavior on opacity { NumberAnimation { duration: 100 } }
-        font.pixelSize: vpx(18)
+        font.pixelSize: fpx(18)
         font.family: subtitleFont.name
         font.bold: true
         style: Text.Outline; styleColor: theme.main

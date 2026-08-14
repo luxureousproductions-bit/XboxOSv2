@@ -33,8 +33,8 @@ id: root
             Text { 
                 text: name
                 font.family: subtitleFont.name
-                font.pixelSize: vpx(16)
-                color: theme.text
+                font.pixelSize: fpx(16)
+                color: (root.state === "settingsscreen") ? "#ebebeb" : theme.text
                 height: parent.height
                 verticalAlignment: Text.AlignVCenter
             }

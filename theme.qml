@@ -64,6 +64,11 @@ id: root
             ShowScanlines:                 api.memory.has("Show scanlines") ? api.memory.get("Show scanlines") : "Yes",
             DetailsDefault:                api.memory.has("Default to full details") ? api.memory.get("Default to full details") : "No",
             LaunchScreenDelay:             api.memory.has("Launch screen delay") ? api.memory.get("Launch screen delay") : "0.6",
+            FeaturedBox:                   api.memory.has("Featured Box") ? api.memory.get("Featured Box") : "Yes",
+            FeaturedBoxCollection:         api.memory.has("Pins to collection") ? api.memory.get("Pins to collection") : "1",
+            UiScale:                       api.memory.has("UI Scale") ? api.memory.get("UI Scale") : "1.0",
+            FavoritedTileAccent:           api.memory.has("Favorited Tile Accent") ? api.memory.get("Favorited Tile Accent") : "Yes",
+            FeaturedBoxContent:            api.memory.has("Featured Box Content") ? api.memory.get("Featured Box Content") : "Favorites",
             ShowcaseBackgroundArt:          api.memory.has("Showcase Background Art") ? api.memory.get("Showcase Background Art") : "Yes",
             RandomizeSystemTileFanart:      api.memory.has("Randomize System Tile Fanart") ? api.memory.get("Randomize System Tile Fanart") : "No",
             CustomBackground:               api.memory.has("Custom Background") ? api.memory.get("Custom Background") : "No",
@@ -306,6 +311,18 @@ id: root
         launchGameScreen();
         saveCurrentState(launchingGame);
         launchDelay.restart();          // hold the splash, then launch (see launchDelay)
+    }
+
+    // Launch from the RetroAchievements pages. Identical to launchGame() except
+    // the return target is rewritten to the Showcase: coming back into a
+    // stale achievements page (possibly for a game reached via search) isn't
+    // useful. lastState must be replaced BEFORE saveCurrentState() serializes it.
+    function launchGameFromRA(game) {
+        launchingGame = (game !== null) ? game : currentGame;
+        launchGameScreen();             // pushes the RA screen onto lastState
+        lastState = ["showcasescreen"];  // ...replaced: return to the Showcase
+        saveCurrentState(launchingGame);
+        launchDelay.restart();
     }
 
     // Save current states for returning from game
@@ -623,6 +640,14 @@ id: root
                                            && settings.CustomBackground === "No"
 
     property real globalMargin: vpx(30)
+
+    // ── UI text scaling ──────────────────────────────────────────────────
+    // vpx() is Pegasus's resolution scaler. fpx() layers the user's "UI Scale"
+    // setting on top and is used for FONT SIZES ONLY — tiles, margins and
+    // icons stay on vpx() so layouts tuned at 1.0 can't overflow. Resolves by
+    // bare name in child screens and Global/ components, exactly like vpx().
+    property real uiScale: parseFloat(settings.UiScale) || 1.0
+    function fpx(n) { return vpx(n) * uiScale; }
     property real helpMargin: buttonbar.height
     property int transitionTime: 100
 
@@ -760,6 +785,16 @@ id: root
 
     function raEntryScreen() {
         lastState.push(state);
+        root.state = "raentryscreen";
+    }
+
+    // RA entry from the achievements search overlay. Deliberately does NOT
+    // push onto lastState: we're already on the RA overview, and B from the
+    // achievements page calls achievementsScreenFromGame() to return there
+    // directly. Pushing left a stale "achievementsscreen" on the stack, so the
+    // next B popped back onto the page you were already on and appeared to do
+    // nothing until a third press.
+    function raEntryScreenFromSearch() {
         root.state = "raentryscreen";
     }
 
@@ -930,6 +965,10 @@ id: root
     Loader  {
     id: launchgameloader
 
+        // Declared before the RA loaders, so it needs an explicit z to sit on
+        // top of them — otherwise launching from the achievements page shows
+        // the RA page for the whole splash delay instead of the launch screen.
+        z: 100
         focus: (root.state === "launchgamescreen")
         active: opacity !== 0
         opacity: focus ? 1 : 0

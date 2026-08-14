@@ -128,7 +128,7 @@ id: root
         source: tileHaloSrc
         color: theme.accent
         z: -1
-        opacity: (gameData && gameData.favorite && !selected) ? 0.35 : 0
+        opacity: (gameData && gameData.favorite && !selected && settings.FavoritedTileAccent !== "No") ? 0.35 : 0
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
     }
@@ -169,8 +169,12 @@ id: root
             }
             width: vpx(20)
             height: width
-            visible: gameData && gameData.favorite
+            opacity: (gameData && gameData.favorite) ? 1 : 0
+            visible: opacity > 0
+            scale: (gameData && gameData.favorite) ? 1 : 0.4
             z: 5
+            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+            Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutBack; easing.overshoot: 3 } }
             Image {
                 source: "../assets/images/favicon.svg"
                 asynchronous: true
@@ -212,7 +216,7 @@ id: root
         color: "transparent"
         border.width: vpx(2)
         border.color: theme.accent
-        visible: gameData && gameData.favorite
+        visible: gameData && gameData.favorite && settings.FavoritedTileAccent !== "No"
     }
 
     Loader {
@@ -260,7 +264,7 @@ id: root
         color: "white"
         scale: selected ? 1.1 : 1
         Behavior on opacity { NumberAnimation { duration: 100 } }
-        font.pixelSize: vpx(18)
+        font.pixelSize: fpx(18)
         font.family: subtitleFont.name
         font.bold: true
         style: Text.Outline; styleColor: theme.main
