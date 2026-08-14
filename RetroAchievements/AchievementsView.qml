@@ -560,13 +560,16 @@ id: root
             results = [];
             totalMatches = 0;
             resultList.currentIndex = 0;
-            kb.open("");        // clears the keyboard and returns it to A-row/first key
+            kb.page = 0;        // back to the letters page
+            kb.row = 0;
+            kb.col = 0;
         }
 
         function openSearch() {
             buildSearchIndex();
             open = true;
-            resetSearch();      // also opens/clears the keyboard, which takes focus
+            resetSearch();
+            forceActiveFocus();
         }
         function closeSearch() {
             open = false;
@@ -826,15 +829,22 @@ id: root
         VirtualKeyboard {
         id: kb
 
-            anchors.fill: parent
+            // Component sizes itself; anchor it bottom-centre like the Xbox
+            // keyboard rather than filling the overlay.
+            anchors {
+                horizontalCenter: parent.horizontalCenter
+                bottom: parent.bottom
+                bottomMargin: vpx(70)
+            }
             visible: !searchOverlay.showingResults
             focus: !searchOverlay.showingResults
             title: "Search Library"
-            isOpen: true
+            text: searchOverlay.query
 
-            onTextEdited: searchOverlay.query = kb.text
-            onAccepted:   searchOverlay.commitSearch()
-            onCancelled:  searchOverlay.closeSearch()
+            // textEdited carries the new string — the overlay owns `query`.
+            onTextEdited:  searchOverlay.query = newText
+            onAccepted:    searchOverlay.commitSearch()
+            onCancelled:   searchOverlay.closeSearch()
         }
 
         // Results-page help prompts. The keyboard draws its own while typing.
