@@ -561,8 +561,10 @@ id: root
             totalMatches = 0;
             resultList.currentIndex = 0;
             kb.page = 0;        // back to the letters page
-            kb.row = 0;
+            kb.row = 1;         // home on 'q', as the Xbox keyboard does
             kb.col = 0;
+            kb.caret = 0;
+            kb.shifted = false;
         }
 
         function openSearch() {
@@ -690,6 +692,22 @@ id: root
                 color: searchOverlay.query === "" ? Qt.rgba(1, 1, 1, 0.4) : "white"
                 font.family: subtitleFont.name
                 font.pixelSize: fpx(20)
+            }
+            // Caret — the keyboard owns the insertion point, so LB/RB movement
+            // shows up here. TextMetrics is not an Item, hence the id refs.
+            TextMetrics {
+                id: queryCaretMetrics
+                font.family: subtitleFont.name
+                font.pixelSize: fpx(20)
+                text: searchOverlay.query.slice(0, kb.caret)
+            }
+            Rectangle {
+                width: vpx(2)
+                height: queryBox.height * 0.55
+                color: theme.accent
+                anchors.verticalCenter: parent.verticalCenter
+                x: vpx(10) + Math.min(queryBox.width - vpx(20), queryCaretMetrics.width)
+                visible: searchOverlay.query !== "" && !searchOverlay.showingResults
             }
         }
 
@@ -838,7 +856,10 @@ id: root
             }
             visible: !searchOverlay.showingResults
             focus: !searchOverlay.showingResults
-            title: "Search Library"
+            // The overlay already draws SEARCH LIBRARY + the query box above,
+            // so the keyboard must not draw its own or they appear twice.
+            title: ""
+            showTextField: false
             text: searchOverlay.query
 
             // textEdited carries the new string — the overlay owns `query`.
