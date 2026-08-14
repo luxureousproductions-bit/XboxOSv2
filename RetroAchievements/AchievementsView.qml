@@ -560,15 +560,13 @@ id: root
             results = [];
             totalMatches = 0;
             resultList.currentIndex = 0;
-            keyRow.row = 0;
-            keyRow.col = 0;
+            kb.open("");        // clears the keyboard and returns it to A-row/first key
         }
 
         function openSearch() {
             buildSearchIndex();
-            resetSearch();
             open = true;
-            forceActiveFocus();
+            resetSearch();      // also opens/clears the keyboard, which takes focus
         }
         function closeSearch() {
             open = false;
@@ -822,142 +820,31 @@ id: root
 
         // On-screen keyboard — controller-first, same idea as the All Games
         // filter panel: a grid of keys navigated with the d-pad.
-        // Accent frame around the keyboard — same treatment as the theme's
-        // other on-screen keyboards.
-        Rectangle {
-            anchors.fill: keyRow
-            anchors.margins: -vpx(12)
-            visible: keyRow.visible
-            color: Qt.rgba(0, 0, 0, 0.35)
-            radius: vpx(10)
-            border.color: theme.accent
-            border.width: vpx(3)
-            antialiasing: true
-        }
+        // ── Keyboard: shared component ───────────────────────────────────
+        // Replaces the old inline key grid. The overlay still owns `query`;
+        // the keyboard edits a copy and reports back via onTextEdited.
+        VirtualKeyboard {
+        id: kb
 
-        Column {
-        id: keyRow
-
+            anchors.fill: parent
             visible: !searchOverlay.showingResults
-            // Row index == rows.length addresses the SEARCH key below the grid.
-            readonly property int searchRow: rows.length
-            property int row: 0
-            property int col: 0
-            // Three pages. Arrays (not strings) so multi-character keys like
-            // SPACE and the page switches can share the grid.
-            property int page: 0        // 0 letters, 1 symbols, 2 accents
-            readonly property var pages: [
-                [ ["A","B","C","D","E","F","G","H","I","J"],
-                  ["K","L","M","N","O","P","Q","R","S","T"],
-                  ["U","V","W","X","Y","Z","0","1","2","3"],
-                  ["4","5","6","7","8","9","SPACE","DEL","&12","áé"] ],
+            focus: !searchOverlay.showingResults
+            title: "Search Library"
+            isOpen: true
 
-                [ ["!","?",".",",",":",";","'","\"","-","_"],
-                  ["(",")","[","]","{","}","<",">","/","\\"],
-                  ["@","#","$","%","&","*","+","=","~","|"],
-                  ["^","`","°","·","¡","¿","SPACE","DEL","ABC","áé"] ],
-
-                [ ["À","Á","Â","Ã","Ä","Å","Æ","Ç","È","É"],
-                  ["Ê","Ë","Ì","Í","Î","Ï","Ñ","Ò","Ó","Ô"],
-                  ["Õ","Ö","Ø","Ù","Ú","Û","Ü","Ý","ß","Œ"],
-                  ["á","é","í","ó","ú","ñ","SPACE","DEL","ABC","&12"] ]
-            ]
-            readonly property var rows: pages[page]
-
-            // Type a key, or act on it when it's a command.
-            function press(k) {
-                if (k === "ABC")   { page = 0; clampCol(); return; }
-                if (k === "&12")   { page = 1; clampCol(); return; }
-                if (k === "áé")    { page = 2; clampCol(); return; }
-                if (k === "SPACE") { searchOverlay.query += " "; return; }
-                if (k === "DEL")   { searchOverlay.query = searchOverlay.query.slice(0, -1); return; }
-                searchOverlay.query += k;
-            }
-            // Keep the cursor inside the row after a page switch.
-            function clampCol() {
-                var len = rows[row].length;
-                if (col > len - 1) col = len - 1;
-            }
-
-            anchors {
-                top: resultList.bottom; topMargin: vpx(16)
-                horizontalCenter: parent.horizontalCenter
-            }
-            spacing: vpx(6)
-
-            Repeater {
-                model: keyRow.rows.length
-                Row {
-                    property int rowIndex: index
-                    spacing: vpx(6)
-                    Repeater {
-                        model: keyRow.rows[rowIndex].length
-                        Rectangle {
-                            property string key: keyRow.rows[rowIndex][index]
-                            property bool isCmd: key.length > 1
-                            width: vpx(42); height: vpx(38)
-                            color: (keyRow.row === rowIndex && keyRow.col === index)
-                                   ? theme.accent : Qt.rgba(1, 1, 1, 0.08)
-                            Text {
-                                anchors.centerIn: parent
-                                text: key === "SPACE" ? "\u2423"
-                                      : (key === "DEL" ? "\u232B" : key)
-                                color: "white"
-                                font.family: subtitleFont.name
-                                // Page-switch labels are 3 chars wide, so drop
-                                // their size to fit the same key cell.
-                                font.pixelSize: (isCmd && key !== "SPACE" && key !== "DEL") ? fpx(13) : fpx(19)
-                                font.bold: true
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                onClicked: {
-                                    keyRow.row = rowIndex; keyRow.col = index;
-                                    keyRow.press(key);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // SEARCH key — full-width row beneath the grid. Y does the same
-            // thing; this just makes it discoverable and touch-friendly.
-            Rectangle {
-                width: (vpx(42) * 10) + (vpx(6) * 9)     // spans the grid exactly
-                height: vpx(38)
-                color: (keyRow.row === keyRow.searchRow) ? theme.accent : Qt.rgba(1, 1, 1, 0.08)
-                border.color: theme.accent
-                border.width: (keyRow.row === keyRow.searchRow) ? 0 : vpx(2)
-                Text {
-                    anchors.centerIn: parent
-                    text: "SEARCH"
-                    color: "white"
-                    font.family: subtitleFont.name
-                    font.pixelSize: fpx(19)
-                    font.bold: true
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: { keyRow.row = keyRow.searchRow; searchOverlay.commitSearch(); }
-                }
-            }
+            onTextEdited: searchOverlay.query = kb.text
+            onAccepted:   searchOverlay.commitSearch()
+            onCancelled:  searchOverlay.closeSearch()
         }
 
-        // Local help bar for the overlay
+        // Results-page help prompts. The keyboard draws its own while typing.
         Row {
+            visible: searchOverlay.showingResults
             anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: vpx(12) }
             spacing: vpx(20)
             Repeater {
-                // Three prompt sets: Results Page list, Results Page keyboard,
-                // and Instant. Keeps the hints honest per mode.
-                model: searchOverlay.showingResults
-                       ? [ { n: "Open",   b: "accept" },
-                           { n: "Back",   b: "cancel" } ]
-                       : [ { n: "Type",   b: "accept"  },
-                           { n: "Search", b: "filters" },
-                           { n: "Delete", b: "details" },
-                           { n: "Close",  b: "cancel"  } ]
+                model: [ { n: "Open", b: "accept" },
+                         { n: "Back", b: "cancel" } ]
                 delegate: Row {
                     spacing: vpx(8)
                     Image {
@@ -978,88 +865,28 @@ id: root
             }
         }
 
-
-        // On the Results Page the d-pad drives the list; otherwise the keyboard.
+        // Results list navigation. While typing, the keyboard has focus and
+        // handles its own input, so these only run on the results page.
         Keys.onUpPressed: {
             event.accepted = true;
-            if (showingResults) {
-                if (resultList.currentIndex > 0) resultList.currentIndex--;
-                return;
-            }
-            if (keyRow.row > 0) keyRow.row--;
+            if (showingResults && resultList.currentIndex > 0) resultList.currentIndex--;
         }
         Keys.onDownPressed: {
             event.accepted = true;
-            if (showingResults) {
-                if (resultList.currentIndex < results.length - 1) resultList.currentIndex++;
-                return;
-            }
-            if (keyRow.row < keyRow.searchRow) keyRow.row++;
-        }
-        Keys.onLeftPressed: {
-            event.accepted = true;
-            if (showingResults) return;
-            if (keyRow.row === keyRow.searchRow) return;      // single full-width key
-            if (keyRow.col > 0) keyRow.col--;
-        }
-        Keys.onRightPressed: {
-            event.accepted = true;
-            if (showingResults) return;
-            if (keyRow.row === keyRow.searchRow) return;      // single full-width key
-            if (keyRow.col < keyRow.rows[keyRow.row].length - 1) keyRow.col++;
+            if (showingResults && resultList.currentIndex < results.length - 1) resultList.currentIndex++;
         }
         Keys.onPressed: {
             if (event.isAutoRepeat) return;
-
-            // ── Results Page: the list has its own, simpler mapping ──
-            if (showingResults) {
-                if (api.keys.isAccept(event)) {            // open highlighted game
-                    event.accepted = true;
-                    searchOverlay.chooseResult();
-                    return;
-                }
-                if (api.keys.isCancel(event)) {            // back to a blank keyboard
-                    event.accepted = true;
-                    searchOverlay.resetSearch();
-                    return;
-                }
+            if (!showingResults) return;
+            if (api.keys.isAccept(event)) {            // open highlighted game
+                event.accepted = true;
+                searchOverlay.chooseResult();
                 return;
             }
-
-            // A — type the highlighted character
-            if (api.keys.isAccept(event)) {
+            if (api.keys.isCancel(event)) {            // back to a blank keyboard
                 event.accepted = true;
-                if (keyRow.row === keyRow.searchRow) searchOverlay.commitSearch();
-                else keyRow.press(keyRow.rows[keyRow.row][keyRow.col]);
+                searchOverlay.resetSearch();
                 return;
-            }
-            // Y — run the search (same as the on-screen SEARCH key)
-            if (api.keys.isFilters(event)) {
-                event.accepted = true;
-                searchOverlay.commitSearch();
-                return;
-            }
-            // X — backspace
-            if (api.keys.isDetails(event)) {
-                event.accepted = true;
-                searchOverlay.query = searchOverlay.query.slice(0, -1);
-                return;
-            }
-            // LB / RB — move through the results without leaving the keyboard
-            if (api.keys.isPrevPage(event)) {
-                event.accepted = true;
-                if (resultList.currentIndex > 0) resultList.currentIndex--;
-                return;
-            }
-            if (api.keys.isNextPage(event)) {
-                event.accepted = true;
-                if (resultList.currentIndex < searchOverlay.results.length - 1) resultList.currentIndex++;
-                return;
-            }
-            // B — close
-            if (api.keys.isCancel(event)) {
-                event.accepted = true;
-                searchOverlay.closeSearch();
             }
         }
     }
