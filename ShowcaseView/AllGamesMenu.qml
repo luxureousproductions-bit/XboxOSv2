@@ -641,10 +641,10 @@ id: root
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                         text: "Publisher: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
-                    Text {
+                    ScrollingText {
                         anchors { left: agPubLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: currentGame && currentGame.publisher ? currentGame.publisher : "—"
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
                     }
                 }
                 Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
@@ -654,10 +654,10 @@ id: root
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                         text: "Developer: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
-                    Text {
+                    ScrollingText {
                         anchors { left: agDevLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: currentGame && currentGame.developer ? currentGame.developer : "—"
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
                     }
                 }
                 Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
@@ -667,10 +667,10 @@ id: root
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                         text: "Players: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
-                    Text {
+                    ScrollingText {
                         anchors { left: agPlayersLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: currentGame && currentGame.players > 0 ? currentGame.players : "—"
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
                     }
                 }
             }
@@ -687,10 +687,10 @@ id: root
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                         text: "Genre: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
-                    Text {
+                    ScrollingText {
                         anchors { left: agGenreLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: currentGame && currentGame.genre ? currentGame.genre : "—"
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
                     }
                 }
                 Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
@@ -700,10 +700,10 @@ id: root
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                         text: "Released: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
-                    Text {
+                    ScrollingText {
                         anchors { left: agRelLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: fmtReleaseDate(currentGame)
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
                     }
                 }
                 Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
@@ -713,10 +713,10 @@ id: root
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                         text: "Rating: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
-                    Text {
+                    ScrollingText {
                         anchors { left: agRatingLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: currentGame && currentGame.rating > 0 ? (currentGame.rating * 10).toFixed(1) : "—"
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
                     }
                 }
             }
@@ -733,10 +733,10 @@ id: root
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                         text: "Last Played: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
-                    Text {
+                    ScrollingText {
                         anchors { left: agLastLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: fmtLastPlayed(currentGame)
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
                     }
                 }
             }
