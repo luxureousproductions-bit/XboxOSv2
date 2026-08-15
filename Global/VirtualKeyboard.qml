@@ -203,6 +203,14 @@ id: root
     readonly property color badgeBlue: "#3D9BD5"
     readonly property color badgeAmber: "#E8A317"
 
+    // ── Drawn glyphs ──────────────────────────────────────────────────────
+    // The chevrons, arrows, space mark and button badges are SVG assets in
+    // assets/images/ rather than font characters or Canvas drawings. Font
+    // characters for these come out short, thick and baseline-aligned (and
+    // U+232B is missing outright, which is why backspace showed as a blank),
+    // while Canvas items were not rendering here at all. Image + SVG renders
+    // reliably and scales cleanly with UI Scale.
+
     Column {
     id: layout
 
@@ -293,16 +301,20 @@ id: root
                             font.pixelSize: fpx(17)
                             font.bold: true
                         }
-                        // LT trigger badge
-                        Rectangle {
+                        // LT — the trigger silhouette: straight top edge, a
+                        // shoulder bulging right, and an S-curved left side.
+                        Item {
                             anchors.verticalCenter: parent.verticalCenter
-                            width: vpx(21); height: vpx(16)
-                            radius: vpx(5)
-                            color: "transparent"
-                            border.color: root.badgeGrey
-                            border.width: vpx(1.5)
+                            width: vpx(20); height: vpx(22)
+                            Image {
+                                anchors.fill: parent
+                                source: "../assets/images/kb_badge_lt.svg"
+                                sourceSize { width: Math.round(parent.width * 2); height: Math.round(parent.height * 2) }
+                                fillMode: Image.PreserveAspectFit
+                                smooth: true
+                            }
                             Text {
-                                anchors.centerIn: parent
+                                anchors { centerIn: parent; horizontalCenterOffset: vpx(1) }
                                 text: "LT"
                                 color: root.badgeGrey
                                 font.family: subtitleFont.name
@@ -327,20 +339,28 @@ id: root
                     Column {
                         anchors.centerIn: parent
                         spacing: vpx(6)
-                        Text {
+                        // Chevron drawn rather than typed: the guillemet glyph
+                        // is short, thick and centred on the text baseline,
+                        // where the Xbox mark is a tall thin stroke with a
+                        // sharp mitred point.
+                        Image {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            text: "\u2039"
-                            color: "white"
-                            font.family: subtitleFont.name
-                            font.pixelSize: fpx(34)
+                            width: vpx(18); height: vpx(32)
+                            source: "../assets/images/kb_chev_left.svg"
+                            sourceSize { width: Math.round(vpx(18) * 2); height: Math.round(vpx(32) * 2) }
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
                         }
-                        Rectangle {
+                        Item {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            width: vpx(24); height: vpx(15)
-                            radius: vpx(7)
-                            color: "transparent"
-                            border.color: root.badgeGrey
-                            border.width: vpx(1.5)
+                            width: vpx(27); height: vpx(19)
+                            Image {
+                                anchors.fill: parent
+                                source: "../assets/images/kb_badge_bumper.svg"
+                                sourceSize { width: Math.round(parent.width * 2); height: Math.round(parent.height * 2) }
+                                fillMode: Image.PreserveAspectFit
+                                smooth: true
+                            }
                             Text {
                                 anchors.centerIn: parent
                                 text: "LB"
@@ -365,13 +385,34 @@ id: root
                            : (root.shifted ? Qt.rgba(1, 1, 1, 0.26) : root.keyFill)
                     border.color: theme.accent
                     border.width: root.selSide(true, 2) ? vpx(3) : 0
-                    Text {
+                    Column {
                         anchors.centerIn: parent
-                        text: "\u2191"
-                        color: root.shifted ? theme.accent : "white"
-                        font.family: subtitleFont.name
-                        font.pixelSize: fpx(30)
-                        font.bold: true
+                        spacing: vpx(4)
+                        // Open-headed arrow, drawn so the head is two straight
+                        // strokes meeting in a point — font arrows have a
+                        // solid triangular head and a much shorter stem.
+                        Image {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: vpx(24); height: vpx(30)
+                            source: "../assets/images/kb_shift.svg"
+                            sourceSize { width: Math.round(vpx(24) * 2); height: Math.round(vpx(30) * 2) }
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                            // Shift state reads from the key's own fill tint
+                            // above, so the asset stays a single white glyph.
+                            opacity: root.shifted ? 1.0 : 0.85
+                        }
+                        // L3 — the stick plate seen head-on with its two legs
+                        // and a small down-facing triangle above (press the
+                        // stick), as drawn on the Xbox keyboard.
+                        Image {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: vpx(22); height: vpx(24)
+                            source: "../assets/images/kb_badge_l3.svg"
+                            sourceSize { width: Math.round(vpx(22) * 2); height: Math.round(vpx(24) * 2) }
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                        }
                     }
                     MouseArea {
                         anchors.fill: parent
@@ -427,12 +468,16 @@ id: root
                     Row {
                         anchors.centerIn: parent
                         spacing: vpx(10)
-                        Text {
+                        // Wide bottom bracket. U+2423 draws a full open box in
+                        // most fonts, which is taller and boxier than the mark
+                        // on the Xbox spacebar.
+                        Image {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "\u2423"
-                            color: "white"
-                            font.family: subtitleFont.name
-                            font.pixelSize: fpx(20)
+                            width: vpx(32); height: vpx(9)
+                            source: "../assets/images/kb_space.svg"
+                            sourceSize { width: Math.round(vpx(32) * 2); height: Math.round(vpx(9) * 2) }
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
                         }
                         // Y face-button badge
                         Rectangle {
@@ -474,12 +519,16 @@ id: root
                     Row {
                         anchors.centerIn: parent
                         spacing: vpx(8)
-                        Text {
+                        // Backspace: pointed pentagon with an X inside. This is
+                        // the glyph that was coming out blank — the font has no
+                        // U+232B, and the Canvas fallback never painted.
+                        Image {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "\u232B"
-                            color: "white"
-                            font.family: subtitleFont.name
-                            font.pixelSize: fpx(20)
+                            width: vpx(26); height: vpx(20)
+                            source: "../assets/images/kb_backspace.svg"
+                            sourceSize { width: Math.round(vpx(26) * 2); height: Math.round(vpx(20) * 2) }
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
                         }
                         Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
@@ -514,20 +563,24 @@ id: root
                     Column {
                         anchors.centerIn: parent
                         spacing: vpx(6)
-                        Text {
+                        Image {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            text: "\u203A"
-                            color: "white"
-                            font.family: subtitleFont.name
-                            font.pixelSize: fpx(34)
+                            width: vpx(18); height: vpx(32)
+                            source: "../assets/images/kb_chev_right.svg"
+                            sourceSize { width: Math.round(vpx(18) * 2); height: Math.round(vpx(32) * 2) }
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
                         }
-                        Rectangle {
+                        Item {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            width: vpx(24); height: vpx(15)
-                            radius: vpx(7)
-                            color: "transparent"
-                            border.color: root.badgeGrey
-                            border.width: vpx(1.5)
+                            width: vpx(27); height: vpx(19)
+                            Image {
+                                anchors.fill: parent
+                                source: "../assets/images/kb_badge_bumper.svg"
+                                sourceSize { width: Math.round(parent.width * 2); height: Math.round(parent.height * 2) }
+                                fillMode: Image.PreserveAspectFit
+                                smooth: true
+                            }
                             Text {
                                 anchors.centerIn: parent
                                 text: "RB"
@@ -554,12 +607,13 @@ id: root
                     Column {
                         anchors.centerIn: parent
                         spacing: vpx(6)
-                        Text {
+                        Image {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            text: "\u2192"
-                            color: "white"
-                            font.family: subtitleFont.name
-                            font.pixelSize: fpx(28)
+                            width: vpx(32); height: vpx(26)
+                            source: "../assets/images/kb_enter.svg"
+                            sourceSize { width: Math.round(vpx(32) * 2); height: Math.round(vpx(26) * 2) }
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
                         }
                         // The reference puts a Menu badge here, but Pegasus has
                         // no Menu binding — so a badge is only drawn when Y is
@@ -580,6 +634,17 @@ id: root
                                 font.pixelSize: fpx(11)
                                 font.bold: true
                             }
+                        }
+
+                        // Start — three bars in a circle, with rounded bar ends
+                        // as on the Xbox keyboard.
+                        Image {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            width: vpx(20); height: vpx(20)
+                            source: "../assets/images/kb_badge_start.svg"
+                            sourceSize { width: Math.round(vpx(20) * 2); height: Math.round(vpx(20) * 2) }
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
                         }
                     }
                     MouseArea {
@@ -673,6 +738,20 @@ id: root
     Keys.onPressed: {
         if (event.isAutoRepeat) return;
 
+        // Raw-code buttons are checked FIRST so the event is marked accepted
+        // before anything upstream reacts — Start otherwise opens Pegasus's
+        // own menu while the keyboard is open.
+        if (startKeys.indexOf(event.key) !== -1) {       // Start — submit
+            event.accepted = true;
+            accepted();
+            return;
+        }
+        if (shiftKeys.indexOf(event.key) !== -1) {       // L3 — shift
+            event.accepted = true;
+            shifted = !shifted;
+            return;
+        }
+
         if (api.keys.isAccept(event)) {                  // A — press the key
             event.accepted = true;
             press(keyAt(row, col));
@@ -716,22 +795,24 @@ id: root
             press("CMD_PAGE");                          // cycle ABC -> #+= -> áé
             return;
         }
-        if (startKeys.indexOf(event.key) !== -1) {                      // Start
-            event.accepted = true;
-            accepted();
-            return;
-        }
-        if (shiftKeys.indexOf(event.key) !== -1) {                      // L3
-            event.accepted = true;
-            shifted = !shifted;
-            return;
-        }
+        // Nothing matched. Start and the stick clicks aren't exposed by
+        // api.keys, so their raw codes have to be discovered per device —
+        // press the button and read the code out of lastrun.log, then add it
+        // to startKeys / shiftKeys above.
+        if (logUnhandledKeys)
+            console.log("[VirtualKeyboard] unhandled key code:", event.key);
     }
+
+    // Flip to false once the codes are filled in.
+    property bool logUnhandledKeys: false
 
     // Raw key codes, since api.keys has no predicate for these. Qt maps the
     // gamepad's Start to Return/Enter and the stick clicks into the gamepad
     // key range; extra codes are listed so a pad that reports differently
     // still works. Add to these arrays if a controller isn't picked up.
-    readonly property var startKeys: [ Qt.Key_Return, Qt.Key_Enter, Qt.Key_Menu, 0x01000053 ]
-    readonly property var shiftKeys: [ Qt.Key_Shift,  0x01000060, 0x01000061 ]
+    // Captured from the device log (Pegasus forwards gamepad buttons in the
+    // 0x100000-- range). Keyboard equivalents kept for desktop testing.
+    // Confirmed on device: 1048587 = Start, 1048582 = left stick click.
+    readonly property var startKeys: [ 1048587, Qt.Key_Return, Qt.Key_Enter ]   // Start -> submit
+    readonly property var shiftKeys: [ 1048582, Qt.Key_Shift ]                  // L3    -> shift
 }
