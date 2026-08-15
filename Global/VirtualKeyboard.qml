@@ -305,7 +305,7 @@ id: root
                         // shoulder bulging right, and an S-curved left side.
                         Item {
                             anchors.verticalCenter: parent.verticalCenter
-                            width: vpx(20); height: vpx(22)
+                            width: vpx(23); height: vpx(25)
                             Image {
                                 anchors.fill: parent
                                 source: "../assets/images/kb_badge_lt.svg"
@@ -353,7 +353,7 @@ id: root
                         }
                         Item {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            width: vpx(27); height: vpx(19)
+                            width: vpx(31); height: vpx(22)
                             Image {
                                 anchors.fill: parent
                                 source: "../assets/images/kb_badge_bumper.svg"
@@ -573,7 +573,7 @@ id: root
                         }
                         Item {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            width: vpx(27); height: vpx(19)
+                            width: vpx(31); height: vpx(22)
                             Image {
                                 anchors.fill: parent
                                 source: "../assets/images/kb_badge_bumper.svg"
