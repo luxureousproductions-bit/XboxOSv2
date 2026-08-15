@@ -396,15 +396,24 @@ id: root
         return api.collections.get(systemIndex).games.get(srcIdx);
     }
 
+    // Group key for letter jumping. Every non-alphabetic leading character
+    // (digits, brackets, symbols) collapses into a single "#" bucket, matching
+    // GridView — otherwise "1943" -> "2048" counted as a letter change and RT
+    // stepped through numbers one at a time instead of reaching A.
+    function letterGroup(title) {
+        var c = (title || "").charAt(0).toUpperCase();
+        return (c >= "A" && c <= "Z") ? c : "#";
+    }
+
     // Jump to the first game of the next / previous letter group
     function jumpToNextLetter() {
         if (gamelist.count === 0) return;
         var cur = gamelist.currentIndex;
         var curE = cur >= 0 ? displayModel.get(cur) : null;
-        var curLtr = curE ? (curE.title || "").charAt(0).toUpperCase() : "";
+        var curLtr = curE ? letterGroup(curE.title) : "";
         for (var i = cur + 1; i < gamelist.count; i++) {
             var e = displayModel.get(i);
-            if (e && (e.title || "").charAt(0).toUpperCase() !== curLtr) { gamelist.currentIndex = i; return; }
+            if (e && letterGroup(e.title) !== curLtr) { gamelist.currentIndex = i; return; }
         }
         gamelist.currentIndex = 0;
     }
@@ -413,10 +422,10 @@ id: root
         var cur = gamelist.currentIndex;
         if (cur <= 0) { gamelist.currentIndex = gamelist.count - 1; return; }
         var prevE = displayModel.get(cur - 1);
-        var prevLtr = prevE ? (prevE.title || "").charAt(0).toUpperCase() : "";
+        var prevLtr = prevE ? letterGroup(prevE.title) : "";
         for (var i = cur - 2; i >= 0; i--) {
             var e = displayModel.get(i);
-            if (e && (e.title || "").charAt(0).toUpperCase() !== prevLtr) { gamelist.currentIndex = i + 1; return; }
+            if (e && letterGroup(e.title) !== prevLtr) { gamelist.currentIndex = i + 1; return; }
         }
         gamelist.currentIndex = 0;
     }
