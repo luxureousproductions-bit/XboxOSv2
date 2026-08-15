@@ -906,12 +906,61 @@ id: root
             event.accepted = true;
             if (showingResults && resultList.currentIndex < results.length - 1) resultList.currentIndex++;
         }
+        // ── Fast travel through a long result list ───────────────────────
+        // Left/Right page by 10; RT/LT jump to the next/previous letter group.
+        // Non-alphabetic titles all collapse into one "#" bucket so a run of
+        // numbered games is a single stop rather than one per digit.
+        function letterGroup(title) {
+            var c = (title || "").charAt(0).toUpperCase();
+            return (c >= "A" && c <= "Z") ? c : "#";
+        }
+        function jumpLetter(dir) {
+            var n = results.length;
+            if (n === 0) return;
+            var cur = resultList.currentIndex;
+            var curLtr = letterGroup(results[cur] ? results[cur].title : "");
+            if (dir > 0) {
+                for (var i = cur + 1; i < n; i++) {
+                    if (letterGroup(results[i].title) !== curLtr) { resultList.currentIndex = i; return; }
+                }
+                resultList.currentIndex = 0;                 // wrap to the top
+            } else {
+                if (cur <= 0) { resultList.currentIndex = n - 1; return; }
+                var prevLtr = letterGroup(results[cur - 1].title);
+                for (var j = cur - 2; j >= 0; j--) {
+                    if (letterGroup(results[j].title) !== prevLtr) { resultList.currentIndex = j + 1; return; }
+                }
+                resultList.currentIndex = 0;
+            }
+        }
+
+        Keys.onLeftPressed: {
+            event.accepted = true;
+            if (!showingResults) return;
+            resultList.currentIndex = Math.max(0, resultList.currentIndex - 10);
+        }
+        Keys.onRightPressed: {
+            event.accepted = true;
+            if (!showingResults) return;
+            resultList.currentIndex = Math.min(results.length - 1, resultList.currentIndex + 10);
+        }
+
         Keys.onPressed: {
             if (event.isAutoRepeat) return;
             if (!showingResults) return;
             if (api.keys.isAccept(event)) {            // open highlighted game
                 event.accepted = true;
                 searchOverlay.chooseResult();
+                return;
+            }
+            if (api.keys.isNextPage(event)) {          // RT — next letter
+                event.accepted = true;
+                searchOverlay.jumpLetter(1);
+                return;
+            }
+            if (api.keys.isPrevPage(event)) {          // LT — previous letter
+                event.accepted = true;
+                searchOverlay.jumpLetter(-1);
                 return;
             }
             if (api.keys.isCancel(event)) {            // back to a blank keyboard
