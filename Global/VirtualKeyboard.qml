@@ -147,16 +147,24 @@ id: root
     function selClip(c) { return row === clipRow && col === c; }
 
     // ── Editing ───────────────────────────────────────────────────────────
+    // Both of these compute the caret's ABSOLUTE target before emitting, then
+    // assign it afterwards. Relative moves (caret++ / caret--) were unsafe:
+    // textEdited updates the host, the host's binding writes `text` back, and
+    // onTextChanged clamps the caret to the new length — so a backspace
+    // clamped 5 -> 4 and then decremented again to 3, deleting one character
+    // too far left. Assigning an absolute value is immune to that clamp.
     function insert(str) {
         var t = root.text;
+        var target = caret + str.length;
         textEdited(t.slice(0, caret) + str + t.slice(caret));
-        caret += str.length;
+        caret = Math.min(target, root.text.length);
     }
     function backspace() {
         if (caret <= 0) return;
         var t = root.text;
+        var target = caret - 1;
         textEdited(t.slice(0, caret - 1) + t.slice(caret));
-        caret--;
+        caret = Math.max(0, Math.min(target, root.text.length));
     }
     function caretLeft()  { if (caret > 0) caret--; }
     function caretRight() { if (caret < root.text.length) caret++; }
