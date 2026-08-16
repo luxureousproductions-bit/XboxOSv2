@@ -197,8 +197,13 @@ id: root
     }
 
     // ── Styling ───────────────────────────────────────────────────────────
-    readonly property color keyFill: Qt.rgba(1, 1, 1, 0.09)
-    readonly property color keyFillSel: Qt.rgba(1, 1, 1, 0.18)
+    // Xbox keyboard palette: flat dark-grey keys, a lighter grey for the
+    // focused key, and a mid-grey for the surrounding command keys (shift,
+    // space, backspace, enter). Solid rather than translucent so the colour
+    // stays constant whatever screen the keyboard is opened over.
+    readonly property color keyFill:    "#2B2B2B"   // letter/number keys
+    readonly property color keyFillSel: "#6E6E6E"   // focused key
+    readonly property color keyFillCmd: "#3F3F3F"   // command keys around the letters
     readonly property color badgeGrey: Qt.rgba(1, 1, 1, 0.55)
     readonly property color badgeBlue: "#3D9BD5"
     readonly property color badgeAmber: "#E8A317"
@@ -241,7 +246,7 @@ id: root
                 height: vpx(46)
                 visible: root.showTextField
                 radius: vpx(4)
-                color: Qt.rgba(1, 1, 1, 0.10)
+                color: "#1C1C1C"
                 border.width: vpx(2)
                 border.color: theme.accent
 
@@ -287,7 +292,7 @@ id: root
                 Rectangle {
                     width: root.sideW; height: root.keyH
                     radius: vpx(6)
-                    color: root.selSide(true, 0) ? root.keyFillSel : root.keyFill
+                    color: root.selSide(true, 0) ? root.keyFillSel : root.keyFillCmd
                     border.color: theme.accent
                     border.width: root.selSide(true, 0) ? vpx(3) : 0
                     Row {
@@ -333,7 +338,7 @@ id: root
                 Rectangle {
                     width: root.sideW; height: (root.keyH * 2) + root.keyGap
                     radius: vpx(6)
-                    color: root.selSide(true, 1) ? root.keyFillSel : root.keyFill
+                    color: root.selSide(true, 1) ? root.keyFillSel : root.keyFillCmd
                     border.color: theme.accent
                     border.width: root.selSide(true, 1) ? vpx(3) : 0
                     Column {
@@ -382,7 +387,7 @@ id: root
                     width: root.sideW; height: (root.keyH * 2) + root.keyGap
                     radius: vpx(6)
                     color: root.selSide(true, 2) ? root.keyFillSel
-                           : (root.shifted ? Qt.rgba(1, 1, 1, 0.26) : root.keyFill)
+                           : (root.shifted ? "#5A5A5A" : root.keyFillCmd)
                     border.color: theme.accent
                     border.width: root.selSide(true, 2) ? vpx(3) : 0
                     Column {
@@ -462,7 +467,7 @@ id: root
                 Rectangle {
                     width: root.gridW; height: root.keyH
                     radius: vpx(6)
-                    color: root.selSpace() ? root.keyFillSel : root.keyFill
+                    color: root.selSpace() ? root.keyFillSel : root.keyFillCmd
                     border.color: theme.accent
                     border.width: root.selSpace() ? vpx(3) : 0
                     Row {
@@ -513,7 +518,7 @@ id: root
                 Rectangle {
                     width: root.sideW; height: root.keyH
                     radius: vpx(6)
-                    color: root.selSide(false, 0) ? root.keyFillSel : root.keyFill
+                    color: root.selSide(false, 0) ? root.keyFillSel : root.keyFillCmd
                     border.color: theme.accent
                     border.width: root.selSide(false, 0) ? vpx(3) : 0
                     Row {
@@ -557,7 +562,7 @@ id: root
                 Rectangle {
                     width: root.sideW; height: (root.keyH * 2) + root.keyGap
                     radius: vpx(6)
-                    color: root.selSide(false, 1) ? root.keyFillSel : root.keyFill
+                    color: root.selSide(false, 1) ? root.keyFillSel : root.keyFillCmd
                     border.color: theme.accent
                     border.width: root.selSide(false, 1) ? vpx(3) : 0
                     Column {
@@ -601,7 +606,7 @@ id: root
                 Rectangle {
                     width: root.sideW; height: (root.keyH * 2) + root.keyGap
                     radius: vpx(6)
-                    color: root.selSide(false, 2) ? root.keyFillSel : root.keyFill
+                    color: root.selSide(false, 2) ? root.keyFillSel : root.keyFillCmd
                     border.color: theme.accent
                     border.width: root.selSide(false, 2) ? vpx(3) : 0
                     Column {
@@ -669,7 +674,7 @@ id: root
                     width: (root.panelW - root.keyGap) / 2
                     height: vpx(34)
                     radius: vpx(6)
-                    color: root.selClip(modelData.c) ? root.keyFillSel : root.keyFill
+                    color: root.selClip(modelData.c) ? root.keyFillSel : root.keyFillCmd
                     border.color: theme.accent
                     border.width: root.selClip(modelData.c) ? vpx(3) : 0
                     Text {
