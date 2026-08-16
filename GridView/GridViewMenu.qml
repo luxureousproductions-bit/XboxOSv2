@@ -62,37 +62,16 @@ id: root
         { label: "Most Played", idx: 2 },
         { label: "Rating",      idx: 3 }
     ]
-    property bool kbSpecial: false
-    property var kbMain: [
-        "A","B","C","D","E","F","G","H","I","J",
-        "K","L","M","N","O","P","Q","R","S","T",
-        "U","V","W","X","Y","Z","-","'",".",":",
-        "0","1","2","3","4","5","6","7","8","9",
-        "áé","SPACE","DEL","CLR","OK"
-    ]
-    property var kbSpec: [
-        "À","Á","Â","Ã","Ä","Å","Æ","Ç","È","É",
-        "Ê","Ë","Ì","Í","Î","Ï","Ñ","Ò","Ó","Ô",
-        "Õ","Ö","Ø","Ù","Ú","Û","Ü","Ý","ß","°",
-        "&","!","?","@","#","%","+","=",",",";",
-        "ABC","SPACE","DEL","CLR","OK"
-    ]
-    property var keyboardKeys: kbSpecial ? kbSpec : kbMain
-    property int keyCols:  10
-    property int keyIndex: 0
-
-    function activateSearch() { searchMode = "Title"; keyIndex = 0; kbSpecial = false; searchActive = true; }
-    function pressKey(k) {
-        if (k === "áé")  { kbSpecial = true;  return; }
-        if (k === "ABC") { kbSpecial = false; return; }
-        if (k === "SPACE")    searchTerm += " ";
-        else if (k === "DEL") searchTerm = searchTerm.slice(0, -1);
-        else if (k === "CLR") searchTerm = "";
-        else if (k === "OK")  searchActive = false;
-        else                  searchTerm += k;
-        gamegrid.currentIndex = 0;
-        sortedGames = null;
+    function activateSearch() {
+        searchMode = "Title";
+        searchActive = true;
+        filterKb.page = 0;
+        filterKb.shifted = false;
+        filterKb.row = 0;
+        filterKb.col = 0;
+        filterKb.forceActiveFocus();
     }
+
     function selectSort(idx) {
         if (sortByIndex === idx) {
             orderBy = (orderBy === Qt.AscendingOrder) ? Qt.DescendingOrder : Qt.AscendingOrder;
@@ -678,7 +657,31 @@ id: root
 
         MouseArea { anchors.fill: parent; onClicked: { searchActive = false; filterOpen = false; gamegrid.focus = true; } }
 
+        // Shared on-screen keyboard — same presentation as the RA search:
+        // title and text field up top, keys below, its own help prompts.
+        VirtualKeyboard {
+        id: filterKb
+
+            anchors.centerIn: parent
+            z: 60
+            visible: searchActive
+            focus: searchActive
+            title: "Filter by Title"
+            text: searchTerm
+
+            onTextEdited: {
+                searchTerm = newText;
+                gamegrid.currentIndex = 0;
+                sortedGames = null;
+            }
+            // Focus MUST go back to the panel here — leaving it on a hidden
+            // keyboard is what froze input on the way out.
+            onAccepted:  { searchActive = false; filterPanel.forceActiveFocus(); }
+            onCancelled: { searchActive = false; filterPanel.forceActiveFocus(); }
+        }
+
         Rectangle {
+            visible: !searchActive        // keyboard takes over the screen while typing
             anchors.centerIn: parent
             width: vpx(500)
             height: titleTxt.height + fieldCol.height + vpx(60)
@@ -841,37 +844,11 @@ id: root
                     }
                 }
 
-                // On-screen keyboard (shown when searching)
-                Grid {
-                    visible: searchActive
-                    columns: keyCols
-                    spacing: vpx(4)
-                    width: parent.width
-
-                    Repeater {
-                        model: keyboardKeys
-                        Rectangle {
-                            width: (fieldCol.width - (keyCols - 1) * vpx(4)) / keyCols
-                            height: vpx(52); radius: vpx(4)
-                            property bool sel: keyIndex === index
-                            property bool wide: modelData.length > 1 && modelData !== "SPACE" && modelData !== "DEL"
-                            color: sel ? theme.accent : Qt.rgba(1,1,1,0.08)
-                            Text {
-                                anchors.centerIn: parent
-                                text: modelData === "SPACE" ? "\u2423" : (modelData === "DEL" ? "\u232B" : modelData)
-                                color: sel ? "white" : "white"
-                                font.family: subtitleFont.name
-                                font.pixelSize: wide ? fpx(12) : fpx(17)
-                                font.bold: sel
-                            }
-                            MouseArea { anchors.fill: parent; onClicked: { keyIndex = index; pressKey(modelData); } }
-                        }
-                    }
-                }
             }
 
             // Button-icon hint bar — swaps prompts per context (search / genre / sort)
             Row {
+                visible: !searchActive     // the keyboard draws its own prompts
                 anchors { bottom: parent.bottom; bottomMargin: vpx(12); right: parent.right; rightMargin: vpx(20) }
                 spacing: vpx(22)
 
@@ -900,37 +877,30 @@ id: root
 
         Keys.onUpPressed: {
             playNav();
-            if (searchActive) { if (keyIndex >= keyCols) keyIndex -= keyCols; }
+            if (searchActive) { }
             else if (genrePickerOpen) { if (genrePickerIndex > 0) genrePickerIndex--; }
             else if (filterRow > 0) filterRow--;
         }
         Keys.onDownPressed: {
             playNav();
-            if (searchActive) { var ni = keyIndex + keyCols; if (ni < keyboardKeys.length) keyIndex = ni; else keyIndex = keyboardKeys.length - 1; }
+            if (searchActive) { }
             else if (genrePickerOpen) { if (genrePickerIndex < genreOptions.length - 1) genrePickerIndex++; }
             else if (filterRow < sortFields.length + 2) filterRow++;
         }
         Keys.onLeftPressed: {
             playNav();
-            if (searchActive && (keyIndex % keyCols) !== 0) keyIndex--;
+            if (searchActive) { }
             else if (genrePickerOpen) genrePickerIndex = Math.max(0, genrePickerIndex - 10);
         }
         Keys.onRightPressed: {
             playNav();
-            if (searchActive && (keyIndex % keyCols) !== (keyCols - 1) && keyIndex < keyboardKeys.length - 1) keyIndex++;
+            if (searchActive) { }
             else if (genrePickerOpen) genrePickerIndex = Math.min(genreOptions.length - 1, genrePickerIndex + 10);
         }
         Keys.onPressed: {
-            if (searchActive) {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey(keyboardKeys[keyIndex]); }
-                // X = backspace, Y = done. X used to close the keyboard, which
-                // is now Y's job so a delete shortcut is always to hand.
-                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey("DEL"); }
-                if (api.keys.isFilters(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey("OK"); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); searchActive = false; }
-
-                return;
-            }
+            // While searching the VirtualKeyboard holds focus and handles its
+            // own input, so nothing here should run.
+            if (searchActive) return;
             if (genrePickerOpen) {
                 if (api.keys.isPageDown(event) && !event.isAutoRepeat) { event.accepted = true; playToggle(); genreJumpLetter(1);  return; }
                 if (api.keys.isPageUp(event)   && !event.isAutoRepeat) { event.accepted = true; playToggle(); genreJumpLetter(-1); return; }
