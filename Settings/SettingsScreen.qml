@@ -16,6 +16,7 @@
 
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
+import "../Global"
 
 FocusScope {
 id: root
@@ -571,43 +572,20 @@ id: root
     property string editText:        ""
     property string editSettingName: ""
     property bool   editMasked:      false
-    property bool   kbShift:         false
-    property bool   kbSpecial:       false
-    property int    keyIndex:        0
-    property int    keyCols:         10
     property int    memRevision:     0   // bump to refresh displayed values
     // Only the two RA fields are text inputs, so an edit always means RA creds changed.
     onMemRevisionChanged: cheevosData.verify()
-
-    property var kbLower: [
-        "1","2","3","4","5","6","7","8","9","0",
-        "q","w","e","r","t","y","u","i","o","p",
-        "a","s","d","f","g","h","j","k","l","@",
-        "z","x","c","v","b","n","m",".","_","-",
-        "SHIFT","áé","SPACE","DEL","CLR","PASTE","COPY","OK"
-    ]
-    property var kbUpper: [
-        "!","@","#","$","%","^","&","*","(",")",
-        "Q","W","E","R","T","Y","U","I","O","P",
-        "A","S","D","F","G","H","J","K","L","+",
-        "Z","X","C","V","B","N","M","?","/","=",
-        "SHIFT","áé","SPACE","DEL","CLR","PASTE","COPY","OK"
-    ]
-    property var kbSpec: [
-        "à","á","â","ã","ä","å","æ","ç","è","é",
-        "ê","ë","ì","í","î","ï","ñ","ò","ó","ô",
-        "õ","ö","ø","ù","ú","û","ü","ý","ÿ","ß",
-        "~","`","|","\\","<",">","{","}","[","]",
-        "SHIFT","ABC","SPACE","DEL","CLR","PASTE","COPY","OK"
-    ]
-    property var keyboardKeys: kbSpecial ? kbSpec : (kbShift ? kbUpper : kbLower)
 
     function openEditor(name, masked) {
         editSettingName = name;
         editMasked = masked;
         editText = api.memory.has(name) ? api.memory.get(name) : "";
-        kbShift = false; kbSpecial = false; keyIndex = 0; kbOpen = true;
-        kbOverlay.forceActiveFocus();
+        kbOpen = true;
+        credsKb.page = 0;          // always start on the letters page
+        credsKb.shifted = false;
+        credsKb.row = 0;
+        credsKb.col = 0;
+        credsKb.forceActiveFocus();
     }
     // Resolve a controller action to its glyph file (assets/images/controller/<hex>.png)
     function fpBtnArt(action) {
@@ -628,43 +606,6 @@ id: root
         return "0";
     }
 
-    function pressKey(k) {
-        if (k === "SHIFT")      kbShift = !kbShift;
-        else if (k === "áé")    kbSpecial = true;
-        else if (k === "ABC")   kbSpecial = false;
-        else if (k === "SPACE") editText += " ";
-        else if (k === "DEL")   editText = editText.slice(0, -1);
-        else if (k === "CLR")   editText = "";
-        else if (k === "PASTE") pasteFromClipboard();
-        else if (k === "COPY")  copyToClipboard();
-        else if (k === "OK") {
-            api.memory.set(editSettingName, editText);
-            memRevision++;
-            kbOpen = false;
-            settingsList.forceActiveFocus();
-        } else {
-            editText += k;
-        }
-    }
-    // Paste from the system clipboard via a hidden, never-focused TextEdit
-    // (no focus = no Android IME = no blue box)
-    function pasteFromClipboard() {
-        clipboardHelper.text = "";
-        clipboardHelper.selectAll();
-        clipboardHelper.paste();
-        editText += clipboardHelper.text;
-        clipboardHelper.text = "";
-    }
-    // Copy the entire current editText to the system clipboard via the same hidden
-    // TextEdit. We push editText into it, select-all, then copy() — effectively
-    // "select all + copy" in one button press. No-op if the field is empty.
-    function copyToClipboard() {
-        if (editText === "") return;
-        clipboardHelper.text = editText;
-        clipboardHelper.selectAll();
-        clipboardHelper.copy();
-        clipboardHelper.text = "";
-    }
     function closeEditor() {
         kbOpen = false;
         settingsList.forceActiveFocus();
@@ -1255,126 +1196,40 @@ id: root
     }
 
     // ── On-screen keyboard overlay ────────────────────────────────────────
+    // Uses the shared VirtualKeyboard (Global/) so the RA credential fields
+    // match every other keyboard in the theme. This host keeps owning
+    // editText; the keyboard reports edits back via onTextEdited.
     Rectangle {
     id: kbOverlay
+
         visible: kbOpen; z: 100
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, 0.82)
+        focus: kbOpen
 
         MouseArea { anchors.fill: parent; onClicked: closeEditor(); }
 
-        // Hidden helper used only for clipboard paste() — never focused
-        TextEdit {
-        id: clipboardHelper
-            visible: false
-            width: 0; height: 0
-            activeFocusOnPress: false
-        }
+        VirtualKeyboard {
+        id: credsKb
 
-        Rectangle {
-            anchors.centerIn: parent
-            width: vpx(560)
-            height: kbTitle.height + vpx(46) + kbGrid.height + vpx(96)
-            radius: vpx(10)
-            color: Qt.rgba(0.10, 0.10, 0.10, 0.98)
-            border.color: theme.accent; border.width: 2
-
-            Text {
-            id: kbTitle
-                text: "Enter " + editSettingName
-                color: settingsTextColor
-                font.family: titleFont.name; font.pixelSize: vpx(24); font.bold: true
-                anchors { top: parent.top; topMargin: vpx(18); left: parent.left; leftMargin: vpx(24) }
+            anchors {
+                horizontalCenter: parent.horizontalCenter
+                verticalCenter: parent.verticalCenter
             }
+            focus: kbOpen
+            title: editSettingName
+            text: editText
+            masked: editMasked
+            allowClipboard: true        // COPY / PASTE for the API key
 
-            Rectangle {
-            id: kbField
-                anchors { top: kbTitle.bottom; topMargin: vpx(12); left: parent.left; right: parent.right; leftMargin: vpx(24); rightMargin: vpx(24) }
-                height: vpx(46); radius: vpx(6)
-                color: Qt.rgba(1,1,1,0.10)
-                border.color: theme.accent; border.width: vpx(1)
-                Text {
-                    anchors { left: parent.left; leftMargin: vpx(14); right: parent.right; rightMargin: vpx(14); verticalCenter: parent.verticalCenter }
-                    text: editText === "" ? "Type\u2026"
-                          : (editMasked ? Array(editText.length + 1).join("\u25CF") : editText)
-                    color: editText === "" ? Qt.rgba(1,1,1,0.4) : settingsTextColor
-                    font.family: subtitleFont.name; font.pixelSize: vpx(20)
-                    elide: Text.ElideRight
-                }
+            onTextEdited:  editText = newText
+            onAccepted: {
+                api.memory.set(editSettingName, editText);
+                memRevision++;
+                kbOpen = false;
+                settingsList.forceActiveFocus();
             }
-
-            Grid {
-            id: kbGrid
-                anchors { top: kbField.bottom; topMargin: vpx(14); horizontalCenter: parent.horizontalCenter }
-                columns: keyCols
-                spacing: vpx(5)
-
-                Repeater {
-                    model: keyboardKeys
-                    Rectangle {
-                        width: vpx(48); height: vpx(42); radius: vpx(4)
-                        property bool sel: keyIndex === index
-                        property bool shiftOn: (modelData === "SHIFT" && kbShift)
-                        color: sel ? theme.accent
-                               : (shiftOn ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.45)
-                                          : Qt.rgba(1,1,1,0.08))
-                        Text {
-                            anchors.centerIn: parent
-                            text: modelData === "SPACE" ? "\u2423"
-                                  : (modelData === "DEL" ? "\u232B"
-                                  : (modelData === "SHIFT" ? "\u21E7" : modelData))
-                            color: sel ? "white" : settingsTextColor
-                            font.family: subtitleFont.name
-                            font.pixelSize: (modelData.length > 1 && modelData !== "SHIFT" && modelData !== "SPACE" && modelData !== "DEL") ? vpx(11) : vpx(18)
-                            font.bold: sel
-                        }
-                        MouseArea { anchors.fill: parent; onClicked: { keyIndex = index; pressKey(modelData); } }
-                    }
-                }
-            }
-
-            // Button-icon hint (A Type / B Cancel) + on-keyboard feature hints
-            Row {
-                anchors { bottom: parent.bottom; bottomMargin: vpx(14); horizontalCenter: parent.horizontalCenter }
-                spacing: vpx(18)
-
-                Repeater {
-                    model: [ {a:"accept",t:"Type"}, {a:"cancel",t:"Cancel"} ]
-                    delegate: Row {
-                        spacing: vpx(7)
-                        Image {
-                            anchors.verticalCenter: parent.verticalCenter
-                            source: "../assets/images/controller/" + fpBtnArt(modelData.a) + ".png"
-                            width: vpx(26); height: vpx(26)
-                            asynchronous: true; smooth: true
-                        }
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: modelData.t
-                            color: settingsTextColor; opacity: 0.55
-                            font.family: subtitleFont.name; font.pixelSize: vpx(15)
-                        }
-                    }
-                }
-                Text {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "\u21E7 Shift    áé Accents"
-                    color: settingsTextColor; opacity: 0.4
-                    font.family: subtitleFont.name; font.pixelSize: vpx(13)
-                }
-            }
-        }
-
-        Keys.onUpPressed:    { playNav(); if (keyIndex >= keyCols) keyIndex -= keyCols; }
-        Keys.onDownPressed:  { playNav(); var ni = keyIndex + keyCols; if (ni < keyboardKeys.length) keyIndex = ni; else keyIndex = keyboardKeys.length - 1; }
-        Keys.onLeftPressed:  { playNav(); if ((keyIndex % keyCols) !== 0) keyIndex--; }
-        Keys.onRightPressed: { playNav(); if ((keyIndex % keyCols) !== (keyCols - 1) && keyIndex < keyboardKeys.length - 1) keyIndex++; }
-        Keys.onPressed: {
-            if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey(keyboardKeys[keyIndex]); }
-            // X = backspace, Y = commit, matching the filter keyboards.
-            if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey("DEL"); }
-            if (api.keys.isFilters(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey("OK"); }
-            if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); closeEditor(); }
+            onCancelled:   closeEditor()
         }
     }
 
