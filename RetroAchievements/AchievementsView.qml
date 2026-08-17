@@ -699,7 +699,16 @@ id: root
                 id: queryCaretMetrics
                 font.family: subtitleFont.name
                 font.pixelSize: fpx(20)
-                text: searchOverlay.query.slice(0, kb.caret)
+                // TextMetrics ignores TRAILING whitespace, so "Mario " and
+                // "Mario" measured the same width and the caret appeared not to
+                // move when space was pressed. Substitute a glyph of comparable
+                // width for measurement only; the box still shows the real text.
+                text: {
+                    var upto = searchOverlay.query.slice(0, kb.caret);
+                    var trimmed = upto.replace(/ +$/, "");
+                    var spaces = upto.length - trimmed.length;
+                    return trimmed + "n".repeat(spaces);
+                }
             }
             Rectangle {
                 width: vpx(2)
