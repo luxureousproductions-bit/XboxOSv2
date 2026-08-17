@@ -71,13 +71,12 @@ id: infocontainer
                 font.bold: true
                 color: theme.accent
             }
-            Text {
+            ScrollingText {
                 anchors { left: publisherlabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                 text: gameData ? (gameData.publisher || "") : ""
                 font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 color: theme.text
-                elide: Text.ElideRight
             }
         }
 
@@ -102,13 +101,12 @@ id: infocontainer
                 font.bold: true
                 color: theme.accent
             }
-            Text {
+            ScrollingText {
                 anchors { left: developerlabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                 text: gameData ? (gameData.developer || "") : ""
                 font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 color: theme.text
-                elide: Text.ElideRight
             }
         }
 
@@ -133,13 +131,12 @@ id: infocontainer
                 font.bold: true
                 color: theme.accent
             }
-            Text {
+            ScrollingText {
                 anchors { left: playerslabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                 text: gameData ? gameData.players : ""
                 font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 color: theme.text
-                elide: Text.ElideRight
             }
         }
     }
@@ -171,13 +168,12 @@ id: infocontainer
                 font.bold: true
                 color: theme.accent
             }
-            Text {
+            ScrollingText {
                 anchors { left: genrelabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                 text: gameData ? gameData.genre : ""
                 font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 color: theme.text
-                elide: Text.ElideRight
             }
         }
 
@@ -202,7 +198,7 @@ id: infocontainer
                 font.bold: true
                 color: theme.accent
             }
-            Text {
+            ScrollingText {
                 anchors { left: releaselabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                 text: {
                     if (!gameData || gameData.releaseYear <= 0) return "";
@@ -214,7 +210,6 @@ id: infocontainer
                 font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 color: theme.text
-                elide: Text.ElideRight
             }
         }
 
@@ -239,14 +234,13 @@ id: infocontainer
                 font.bold: true
                 color: theme.accent
             }
-            Text {
+            ScrollingText {
                 property real processedRating: gameData ? Math.round(gameData.rating * 100) / 10 : 0
                 anchors { left: ratinglabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                 text: gameData && gameData.rating > 0 ? (steam ? processedRating * 5 : processedRating) : ""
                 font.pixelSize: fpx(16)
                 font.family: subtitleFont.name
                 color: theme.text
-                elide: Text.ElideRight
             }
         }
     }

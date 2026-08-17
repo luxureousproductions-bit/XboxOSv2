@@ -1613,9 +1613,25 @@ id: root
                 glideTop.stop();
                 highlightRangeMode = ListView.ApplyRange;
             }
+            var before = currentIndex;
             do {
                 incrementCurrentIndex();
             } while (!currentItem.enabled);
+            // Index 0 is the empty spacer that lets the background show at the
+            // top — it's "enabled" but has nothing to focus, so wrapping off the
+            // last collection used to land there and need a second press to
+            // reach the system tiles. Step past it in one go.
+            if (currentIndex === 0) incrementCurrentIndex();
+
+            // Wrapped from the last collection back to the top: ApplyRange was
+            // switched on above and had already snapped contentY partway, so the
+            // glide started from the wrong place and the system tiles came to
+            // rest half off-screen. Settle the top zone explicitly instead.
+            if (currentIndex < before) {
+                glideTop.stop();
+                highlightRangeMode = ListView.NoHighlightRange;
+                positionViewAtBeginning();
+            }
         }
     }
 

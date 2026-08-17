@@ -166,37 +166,13 @@ id: root
         onTriggered: settledGame = currentGame
     }
 
-    // On-screen keyboard — fully controller-driven, NO native Android IME
-    // (this is what eliminates the stuck blue input box entirely)
-    property bool kbSpecial: false
-    property var kbMain: [
-        "A","B","C","D","E","F","G","H","I","J",
-        "K","L","M","N","O","P","Q","R","S","T",
-        "U","V","W","X","Y","Z","-","'",".",":",
-        "0","1","2","3","4","5","6","7","8","9",
-        "áé","SPACE","DEL","CLR","OK"
-    ]
-    property var kbSpec: [
-        "À","Á","Â","Ã","Ä","Å","Æ","Ç","È","É",
-        "Ê","Ë","Ì","Í","Î","Ï","Ñ","Ò","Ó","Ô",
-        "Õ","Ö","Ø","Ù","Ú","Û","Ü","Ý","ß","°",
-        "&","!","?","@","#","%","+","=",",",";",
-        "ABC","SPACE","DEL","CLR","OK"
-    ]
-    property var keyboardKeys: kbSpecial ? kbSpec : kbMain
-    property int keyCols:  10
-    property int keyIndex: 0
-
-    function activateSearch() { keyIndex = 0; kbSpecial = false; searchActive = true; }
-    function pressKey(k) {
-        if (k === "áé")  { kbSpecial = true;  return; }
-        if (k === "ABC") { kbSpecial = false; return; }
-        if (k === "SPACE")    nameFilter += " ";
-        else if (k === "DEL") nameFilter = nameFilter.slice(0, -1);
-        else if (k === "CLR") nameFilter = "";
-        else if (k === "OK")  searchActive = false;
-        else                  nameFilter += k;
-        gamelist.currentIndex = 0;
+    function activateSearch() {
+        searchActive = true;
+        filterKb.page = 0;
+        filterKb.shifted = false;
+        filterKb.row = 0;
+        filterKb.col = 0;
+        filterKb.forceActiveFocus();
     }
 
     property var sortFields: [
@@ -396,15 +372,24 @@ id: root
         return api.collections.get(systemIndex).games.get(srcIdx);
     }
 
+    // Group key for letter jumping. Every non-alphabetic leading character
+    // (digits, brackets, symbols) collapses into a single "#" bucket, matching
+    // GridView — otherwise "1943" -> "2048" counted as a letter change and RT
+    // stepped through numbers one at a time instead of reaching A.
+    function letterGroup(title) {
+        var c = (title || "").charAt(0).toUpperCase();
+        return (c >= "A" && c <= "Z") ? c : "#";
+    }
+
     // Jump to the first game of the next / previous letter group
     function jumpToNextLetter() {
         if (gamelist.count === 0) return;
         var cur = gamelist.currentIndex;
         var curE = cur >= 0 ? displayModel.get(cur) : null;
-        var curLtr = curE ? (curE.title || "").charAt(0).toUpperCase() : "";
+        var curLtr = curE ? letterGroup(curE.title) : "";
         for (var i = cur + 1; i < gamelist.count; i++) {
             var e = displayModel.get(i);
-            if (e && (e.title || "").charAt(0).toUpperCase() !== curLtr) { gamelist.currentIndex = i; return; }
+            if (e && letterGroup(e.title) !== curLtr) { gamelist.currentIndex = i; return; }
         }
         gamelist.currentIndex = 0;
     }
@@ -413,10 +398,10 @@ id: root
         var cur = gamelist.currentIndex;
         if (cur <= 0) { gamelist.currentIndex = gamelist.count - 1; return; }
         var prevE = displayModel.get(cur - 1);
-        var prevLtr = prevE ? (prevE.title || "").charAt(0).toUpperCase() : "";
+        var prevLtr = prevE ? letterGroup(prevE.title) : "";
         for (var i = cur - 2; i >= 0; i--) {
             var e = displayModel.get(i);
-            if (e && (e.title || "").charAt(0).toUpperCase() !== prevLtr) { gamelist.currentIndex = i + 1; return; }
+            if (e && letterGroup(e.title) !== prevLtr) { gamelist.currentIndex = i + 1; return; }
         }
         gamelist.currentIndex = 0;
     }
@@ -641,10 +626,10 @@ id: root
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                         text: "Publisher: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
-                    Text {
+                    ScrollingText {
                         anchors { left: agPubLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: currentGame && currentGame.publisher ? currentGame.publisher : "—"
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
                     }
                 }
                 Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
@@ -654,10 +639,10 @@ id: root
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                         text: "Developer: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
-                    Text {
+                    ScrollingText {
                         anchors { left: agDevLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: currentGame && currentGame.developer ? currentGame.developer : "—"
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
                     }
                 }
                 Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
@@ -667,10 +652,10 @@ id: root
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                         text: "Players: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
-                    Text {
+                    ScrollingText {
                         anchors { left: agPlayersLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: currentGame && currentGame.players > 0 ? currentGame.players : "—"
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
                     }
                 }
             }
@@ -687,10 +672,10 @@ id: root
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                         text: "Genre: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
-                    Text {
+                    ScrollingText {
                         anchors { left: agGenreLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: currentGame && currentGame.genre ? currentGame.genre : "—"
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
                     }
                 }
                 Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
@@ -700,10 +685,10 @@ id: root
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                         text: "Released: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
-                    Text {
+                    ScrollingText {
                         anchors { left: agRelLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: fmtReleaseDate(currentGame)
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
                     }
                 }
                 Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
@@ -713,10 +698,10 @@ id: root
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                         text: "Rating: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
-                    Text {
+                    ScrollingText {
                         anchors { left: agRatingLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: currentGame && currentGame.rating > 0 ? (currentGame.rating * 10).toFixed(1) : "—"
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
                     }
                 }
             }
@@ -733,10 +718,10 @@ id: root
                         anchors { left: parent.left; verticalCenter: parent.verticalCenter }
                         text: "Last Played: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                     }
-                    Text {
+                    ScrollingText {
                         anchors { left: agLastLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
                         text: fmtLastPlayed(currentGame)
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text; elide: Text.ElideRight
+                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
                     }
                 }
             }
@@ -1104,7 +1089,30 @@ id: root
 
         MouseArea { anchors.fill: parent; onClicked: { searchActive = false; filterOpen = false; gamelist.focus = true; } }
 
+        // Shared on-screen keyboard — same presentation as the RA search:
+        // title and text field up top, keys below, its own help prompts.
+        VirtualKeyboard {
+        id: filterKb
+
+            anchors.centerIn: parent
+            z: 60
+            visible: searchActive
+            focus: searchActive
+            title: "Filter by Title"
+            text: nameFilter
+
+            onTextEdited: {
+                nameFilter = newText;
+                gamelist.currentIndex = 0;
+            }
+            // Focus MUST go back to the panel here — leaving it on a hidden
+            // keyboard is what froze input on the way out.
+            onAccepted:  { searchActive = false; filterPanel.forceActiveFocus(); }
+            onCancelled: { searchActive = false; filterPanel.forceActiveFocus(); }
+        }
+
         Rectangle {
+            visible: !searchActive        // keyboard takes over the screen while typing
             anchors.centerIn: parent
             width: vpx(500)
             height: titleTxt.height + fieldCol.height + vpx(60)
@@ -1333,37 +1341,11 @@ id: root
                     }
                 }
 
-                // On-screen keyboard (shown when searching)
-                Grid {
-                    visible: searchActive
-                    columns: keyCols
-                    spacing: vpx(4)
-                    width: parent.width
-
-                    Repeater {
-                        model: keyboardKeys
-                        Rectangle {
-                            width: (fieldCol.width - (keyCols - 1) * vpx(4)) / keyCols
-                            height: vpx(52); radius: vpx(4)
-                            property bool sel: keyIndex === index
-                            property bool wide: modelData.length > 1 && modelData !== "SPACE" && modelData !== "DEL"
-                            color: sel ? theme.accent : Qt.rgba(1,1,1,0.08)
-                            Text {
-                                anchors.centerIn: parent
-                                text: modelData === "SPACE" ? "\u2423" : (modelData === "DEL" ? "\u232B" : modelData)
-                                color: sel ? "white" : "white"
-                                font.family: subtitleFont.name
-                                font.pixelSize: wide ? fpx(12) : fpx(17)
-                                font.bold: sel
-                            }
-                            MouseArea { anchors.fill: parent; onClicked: { keyIndex = index; pressKey(modelData); } }
-                        }
-                    }
-                }
             }
 
             // Button-icon hint bar — swaps prompts per context (search / genre / sort)
             Row {
+                visible: !searchActive     // the keyboard draws its own prompts
                 anchors { bottom: parent.bottom; bottomMargin: vpx(12); right: parent.right; rightMargin: vpx(20) }
                 spacing: vpx(22)
 
@@ -1393,41 +1375,34 @@ id: root
 
         Keys.onUpPressed: {
             playNav();
-            if (searchActive) { if (keyIndex >= keyCols) keyIndex -= keyCols; }
+            if (searchActive) { }
             else if (genrePickerOpen) { if (genrePickerIndex > 0) genrePickerIndex--; }
             else if (systemPickerOpen) { if (systemPickerIndex > 0) systemPickerIndex--; }
             else if (filterRow > 0) filterRow--;
         }
         Keys.onDownPressed: {
             playNav();
-            if (searchActive) { var ni = keyIndex + keyCols; if (ni < keyboardKeys.length) keyIndex = ni; else keyIndex = keyboardKeys.length - 1; }
+            if (searchActive) { }
             else if (genrePickerOpen) { if (genrePickerIndex < genreOptions.length - 1) genrePickerIndex++; }
             else if (systemPickerOpen) { if (systemPickerIndex < systemOptions.length - 1) systemPickerIndex++; }
             else if (filterRow < sortFields.length + 3) filterRow++;
         }
         Keys.onLeftPressed: {
             playNav();
-            if (searchActive && (keyIndex % keyCols) !== 0) keyIndex--;
+            if (searchActive) { }
             else if (genrePickerOpen) genrePickerIndex = Math.max(0, genrePickerIndex - 10);
             else if (systemPickerOpen) systemPickerIndex = Math.max(0, systemPickerIndex - 10);
         }
         Keys.onRightPressed: {
             playNav();
-            if (searchActive && (keyIndex % keyCols) !== (keyCols - 1) && keyIndex < keyboardKeys.length - 1) keyIndex++;
+            if (searchActive) { }
             else if (genrePickerOpen) genrePickerIndex = Math.min(genreOptions.length - 1, genrePickerIndex + 10);
             else if (systemPickerOpen) systemPickerIndex = Math.min(systemOptions.length - 1, systemPickerIndex + 10);
         }
         Keys.onPressed: {
-            if (searchActive) {
-                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey(keyboardKeys[keyIndex]); }
-                // X = backspace, Y = done. X used to close the keyboard, which
-                // is now Y's job so a delete shortcut is always to hand.
-                if (api.keys.isDetails(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey("DEL"); }
-                if (api.keys.isFilters(event) && !event.isAutoRepeat) { event.accepted = true; playAccept(); pressKey("OK"); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); searchActive = false; }
-
-                return;
-            }
+            // While searching the VirtualKeyboard holds focus and handles its
+            // own input, so nothing here should run.
+            if (searchActive) return;
             if (genrePickerOpen) {
                 if (api.keys.isPageDown(event) && !event.isAutoRepeat) { event.accepted = true; playToggle(); genreJumpLetter(1);  return; }
                 if (api.keys.isPageUp(event)   && !event.isAutoRepeat) { event.accepted = true; playToggle(); genreJumpLetter(-1); return; }
@@ -1489,10 +1464,10 @@ id: root
                 filterPanel.forceActiveFocus();
             }
         }
-        // Y — game details page
+        // Y — game details page, opened with the full details pane expanded
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus) { gameDetails(currentGame); }
+            if (!filterOpen && gamelist.focus) { gameDetailsFull(currentGame); }
         }
         // LT — previous letter group
         if (api.keys.isPageUp(event) && !event.isAutoRepeat) {
@@ -1511,11 +1486,11 @@ id: root
         }
     }
 
-    // ── Helpbar: A Launch, X Filters, Y Game Details, B Back ──────────────
+    // ── Helpbar: A Launch, X Filters, Y More Details, B Back ──────────────
     ListModel {
         id: allGamesHelpModel
         ListElement { name: "Back";         button: "cancel"  }
-        ListElement { name: "Game Details"; button: "filters" }
+        ListElement { name: "More Details"; button: "filters" }
         ListElement { name: "Filters";      button: "details" }
         ListElement { name: "Launch";       button: "accept"  }
     }

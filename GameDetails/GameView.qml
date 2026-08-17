@@ -140,6 +140,19 @@ id: root
     }
 
     // Show/hide the details overlay
+    // Watches the theme-level one-shot flag. GameView is kept alive after its
+    // first load, so Component.onCompleted would only ever fire once —
+    // reacting to the flag flipping false->true works on every visit, and
+    // survives detailsOpacity's binding being broken by showDetails().
+    property bool wantFullDetails: forceFullDetails
+    onWantFullDetailsChanged: {
+        if (wantFullDetails) {
+            detailsEverShown = true;
+            detailsOpacity = 1;
+            toggleVideo(false);
+        }
+    }
+
     function showDetails() {
         if (detailsOpacity === 1) {
             toggleVideo(true);
