@@ -34,7 +34,7 @@ id: root
     property real pixelsPerSecond: 40   // slow, readable drift
 
     implicitHeight: label.implicitHeight
-    clip: overflowing
+    clip: true
 
     readonly property bool overflowing: label.implicitWidth > width
 
@@ -42,27 +42,32 @@ id: root
     id: label
 
         text: root.text
-        // Anchored only vertically — x is animated when it overflows.
+        // Anchored only vertically — x is animated when the text overflows.
         anchors.verticalCenter: parent.verticalCenter
         x: 0
-        // Elide only matters before the pass starts; once scrolling we show
-        // the full string, so elide is disabled while it's in motion.
-        elide: root.overflowing ? Text.ElideNone : Text.ElideRight
-        width: root.overflowing ? implicitWidth : root.width
+        // Always laid out at natural width and simply clipped by the parent.
+        // Previously elide/width were bound to `overflowing`, so the text was
+        // re-measured every time that flag flipped — feeding the same timing
+        // race that made scrolling intermittent.
+        width: implicitWidth
+        elide: Text.ElideNone
     }
 
     // One slow pass: hold at the start, drift to reveal the tail, hold, snap
-    // back. Restarts from the beginning whenever the text or width changes.
+    // back. `to` and `duration` are SET IN restart() rather than bound: as
+    // declarative bindings they were read at the moment the animation started,
+    // which is often before the font has finished loading and implicitWidth is
+    // final — giving a 1 ms duration (an instant jump) or no movement at all.
+    // That timing race is why scrolling worked only sometimes.
     SequentialAnimation {
     id: pass
 
         running: false
         PauseAnimation { duration: root.startDelay }
         NumberAnimation {
+            id: drift
             target: label
             property: "x"
-            to: Math.min(0, root.width - label.implicitWidth)
-            duration: Math.max(1, (label.implicitWidth - root.width) / root.pixelsPerSecond * 1000)
             easing.type: Easing.Linear
         }
         PauseAnimation { duration: root.endDelay }
@@ -75,14 +80,38 @@ id: root
         }
     }
 
+    // Coalesces the several change signals that fire while a delegate is being
+    // set up (text, width, font metrics) into ONE start, once things settle.
+    Timer {
+        id: settle
+        interval: 120
+        repeat: false
+        onTriggered: root.beginPass()
+    }
+
     function restart() {
         pass.stop();
         label.x = 0;
-        if (overflowing && width > 0) pass.start();
+        settle.restart();
+    }
+
+    function beginPass() {
+        pass.stop();
+        label.x = 0;
+        var over = label.implicitWidth - root.width;
+        if (over <= 0 || root.width <= 0 || root.text === "") return;
+        drift.to = -over;
+        drift.duration = Math.max(400, over / root.pixelsPerSecond * 1000);
+        pass.start();
     }
 
     onTextChanged: restart()
     onWidthChanged: restart()
-    onOverflowingChanged: restart()
+    // Fires when the font finishes loading or the string is re-measured, which
+    // is the moment the old binding-based version usually missed.
+    Connections {
+        target: label
+        onImplicitWidthChanged: root.restart()
+    }
     Component.onCompleted: restart()
 }
