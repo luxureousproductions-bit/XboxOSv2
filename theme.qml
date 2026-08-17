@@ -812,6 +812,15 @@ id: root
     // Navigate to game details without pushing "discoverscreen" onto lastState.
     // Called by DiscoverView so that pressing Back in Game Details returns to
     // Showcase (or wherever the user came from) rather than back to Discover.
+    // Set for a single visit by callers that want GameView to open with the
+    // full details pane already expanded, regardless of the global
+    // "Default to full details" setting. Cleared on leaving GameView.
+    property bool forceFullDetails: false
+    function gameDetailsFull(game) {
+        forceFullDetails = true;
+        gameDetails(game);
+    }
+
     function gameDetailsFromDiscover(game) {
         playAccept();
         if (lastState.length != 0)
@@ -832,6 +841,10 @@ id: root
             saveCurrentState(game);
             launchDelay.restart();      // hold the splash, then launch (see launchDelay)
         }
+    }
+
+    onStateChanged: {
+        if (state !== "gameviewscreen") forceFullDetails = false;
     }
 
     function launchGameScreen() {
