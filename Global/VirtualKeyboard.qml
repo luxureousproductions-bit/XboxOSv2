@@ -274,7 +274,17 @@ id: root
                     id: caretMetrics
                     font.family: subtitleFont.name
                     font.pixelSize: fpx(20)
-                    text: fieldBox.shown.slice(0, root.caret)
+                    // TextMetrics ignores TRAILING whitespace, so "Mario " and
+                    // "Mario" measured the same and the caret appeared not to
+                    // move when space was pressed. Swap trailing spaces for a
+                    // glyph of comparable width purely for measurement — the
+                    // visible field still shows the real string.
+                    text: {
+                        var upto = fieldBox.shown.slice(0, root.caret);
+                        var trimmed = upto.replace(/ +$/, "");
+                        var spaces = upto.length - trimmed.length;
+                        return trimmed + "n".repeat(spaces);
+                    }
                 }
                 Rectangle {
                     width: vpx(2)
