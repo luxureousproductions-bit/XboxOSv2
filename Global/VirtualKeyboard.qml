@@ -147,24 +147,16 @@ id: root
     function selClip(c) { return row === clipRow && col === c; }
 
     // ── Editing ───────────────────────────────────────────────────────────
-    // Both of these compute the caret's ABSOLUTE target before emitting, then
-    // assign it afterwards. Relative moves (caret++ / caret--) were unsafe:
-    // textEdited updates the host, the host's binding writes `text` back, and
-    // onTextChanged clamps the caret to the new length — so a backspace
-    // clamped 5 -> 4 and then decremented again to 3, deleting one character
-    // too far left. Assigning an absolute value is immune to that clamp.
     function insert(str) {
         var t = root.text;
-        var target = caret + str.length;
         textEdited(t.slice(0, caret) + str + t.slice(caret));
-        caret = Math.min(target, root.text.length);
+        caret += str.length;
     }
     function backspace() {
         if (caret <= 0) return;
         var t = root.text;
-        var target = caret - 1;
         textEdited(t.slice(0, caret - 1) + t.slice(caret));
-        caret = Math.max(0, Math.min(target, root.text.length));
+        caret--;
     }
     function caretLeft()  { if (caret > 0) caret--; }
     function caretRight() { if (caret < root.text.length) caret++; }
@@ -205,13 +197,8 @@ id: root
     }
 
     // ── Styling ───────────────────────────────────────────────────────────
-    // Xbox keyboard palette: flat dark-grey keys, a lighter grey for the
-    // focused key, and a mid-grey for the surrounding command keys (shift,
-    // space, backspace, enter). Solid rather than translucent so the colour
-    // stays constant whatever screen the keyboard is opened over.
-    readonly property color keyFill:    "#2B2B2B"   // letter/number keys
-    readonly property color keyFillSel: "#6E6E6E"   // focused key
-    readonly property color keyFillCmd: "#3F3F3F"   // command keys around the letters
+    readonly property color keyFill: Qt.rgba(1, 1, 1, 0.09)
+    readonly property color keyFillSel: Qt.rgba(1, 1, 1, 0.18)
     readonly property color badgeGrey: Qt.rgba(1, 1, 1, 0.55)
     readonly property color badgeBlue: "#3D9BD5"
     readonly property color badgeAmber: "#E8A317"
@@ -254,7 +241,7 @@ id: root
                 height: vpx(46)
                 visible: root.showTextField
                 radius: vpx(4)
-                color: "#1C1C1C"
+                color: Qt.rgba(1, 1, 1, 0.10)
                 border.width: vpx(2)
                 border.color: theme.accent
 
@@ -274,17 +261,7 @@ id: root
                     id: caretMetrics
                     font.family: subtitleFont.name
                     font.pixelSize: fpx(20)
-                    // TextMetrics ignores TRAILING whitespace, so "Mario " and
-                    // "Mario" measured the same and the caret appeared not to
-                    // move when space was pressed. Swap trailing spaces for a
-                    // glyph of comparable width purely for measurement — the
-                    // visible field still shows the real string.
-                    text: {
-                        var upto = fieldBox.shown.slice(0, root.caret);
-                        var trimmed = upto.replace(/ +$/, "");
-                        var spaces = upto.length - trimmed.length;
-                        return trimmed + "n".repeat(spaces);
-                    }
+                    text: fieldBox.shown.slice(0, root.caret)
                 }
                 Rectangle {
                     width: vpx(2)
@@ -310,7 +287,7 @@ id: root
                 Rectangle {
                     width: root.sideW; height: root.keyH
                     radius: vpx(6)
-                    color: root.selSide(true, 0) ? root.keyFillSel : root.keyFillCmd
+                    color: root.selSide(true, 0) ? root.keyFillSel : root.keyFill
                     border.color: theme.accent
                     border.width: root.selSide(true, 0) ? vpx(3) : 0
                     Row {
@@ -324,11 +301,11 @@ id: root
                             font.pixelSize: fpx(17)
                             font.bold: true
                         }
-                        // LT — the trigger silhouette: straight top edge, a
-                        // shoulder bulging right, and an S-curved left side.
+                        // LT — trigger silhouette traced from the source badge
+                        // art and mirrored so the point faces left.
                         Item {
                             anchors.verticalCenter: parent.verticalCenter
-                            width: vpx(23); height: vpx(25)
+                            width: vpx(21); height: vpx(20)
                             Image {
                                 anchors.fill: parent
                                 source: "../assets/images/kb_badge_lt.svg"
@@ -337,7 +314,7 @@ id: root
                                 smooth: true
                             }
                             Text {
-                                anchors { centerIn: parent; horizontalCenterOffset: vpx(1) }
+                                anchors { centerIn: parent; horizontalCenterOffset: vpx(1.5) }
                                 text: "LT"
                                 color: root.badgeGrey
                                 font.family: subtitleFont.name
@@ -356,7 +333,7 @@ id: root
                 Rectangle {
                     width: root.sideW; height: (root.keyH * 2) + root.keyGap
                     radius: vpx(6)
-                    color: root.selSide(true, 1) ? root.keyFillSel : root.keyFillCmd
+                    color: root.selSide(true, 1) ? root.keyFillSel : root.keyFill
                     border.color: theme.accent
                     border.width: root.selSide(true, 1) ? vpx(3) : 0
                     Column {
@@ -376,10 +353,10 @@ id: root
                         }
                         Item {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            width: vpx(31); height: vpx(22)
+                            width: vpx(27); height: vpx(19)
                             Image {
                                 anchors.fill: parent
-                                source: "../assets/images/kb_badge_bumper.svg"
+                                source: "../assets/images/kb_badge_lb.svg"
                                 sourceSize { width: Math.round(parent.width * 2); height: Math.round(parent.height * 2) }
                                 fillMode: Image.PreserveAspectFit
                                 smooth: true
@@ -405,7 +382,7 @@ id: root
                     width: root.sideW; height: (root.keyH * 2) + root.keyGap
                     radius: vpx(6)
                     color: root.selSide(true, 2) ? root.keyFillSel
-                           : (root.shifted ? "#5A5A5A" : root.keyFillCmd)
+                           : (root.shifted ? Qt.rgba(1, 1, 1, 0.26) : root.keyFill)
                     border.color: theme.accent
                     border.width: root.selSide(true, 2) ? vpx(3) : 0
                     Column {
@@ -485,7 +462,7 @@ id: root
                 Rectangle {
                     width: root.gridW; height: root.keyH
                     radius: vpx(6)
-                    color: root.selSpace() ? root.keyFillSel : root.keyFillCmd
+                    color: root.selSpace() ? root.keyFillSel : root.keyFill
                     border.color: theme.accent
                     border.width: root.selSpace() ? vpx(3) : 0
                     Row {
@@ -536,7 +513,7 @@ id: root
                 Rectangle {
                     width: root.sideW; height: root.keyH
                     radius: vpx(6)
-                    color: root.selSide(false, 0) ? root.keyFillSel : root.keyFillCmd
+                    color: root.selSide(false, 0) ? root.keyFillSel : root.keyFill
                     border.color: theme.accent
                     border.width: root.selSide(false, 0) ? vpx(3) : 0
                     Row {
@@ -580,7 +557,7 @@ id: root
                 Rectangle {
                     width: root.sideW; height: (root.keyH * 2) + root.keyGap
                     radius: vpx(6)
-                    color: root.selSide(false, 1) ? root.keyFillSel : root.keyFillCmd
+                    color: root.selSide(false, 1) ? root.keyFillSel : root.keyFill
                     border.color: theme.accent
                     border.width: root.selSide(false, 1) ? vpx(3) : 0
                     Column {
@@ -596,10 +573,10 @@ id: root
                         }
                         Item {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            width: vpx(31); height: vpx(22)
+                            width: vpx(27); height: vpx(19)
                             Image {
                                 anchors.fill: parent
-                                source: "../assets/images/kb_badge_bumper.svg"
+                                source: "../assets/images/kb_badge_rb.svg"
                                 sourceSize { width: Math.round(parent.width * 2); height: Math.round(parent.height * 2) }
                                 fillMode: Image.PreserveAspectFit
                                 smooth: true
@@ -624,7 +601,7 @@ id: root
                 Rectangle {
                     width: root.sideW; height: (root.keyH * 2) + root.keyGap
                     radius: vpx(6)
-                    color: root.selSide(false, 2) ? root.keyFillSel : root.keyFillCmd
+                    color: root.selSide(false, 2) ? root.keyFillSel : root.keyFill
                     border.color: theme.accent
                     border.width: root.selSide(false, 2) ? vpx(3) : 0
                     Column {
@@ -692,7 +669,7 @@ id: root
                     width: (root.panelW - root.keyGap) / 2
                     height: vpx(34)
                     radius: vpx(6)
-                    color: root.selClip(modelData.c) ? root.keyFillSel : root.keyFillCmd
+                    color: root.selClip(modelData.c) ? root.keyFillSel : root.keyFill
                     border.color: theme.accent
                     border.width: root.selClip(modelData.c) ? vpx(3) : 0
                     Text {
