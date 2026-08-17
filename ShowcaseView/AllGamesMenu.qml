@@ -1464,10 +1464,10 @@ id: root
                 filterPanel.forceActiveFocus();
             }
         }
-        // Y — game details page
+        // Y — game details page, opened with the full details pane expanded
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus) { gameDetails(currentGame); }
+            if (!filterOpen && gamelist.focus) { gameDetailsFull(currentGame); }
         }
         // LT — previous letter group
         if (api.keys.isPageUp(event) && !event.isAutoRepeat) {
@@ -1486,11 +1486,11 @@ id: root
         }
     }
 
-    // ── Helpbar: A Launch, X Filters, Y Game Details, B Back ──────────────
+    // ── Helpbar: A Launch, X Filters, Y More Details, B Back ──────────────
     ListModel {
         id: allGamesHelpModel
         ListElement { name: "Back";         button: "cancel"  }
-        ListElement { name: "Game Details"; button: "filters" }
+        ListElement { name: "More Details"; button: "filters" }
         ListElement { name: "Filters";      button: "details" }
         ListElement { name: "Launch";       button: "accept"  }
     }
