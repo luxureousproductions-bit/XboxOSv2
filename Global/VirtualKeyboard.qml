@@ -336,14 +336,6 @@ id: root
                                 fillMode: Image.PreserveAspectFit
                                 smooth: true
                             }
-                            Text {
-                                anchors { centerIn: parent; horizontalCenterOffset: vpx(1) }
-                                text: "LT"
-                                color: root.badgeGrey
-                                font.family: subtitleFont.name
-                                font.pixelSize: fpx(9)
-                                font.bold: true
-                            }
                         }
                     }
                     MouseArea {
@@ -383,14 +375,6 @@ id: root
                                 sourceSize { width: Math.round(parent.width * 2); height: Math.round(parent.height * 2) }
                                 fillMode: Image.PreserveAspectFit
                                 smooth: true
-                            }
-                            Text {
-                                anchors.centerIn: parent
-                                text: "LB"
-                                color: root.badgeGrey
-                                font.family: subtitleFont.name
-                                font.pixelSize: fpx(9)
-                                font.bold: true
                             }
                         }
                     }
@@ -603,14 +587,6 @@ id: root
                                 sourceSize { width: Math.round(parent.width * 2); height: Math.round(parent.height * 2) }
                                 fillMode: Image.PreserveAspectFit
                                 smooth: true
-                            }
-                            Text {
-                                anchors.centerIn: parent
-                                text: "RB"
-                                color: root.badgeGrey
-                                font.family: subtitleFont.name
-                                font.pixelSize: fpx(9)
-                                font.bold: true
                             }
                         }
                     }
