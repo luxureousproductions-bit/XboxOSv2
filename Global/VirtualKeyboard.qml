@@ -189,17 +189,20 @@ id: root
         if (clipProxy.text.length > 0) insert(clipProxy.text);
     }
 
+    // Every key action funnels through here, whether it arrived from the A
+    // button or a tap, so this is the one place sound effects belong.
     function press(k) {
-        if (k === "CMD_PAGE")  { page = (page + 1) % 3; return; }
-        if (k === "CMD_LEFT")  { caretLeft(); return; }
-        if (k === "CMD_RIGHT") { caretRight(); return; }
-        if (k === "CMD_SHIFT") { shifted = !shifted; return; }
-        if (k === "CMD_DEL")   { backspace(); return; }
-        if (k === "CMD_ENTER") { accepted(); return; }
-        if (k === "CMD_SPACE") { insert(" "); return; }
-        if (k === "CMD_COPY")  { doCopy(); return; }
-        if (k === "CMD_PASTE") { doPaste(); return; }
+        if (k === "CMD_PAGE")  { playToggle(); page = (page + 1) % 3; return; }
+        if (k === "CMD_LEFT")  { playNav();    caretLeft(); return; }
+        if (k === "CMD_RIGHT") { playNav();    caretRight(); return; }
+        if (k === "CMD_SHIFT") { playToggle(); shifted = !shifted; return; }
+        if (k === "CMD_DEL")   { playBack();   backspace(); return; }
+        if (k === "CMD_ENTER") { playAccept(); accepted(); return; }
+        if (k === "CMD_SPACE") { playAccept(); insert(" "); return; }
+        if (k === "CMD_COPY")  { playToggle(); doCopy(); return; }
+        if (k === "CMD_PASTE") { playToggle(); doPaste(); return; }
         // Shift is a one-shot, the way on-screen keyboards normally behave.
+        playAccept();
         insert(shifted ? k.toUpperCase() : k);
         if (shifted) shifted = false;
     }
@@ -696,6 +699,7 @@ id: root
     // movement between regions is remapped rather than using raw indices.
     Keys.onUpPressed: {
         event.accepted = true;
+        playNav();
         if (col === -1 || col === 10) {
             var s = sideSlot(row);
             if (s > 0) row = slotRow(s - 1);
@@ -706,6 +710,7 @@ id: root
     }
     Keys.onDownPressed: {
         event.accepted = true;
+        playNav();
         if (col === -1 || col === 10) {
             var s = sideSlot(row);
             if (s < 2) row = slotRow(s + 1);
@@ -718,6 +723,7 @@ id: root
     }
     Keys.onLeftPressed: {
         event.accepted = true;
+        playNav();
         if (col === -1) return;
         if (row === clipRow) { if (col > 0) col--; return; }
         if (col === 10) { col = 9; return; }
@@ -727,6 +733,7 @@ id: root
     }
     Keys.onRightPressed: {
         event.accepted = true;
+        playNav();
         if (col === 10) return;
         if (row === clipRow) { if (col < 1) col++; return; }
         if (col === -1) { col = 0; return; }
@@ -742,11 +749,13 @@ id: root
         // own menu while the keyboard is open.
         if (startKeys.indexOf(event.key) !== -1) {       // Start — submit
             event.accepted = true;
+            playAccept();
             accepted();
             return;
         }
         if (shiftKeys.indexOf(event.key) !== -1) {       // L3 — shift
             event.accepted = true;
+            playToggle();
             shifted = !shifted;
             return;
         }
@@ -758,27 +767,32 @@ id: root
         }
         if (api.keys.isDetails(event)) {                 // X — backspace
             event.accepted = true;
+            playBack();
             backspace();
             return;
         }
         if (api.keys.isFilters(event)) {                 // Y — space or submit
             event.accepted = true;
+            playAccept();
             if (submitOnY) accepted();
             else insert(" ");
             return;
         }
         if (api.keys.isPrevPage(event)) {                // LB — caret left
             event.accepted = true;
+            playNav();
             caretLeft();
             return;
         }
         if (api.keys.isNextPage(event)) {                // RB — caret right
             event.accepted = true;
+            playNav();
             caretRight();
             return;
         }
         if (api.keys.isCancel(event)) {                  // B — close
             event.accepted = true;
+            playBack();
             cancelled();
             return;
         }
