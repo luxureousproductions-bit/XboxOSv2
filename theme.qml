@@ -145,6 +145,18 @@ id: root
     property int currentGameIndex: 0
     property var currentCollection: api.collections.get(currentCollectionIndex)
 
+    // The app drawer replaces Pegasus's own installed-apps tile, so that
+    // collection is kept out of the system row everywhere.
+    //
+    // Matched on NAME, not shortName: the provider's collection and a
+    // hand-written "Android Apps" collection both report shortName "android",
+    // so shortName can't tell them apart. Hand-made app collections are left
+    // alone on purpose — only the provider's own tile is replaced.
+    readonly property string appsCollectionName: "Android"
+    function isDrawerCollection(c) {
+        return !!c && (c.name || "").toLowerCase() === appsCollectionName.toLowerCase();
+    }
+
     // Shared system order (home/platform page + grid LB/RB cycle), per the
     // "System sort" setting. Collections are read THROUGH this index array so
     // every screen orders systems identically without altering Pegasus's order.
@@ -154,6 +166,8 @@ id: root
         var items = [];
         for (var i = 0; i < n; i++) {
             var c = api.collections.get(i);
+            // The drawer owns this collection; it gets no system tile.
+            if (isDrawerCollection(c)) continue;
             items.push({
                 idx:   i,
                 name:  (c.name || "").toLowerCase(),
@@ -876,6 +890,26 @@ id: root
 
         if (fromGame)
             returnedFromGame();
+
+        // currentCollectionIndex defaults to 0, which can now be the hidden
+        // apps collection. Set once (not bound) so it lands on the first
+        // system that actually has a tile, without resetting on re-sorts.
+        if (sortedColl.length > 0)
+            currentCollectionIndex = sortedColl[0];
+
+        // Temporary, paired with logKeys: dumps every collection so the apps
+        // one can be identified by its exact name. Several collections here
+        // contain "android" (the ROM folders as well as the system apps
+        // provider), so the drawer's loose name match can land on the wrong
+        // one. Remove once the drawer is pointed at the right collection.
+        if (logCollections) {
+            for (var i = 0; i < api.collections.count; i++) {
+                var c = api.collections.get(i);
+                console.log("[theme] collection", i, "name:", c.name,
+                            "| shortName:", c.shortName,
+                            "| games:", c.games.count);
+            }
+        }
     }
 
     // Background
@@ -1170,6 +1204,57 @@ id: root
             bottom: parent.bottom
         }
         visible: settings.HideButtonHelp === "No" && root.state !== "launchgamescreen"
+    }
+
+    // ── App drawer ────────────────────────────────────────────────────────
+    // One instance at the top level so it overlays every screen. z sits above
+    // launchgameloader (z: 100) and the help bar so nothing draws over it.
+    AppDrawer {
+    id: appDrawer
+
+        z: 500
+        // Same constant the system-row filter uses, so the collection the
+        // drawer shows is exactly the one hidden from the row — they can't
+        // drift apart.
+        collectionMatch: root.appsCollectionName
+        title: "My games & apps"
+
+        // Reuses the Discover launch path, which deliberately does NOT push
+        // onto lastState — so coming back from an app returns to the screen
+        // that was showing, rather than re-entering wherever the drawer was
+        // opened from.
+        onAppChosen: launchGameFromDiscover(game)
+        onClosed: playBack()
+    }
+
+    // Trigger. Screens accept the keys they use, so anything they ignore
+    // bubbles up to here — which is why this works from any screen without
+    // touching the individual views.
+    //
+    // 1048586 = Select, captured from the device log. Tab is kept for
+    // desktop testing.
+    readonly property var appDrawerKeys: [ 1048586, Qt.Key_Tab ]
+
+    // Diagnostics, both off-switchable. Key logging is done — Select was
+    // caught — but the collection dump is worth one more run to confirm which
+    // collection the Android apps provider creates once it's enabled.
+    property bool logKeys: false
+    property bool logCollections: true
+
+    Keys.onPressed: {
+        if (event.isAutoRepeat) return;
+
+        if (logKeys)
+            console.log("[theme] key code:", event.key, "text:", event.text);
+
+        if (appDrawerKeys.indexOf(event.key) === -1) return;
+        event.accepted = true;
+        if (appDrawer.open) {
+            appDrawer.closeDrawer();
+        } else {
+            playToggle();
+            appDrawer.openDrawer();
+        }
     }
 
     ///////////////////
