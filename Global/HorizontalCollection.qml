@@ -179,7 +179,9 @@ id: root
             onActivated: {
                 if (selected) {
                     activateSelected();
-                    gameDetails(search.currentGame(currentIndex));
+                    // Apps launch straight from the row; everything else opens
+                    // its details page. See openGame() in theme.qml.
+                    openGame(search.currentGame(currentIndex));
                 } else {
                     activate(index);
                     collectionList.currentIndex = index;
@@ -274,7 +276,7 @@ id: root
                 event.accepted = true;
                 if (root.favTargetGame) {
                     activateSelected();
-                    gameDetails(root.favTargetGame);
+                    openGame(root.favTargetGame);
                 }
             }
         }
