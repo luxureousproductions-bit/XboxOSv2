@@ -1278,6 +1278,23 @@ id: root
         // opened from.
         onAppChosen: launchGameFromDiscover(game)
         onClosed: playBack()
+
+        // Home resets the back stack rather than pushing onto it — otherwise
+        // backing out of the Showcase would return to whatever screen you were
+        // on when you opened the drawer, which isn't what "Home" means. Seeded
+        // rather than emptied because previousScreen() reads the top of the
+        // stack without checking it's non-empty.
+        onNavHome: {
+            if (root.state === "showcasescreen") return;
+            playAccept();
+            lastState = ["showcasescreen"];
+            root.state = "showcasescreen";
+        }
+        // Library pushes normally, so Back returns where you came from.
+        onNavLibrary: {
+            if (root.state === "allgamesscreen") return;
+            allGamesScreen();
+        }
         // Last-resort recovery: re-apply the current state so every loader's
         // `focus: shown` binding re-evaluates and the active screen takes focus
         // back. Only fires if the captured item is gone.
