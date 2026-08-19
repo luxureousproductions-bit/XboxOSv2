@@ -27,6 +27,9 @@
 
 import QtQuick 2.15
 import QtQuick.Window 2.15
+// For OpacityMask — used to round the app icons. Bundled with Pegasus, and
+// already used elsewhere in this theme.
+import QtGraphicalEffects 1.15
 
 FocusScope {
 id: root
@@ -38,7 +41,13 @@ id: root
     // broken.
     property var collection: null
     property string title: "My games & apps"
-    property real panelWidth: vpx(330)
+    property real panelWidth: vpx(400)
+    // Gap between the panel and the screen edges on the left, top and bottom.
+    property real panelMargin: vpx(20)
+    property real panelRadius: vpx(14)
+    property real iconSize: vpx(46)
+    property real iconRadius: vpx(8)
+    property real rowHeight: vpx(68)
 
     // If `collection` is left null, the apps collection is looked up by name
     // instead. Pegasus doesn't guarantee what it calls that collection, so the
@@ -172,17 +181,18 @@ id: root
     id: panel
 
         width: root.panelWidth
-        height: parent.height
-        x: -root.panelWidth * (1 - root.slide)
+        // Inset from the screen edges so the panel floats as a card rather
+        // than butting against them.
+        x: -(root.panelWidth + root.panelMargin) * (1 - root.slide) + root.panelMargin
+        y: root.panelMargin
+        height: parent.height - (root.panelMargin * 2)
+        radius: root.panelRadius
         color: "#1C1C1C"
 
-        // Hairline along the open edge, so the panel reads as a layer above
-        // the screen rather than a flat block of colour.
-        Rectangle {
-            anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
-            width: vpx(1)
-            color: Qt.rgba(1, 1, 1, 0.12)
-        }
+        // Outline rather than a single open-edge hairline: now that the panel
+        // is inset on all sides, it needs an edge the whole way round.
+        border.width: vpx(1)
+        border.color: Qt.rgba(1, 1, 1, 0.12)
 
         Text {
         id: header
@@ -249,7 +259,7 @@ id: root
 
             delegate: Item {
                 width: ListView.view.width
-                height: vpx(60)
+                height: root.rowHeight
 
                 readonly property bool current: ListView.isCurrentItem
 
@@ -276,23 +286,48 @@ id: root
                         // tile keeps every row the same visual weight so a
                         // partly-scraped list doesn't look broken.
                         Item {
-                            width: vpx(40); height: vpx(40)
+                        id: iconBox
+
+                            width: root.iconSize; height: root.iconSize
                             anchors.verticalCenter: parent.verticalCenter
 
-                            Image {
-                                id: appIcon
+                            // Masked so the art is cropped square with rounded
+                            // corners like the Xbox tiles. PreserveAspectFit
+                            // would letterbox anything non-square, which is most
+                            // app icons, and clip: true can only cut rectangles.
+                            Item {
+                            id: iconClip
+
                                 anchors.fill: parent
-                                source: root.artFor(modelData)
-                                sourceSize { width: Math.round(vpx(40) * 2); height: Math.round(vpx(40) * 2) }
-                                fillMode: Image.PreserveAspectFit
-                                asynchronous: true
-                                smooth: true
-                                visible: source != "" && status === Image.Ready
+                                visible: appIcon.status === Image.Ready && appIcon.source != ""
+                                // Only pay for the FBO on rows that have art.
+                                layer.enabled: visible
+                                layer.effect: OpacityMask {
+                                    maskSource: Rectangle {
+                                        width: iconBox.width
+                                        height: iconBox.height
+                                        radius: root.iconRadius
+                                    }
+                                }
+
+                                Image {
+                                    id: appIcon
+                                    anchors.fill: parent
+                                    source: root.artFor(modelData)
+                                    sourceSize {
+                                        width: Math.round(root.iconSize * 2)
+                                        height: Math.round(root.iconSize * 2)
+                                    }
+                                    fillMode: Image.PreserveAspectCrop
+                                    asynchronous: true
+                                    smooth: true
+                                }
                             }
+
                             Rectangle {
                                 anchors.fill: parent
-                                visible: !appIcon.visible
-                                radius: vpx(6)
+                                visible: !iconClip.visible
+                                radius: root.iconRadius
                                 color: Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.22)
                                 Text {
                                     anchors.centerIn: parent
@@ -306,7 +341,7 @@ id: root
                         }
 
                         Text {
-                            width: parent.width - vpx(40) - vpx(12)
+                            width: parent.width - root.iconSize - vpx(12)
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData ? modelData.title : ""
                             color: "white"
