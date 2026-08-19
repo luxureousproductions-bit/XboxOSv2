@@ -80,14 +80,17 @@ id: root
         { label: "My games & apps",  icon: "../assets/images/drawer_library.svg" }
     ]
 
-    // Placeholders. Swap the icons or add entries and the strip follows —
-    // nothing else needs changing.
+    // Tab strip. The logo is real; the rest are throwaway shapes drawn with
+    // plain Rectangles until the strip's actual contents are decided.
+    //
+    // Rectangles rather than Canvas: Canvas doesn't render in this build (the
+    // same reason every keyboard glyph is an SVG). An entry with `icon` draws
+    // that image; one with `shape` draws the named placeholder.
     readonly property var tabs: [
-        { icon: "../assets/images/drawer_tab_share.svg" },
-        { icon: "../assets/images/drawer_tab_chat.svg" },
-        { icon: "../assets/images/drawer_tab_friends.svg" },
-        { icon: "../assets/images/drawer_tab_controller.svg" },
-        { icon: "../assets/images/drawer_tab_profile.svg" }
+        { icon: "../assets/images/Xbox-logo2.png" },
+        { shape: "circle" },
+        { shape: "square" },
+        { shape: "grid" }
     ]
 
     // Closes first, so the drawer isn't sitting open over the screen it just
@@ -270,12 +273,53 @@ id: root
 
                     Image {
                         anchors.centerIn: parent
-                        width: vpx(22); height: vpx(22)
-                        source: modelData.icon
-                        sourceSize { width: Math.round(vpx(22) * 2); height: Math.round(vpx(22) * 2) }
+                        visible: modelData.icon !== undefined
+                        width: vpx(24); height: vpx(24)
+                        source: modelData.icon !== undefined ? modelData.icon : ""
+                        sourceSize { width: Math.round(vpx(24) * 2); height: Math.round(vpx(24) * 2) }
                         fillMode: Image.PreserveAspectFit
                         smooth: true
                         opacity: parent.current ? 1.0 : 0.55
+                    }
+
+                    // Drawn placeholders. Deliberately plain — they're meant to
+                    // be replaced, and shapes make that obvious at a glance.
+                    Item {
+                        anchors.centerIn: parent
+                        visible: modelData.shape !== undefined
+                        width: vpx(22); height: vpx(22)
+                        opacity: parent.current ? 1.0 : 0.55
+
+                        Rectangle {
+                            anchors.fill: parent
+                            visible: modelData.shape === "circle"
+                            radius: width / 2
+                            color: "transparent"
+                            border.width: vpx(2)
+                            border.color: "white"
+                        }
+                        Rectangle {
+                            anchors.fill: parent
+                            visible: modelData.shape === "square"
+                            radius: vpx(4)
+                            color: "transparent"
+                            border.width: vpx(2)
+                            border.color: "white"
+                        }
+                        Grid {
+                            anchors.centerIn: parent
+                            visible: modelData.shape === "grid"
+                            columns: 2
+                            spacing: vpx(4)
+                            Repeater {
+                                model: 4
+                                Rectangle {
+                                    width: vpx(9); height: vpx(9)
+                                    radius: vpx(2)
+                                    color: "white"
+                                }
+                            }
+                        }
                     }
                     // Underline marks the active tab, as the guide does.
                     Rectangle {
