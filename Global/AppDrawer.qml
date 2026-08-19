@@ -47,6 +47,15 @@ id: root
     property real panelRadius: vpx(14)
     property real iconSize: vpx(46)
     property real iconRadius: vpx(8)
+    // Pegasus renders Android adaptive icons as circles with transparent
+    // corners, so a circular source sits inside the square tile still looking
+    // round. A circle needs ~1.41x to cover the square it's inscribed in;
+    // rounding up slightly hides the antialiased rim. On adaptive icons the
+    // ring being cropped is background, so nothing meaningful is lost.
+    // Set to 1.0 if any icon crops too hard — it will then sit centred on the
+    // plate below instead.
+    property real iconZoom: 1.45
+    property color iconPlate: "#2E2E2E"
     property real rowHeight: vpx(68)
 
     // If `collection` is left null, the apps collection is looked up by name
@@ -291,10 +300,21 @@ id: root
                             width: root.iconSize; height: root.iconSize
                             anchors.verticalCenter: parent.verticalCenter
 
+                            // Plate behind the art. Icons arrive with
+                            // transparent corners, so without this the tile
+                            // shows the row through them instead of reading as
+                            // a solid square.
+                            Rectangle {
+                                anchors.fill: parent
+                                visible: iconClip.visible
+                                radius: root.iconRadius
+                                color: root.iconPlate
+                            }
+
                             // Masked so the art is cropped square with rounded
                             // corners like the Xbox tiles. PreserveAspectFit
-                            // would letterbox anything non-square, which is most
-                            // app icons, and clip: true can only cut rectangles.
+                            // would letterbox anything non-square, and
+                            // clip: true can only cut rectangles.
                             Item {
                             id: iconClip
 
@@ -314,11 +334,16 @@ id: root
                                     id: appIcon
                                     anchors.fill: parent
                                     source: root.artFor(modelData)
+                                    // Decoded at the zoomed size so scaling up
+                                    // doesn't soften the icon.
                                     sourceSize {
-                                        width: Math.round(root.iconSize * 2)
-                                        height: Math.round(root.iconSize * 2)
+                                        width: Math.round(root.iconSize * root.iconZoom * 2)
+                                        height: Math.round(root.iconSize * root.iconZoom * 2)
                                     }
                                     fillMode: Image.PreserveAspectCrop
+                                    // Scales about the centre; the surrounding
+                                    // layer clips the overflow.
+                                    scale: root.iconZoom
                                     asynchronous: true
                                     smooth: true
                                 }
