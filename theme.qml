@@ -965,8 +965,9 @@ id: root
     Loader  {
     id: showcaseLoader
 
-        focus: (root.state === "showcasescreen")
-        opacity: focus ? 1 : 0
+        readonly property bool shown: (root.state === "showcasescreen")
+        focus: shown
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -976,9 +977,10 @@ id: root
     Loader {
     id: allgamesloader
 
-        focus: (root.state === "allgamesscreen")
+        readonly property bool shown: (root.state === "allgamesscreen")
+        focus: shown
         active: opacity !== 0
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -989,9 +991,10 @@ id: root
     Loader  {
     id: gridviewloader
 
-        focus: (root.state === "softwaregridscreen")
+        readonly property bool shown: (root.state === "softwaregridscreen")
+        focus: shown
         active: opacity !== 0
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -1002,9 +1005,10 @@ id: root
     Loader  {
     id: listviewloader
 
-        focus: (root.state === "softwarescreen")
+        readonly property bool shown: (root.state === "softwarescreen")
+        focus: shown
         active: opacity !== 0
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -1015,7 +1019,8 @@ id: root
     Loader  {
     id: gameviewloader
 
-        focus: (root.state === "gameviewscreen")
+        readonly property bool shown: (root.state === "gameviewscreen")
+        focus: shown
         // Stay alive once loaded: the first visit sets gameviewLoaded = true via onLoaded,
         // after which active is always true so the component is never destroyed.
         // This prevents the blank-screen bug that occurred when returning from Settings
@@ -1023,7 +1028,7 @@ id: root
         // popLastGame() and left currentGame pointing at the wrong game).
         active: (root.state === "gameviewscreen") || gameviewLoaded
         onLoaded: gameviewLoaded = true
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         // Skip GPU compositing entirely while fully hidden to keep memory overhead low.
         visible: opacity > 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
@@ -1041,9 +1046,10 @@ id: root
         // top of them — otherwise launching from the achievements page shows
         // the RA page for the whole splash delay instead of the launch screen.
         z: 100
-        focus: (root.state === "launchgamescreen")
+        readonly property bool shown: (root.state === "launchgamescreen")
+        focus: shown
         active: opacity !== 0
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -1084,9 +1090,10 @@ id: root
     Loader  {
     id: settingsloader
 
-        focus: (root.state === "settingsscreen")
+        readonly property bool shown: (root.state === "settingsscreen")
+        focus: shown
         active: opacity !== 0
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -1097,9 +1104,10 @@ id: root
     Loader {
     id: achievementsloader
 
-        focus: (root.state === "achievementsscreen")
+        readonly property bool shown: (root.state === "achievementsscreen")
+        focus: shown
         active: opacity !== 0
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -1110,9 +1118,10 @@ id: root
     Loader {
     id: gameachievementsloader
 
-        focus: (root.state === "gameachievementsscreen")
+        readonly property bool shown: (root.state === "gameachievementsscreen")
+        focus: shown
         active: opacity !== 0
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -1123,9 +1132,10 @@ id: root
     Loader {
     id: raentryloader
 
-        focus: (root.state === "raentryscreen")
+        readonly property bool shown: (root.state === "raentryscreen")
+        focus: shown
         active: opacity !== 0
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -1199,9 +1209,10 @@ id: root
     Loader {
     id: discoverviewloader
 
-        focus: (root.state === "discoverscreen")
+        readonly property bool shown: (root.state === "discoverscreen")
+        focus: shown
         active: opacity !== 0
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -1250,6 +1261,14 @@ id: root
         // opened from.
         onAppChosen: launchGameFromDiscover(game)
         onClosed: playBack()
+        // Last-resort recovery: re-apply the current state so every loader's
+        // `focus: shown` binding re-evaluates and the active screen takes focus
+        // back. Only fires if the captured item is gone.
+        onFocusRestoreFailed: {
+            var s = root.state;
+            root.state = "";
+            root.state = s;
+        }
     }
 
     // Trigger. Screens accept the keys they use, so anything they ignore
