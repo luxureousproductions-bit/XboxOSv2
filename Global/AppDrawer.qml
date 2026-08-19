@@ -101,23 +101,11 @@ id: root
         if (collection) return collection;
         if (collectionMatch === "") return null;
         var needle = collectionMatch.toLowerCase();
-        var i, c;
-        // Exact name wins. The apps provider's collection and the hand-written
-        // ROM collections can all share the shortName "android", so a substring
-        // match would just return whichever happened to be enumerated first —
-        // which is not a stable thing to depend on.
-        for (i = 0; i < api.collections.count; i++) {
-            c = api.collections.get(i);
-            if ((c.name || "").toLowerCase() === needle) return c;
-        }
-        for (i = 0; i < api.collections.count; i++) {
-            c = api.collections.get(i);
-            if ((c.shortName || "").toLowerCase() === needle) return c;
-        }
-        // Substring only as a last resort.
-        for (i = 0; i < api.collections.count; i++) {
-            c = api.collections.get(i);
-            if ((c.name || "").toLowerCase().indexOf(needle) >= 0) return c;
+        for (var i = 0; i < api.collections.count; i++) {
+            var c = api.collections.get(i);
+            if ((c.name || "").toLowerCase().indexOf(needle) >= 0
+             || (c.shortName || "").toLowerCase().indexOf(needle) >= 0)
+                return c;
         }
         return null;
     }
