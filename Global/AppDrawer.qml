@@ -60,12 +60,19 @@ id: root
     visible: slide > 0.001
     enabled: open
 
-    // The screens take focus through `focus: (root.state === ...)` bindings,
-    // which do NOT re-assert themselves once something else steals active
-    // focus. So the item that had focus is captured on open and handed it back
-    // on close — this works whatever screen is showing, with no per-state
-    // bookkeeping in theme.qml.
+    // The screens take focus through `focus: shown` bindings, which do NOT
+    // re-assert themselves once something else steals active focus. So the item
+    // that had focus is captured on open and handed it back on close — this
+    // works whatever screen is showing, with no per-state bookkeeping.
+    //
+    // This only holds because the screen Loaders stay loaded while the drawer
+    // is open. They used to unload (active was chained to focus via opacity),
+    // which destroyed the component the captured item lived in and left the
+    // screen black on return.
     property var previousFocusItem: null
+
+    // Emitted when focus couldn't be handed back — the host should re-assert it.
+    signal focusRestoreFailed()
 
     function openDrawer() {
         previousFocusItem = Window.activeFocusItem;
@@ -74,10 +81,13 @@ id: root
     }
     function closeDrawer() {
         open = false;
-        // Guard: the previous item can be gone if its Loader unloaded while
-        // the drawer was open.
-        if (previousFocusItem)
+        // A destroyed QObject reads as null here, so this also covers the case
+        // where the screen went away while the drawer was open.
+        if (previousFocusItem) {
             previousFocusItem.forceActiveFocus();
+        } else {
+            focusRestoreFailed();
+        }
         previousFocusItem = null;
         closed();
     }
@@ -101,11 +111,23 @@ id: root
         if (collection) return collection;
         if (collectionMatch === "") return null;
         var needle = collectionMatch.toLowerCase();
-        for (var i = 0; i < api.collections.count; i++) {
-            var c = api.collections.get(i);
-            if ((c.name || "").toLowerCase().indexOf(needle) >= 0
-             || (c.shortName || "").toLowerCase().indexOf(needle) >= 0)
-                return c;
+        var i, c;
+        // Exact name wins. The apps provider's collection and the hand-written
+        // ROM collections can all share the shortName "android", so a substring
+        // match would just return whichever happened to be enumerated first —
+        // which is not a stable thing to depend on.
+        for (i = 0; i < api.collections.count; i++) {
+            c = api.collections.get(i);
+            if ((c.name || "").toLowerCase() === needle) return c;
+        }
+        for (i = 0; i < api.collections.count; i++) {
+            c = api.collections.get(i);
+            if ((c.shortName || "").toLowerCase() === needle) return c;
+        }
+        // Substring only as a last resort.
+        for (i = 0; i < api.collections.count; i++) {
+            c = api.collections.get(i);
+            if ((c.name || "").toLowerCase().indexOf(needle) >= 0) return c;
         }
         return null;
     }
