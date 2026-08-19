@@ -860,6 +860,23 @@ id: root
         gameDetails(game);
     }
 
+    // Installed apps carry almost no metadata, so a details page for them is an
+    // empty screen and an extra button press. When they're allowed into the
+    // rows, open them straight away instead.
+    //
+    // Gated on the Omit setting deliberately: with omit ON, apps aren't in the
+    // rows at all, so this must not change how anything else behaves.
+    function isAppGame(game) {
+        return !!game && appTitleSet[game.title] === true;
+    }
+    function openGame(game) {
+        if (!game) return;
+        if (settings.OmitApplicationFromShowcase !== "Yes" && isAppGame(game))
+            launchGame(game);
+        else
+            gameDetails(game);
+    }
+
     function gameDetailsFromDiscover(game) {
         playAccept();
         if (lastState.length != 0)
