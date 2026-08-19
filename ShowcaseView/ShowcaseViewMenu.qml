@@ -931,7 +931,11 @@ id: root
 
             Component.onCompleted: alignToIndex(savedIndex)
 
-            model: api.collections.count + 1   // index 0 = hero, 1.. = platforms
+            // Driven by sortedColl, NOT api.collections.count — the two differ
+            // now that the apps collection is filtered out of the system row.
+            // Using the raw count left a trailing tile whose sortedColl lookup
+            // was undefined: blank, and impossible to enter.
+            model: sortedColl.length + 1   // index 0 = hero, 1.. = platforms
             delegate: Rectangle {
                 id: tile
                 property bool isHero: index === 0
