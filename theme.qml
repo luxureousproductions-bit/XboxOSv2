@@ -157,6 +157,31 @@ id: root
         return !!c && (c.name || "").toLowerCase() === appsCollectionName.toLowerCase();
     }
 
+    // Titles of everything in the drawer's collection, used to keep installed
+    // apps out of the Showcase rows when "Omit genre: Application" is on.
+    //
+    // Keyed by TITLE rather than collection because the Showcase rows filter
+    // through SortFilterProxyModel, and an ExpressionFilter there only sees
+    // model *roles* — a game's collections aren't reachable from inside one.
+    //
+    // Needed at all because the existing filter tests genre, and the provider's
+    // apps get genres from Play Store lookups that frequently fail outright, so
+    // most of them carry no genre for that test to match on.
+    readonly property var appTitleSet: {
+        var set = {};
+        var n = api.collections.count;          // referenced so this re-runs if collections reload
+        for (var i = 0; i < n; i++) {
+            var c = api.collections.get(i);
+            if (!isDrawerCollection(c)) continue;
+            var gl = c.games;
+            for (var j = 0; j < gl.count; j++) {
+                var t = gl.get(j).title;
+                if (t) set[t] = true;
+            }
+        }
+        return set;
+    }
+
     // Shared system order (home/platform page + grid LB/RB cycle), per the
     // "System sort" setting. Collections are read THROUGH this index array so
     // every screen orders systems identically without altering Pegasus's order.
