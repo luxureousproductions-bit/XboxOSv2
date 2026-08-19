@@ -56,6 +56,47 @@ id: root
     // plate below instead.
     property real iconZoom: 1.45
     property color iconPlate: "#2E2E2E"
+
+    // ── Zones ─────────────────────────────────────────────────────────────
+    // The panel is three stacked navigable regions. Focus moves between them
+    // vertically; each keeps its own index so returning to one lands where you
+    // left it.
+    readonly property int zoneTabs: 0
+    readonly property int zoneNav:  1
+    readonly property int zoneApps: 2
+
+    property int zone: zoneNav      // opens on Home, like the guide
+    property int tabIndex: 0
+    property int navIndex: 0
+
+    property real navRowHeight: vpx(52)
+
+    // Emitted when a nav row is chosen; the host decides where each one goes.
+    signal navHome()
+    signal navLibrary()
+
+    readonly property var navItems: [
+        { label: "Home",             icon: "../assets/images/drawer_home.svg" },
+        { label: "My games & apps",  icon: "../assets/images/drawer_library.svg" }
+    ]
+
+    // Placeholders. Swap the icons or add entries and the strip follows —
+    // nothing else needs changing.
+    readonly property var tabs: [
+        { icon: "../assets/images/drawer_tab_share.svg" },
+        { icon: "../assets/images/drawer_tab_chat.svg" },
+        { icon: "../assets/images/drawer_tab_friends.svg" },
+        { icon: "../assets/images/drawer_tab_controller.svg" },
+        { icon: "../assets/images/drawer_tab_profile.svg" }
+    ]
+
+    // Closes first, so the drawer isn't sitting open over the screen it just
+    // navigated to.
+    function triggerNav(i) {
+        closeDrawer();
+        if (i === 0) navHome();
+        else         navLibrary();
+    }
     property real rowHeight: vpx(80)
 
     // If `collection` is left null, the apps collection is looked up by name
@@ -94,6 +135,10 @@ id: root
 
     function openDrawer() {
         previousFocusItem = Window.activeFocusItem;
+        // Always opens on Home rather than wherever it was left, so the first
+        // press of Down is predictable.
+        zone = zoneNav;
+        navIndex = 0;
         open = true;
         forceActiveFocus();
     }
@@ -203,26 +248,132 @@ id: root
         border.width: vpx(1)
         border.color: Qt.rgba(1, 1, 1, 0.12)
 
-        Text {
-        id: header
+        // ── Tab strip ─────────────────────────────────────────────────────
+        // Placeholders for now — edit root.tabs to change them. Each entry is
+        // just an icon plus an action, so wiring one up later is a one-liner.
+        Row {
+        id: tabStrip
 
             anchors {
-                top: parent.top; topMargin: vpx(22)
-                left: parent.left; leftMargin: vpx(20)
-                right: parent.right; rightMargin: vpx(20)
+                top: parent.top; topMargin: vpx(14)
+                horizontalCenter: parent.horizontalCenter
             }
-            text: root.title
-            color: "white"
-            font.family: titleFont.name
-            font.pixelSize: fpx(20)
-            font.bold: true
-            elide: Text.ElideRight
+            height: vpx(44)
+            spacing: vpx(4)
+
+            Repeater {
+                model: root.tabs
+                delegate: Item {
+                    width: vpx(52); height: tabStrip.height
+                    readonly property bool current: root.zone === root.zoneTabs
+                                                    && root.tabIndex === index
+
+                    Image {
+                        anchors.centerIn: parent
+                        width: vpx(22); height: vpx(22)
+                        source: modelData.icon
+                        sourceSize { width: Math.round(vpx(22) * 2); height: Math.round(vpx(22) * 2) }
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                        opacity: parent.current ? 1.0 : 0.55
+                    }
+                    // Underline marks the active tab, as the guide does.
+                    Rectangle {
+                        anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter }
+                        width: vpx(26); height: vpx(2)
+                        radius: height / 2
+                        color: theme.accent
+                        visible: parent.current
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: { root.zone = root.zoneTabs; root.tabIndex = index; }
+                    }
+                }
+            }
+        }
+
+        Rectangle {
+        id: tabRule
+
+            anchors { top: tabStrip.bottom; topMargin: vpx(10); left: parent.left; right: parent.right }
+            height: vpx(1)
+            color: Qt.rgba(1, 1, 1, 0.12)
+        }
+
+        // ── Home / My games & apps ────────────────────────────────────────
+        Column {
+        id: navSection
+
+            anchors {
+                top: tabRule.bottom; topMargin: vpx(10)
+                left: parent.left; right: parent.right
+            }
+            spacing: vpx(2)
+
+            Repeater {
+                model: root.navItems
+                delegate: Item {
+                    width: navSection.width
+                    height: root.navRowHeight
+                    readonly property bool current: root.zone === root.zoneNav
+                                                    && root.navIndex === index
+
+                    Rectangle {
+                        anchors {
+                            fill: parent
+                            leftMargin: vpx(12); rightMargin: vpx(12)
+                            topMargin: vpx(2); bottomMargin: vpx(2)
+                        }
+                        radius: vpx(6)
+                        color: parent.current ? Qt.rgba(1, 1, 1, 0.07) : "transparent"
+                        border.width: parent.current ? vpx(2) : 0
+                        border.color: theme.accent
+                    }
+
+                    Row {
+                        anchors {
+                            left: parent.left; leftMargin: vpx(26)
+                            right: parent.right; rightMargin: vpx(18)
+                            verticalCenter: parent.verticalCenter
+                        }
+                        spacing: vpx(16)
+
+                        Image {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: vpx(24); height: vpx(24)
+                            source: modelData.icon
+                            sourceSize { width: Math.round(vpx(24) * 2); height: Math.round(vpx(24) * 2) }
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width - vpx(24) - vpx(16)
+                            text: modelData.label
+                            color: "white"
+                            font.family: subtitleFont.name
+                            font.pixelSize: fpx(17)
+                            elide: Text.ElideRight
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            root.zone = root.zoneNav;
+                            root.navIndex = index;
+                            root.triggerNav(index);
+                        }
+                    }
+                }
+            }
         }
 
         Rectangle {
         id: headerRule
 
-            anchors { top: header.bottom; topMargin: vpx(14); left: parent.left; right: parent.right }
+            anchors { top: navSection.bottom; topMargin: vpx(10); left: parent.left; right: parent.right }
             height: vpx(1)
             color: Qt.rgba(1, 1, 1, 0.12)
         }
@@ -405,20 +556,49 @@ id: root
     }
 
     // ── Input ─────────────────────────────────────────────────────────────
+    // Vertical movement crosses zones; the app list is skipped entirely when
+    // it's empty, so an unconfigured collection can't strand the cursor.
     Keys.onUpPressed: {
         event.accepted = true;
-        if (list.currentIndex > 0) list.currentIndex--;
+        if (zone === zoneApps) {
+            if (list.currentIndex > 0) list.currentIndex--;
+            else { zone = zoneNav; navIndex = navItems.length - 1; }
+            return;
+        }
+        if (zone === zoneNav) {
+            if (navIndex > 0) navIndex--;
+            else zone = zoneTabs;
+            return;
+        }
+        // Already at the top.
     }
     Keys.onDownPressed: {
         event.accepted = true;
+        if (zone === zoneTabs) { zone = zoneNav; navIndex = 0; return; }
+        if (zone === zoneNav) {
+            if (navIndex < navItems.length - 1) { navIndex++; return; }
+            if (appCount > 0) { zone = zoneApps; list.currentIndex = 0; }
+            return;
+        }
         if (list.currentIndex < list.count - 1) list.currentIndex++;
     }
+    Keys.onLeftPressed: {
+        event.accepted = true;
+        if (zone === zoneTabs && tabIndex > 0) tabIndex--;
+    }
+    Keys.onRightPressed: {
+        event.accepted = true;
+        if (zone === zoneTabs && tabIndex < tabs.length - 1) tabIndex++;
+    }
+
     Keys.onPressed: {
         if (event.isAutoRepeat) return;
 
         if (api.keys.isAccept(event)) {
             event.accepted = true;
-            chooseCurrent();
+            if (zone === zoneNav) triggerNav(navIndex);
+            else if (zone === zoneApps) chooseCurrent();
+            // Tabs are placeholders — nothing bound yet.
             return;
         }
         if (api.keys.isCancel(event)) {
@@ -426,14 +606,17 @@ id: root
             closeDrawer();
             return;
         }
+        // Page jumps only make sense in the app list.
         if (api.keys.isPrevPage(event)) {                 // LB — page up
             event.accepted = true;
-            list.currentIndex = Math.max(0, list.currentIndex - 8);
+            if (zone === zoneApps)
+                list.currentIndex = Math.max(0, list.currentIndex - 8);
             return;
         }
         if (api.keys.isNextPage(event)) {                 // RB — page down
             event.accepted = true;
-            list.currentIndex = Math.min(list.count - 1, list.currentIndex + 8);
+            if (zone === zoneApps)
+                list.currentIndex = Math.min(list.count - 1, list.currentIndex + 8);
         }
     }
 }
