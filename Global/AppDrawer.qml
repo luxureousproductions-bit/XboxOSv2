@@ -45,8 +45,8 @@ id: root
     // Gap between the panel and the screen edges on the left, top and bottom.
     property real panelMargin: vpx(20)
     property real panelRadius: vpx(14)
-    property real iconSize: vpx(46)
-    property real iconRadius: vpx(8)
+    property real iconSize: vpx(56)
+    property real iconRadius: vpx(10)
     // Pegasus renders Android adaptive icons as circles with transparent
     // corners, so a circular source sits inside the square tile still looking
     // round. A circle needs ~1.41x to cover the square it's inscribed in;
@@ -56,7 +56,7 @@ id: root
     // plate below instead.
     property real iconZoom: 1.45
     property color iconPlate: "#2E2E2E"
-    property real rowHeight: vpx(68)
+    property real rowHeight: vpx(80)
 
     // If `collection` is left null, the apps collection is looked up by name
     // instead. Pegasus doesn't guarantee what it calls that collection, so the
@@ -300,13 +300,22 @@ id: root
                             width: root.iconSize; height: root.iconSize
                             anchors.verticalCenter: parent.verticalCenter
 
+                            // Fixed for the life of the row. The mask layer and
+                            // the plate key off THIS rather than the image's
+                            // load status: binding the layer to status meant it
+                            // was created at the moment the async texture
+                            // arrived, and in a recycled delegate that race
+                            // sometimes captured an empty layer — the blank
+                            // tiles that appeared at random.
+                            readonly property bool hasArt: root.artFor(modelData) !== ""
+
                             // Plate behind the art. Icons arrive with
                             // transparent corners, so without this the tile
                             // shows the row through them instead of reading as
                             // a solid square.
                             Rectangle {
                                 anchors.fill: parent
-                                visible: iconClip.visible
+                                visible: iconBox.hasArt
                                 radius: root.iconRadius
                                 color: root.iconPlate
                             }
@@ -319,9 +328,8 @@ id: root
                             id: iconClip
 
                                 anchors.fill: parent
-                                visible: appIcon.status === Image.Ready && appIcon.source != ""
-                                // Only pay for the FBO on rows that have art.
-                                layer.enabled: visible
+                                visible: iconBox.hasArt
+                                layer.enabled: iconBox.hasArt
                                 layer.effect: OpacityMask {
                                     maskSource: Rectangle {
                                         width: iconBox.width
@@ -344,14 +352,20 @@ id: root
                                     // Scales about the centre; the surrounding
                                     // layer clips the overflow.
                                     scale: root.iconZoom
-                                    asynchronous: true
+                                    // Synchronous on purpose: at this size the
+                                    // decode is trivial, and it removes the
+                                    // load-timing race entirely.
+                                    asynchronous: false
                                     smooth: true
                                 }
                             }
 
+                            // Letter tile — also covers art that failed to load,
+                            // so a broken path leaves a labelled tile rather
+                            // than an empty plate.
                             Rectangle {
                                 anchors.fill: parent
-                                visible: !iconClip.visible
+                                visible: !iconBox.hasArt || appIcon.status === Image.Error
                                 radius: root.iconRadius
                                 color: Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.22)
                                 Text {
