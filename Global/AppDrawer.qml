@@ -76,8 +76,8 @@ id: root
     signal navLibrary()
 
     readonly property var navItems: [
-        { label: "Home",             icon: "../assets/images/drawer_home.svg" },
-        { label: "My games & apps",  icon: "../assets/images/drawer_library.svg" }
+        { label: "Home",             icon: "../assets/images/icon_home.svg" },
+        { label: "My games & apps",  icon: "../assets/images/gamesandapps.png" }
     ]
 
     // Tab strip. The logo is real; the rest are throwaway shapes drawn with
@@ -412,7 +412,7 @@ id: root
                 top: parent.top; topMargin: vpx(14)
                 horizontalCenter: parent.horizontalCenter
             }
-            height: vpx(44)
+            height: vpx(46)
             spacing: vpx(4)
 
             Repeater {
@@ -425,9 +425,12 @@ id: root
                     Image {
                         anchors.centerIn: parent
                         visible: modelData.icon !== undefined
-                        width: vpx(24); height: vpx(24)
+                        // Larger than the drawn placeholders: the logo has its
+                        // own internal padding, so matching their box size left
+                        // it looking like a dot.
+                        width: vpx(38); height: vpx(38)
                         source: modelData.icon !== undefined ? modelData.icon : ""
-                        sourceSize { width: Math.round(vpx(24) * 2); height: Math.round(vpx(24) * 2) }
+                        sourceSize { width: Math.round(vpx(38) * 2); height: Math.round(vpx(38) * 2) }
                         fillMode: Image.PreserveAspectFit
                         smooth: true
                         opacity: parent.current ? 1.0 : 0.55
@@ -524,34 +527,12 @@ id: root
             color: Qt.rgba(1, 1, 1, 0.12)
         }
 
-        // Names the active tab. The placeholder shapes carry no meaning on
-        // their own, and even with real icons a label is useful here.
-        Text {
-        id: tabLabel
-
-            anchors {
-                top: tabRule.bottom; topMargin: vpx(10)
-                left: parent.left; leftMargin: vpx(26)
-                right: parent.right; rightMargin: vpx(18)
-            }
-            text: {
-                var t = root.tabs[root.tabIndex];
-                var n = root.filteredApps.length;
-                return (t && t.label ? t.label : "") + "  (" + n + ")";
-            }
-            color: Qt.rgba(1, 1, 1, 0.5)
-            font.family: subtitleFont.name
-            font.pixelSize: fpx(13)
-            font.bold: true
-            elide: Text.ElideRight
-        }
-
         // ── Home / My games & apps ────────────────────────────────────────
         Column {
         id: navSection
 
             anchors {
-                top: tabLabel.bottom; topMargin: vpx(8)
+                top: tabRule.bottom; topMargin: vpx(10)
                 left: parent.left; right: parent.right
             }
             spacing: vpx(2)
@@ -818,6 +799,70 @@ id: root
     // ── Input ─────────────────────────────────────────────────────────────
     // Vertical movement crosses zones; the app list is skipped entirely when
     // it's empty, so an unconfigured collection can't strand the cursor.
+    // ── Hints ─────────────────────────────────────────────────────────────
+    // Sits beside the panel, where the guide puts its prompts. The section
+    // label lives here rather than inside the panel so the panel is nothing but
+    // tabs, nav and list.
+    Column {
+    id: hints
+
+        anchors {
+            left: panel.right; leftMargin: vpx(30)
+            top: panel.top; topMargin: vpx(34)
+            right: parent.right; rightMargin: vpx(20)
+        }
+        spacing: vpx(12)
+        // Fades in with the panel rather than popping.
+        opacity: root.slide
+
+        // Xbox button + the section you're in, with a live count.
+        Row {
+            spacing: vpx(12)
+            Image {
+                anchors.verticalCenter: parent.verticalCenter
+                width: vpx(26); height: vpx(26)
+                source: "../assets/images/Xbox-logo2.png"
+                sourceSize { width: Math.round(vpx(26) * 2); height: Math.round(vpx(26) * 2) }
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: {
+                    var t = root.tabs[root.tabIndex];
+                    return (t && t.label ? t.label : "") + "  (" + root.filteredApps.length + ")";
+                }
+                color: "white"
+                font.family: subtitleFont.name
+                font.pixelSize: fpx(17)
+                elide: Text.ElideRight
+            }
+        }
+
+        // Only meaningful with an app highlighted — the quick menu acts on the
+        // current row, so it's hidden in the tab and nav zones.
+        Row {
+            spacing: vpx(12)
+            visible: root.zone === root.zoneApps && root.filteredApps.length > 0
+            Image {
+                anchors.verticalCenter: parent.verticalCenter
+                width: vpx(24); height: vpx(24)
+                source: "../assets/images/kb_badge_start_white.svg"
+                sourceSize { width: Math.round(vpx(24) * 2); height: Math.round(vpx(24) * 2) }
+                fillMode: Image.PreserveAspectFit
+                smooth: true
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "More options"
+                color: Qt.rgba(1, 1, 1, 0.85)
+                font.family: subtitleFont.name
+                font.pixelSize: fpx(17)
+                elide: Text.ElideRight
+            }
+        }
+    }
+
     // ── Quick menu ────────────────────────────────────────────────────────
     // Opened with Start on the highlighted app. Modal: while it's up the
     // drawer's own key handling defers to it entirely.
@@ -999,6 +1044,7 @@ id: root
     Keys.onLeftPressed: {
         event.accepted = true;
         if (quickOpen) return;
+        if (zone === zoneTabs) { cycleTab(-1); return; }
         if (zone !== zoneApps) return;
         if (list.count < 1) return;
         if (list.currentIndex > 0) list.currentIndex = Math.max(0, list.currentIndex - 8);
@@ -1008,6 +1054,7 @@ id: root
     Keys.onRightPressed: {
         event.accepted = true;
         if (quickOpen) return;
+        if (zone === zoneTabs) { cycleTab(1); return; }
         if (zone !== zoneApps) return;
         if (list.count < 1) return;
         if (list.currentIndex < list.count - 1)
