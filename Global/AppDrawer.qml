@@ -42,8 +42,12 @@ id: root
     property var collection: null
     property string title: "My games & apps"
     property real panelWidth: vpx(400)
-    // Gap between the panel and the screen edges on the left, top and bottom.
-    property real panelMargin: vpx(20)
+    // Gap between the panel and the screen edges. The left is deliberately
+    // wider than the top/bottom — the Xbox guide sits well in from the left
+    // edge while hugging top and bottom, roughly a 3:1 ratio. A uniform inset
+    // is what made this read as slightly off against the reference.
+    property real panelMargin: vpx(20)          // top and bottom
+    property real panelMarginLeft: vpx(36)
     property real panelRadius: vpx(14)
     property real iconSize: vpx(64)
     property real iconRadius: vpx(12)
@@ -418,7 +422,7 @@ id: root
         width: root.panelWidth
         // Inset from the screen edges so the panel floats as a card rather
         // than butting against them.
-        x: -(root.panelWidth + root.panelMargin) * (1 - root.slide) + root.panelMargin
+        x: -(root.panelWidth + root.panelMarginLeft) * (1 - root.slide) + root.panelMarginLeft
         y: root.panelMargin
         height: parent.height - (root.panelMargin * 2)
         radius: root.panelRadius
