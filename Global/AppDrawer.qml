@@ -59,7 +59,18 @@ id: root
     // Set to 1.0 if any icon crops too hard — it will then sit centred on the
     // plate below instead.
     property real iconZoom: 1.45
-    property color iconPlate: "#2E2E2E"
+    property color iconPlate: "#303030"
+
+    // ── Palette ───────────────────────────────────────────────────────────
+    // Sampled off the reference screenshot rather than eyeballed. The strip
+    // behind the top nav is genuinely darker than the panel body — that
+    // contrast is a lot of what makes the guide read the way it does.
+    property color colPanel:    "#1F1F1F"   // panel body
+    property color colTabBar:   "#191919"   // bar behind the tab strip
+    property color colRowSel:   "#343434"   // highlighted row fill
+    property color colDivider:  "#2A2A2A"   // rules between sections
+    property color colMenu:     "#272727"   // quick menu surface
+    property color colMenuSel:  "#3A3A3A"   // highlighted quick menu row
 
     // ── Zones ─────────────────────────────────────────────────────────────
     // The panel is three stacked navigable regions. Focus moves between them
@@ -74,6 +85,7 @@ id: root
     property int navIndex: 0
 
     property real navRowHeight: vpx(52)
+    property real tabWidth: vpx(46)
 
     // Emitted when a nav row is chosen; the host decides where each one goes.
     signal navHome()
@@ -100,7 +112,7 @@ id: root
     // the index of any other tab.
     readonly property var tabs: {
         var base = [
-            { icon: "../assets/images/Xbox-logo2.png", filter: "all",      label: "All" },
+            { icon: "../assets/images/Xbox-logo2-tight.png", filter: "all",      label: "All" },
             { shape: "diamond",                         filter: "favorite", label: "Favorites" },
             { shape: "circle",                          filter: "game",     label: "Games" },
             { shape: "square",                          filter: "emulator", label: "Emulators" },
@@ -426,12 +438,44 @@ id: root
         y: root.panelMargin
         height: parent.height - (root.panelMargin * 2)
         radius: root.panelRadius
-        color: "#1C1C1C"
+        color: root.colPanel
 
-        // Outline rather than a single open-edge hairline: now that the panel
-        // is inset on all sides, it needs an edge the whole way round.
-        border.width: vpx(1)
-        border.color: Qt.rgba(1, 1, 1, 0.12)
+        // No border: the reference has none. An outline here read as a card
+        // sitting on the screen rather than part of the shell.
+
+        // Darker bar behind the top nav.
+        Item {
+        id: tabBar
+
+            anchors { top: parent.top; left: parent.left; right: parent.right }
+            height: tabStrip.y + tabStrip.height + vpx(10)
+
+            // Two rectangles because a single one with a radius would round all
+            // four corners — the lower squares off the bottom so only the
+            // panel's top corners stay curved.
+            Rectangle {
+                anchors.fill: parent
+                radius: root.panelRadius
+                color: root.colTabBar
+            }
+            Rectangle {
+                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                height: root.panelRadius
+                color: root.colTabBar
+            }
+
+            // The accent IS the bottom edge of the bar, under the active tab —
+            // in the reference there's no separate underline and no divider
+            // rule; away from the active tab the dark bar just meets the body.
+            Rectangle {
+                anchors.bottom: parent.bottom
+                x: tabStrip.x + root.tabIndex * (root.tabWidth + tabStrip.spacing)
+                width: root.tabWidth
+                height: vpx(5)
+                color: theme.accent
+                Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+            }
+        }
 
         // ── Tab strip ─────────────────────────────────────────────────────
         // Placeholders for now — edit root.tabs to change them. Each entry is
@@ -449,7 +493,7 @@ id: root
             Repeater {
                 model: root.tabs
                 delegate: Item {
-                    width: vpx(46); height: tabStrip.height
+                    width: root.tabWidth; height: tabStrip.height
                     // Which section is showing — stays lit wherever the cursor
                     // is, so the strip always says where you are.
                     readonly property bool active: root.tabIndex === index
@@ -462,7 +506,7 @@ id: root
                         anchors.margins: vpx(3)
                         visible: parent.focused
                         radius: vpx(6)
-                        color: Qt.rgba(1, 1, 1, 0.10)
+                        color: Qt.rgba(1, 1, 1, 0.08)
                     }
 
                     Image {
@@ -546,15 +590,6 @@ id: root
                             color: "white"
                         }
                     }
-                    // Underline marks the active section, as the guide does.
-                    // Not tied to focus — it's the "you are here" marker.
-                    Rectangle {
-                        anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter }
-                        width: vpx(26); height: vpx(3)
-                        radius: height / 2
-                        color: theme.accent
-                        visible: parent.active
-                    }
                     MouseArea {
                         anchors.fill: parent
                         onClicked: { root.zone = root.zoneTabs; root.tabIndex = index; }
@@ -563,20 +598,13 @@ id: root
             }
         }
 
-        Rectangle {
-        id: tabRule
-
-            anchors { top: tabStrip.bottom; topMargin: vpx(10); left: parent.left; right: parent.right }
-            height: vpx(1)
-            color: Qt.rgba(1, 1, 1, 0.12)
-        }
 
         // ── Home / My games & apps ────────────────────────────────────────
         Column {
         id: navSection
 
             anchors {
-                top: tabRule.bottom; topMargin: vpx(10)
+                top: tabBar.bottom; topMargin: vpx(12)
                 left: parent.left; right: parent.right
             }
             spacing: vpx(2)
@@ -596,7 +624,7 @@ id: root
                             topMargin: vpx(2); bottomMargin: vpx(2)
                         }
                         radius: vpx(6)
-                        color: parent.current ? Qt.rgba(1, 1, 1, 0.07) : "transparent"
+                        color: parent.current ? root.colRowSel : "transparent"
                         border.width: parent.current ? vpx(2) : 0
                         border.color: theme.accent
                     }
@@ -645,7 +673,7 @@ id: root
 
             anchors { top: navSection.bottom; topMargin: vpx(10); left: parent.left; right: parent.right }
             height: vpx(1)
-            color: Qt.rgba(1, 1, 1, 0.12)
+            color: root.colDivider
         }
 
         // Empty state — most likely the system apps option isn't enabled yet,
@@ -705,7 +733,7 @@ id: root
                         topMargin: vpx(3); bottomMargin: vpx(3)
                     }
                     radius: vpx(4)
-                    color: parent.current ? Qt.rgba(1, 1, 1, 0.10) : "transparent"
+                    color: parent.current ? root.colRowSel : "transparent"
                     border.color: theme.accent
                     border.width: parent.current ? vpx(2) : 0
 
@@ -865,7 +893,7 @@ id: root
             Image {
                 anchors.verticalCenter: parent.verticalCenter
                 width: vpx(26); height: vpx(26)
-                source: "../assets/images/Xbox-logo2.png"
+                source: "../assets/images/Xbox-logo2-tight.png"
                 sourceSize { width: Math.round(vpx(26) * 2); height: Math.round(vpx(26) * 2) }
                 fillMode: Image.PreserveAspectFit
                 smooth: true
@@ -976,9 +1004,9 @@ id: root
         width: vpx(330)
         height: quickCol.height + vpx(28)
         radius: vpx(10)
-        color: "#242424"
+        color: root.colMenu
         border.width: vpx(1)
-        border.color: Qt.rgba(1, 1, 1, 0.16)
+        border.color: Qt.rgba(1, 1, 1, 0.10)
         visible: root.quickOpen
         opacity: root.quickOpen ? 1 : 0
         scale: root.quickOpen ? 1 : 0.94
@@ -1016,7 +1044,7 @@ id: root
                             topMargin: vpx(1); bottomMargin: vpx(1)
                         }
                         radius: vpx(5)
-                        color: parent.current ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+                        color: parent.current ? root.colMenuSel : "transparent"
                         border.width: parent.current ? vpx(2) : 0
                         border.color: theme.accent
                     }
