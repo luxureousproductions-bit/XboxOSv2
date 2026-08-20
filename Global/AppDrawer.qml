@@ -87,10 +87,12 @@ id: root
     // same reason every keyboard glyph is an SVG). An entry with `icon` draws
     // that image; one with `shape` draws the named placeholder.
     readonly property var tabs: [
-        { icon: "../assets/images/Xbox-logo2.png" },
-        { shape: "circle" },
-        { shape: "square" },
-        { shape: "grid" }
+        { icon: "../assets/images/Xbox-logo2.png", filter: "all",      label: "All" },
+        { shape: "diamond",                         filter: "favorite", label: "Favorites" },
+        { shape: "circle",                          filter: "game",     label: "Games" },
+        { shape: "square",                          filter: "emulator", label: "Emulators" },
+        { shape: "grid",                            filter: "system",   label: "System" },
+        { shape: "bar",                             filter: "hidden",   label: "Hidden" }
     ]
 
     // Closes first, so the drawer isn't sitting open over the screen it just
@@ -158,8 +160,8 @@ id: root
         closed();
     }
     function chooseCurrent() {
-        if (!appModel || list.currentIndex < 0) return;
-        var g = appModel.get(list.currentIndex);
+        if (list.currentIndex < 0 || list.currentIndex >= filteredApps.length) return;
+        var g = filteredApps[list.currentIndex];
         if (!g) return;
         // Launching suspends Pegasus; close now so returning doesn't land
         // back in a half-open drawer.
@@ -198,7 +200,149 @@ id: root
         return null;
     }
     readonly property var appModel: resolvedCollection ? resolvedCollection.games : null
-    readonly property int appCount: appModel ? appModel.count : 0
+    readonly property int appCount: filteredApps.length
+
+    // ── Categories ────────────────────────────────────────────────────────
+    // Pegasus leaves genre, developer and publisher empty on provider apps, but
+    // it does expose the package name via files — "android:com.dsemu.drastic".
+    // That's the only usable signal, so categories are derived from it.
+    //
+    // System and emulator detect reliably. "Game vs ordinary app" has NO signal
+    // in the data, so games are listed explicitly below; anything unmatched
+    // still shows under the All tab, so nothing is ever hidden.
+    property var systemPrefixes: [
+        "com.android.", "com.google.android.", "com.qualcomm.", "com.mediatek.",
+        "com.samsung.", "com.sec.", "com.odin.", "com.ayn.", "org.lineageos.", "android."
+    ]
+    property var emulatorKeywords: [
+        "citra", "dolphin", "drastic", "duckstation", "aethersx2", "ppsspp", "retroarch",
+        "vita3k", "yuzu", "ryujinx", "eden", "sudachi", "redream", "mupen", "melonds",
+        "flycast", "pcsx", "epsxe", "mame", "xemu", "winlator", "lime3ds", "azahar",
+        "panda3ds", "skyline", "nethersx2", "snes9x", "mgba", "fpse", "dsemu", "mm.jr",
+        "emu", "emulator", "gamenative"
+    ]
+    // Package -> category. Wins over every rule; this is where games go, and
+    // where anything the rules get wrong gets corrected.
+    property var categoryOverrides: ({
+        "com.lojical.AM2R": "game"
+    })
+
+    // ── Saved state ───────────────────────────────────────────────────────
+    // Favorites, hidden apps and reclassifications are theme-side concepts —
+    // Pegasus knows nothing about them — so they live in api.memory, which
+    // persists across restarts.
+    //
+    // Stored keyed by package rather than title: titles can change when an app
+    // updates, package names don't.
+    property var favoritePkgs: ({})
+    property var hiddenPkgs: ({})
+    property var savedCategories: ({})
+
+    readonly property string memFavorites: "appdrawer.favorites"
+    readonly property string memHidden: "appdrawer.hidden"
+    readonly property string memCategories: "appdrawer.categories"
+
+    function parseObj(raw) {
+        if (!raw) return ({});
+        try {
+            var o = JSON.parse(raw);
+            return (o && typeof o === "object") ? o : ({});
+        } catch (e) {
+            return ({});
+        }
+    }
+    function loadState() {
+        favoritePkgs    = parseObj(api.memory.get(memFavorites));
+        hiddenPkgs      = parseObj(api.memory.get(memHidden));
+        savedCategories = parseObj(api.memory.get(memCategories));
+    }
+    // Reassigns a fresh object rather than mutating in place: QML only
+    // re-evaluates bindings on assignment, so an in-place edit would update the
+    // data without ever refreshing the list.
+    function withKey(obj, key, value) {
+        var copy = {};
+        for (var k in obj) copy[k] = obj[k];
+        if (value === undefined) delete copy[key];
+        else copy[key] = value;
+        return copy;
+    }
+
+    function isFavorite(pkg) { return pkg !== "" && favoritePkgs[pkg] === true; }
+    function isHidden(pkg)   { return pkg !== "" && hiddenPkgs[pkg] === true; }
+
+    function toggleFavorite(pkg) {
+        if (pkg === "") return;
+        favoritePkgs = withKey(favoritePkgs, pkg, isFavorite(pkg) ? undefined : true);
+        api.memory.set(memFavorites, JSON.stringify(favoritePkgs));
+    }
+    function toggleHidden(pkg) {
+        if (pkg === "") return;
+        hiddenPkgs = withKey(hiddenPkgs, pkg, isHidden(pkg) ? undefined : true);
+        api.memory.set(memHidden, JSON.stringify(hiddenPkgs));
+    }
+    function setCategory(pkg, cat) {
+        if (pkg === "") return;
+        savedCategories = withKey(savedCategories, pkg, cat);
+        api.memory.set(memCategories, JSON.stringify(savedCategories));
+    }
+
+    Component.onCompleted: loadState()
+
+    function packageOf(game) {
+        if (!game || !game.files || game.files.count < 1) return "";
+        var p = game.files.get(0).path || "";
+        // Paths arrive prefixed, e.g. "android:com.dsemu.drastic".
+        var colon = p.indexOf(":");
+        return colon >= 0 ? p.substring(colon + 1) : p;
+    }
+
+    function categoryOf(game) {
+        var pkg = packageOf(game);
+        // Saved reclassification beats the shipped seed, which beats the rules.
+        if (pkg !== "" && savedCategories[pkg] !== undefined)
+            return savedCategories[pkg];
+        if (pkg !== "" && categoryOverrides[pkg] !== undefined)
+            return categoryOverrides[pkg];
+
+        var p = pkg.toLowerCase();
+        var t = (game && game.title ? game.title : "").toLowerCase();
+        var i;
+        for (i = 0; i < systemPrefixes.length; i++)
+            if (p.indexOf(systemPrefixes[i]) === 0) return "system";
+        for (i = 0; i < emulatorKeywords.length; i++)
+            if (p.indexOf(emulatorKeywords[i]) >= 0 || t.indexOf(emulatorKeywords[i]) >= 0)
+                return "emulator";
+        return "other";
+    }
+
+    // Rebuilt when the collection, the active tab, or any saved state changes.
+    // A plain JS array is used as the ListView model because a Pegasus GameList
+    // can't be filtered in place.
+    readonly property string activeFilter: {
+        var t = tabs[tabIndex];
+        return (t && t.filter !== undefined) ? t.filter : "all";
+    }
+    readonly property var filteredApps: {
+        var out = [];
+        if (!appModel) return out;
+        var want = activeFilter;
+        // Referenced so the list rebuilds when any of these change.
+        var fav = favoritePkgs, hid = hiddenPkgs, cats = savedCategories;
+        for (var i = 0; i < appModel.count; i++) {
+            var g = appModel.get(i);
+            var pkg = packageOf(g);
+            // Hidden apps are gone from every tab except Hidden itself,
+            // otherwise there'd be no way to get them back.
+            if (want !== "hidden" && hid[pkg] === true) continue;
+            if (want === "all") { out.push(g); continue; }
+            if (want === "favorite") { if (fav[pkg] === true) out.push(g); continue; }
+            if (want === "hidden")   { if (hid[pkg] === true) out.push(g); continue; }
+            if (categoryOf(g) === want) out.push(g);
+        }
+        return out;
+    }
+    // Selecting a different tab restarts the list at the top.
+    onActiveFilterChanged: list.currentIndex = 0
 
     // Pegasus only has art for some installed apps, so try the asset slots an
     // app icon realistically lands in and let the delegate fall back to a
@@ -320,6 +464,23 @@ id: root
                                 }
                             }
                         }
+                        Rectangle {
+                            anchors.centerIn: parent
+                            visible: modelData.shape === "diamond"
+                            width: vpx(15); height: vpx(15)
+                            radius: vpx(2)
+                            rotation: 45
+                            color: "transparent"
+                            border.width: vpx(2)
+                            border.color: "white"
+                        }
+                        Rectangle {
+                            anchors.centerIn: parent
+                            visible: modelData.shape === "bar"
+                            width: vpx(20); height: vpx(6)
+                            radius: vpx(3)
+                            color: "white"
+                        }
                     }
                     // Underline marks the active tab, as the guide does.
                     Rectangle {
@@ -345,12 +506,34 @@ id: root
             color: Qt.rgba(1, 1, 1, 0.12)
         }
 
+        // Names the active tab. The placeholder shapes carry no meaning on
+        // their own, and even with real icons a label is useful here.
+        Text {
+        id: tabLabel
+
+            anchors {
+                top: tabRule.bottom; topMargin: vpx(10)
+                left: parent.left; leftMargin: vpx(26)
+                right: parent.right; rightMargin: vpx(18)
+            }
+            text: {
+                var t = root.tabs[root.tabIndex];
+                var n = root.filteredApps.length;
+                return (t && t.label ? t.label : "") + "  (" + n + ")";
+            }
+            color: Qt.rgba(1, 1, 1, 0.5)
+            font.family: subtitleFont.name
+            font.pixelSize: fpx(13)
+            font.bold: true
+            elide: Text.ElideRight
+        }
+
         // ── Home / My games & apps ────────────────────────────────────────
         Column {
         id: navSection
 
             anchors {
-                top: tabRule.bottom; topMargin: vpx(10)
+                top: tabLabel.bottom; topMargin: vpx(8)
                 left: parent.left; right: parent.right
             }
             spacing: vpx(2)
@@ -432,7 +615,9 @@ id: root
             }
             visible: root.appCount === 0
             text: root.resolvedCollection
-                  ? "No apps in this collection."
+                  ? (root.activeFilter === "all"
+                     ? "No apps in this collection."
+                     : "Nothing in this category yet.")
                   : "No app collection found.\nEnable system apps in Pegasus settings, "
                     + "or set the collection on this drawer."
             color: Qt.rgba(1, 1, 1, 0.5)
@@ -452,7 +637,7 @@ id: root
             }
             visible: root.appCount > 0
             clip: true
-            model: root.appModel
+            model: root.filteredApps
             currentIndex: 0
             // Keeps the focused row off the very edge when scrolling.
             preferredHighlightBegin: height * 0.25
@@ -575,7 +760,7 @@ id: root
                         }
 
                         Text {
-                            width: parent.width - root.iconSize - vpx(12)
+                            width: parent.width - root.iconSize - vpx(12) - vpx(16)
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData ? modelData.title : ""
                             color: "white"
@@ -584,6 +769,16 @@ id: root
                             elide: Text.ElideRight
                             maximumLineCount: 2
                             wrapMode: Text.WordWrap
+                        }
+
+                        // Favourite marker — visible in every tab, so the state
+                        // is readable without opening the quick menu.
+                        Rectangle {
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: root.isFavorite(root.packageOf(modelData))
+                            width: vpx(8); height: vpx(8)
+                            radius: width / 2
+                            color: theme.accent
                         }
                     }
 
@@ -602,8 +797,144 @@ id: root
     // ── Input ─────────────────────────────────────────────────────────────
     // Vertical movement crosses zones; the app list is skipped entirely when
     // it's empty, so an unconfigured collection can't strand the cursor.
+    // ── Quick menu ────────────────────────────────────────────────────────
+    // Opened with Start on the highlighted app. Modal: while it's up the
+    // drawer's own key handling defers to it entirely.
+    property bool quickOpen: false
+    property int quickIndex: 0
+    property var quickApp: null
+    // Start. api.keys has no binding for it, so the raw code is used — the
+    // same one the virtual keyboard uses.
+    property int quickMenuKey: 1048587
+
+    readonly property var quickActions: {
+        var pkg = root.quickApp ? root.packageOf(root.quickApp) : "";
+        return [
+            { label: root.isFavorite(pkg) ? "Remove from Favorites" : "Add to Favorites", act: "fav" },
+            { label: root.isHidden(pkg)   ? "Unhide app"            : "Hide app",         act: "hide" },
+            { label: "Move to Games",     act: "cat", cat: "game" },
+            { label: "Move to Emulators", act: "cat", cat: "emulator" },
+            { label: "Move to System",    act: "cat", cat: "system" },
+            { label: "Move to Other",     act: "cat", cat: "other" }
+        ];
+    }
+
+    function openQuickMenu() {
+        if (zone !== zoneApps) return;
+        if (list.currentIndex < 0 || list.currentIndex >= filteredApps.length) return;
+        quickApp = filteredApps[list.currentIndex];
+        quickIndex = 0;
+        quickOpen = true;
+    }
+    function closeQuickMenu() {
+        quickOpen = false;
+        quickApp = null;
+    }
+    function runQuickAction() {
+        var a = quickActions[quickIndex];
+        var pkg = quickApp ? packageOf(quickApp) : "";
+        if (!a || pkg === "") { closeQuickMenu(); return; }
+        if (a.act === "fav")       toggleFavorite(pkg);
+        else if (a.act === "hide") toggleHidden(pkg);
+        else if (a.act === "cat")  setCategory(pkg, a.cat);
+        closeQuickMenu();
+        // The list may have shrunk under the cursor — hiding an app removes it
+        // from the current tab, reclassifying can too.
+        if (list.currentIndex >= filteredApps.length)
+            list.currentIndex = Math.max(0, filteredApps.length - 1);
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        color: "#000000"
+        opacity: root.quickOpen ? 0.5 : 0
+        visible: opacity > 0.001
+        Behavior on opacity { NumberAnimation { duration: 120 } }
+        MouseArea {
+            anchors.fill: parent
+            enabled: root.quickOpen
+            onClicked: root.closeQuickMenu()
+        }
+    }
+
+    Rectangle {
+    id: quickMenu
+
+        anchors.centerIn: parent
+        width: vpx(330)
+        height: quickCol.height + vpx(28)
+        radius: vpx(10)
+        color: "#242424"
+        border.width: vpx(1)
+        border.color: Qt.rgba(1, 1, 1, 0.16)
+        visible: root.quickOpen
+        opacity: root.quickOpen ? 1 : 0
+        scale: root.quickOpen ? 1 : 0.94
+        Behavior on opacity { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+        Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutBack; easing.overshoot: 2 } }
+
+        Column {
+        id: quickCol
+
+            anchors { top: parent.top; topMargin: vpx(14); left: parent.left; right: parent.right }
+            spacing: vpx(2)
+
+            Text {
+                anchors { left: parent.left; leftMargin: vpx(18); right: parent.right; rightMargin: vpx(18) }
+                text: root.quickApp ? root.quickApp.title : ""
+                color: Qt.rgba(1, 1, 1, 0.55)
+                font.family: subtitleFont.name
+                font.pixelSize: fpx(13)
+                font.bold: true
+                elide: Text.ElideRight
+                bottomPadding: vpx(8)
+            }
+
+            Repeater {
+                model: root.quickActions
+                delegate: Item {
+                    width: quickCol.width
+                    height: vpx(40)
+                    readonly property bool current: root.quickIndex === index
+
+                    Rectangle {
+                        anchors {
+                            fill: parent
+                            leftMargin: vpx(10); rightMargin: vpx(10)
+                            topMargin: vpx(1); bottomMargin: vpx(1)
+                        }
+                        radius: vpx(5)
+                        color: parent.current ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
+                        border.width: parent.current ? vpx(2) : 0
+                        border.color: theme.accent
+                    }
+                    Text {
+                        anchors {
+                            left: parent.left; leftMargin: vpx(22)
+                            right: parent.right; rightMargin: vpx(18)
+                            verticalCenter: parent.verticalCenter
+                        }
+                        text: modelData.label
+                        color: "white"
+                        font.family: subtitleFont.name
+                        font.pixelSize: fpx(15)
+                        elide: Text.ElideRight
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: { root.quickIndex = index; root.runQuickAction(); }
+                    }
+                }
+            }
+        }
+    }
+
     Keys.onUpPressed: {
         event.accepted = true;
+        if (quickOpen) {
+            if (quickIndex > 0) quickIndex--;
+            return;
+        }
         if (zone === zoneApps) {
             if (list.currentIndex > 0) list.currentIndex--;
             else { zone = zoneNav; navIndex = navItems.length - 1; }
@@ -618,6 +949,10 @@ id: root
     }
     Keys.onDownPressed: {
         event.accepted = true;
+        if (quickOpen) {
+            if (quickIndex < quickActions.length - 1) quickIndex++;
+            return;
+        }
         if (zone === zoneTabs) { zone = zoneNav; navIndex = 0; return; }
         if (zone === zoneNav) {
             if (navIndex < navItems.length - 1) { navIndex++; return; }
@@ -628,15 +963,33 @@ id: root
     }
     Keys.onLeftPressed: {
         event.accepted = true;
+        if (quickOpen) return;
         if (zone === zoneTabs && tabIndex > 0) tabIndex--;
     }
     Keys.onRightPressed: {
         event.accepted = true;
+        if (quickOpen) return;
         if (zone === zoneTabs && tabIndex < tabs.length - 1) tabIndex++;
     }
 
     Keys.onPressed: {
         if (event.isAutoRepeat) return;
+
+        // Modal: the quick menu takes everything while it's up.
+        if (quickOpen) {
+            event.accepted = true;
+            if (api.keys.isAccept(event))      runQuickAction();
+            else if (api.keys.isCancel(event)) closeQuickMenu();
+            else if (event.key === quickMenuKey) closeQuickMenu();
+            return;
+        }
+
+        // Start opens the quick menu on the highlighted app.
+        if (event.key === quickMenuKey) {
+            event.accepted = true;
+            openQuickMenu();
+            return;
+        }
 
         if (api.keys.isAccept(event)) {
             event.accepted = true;
