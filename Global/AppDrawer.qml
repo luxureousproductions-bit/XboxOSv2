@@ -86,15 +86,42 @@ id: root
     // Rectangles rather than Canvas: Canvas doesn't render in this build (the
     // same reason every keyboard glyph is an SVG). An entry with `icon` draws
     // that image; one with `shape` draws the named placeholder.
-    readonly property var tabs: [
-        { icon: "../assets/images/Xbox-logo2.png", filter: "all",      label: "All" },
-        { shape: "diamond",                         filter: "favorite", label: "Favorites" },
-        { shape: "circle",                          filter: "game",     label: "Games" },
-        { shape: "square",                          filter: "emulator", label: "Emulators" },
-        { shape: "grid",                            filter: "system",   label: "System" },
-        { shape: "tri",                             filter: "other",    label: "Apps" },
-        { shape: "bar",                             filter: "hidden",   label: "Hidden" }
-    ]
+    // Six sections normally. Hidden is appended only while something is
+    // actually hidden — a permanent seventh tab that reads "(0)" most of the
+    // time is clutter, and a setting would mean configuring something almost
+    // nobody touches. It can't live in the quick menu either: that menu acts on
+    // the highlighted row, and a hidden app isn't in any list to highlight.
+    //
+    // Appended last on purpose, so its appearing and disappearing never shifts
+    // the index of any other tab.
+    readonly property var tabs: {
+        var base = [
+            { icon: "../assets/images/Xbox-logo2.png", filter: "all",      label: "All" },
+            { shape: "diamond",                         filter: "favorite", label: "Favorites" },
+            { shape: "circle",                          filter: "game",     label: "Games" },
+            { shape: "square",                          filter: "emulator", label: "Emulators" },
+            { shape: "grid",                            filter: "system",   label: "System" },
+            { shape: "tri",                             filter: "other",    label: "Apps" }
+        ];
+        if (hiddenCount > 0)
+            base.push({ shape: "bar", filter: "hidden", label: "Hidden" });
+        return base;
+    }
+
+    // Counted against the live collection rather than the saved list, so stale
+    // entries for uninstalled apps can't keep the tab alive forever.
+    readonly property int hiddenCount: {
+        if (!appModel) return 0;
+        var hid = hiddenPkgs;
+        var n = 0;
+        for (var i = 0; i < appModel.count; i++)
+            if (hid[packageOf(appModel.get(i))] === true) n++;
+        return n;
+    }
+
+    // Unhiding the last app removes the tab under the cursor; step back so the
+    // index can't dangle past the end.
+    onTabsChanged: if (tabIndex >= tabs.length) tabIndex = tabs.length - 1;
 
     // Closes first, so the drawer isn't sitting open over the screen it just
     // navigated to.
@@ -419,8 +446,20 @@ id: root
                 model: root.tabs
                 delegate: Item {
                     width: vpx(46); height: tabStrip.height
-                    readonly property bool current: root.zone === root.zoneTabs
-                                                    && root.tabIndex === index
+                    // Which section is showing — stays lit wherever the cursor
+                    // is, so the strip always says where you are.
+                    readonly property bool active: root.tabIndex === index
+                    // Whether the cursor is actually on the strip. Drawn as a
+                    // backing plate so it reads differently from `active`.
+                    readonly property bool focused: active && root.zone === root.zoneTabs
+
+                    Rectangle {
+                        anchors.fill: parent
+                        anchors.margins: vpx(3)
+                        visible: parent.focused
+                        radius: vpx(6)
+                        color: Qt.rgba(1, 1, 1, 0.10)
+                    }
 
                     Image {
                         anchors.centerIn: parent
@@ -433,7 +472,7 @@ id: root
                         sourceSize { width: Math.round(vpx(38) * 2); height: Math.round(vpx(38) * 2) }
                         fillMode: Image.PreserveAspectFit
                         smooth: true
-                        opacity: parent.current ? 1.0 : 0.55
+                        opacity: parent.active ? 1.0 : 0.5
                     }
 
                     // Drawn placeholders. Deliberately plain — they're meant to
@@ -442,7 +481,7 @@ id: root
                         anchors.centerIn: parent
                         visible: modelData.shape !== undefined
                         width: vpx(22); height: vpx(22)
-                        opacity: parent.current ? 1.0 : 0.55
+                        opacity: parent.active ? 1.0 : 0.5
 
                         Rectangle {
                             anchors.fill: parent
@@ -503,13 +542,14 @@ id: root
                             color: "white"
                         }
                     }
-                    // Underline marks the active tab, as the guide does.
+                    // Underline marks the active section, as the guide does.
+                    // Not tied to focus — it's the "you are here" marker.
                     Rectangle {
                         anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter }
-                        width: vpx(26); height: vpx(2)
+                        width: vpx(26); height: vpx(3)
                         radius: height / 2
                         color: theme.accent
-                        visible: parent.current
+                        visible: parent.active
                     }
                     MouseArea {
                         anchors.fill: parent
