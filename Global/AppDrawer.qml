@@ -45,8 +45,8 @@ id: root
     // Gap between the panel and the screen edges on the left, top and bottom.
     property real panelMargin: vpx(20)
     property real panelRadius: vpx(14)
-    property real iconSize: vpx(56)
-    property real iconRadius: vpx(10)
+    property real iconSize: vpx(64)
+    property real iconRadius: vpx(12)
     // Pegasus renders Android adaptive icons as circles with transparent
     // corners, so a circular source sits inside the square tile still looking
     // round. A circle needs ~1.41x to cover the square it's inscribed in;
@@ -92,6 +92,7 @@ id: root
         { shape: "circle",                          filter: "game",     label: "Games" },
         { shape: "square",                          filter: "emulator", label: "Emulators" },
         { shape: "grid",                            filter: "system",   label: "System" },
+        { shape: "tri",                             filter: "other",    label: "Apps" },
         { shape: "bar",                             filter: "hidden",   label: "Hidden" }
     ]
 
@@ -102,7 +103,7 @@ id: root
         if (i === 0) navHome();
         else         navLibrary();
     }
-    property real rowHeight: vpx(80)
+    property real rowHeight: vpx(90)
 
     // If `collection` is left null, the apps collection is looked up by name
     // instead. Pegasus doesn't guarantee what it calls that collection, so the
@@ -285,6 +286,12 @@ id: root
         savedCategories = withKey(savedCategories, pkg, cat);
         api.memory.set(memCategories, JSON.stringify(savedCategories));
     }
+    // Drops the saved override so the package falls back to the rules.
+    function clearCategory(pkg) {
+        if (pkg === "") return;
+        savedCategories = withKey(savedCategories, pkg, undefined);
+        api.memory.set(memCategories, JSON.stringify(savedCategories));
+    }
 
     Component.onCompleted: loadState()
 
@@ -411,7 +418,7 @@ id: root
             Repeater {
                 model: root.tabs
                 delegate: Item {
-                    width: vpx(52); height: tabStrip.height
+                    width: vpx(46); height: tabStrip.height
                     readonly property bool current: root.zone === root.zoneTabs
                                                     && root.tabIndex === index
 
@@ -479,6 +486,17 @@ id: root
                             visible: modelData.shape === "bar"
                             width: vpx(20); height: vpx(6)
                             radius: vpx(3)
+                            color: "white"
+                        }
+                        // Triangle stand-in built from a rotated square, since
+                        // Rectangle can't do triangles and Canvas doesn't render
+                        // in this build.
+                        Rectangle {
+                            anchors.centerIn: parent
+                            visible: modelData.shape === "tri"
+                            width: vpx(14); height: vpx(14)
+                            radius: vpx(2)
+                            rotation: 45
                             color: "white"
                         }
                     }
@@ -650,7 +668,10 @@ id: root
                 width: ListView.view.width
                 height: root.rowHeight
 
+                // Requires the cursor to actually be in the app list — otherwise
+                // the top row stayed lit while focus was up on the tabs or nav.
                 readonly property bool current: ListView.isCurrentItem
+                                                && root.zone === root.zoneApps
 
                 Rectangle {
                     anchors {
@@ -815,7 +836,8 @@ id: root
             { label: "Move to Games",     act: "cat", cat: "game" },
             { label: "Move to Emulators", act: "cat", cat: "emulator" },
             { label: "Move to System",    act: "cat", cat: "system" },
-            { label: "Move to Other",     act: "cat", cat: "other" }
+            { label: "Move to Apps",      act: "cat", cat: "other" },
+            { label: "Reset to automatic", act: "reset" }
         ];
     }
 
@@ -837,6 +859,7 @@ id: root
         if (a.act === "fav")       toggleFavorite(pkg);
         else if (a.act === "hide") toggleHidden(pkg);
         else if (a.act === "cat")  setCategory(pkg, a.cat);
+        else if (a.act === "reset") clearCategory(pkg);
         closeQuickMenu();
         // The list may have shrunk under the cursor — hiding an app removes it
         // from the current tab, reclassifying can too.
@@ -929,20 +952,26 @@ id: root
         }
     }
 
+    // ── Navigation ────────────────────────────────────────────────────────
+    // Vertical moves cross zones. The app list wraps top-to-bottom so a long
+    // list can be circled without backing out of it, but Up from the first row
+    // still exits to the nav rows — otherwise there'd be no way back up.
     Keys.onUpPressed: {
         event.accepted = true;
         if (quickOpen) {
-            if (quickIndex > 0) quickIndex--;
+            if (quickIndex > 0) { quickIndex--; playNav(); }
             return;
         }
         if (zone === zoneApps) {
             if (list.currentIndex > 0) list.currentIndex--;
             else { zone = zoneNav; navIndex = navItems.length - 1; }
+            playNav();
             return;
         }
         if (zone === zoneNav) {
             if (navIndex > 0) navIndex--;
             else zone = zoneTabs;
+            playNav();
             return;
         }
         // Already at the top.
@@ -950,26 +979,49 @@ id: root
     Keys.onDownPressed: {
         event.accepted = true;
         if (quickOpen) {
-            if (quickIndex < quickActions.length - 1) quickIndex++;
+            if (quickIndex < quickActions.length - 1) { quickIndex++; playNav(); }
             return;
         }
-        if (zone === zoneTabs) { zone = zoneNav; navIndex = 0; return; }
+        if (zone === zoneTabs) { zone = zoneNav; navIndex = 0; playNav(); return; }
         if (zone === zoneNav) {
-            if (navIndex < navItems.length - 1) { navIndex++; return; }
-            if (appCount > 0) { zone = zoneApps; list.currentIndex = 0; }
+            if (navIndex < navItems.length - 1) { navIndex++; playNav(); return; }
+            if (appCount > 0) { zone = zoneApps; list.currentIndex = 0; playNav(); }
             return;
         }
+        // Wraps back to the first app past the end of the list.
         if (list.currentIndex < list.count - 1) list.currentIndex++;
+        else list.currentIndex = 0;
+        playNav();
     }
+
+    // Left/Right page through the app list, wrapping at both ends. They used to
+    // move the tab strip; that's on LB/RB now, matching the nav bar elsewhere.
     Keys.onLeftPressed: {
         event.accepted = true;
         if (quickOpen) return;
-        if (zone === zoneTabs && tabIndex > 0) tabIndex--;
+        if (zone !== zoneApps) return;
+        if (list.count < 1) return;
+        if (list.currentIndex > 0) list.currentIndex = Math.max(0, list.currentIndex - 8);
+        else list.currentIndex = list.count - 1;      // wrap to the bottom
+        playNav();
     }
     Keys.onRightPressed: {
         event.accepted = true;
         if (quickOpen) return;
-        if (zone === zoneTabs && tabIndex < tabs.length - 1) tabIndex++;
+        if (zone !== zoneApps) return;
+        if (list.count < 1) return;
+        if (list.currentIndex < list.count - 1)
+            list.currentIndex = Math.min(list.count - 1, list.currentIndex + 8);
+        else list.currentIndex = 0;                   // wrap to the top
+        playNav();
+    }
+
+    // Cycles the tab strip from anywhere in the drawer, without having to walk
+    // the cursor up to it first.
+    function cycleTab(step) {
+        var n = tabs.length;
+        tabIndex = (tabIndex + step + n) % n;
+        playNav();
     }
 
     Keys.onPressed: {
@@ -978,15 +1030,16 @@ id: root
         // Modal: the quick menu takes everything while it's up.
         if (quickOpen) {
             event.accepted = true;
-            if (api.keys.isAccept(event))      runQuickAction();
-            else if (api.keys.isCancel(event)) closeQuickMenu();
-            else if (event.key === quickMenuKey) closeQuickMenu();
+            if (api.keys.isAccept(event))      { playAccept(); runQuickAction(); }
+            else if (api.keys.isCancel(event)) { playBack(); closeQuickMenu(); }
+            else if (event.key === quickMenuKey) { playBack(); closeQuickMenu(); }
             return;
         }
 
         // Start opens the quick menu on the highlighted app.
         if (event.key === quickMenuKey) {
             event.accepted = true;
+            if (zone === zoneApps) playToggle();
             openQuickMenu();
             return;
         }
@@ -1003,17 +1056,16 @@ id: root
             closeDrawer();
             return;
         }
-        // Page jumps only make sense in the app list.
-        if (api.keys.isPrevPage(event)) {                 // LB — page up
+        // LB/RB cycle the tab strip, mirroring how they move the system row
+        // elsewhere in the theme. Works from any zone.
+        if (api.keys.isPrevPage(event)) {                 // LB
             event.accepted = true;
-            if (zone === zoneApps)
-                list.currentIndex = Math.max(0, list.currentIndex - 8);
+            cycleTab(-1);
             return;
         }
-        if (api.keys.isNextPage(event)) {                 // RB — page down
+        if (api.keys.isNextPage(event)) {                 // RB
             event.accepted = true;
-            if (zone === zoneApps)
-                list.currentIndex = Math.min(list.count - 1, list.currentIndex + 8);
+            cycleTab(1);
         }
     }
 }
