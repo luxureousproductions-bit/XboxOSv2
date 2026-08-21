@@ -79,21 +79,49 @@ id: root
     readonly property int zoneTabs: 0
     readonly property int zoneNav:  1
     readonly property int zoneApps: 2
+    readonly property int zoneActions: 3
 
     property int zone: zoneNav      // opens on Home, like the guide
     property int tabIndex: 0
     property int navIndex: 0
+    property int actionIndex: 0
 
-    property real navRowHeight: vpx(52)
-    property real tabWidth: vpx(46)
+    // Hidden apps are hidden for a reason, so the Hidden tab is off by default
+    // — otherwise the section advertises exactly what you asked to tuck away.
+    // This toggle is the way back in.
+    property bool showHiddenTab: false
+
+    readonly property var actions: [
+        { label: root.showHiddenTab ? "Hide hidden section" : "Show hidden section",
+          act: "toggleHidden", on: root.showHiddenTab }
+    ]
+
+    function runAction(i) {
+        var a = actions[i];
+        if (!a) return;
+        if (a.act === "toggleHidden") {
+            showHiddenTab = !showHiddenTab;
+            playToggle();
+        }
+    }
+
+    property real navRowHeight: vpx(56)
+    property real rowInset: vpx(10)      // row edge -> icon column
+    property real iconGap: vpx(12)       // icon column -> label
+    property real navIconSize: vpx(28)   // nav glyphs, drawn inside the icon column
+    property real tabStripInset: vpx(10)
+    // Divides the available width, so the icons spread evenly however many
+    // tabs are showing.
+    readonly property real tabWidth:
+        (panelWidth - tabStripInset * 2) / Math.max(1, tabs.length)
 
     // Emitted when a nav row is chosen; the host decides where each one goes.
     signal navHome()
     signal navLibrary()
 
     readonly property var navItems: [
-        { label: "Home",             icon: "../assets/images/icon_home.svg" },
-        { label: "My games & apps",  icon: "../assets/images/gamesandapps.png" }
+        { label: "Home",             icon: "../assets/images/icon_home.svg",     scale: 1.0 },
+        { label: "My games & apps",  icon: "../assets/images/gamesandapps.png", scale: 1.35 }
     ]
 
     // Tab strip. The logo is real; the rest are throwaway shapes drawn with
@@ -119,7 +147,7 @@ id: root
             { shape: "grid",                            filter: "system",   label: "System" },
             { shape: "tri",                             filter: "other",    label: "Apps" }
         ];
-        if (hiddenCount > 0)
+        if (hiddenCount > 0 && showHiddenTab)
             base.push({ shape: "bar", filter: "hidden", label: "Hidden" });
         return base;
     }
@@ -469,9 +497,11 @@ id: root
             // rule; away from the active tab the dark bar just meets the body.
             Rectangle {
                 anchors.bottom: parent.bottom
-                x: tabStrip.x + root.tabIndex * (root.tabWidth + tabStrip.spacing)
-                width: root.tabWidth
+                x: tabStrip.x + root.tabIndex * root.tabWidth
+                     + (root.tabWidth - width) / 2
+                width: root.tabWidth * 0.62
                 height: vpx(5)
+                radius: height / 2
                 color: theme.accent
                 Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
             }
@@ -485,10 +515,11 @@ id: root
 
             anchors {
                 top: parent.top; topMargin: vpx(14)
-                horizontalCenter: parent.horizontalCenter
+                left: parent.left; leftMargin: root.tabStripInset
+                right: parent.right; rightMargin: root.tabStripInset
             }
             height: vpx(46)
-            spacing: vpx(4)
+            spacing: 0
 
             Repeater {
                 model: root.tabs
@@ -515,9 +546,9 @@ id: root
                         // Larger than the drawn placeholders: the logo has its
                         // own internal padding, so matching their box size left
                         // it looking like a dot.
-                        width: vpx(38); height: vpx(38)
+                        width: vpx(30); height: vpx(30)
                         source: modelData.icon !== undefined ? modelData.icon : ""
-                        sourceSize { width: Math.round(vpx(38) * 2); height: Math.round(vpx(38) * 2) }
+                        sourceSize { width: Math.round(vpx(30) * 2); height: Math.round(vpx(30) * 2) }
                         fillMode: Image.PreserveAspectFit
                         smooth: true
                         opacity: parent.active ? 1.0 : 0.5
@@ -631,23 +662,33 @@ id: root
 
                     Row {
                         anchors {
-                            left: parent.left; leftMargin: vpx(26)
+                            left: parent.left; leftMargin: root.rowInset
                             right: parent.right; rightMargin: vpx(18)
                             verticalCenter: parent.verticalCenter
                         }
-                        spacing: vpx(16)
+                        spacing: root.iconGap
 
-                        Image {
+                        // Same width as an app tile: the glyph is centred in
+                        // that column so both the icons and the labels below
+                        // line up, rather than each row carrying its own inset.
+                        Item {
                             anchors.verticalCenter: parent.verticalCenter
-                            width: vpx(24); height: vpx(24)
-                            source: modelData.icon
-                            sourceSize { width: Math.round(vpx(24) * 2); height: Math.round(vpx(24) * 2) }
-                            fillMode: Image.PreserveAspectFit
-                            smooth: true
+                            width: root.iconSize; height: root.iconSize
+                            Image {
+                                anchors.centerIn: parent
+                                // Per-item scale: these are separate assets with
+                                // different amounts of built-in padding.
+                                width: root.navIconSize * (modelData.scale !== undefined ? modelData.scale : 1)
+                                height: width
+                                source: modelData.icon
+                                sourceSize { width: Math.round(width * 2); height: Math.round(width * 2) }
+                                fillMode: Image.PreserveAspectFit
+                                smooth: true
+                            }
                         }
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            width: parent.width - vpx(24) - vpx(16)
+                            width: parent.width - root.iconSize - root.iconGap
                             text: modelData.label
                             color: "white"
                             font.family: subtitleFont.name
@@ -704,7 +745,7 @@ id: root
             anchors {
                 top: headerRule.bottom; topMargin: vpx(8)
                 left: parent.left; right: parent.right
-                bottom: parent.bottom; bottomMargin: vpx(12)
+                bottom: actionBar.top; bottomMargin: vpx(8)
             }
             visible: root.appCount > 0
             clip: true
@@ -739,11 +780,11 @@ id: root
 
                     Row {
                         anchors {
-                            left: parent.left; leftMargin: vpx(10)
+                            left: parent.left; leftMargin: root.rowInset
                             right: parent.right; rightMargin: vpx(10)
                             verticalCenter: parent.verticalCenter
                         }
-                        spacing: vpx(12)
+                        spacing: root.iconGap
 
                         // Icon, or a letter tile when the app has no art. The
                         // tile keeps every row the same visual weight so a
@@ -861,6 +902,66 @@ id: root
                         onClicked: {
                             list.currentIndex = index;
                             root.chooseCurrent();
+                        }
+                    }
+                }
+            }
+        }
+
+        // ── Action bar ────────────────────────────────────────────────────
+        // The row of boxes along the foot of the guide. One placeholder button
+        // for now, driven by a Repeater so more slot in without touching the
+        // navigation code.
+        Row {
+        id: actionBar
+
+            anchors {
+                left: parent.left; leftMargin: root.tabStripInset
+                right: parent.right; rightMargin: root.tabStripInset
+                bottom: parent.bottom; bottomMargin: vpx(12)
+            }
+            height: vpx(46)
+            spacing: vpx(6)
+
+            Repeater {
+                model: root.actions
+                delegate: Rectangle {
+                    width: (actionBar.width - (actionBar.spacing * (root.actions.length - 1)))
+                           / Math.max(1, root.actions.length)
+                    height: actionBar.height
+                    readonly property bool current: root.zone === root.zoneActions
+                                                    && root.actionIndex === index
+                    radius: vpx(6)
+                    color: current ? root.colRowSel : root.colTabBar
+                    border.width: current ? vpx(2) : 0
+                    border.color: theme.accent
+
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: vpx(10)
+                        // Placeholder glyph until the real icons are decided.
+                        Rectangle {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: vpx(18); height: vpx(6)
+                            radius: vpx(3)
+                            color: modelData.on ? theme.accent : "white"
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData.label
+                            color: "white"
+                            font.family: subtitleFont.name
+                            font.pixelSize: fpx(14)
+                            font.bold: true
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: {
+                            root.zone = root.zoneActions;
+                            root.actionIndex = index;
+                            root.runAction(index);
                         }
                     }
                 }
@@ -1079,6 +1180,12 @@ id: root
             if (quickIndex > 0) { quickIndex--; playNav(); }
             return;
         }
+        if (zone === zoneActions) {
+            if (appCount > 0) { zone = zoneApps; list.currentIndex = list.count - 1; }
+            else { zone = zoneNav; navIndex = navItems.length - 1; }
+            playNav();
+            return;
+        }
         if (zone === zoneApps) {
             if (list.currentIndex > 0) list.currentIndex--;
             else { zone = zoneNav; navIndex = navItems.length - 1; }
@@ -1102,12 +1209,16 @@ id: root
         if (zone === zoneTabs) { zone = zoneNav; navIndex = 0; playNav(); return; }
         if (zone === zoneNav) {
             if (navIndex < navItems.length - 1) { navIndex++; playNav(); return; }
-            if (appCount > 0) { zone = zoneApps; list.currentIndex = 0; playNav(); }
+            if (appCount > 0) { zone = zoneApps; list.currentIndex = 0; }
+            else zone = zoneActions;
+            playNav();
             return;
         }
-        // Wraps back to the first app past the end of the list.
-        if (list.currentIndex < list.count - 1) list.currentIndex++;
-        else list.currentIndex = 0;
+        if (zone === zoneActions) return;      // bottom of the panel
+        // Past the end of the list, drop into the action bar; Up comes back.
+        if (list.currentIndex < list.count - 1) { list.currentIndex++; playNav(); return; }
+        zone = zoneActions;
+        actionIndex = 0;
         playNav();
     }
 
@@ -1117,6 +1228,10 @@ id: root
         event.accepted = true;
         if (quickOpen) return;
         if (zone === zoneTabs) { cycleTab(-1); return; }
+        if (zone === zoneActions) {
+            if (actionIndex > 0) { actionIndex--; playNav(); }
+            return;
+        }
         if (zone !== zoneApps) return;
         if (list.count < 1) return;
         if (list.currentIndex > 0) list.currentIndex = Math.max(0, list.currentIndex - 8);
@@ -1127,6 +1242,10 @@ id: root
         event.accepted = true;
         if (quickOpen) return;
         if (zone === zoneTabs) { cycleTab(1); return; }
+        if (zone === zoneActions) {
+            if (actionIndex < actions.length - 1) { actionIndex++; playNav(); }
+            return;
+        }
         if (zone !== zoneApps) return;
         if (list.count < 1) return;
         if (list.currentIndex < list.count - 1)
@@ -1167,6 +1286,7 @@ id: root
             event.accepted = true;
             if (zone === zoneNav) triggerNav(navIndex);
             else if (zone === zoneApps) chooseCurrent();
+            else if (zone === zoneActions) runAction(actionIndex);
             // Tabs are placeholders — nothing bound yet.
             return;
         }
