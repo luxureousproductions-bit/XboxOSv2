@@ -141,8 +141,8 @@ id: root
     readonly property var tabs: {
         var base = [
             { icon: "../assets/images/Xbox-logo2-tight.png", filter: "all",      label: "All" },
-            { shape: "diamond",                         filter: "favorite", label: "Favorites" },
-            { shape: "circle",                          filter: "game",     label: "Games" },
+            { icon: "../assets/images/icon_heart.svg",  filter: "favorite", label: "Favorites", scale: 0.85 },
+            { icon: "../assets/images/icon_games.svg",  filter: "game",     label: "Games", scale: 1.15 },
             { shape: "square",                          filter: "emulator", label: "Emulators" },
             { shape: "grid",                            filter: "system",   label: "System" },
             { shape: "tri",                             filter: "other",    label: "Apps" }
@@ -546,9 +546,12 @@ id: root
                         // Larger than the drawn placeholders: the logo has its
                         // own internal padding, so matching their box size left
                         // it looking like a dot.
-                        width: vpx(30); height: vpx(30)
+                        // Per-tab scale: these are separate assets with
+                        // different amounts of built-in padding.
+                        width: vpx(30) * (modelData.scale !== undefined ? modelData.scale : 1)
+                        height: width
                         source: modelData.icon !== undefined ? modelData.icon : ""
-                        sourceSize { width: Math.round(vpx(30) * 2); height: Math.round(vpx(30) * 2) }
+                        sourceSize { width: Math.round(width * 2); height: Math.round(width * 2) }
                         fillMode: Image.PreserveAspectFit
                         smooth: true
                         opacity: parent.active ? 1.0 : 0.5
