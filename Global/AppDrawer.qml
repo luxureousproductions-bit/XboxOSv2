@@ -141,14 +141,14 @@ id: root
     readonly property var tabs: {
         var base = [
             { icon: "../assets/images/Xbox-logo2-tight.png", filter: "all",      label: "All" },
-            { icon: "../assets/images/icon_heart.svg",  filter: "favorite", label: "Favorites", scale: 0.85 },
-            { icon: "../assets/images/icon_games.svg",  filter: "game",     label: "Games", scale: 1.15 },
-            { icon: "../assets/images/icon_emulator.svg", filter: "emulator", label: "Emulators", scale: 1.0 },
-            { icon: "../assets/images/icon_system.svg", filter: "system",   label: "System", scale: 1.0 },
-            { icon: "../assets/images/icon_other.svg",  filter: "other",    label: "Other", scale: 0.95 }
+            { icon: "../assets/images/icon_heart.svg",  filter: "favorite", label: "Favorites", scale: 0.77 },
+            { icon: "../assets/images/icon_games.svg",  filter: "game",     label: "Games", scale: 1.03 },
+            { icon: "../assets/images/icon_emulator.svg", filter: "emulator", label: "Emulators", scale: 1.34 },
+            { icon: "../assets/images/icon_system.svg", filter: "system",   label: "System", scale: 0.96 },
+            { icon: "../assets/images/icon_other.svg",  filter: "other",    label: "Other", scale: 1.02 }
         ];
         if (hiddenCount > 0 && showHiddenTab)
-            base.push({ icon: "../assets/images/icon_hidden.svg", filter: "hidden", label: "Hidden", scale: 1.05 });
+            base.push({ icon: "../assets/images/icon_hidden.svg", filter: "hidden", label: "Hidden", scale: 0.75 });
         return base;
     }
 
