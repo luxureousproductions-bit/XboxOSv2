@@ -143,12 +143,12 @@ id: root
             { icon: "../assets/images/Xbox-logo2-tight.png", filter: "all",      label: "All" },
             { icon: "../assets/images/icon_heart.svg",  filter: "favorite", label: "Favorites", scale: 0.85 },
             { icon: "../assets/images/icon_games.svg",  filter: "game",     label: "Games", scale: 1.15 },
-            { shape: "square",                          filter: "emulator", label: "Emulators" },
-            { shape: "grid",                            filter: "system",   label: "System" },
-            { shape: "tri",                             filter: "other",    label: "Apps" }
+            { icon: "../assets/images/icon_emulator.svg", filter: "emulator", label: "Emulators", scale: 1.0 },
+            { icon: "../assets/images/icon_system.svg", filter: "system",   label: "System", scale: 1.0 },
+            { icon: "../assets/images/icon_other.svg",  filter: "other",    label: "Other", scale: 0.95 }
         ];
         if (hiddenCount > 0 && showHiddenTab)
-            base.push({ shape: "bar", filter: "hidden", label: "Hidden" });
+            base.push({ icon: "../assets/images/icon_hidden.svg", filter: "hidden", label: "Hidden", scale: 1.05 });
         return base;
     }
 
@@ -996,9 +996,16 @@ id: root
             spacing: vpx(12)
             Image {
                 anchors.verticalCenter: parent.verticalCenter
-                width: vpx(26); height: vpx(26)
-                source: "../assets/images/Xbox-logo2-tight.png"
-                sourceSize { width: Math.round(vpx(26) * 2); height: Math.round(vpx(26) * 2) }
+                // Follows the active tab. Falls back to the logo for any tab
+                // still on a drawn placeholder — none are, currently.
+                readonly property var tab: root.tabs[root.tabIndex]
+                readonly property real iconScale:
+                    (tab && tab.scale !== undefined) ? tab.scale : 1
+                width: vpx(26) * iconScale
+                height: width
+                source: (tab && tab.icon !== undefined)
+                        ? tab.icon : "../assets/images/Xbox-logo2-tight.png"
+                sourceSize { width: Math.round(width * 2); height: Math.round(width * 2) }
                 fillMode: Image.PreserveAspectFit
                 smooth: true
             }
