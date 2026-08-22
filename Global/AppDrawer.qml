@@ -152,14 +152,47 @@ id: root
         return base;
     }
 
+    // One pass over the collection, done only when the collection itself
+    // changes. packageOf() and artFor() reach into Pegasus's model (files,
+    // assets), which is far too costly to call from delegate bindings or from
+    // a filter that re-runs on every favourite/hide/tab change — that work is
+    // cached here instead.
+    readonly property var appIndex: {
+        var out = [];
+        if (!appModel) return out;
+        for (var i = 0; i < appModel.count; i++) {
+            var g = appModel.get(i);
+            var t = g.title || "";
+            out.push({
+                g: g,
+                pkg: packageOf(g),
+                art: artFor(g),
+                title: t,
+                initial: t.length > 0 ? t.charAt(0).toUpperCase() : "?"
+            });
+        }
+        return out;
+    }
+
+    // pkg -> category. Rebuilt only when the collection or a saved override
+    // changes, so the rule matching runs once per app rather than once per app
+    // per filter rebuild.
+    readonly property var categoryMap: {
+        var m = {};
+        var idx = appIndex;
+        for (var i = 0; i < idx.length; i++)
+            m[idx[i].pkg] = categoryFor(idx[i].pkg, idx[i].title);
+        return m;
+    }
+
     // Counted against the live collection rather than the saved list, so stale
     // entries for uninstalled apps can't keep the tab alive forever.
     readonly property int hiddenCount: {
-        if (!appModel) return 0;
         var hid = hiddenPkgs;
+        var idx = appIndex;
         var n = 0;
-        for (var i = 0; i < appModel.count; i++)
-            if (hid[packageOf(appModel.get(i))] === true) n++;
+        for (var i = 0; i < idx.length; i++)
+            if (hid[idx[i].pkg] === true) n++;
         return n;
     }
 
@@ -233,7 +266,8 @@ id: root
     }
     function chooseCurrent() {
         if (list.currentIndex < 0 || list.currentIndex >= filteredApps.length) return;
-        var g = filteredApps[list.currentIndex];
+        var e = filteredApps[list.currentIndex];
+        var g = e ? e.g : null;
         if (!g) return;
         // Launching suspends Pegasus; close now so returning doesn't land
         // back in a half-open drawer.
@@ -374,8 +408,7 @@ id: root
         return colon >= 0 ? p.substring(colon + 1) : p;
     }
 
-    function categoryOf(game) {
-        var pkg = packageOf(game);
+    function categoryFor(pkg, title) {
         // Saved reclassification beats the shipped seed, which beats the rules.
         if (pkg !== "" && savedCategories[pkg] !== undefined)
             return savedCategories[pkg];
@@ -383,7 +416,7 @@ id: root
             return categoryOverrides[pkg];
 
         var p = pkg.toLowerCase();
-        var t = (game && game.title ? game.title : "").toLowerCase();
+        var t = (title || "").toLowerCase();
         var i;
         for (i = 0; i < systemPrefixes.length; i++)
             if (p.indexOf(systemPrefixes[i]) === 0) return "system";
@@ -402,20 +435,18 @@ id: root
     }
     readonly property var filteredApps: {
         var out = [];
-        if (!appModel) return out;
+        var idx = appIndex;
         var want = activeFilter;
-        // Referenced so the list rebuilds when any of these change.
-        var fav = favoritePkgs, hid = hiddenPkgs, cats = savedCategories;
-        for (var i = 0; i < appModel.count; i++) {
-            var g = appModel.get(i);
-            var pkg = packageOf(g);
+        var fav = favoritePkgs, hid = hiddenPkgs, cats = categoryMap;
+        for (var i = 0; i < idx.length; i++) {
+            var e = idx[i];
             // Hidden apps are gone from every tab except Hidden itself,
             // otherwise there'd be no way to get them back.
-            if (want !== "hidden" && hid[pkg] === true) continue;
-            if (want === "all") { out.push(g); continue; }
-            if (want === "favorite") { if (fav[pkg] === true) out.push(g); continue; }
-            if (want === "hidden")   { if (hid[pkg] === true) out.push(g); continue; }
-            if (categoryOf(g) === want) out.push(g);
+            if (want !== "hidden" && hid[e.pkg] === true) continue;
+            if (want === "all") { out.push(e); continue; }
+            if (want === "favorite") { if (fav[e.pkg] === true) out.push(e); continue; }
+            if (want === "hidden")   { if (hid[e.pkg] === true) out.push(e); continue; }
+            if (cats[e.pkg] === want) out.push(e);
         }
         return out;
     }
@@ -752,7 +783,13 @@ id: root
             }
             visible: root.appCount > 0
             clip: true
-            model: root.filteredApps
+            // Emptied while the drawer is fully closed. A ListView builds its
+            // delegates regardless of visibility, so otherwise a dozen rows —
+            // each with an image and a mask layer — stayed allocated for the
+            // whole session, for a panel nobody was looking at. Keyed to slide
+            // rather than open so rows survive the close animation instead of
+            // vanishing mid-slide.
+            model: root.slide > 0.001 ? root.filteredApps : 0
             currentIndex: 0
             // Keeps the focused row off the very edge when scrolling.
             preferredHighlightBegin: height * 0.25
@@ -805,7 +842,7 @@ id: root
                             // arrived, and in a recycled delegate that race
                             // sometimes captured an empty layer — the blank
                             // tiles that appeared at random.
-                            readonly property bool hasArt: root.artFor(modelData) !== ""
+                            readonly property bool hasArt: modelData.art !== ""
 
                             // Plate behind the art. Icons arrive with
                             // transparent corners, so without this the tile
@@ -839,21 +876,23 @@ id: root
                                 Image {
                                     id: appIcon
                                     anchors.fill: parent
-                                    source: root.artFor(modelData)
+                                    source: modelData.art
                                     // Decoded at the zoomed size so scaling up
                                     // doesn't soften the icon.
                                     sourceSize {
-                                        width: Math.round(root.iconSize * root.iconZoom * 2)
-                                        height: Math.round(root.iconSize * root.iconZoom * 2)
+                                        width: Math.round(root.iconSize * root.iconZoom * 1.4)
+                                        height: Math.round(root.iconSize * root.iconZoom * 1.4)
                                     }
                                     fillMode: Image.PreserveAspectCrop
                                     // Scales about the centre; the surrounding
                                     // layer clips the overflow.
                                     scale: root.iconZoom
-                                    // Synchronous on purpose: at this size the
-                                    // decode is trivial, and it removes the
-                                    // load-timing race entirely.
-                                    asynchronous: false
+                                    // Async is safe here: the blank-tile race
+                                    // came from layer.enabled tracking load
+                                    // status, and that's keyed to hasArt now.
+                                    // Sync decode blocked the UI thread once
+                                    // per row created.
+                                    asynchronous: true
                                     smooth: true
                                 }
                             }
@@ -868,7 +907,7 @@ id: root
                                 color: Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.22)
                                 Text {
                                     anchors.centerIn: parent
-                                    text: root.initialFor(modelData)
+                                    text: modelData.initial
                                     color: "white"
                                     font.family: titleFont.name
                                     font.pixelSize: fpx(19)
@@ -880,7 +919,7 @@ id: root
                         Text {
                             width: parent.width - root.iconSize - vpx(12) - vpx(16)
                             anchors.verticalCenter: parent.verticalCenter
-                            text: modelData ? modelData.title : ""
+                            text: modelData.title
                             color: "white"
                             font.family: subtitleFont.name
                             font.pixelSize: fpx(16)
@@ -893,7 +932,7 @@ id: root
                         // is readable without opening the quick menu.
                         Rectangle {
                             anchors.verticalCenter: parent.verticalCenter
-                            visible: root.isFavorite(root.packageOf(modelData))
+                            visible: root.favoritePkgs[modelData.pkg] === true
                             width: vpx(8); height: vpx(8)
                             radius: width / 2
                             color: theme.accent
@@ -1057,7 +1096,7 @@ id: root
     property int quickMenuKey: 1048587
 
     readonly property var quickActions: {
-        var pkg = root.quickApp ? root.packageOf(root.quickApp) : "";
+        var pkg = root.quickApp ? root.quickApp.pkg : "";
         return [
             { label: root.isFavorite(pkg) ? "Remove from Favorites" : "Add to Favorites", act: "fav" },
             { label: root.isHidden(pkg)   ? "Unhide app"            : "Hide app",         act: "hide" },
@@ -1072,7 +1111,7 @@ id: root
     function openQuickMenu() {
         if (zone !== zoneApps) return;
         if (list.currentIndex < 0 || list.currentIndex >= filteredApps.length) return;
-        quickApp = filteredApps[list.currentIndex];
+        quickApp = filteredApps[list.currentIndex];   // cached entry, not a raw Game
         quickIndex = 0;
         quickOpen = true;
     }
@@ -1082,7 +1121,7 @@ id: root
     }
     function runQuickAction() {
         var a = quickActions[quickIndex];
-        var pkg = quickApp ? packageOf(quickApp) : "";
+        var pkg = quickApp ? quickApp.pkg : "";
         if (!a || pkg === "") { closeQuickMenu(); return; }
         if (a.act === "fav")       toggleFavorite(pkg);
         else if (a.act === "hide") toggleHidden(pkg);
