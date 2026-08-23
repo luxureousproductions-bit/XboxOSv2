@@ -1303,7 +1303,7 @@ id: root
         // that was showing, rather than re-entering wherever the drawer was
         // opened from.
         onAppChosen: launchGameFromDiscover(game)
-        onClosed: playBack()
+        onClosed: playTabLeft()
 
         // Home resets the back stack rather than pushing onto it — otherwise
         // backing out of the Showcase would return to whatever screen you were
@@ -1356,7 +1356,7 @@ id: root
         if (appDrawer.open) {
             appDrawer.closeDrawer();
         } else {
-            playToggle();
+            playTabRight();
             appDrawer.openDrawer();
         }
     }
