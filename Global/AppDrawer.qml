@@ -92,17 +92,31 @@ id: root
     property bool showHiddenTab: false
 
     readonly property var actions: [
-        { label: root.showHiddenTab ? "Hide hidden section" : "Show hidden section",
-          act: "toggleHidden", on: root.showHiddenTab }
+        { act: "toggleHidden", icon: "../assets/images/icon_hidden.svg",   scale: 0.84,
+          on: root.showHiddenTab },
+        { act: "discover",     icon: "../assets/images/icon_discover.svg", scale: 0.92 },
+        { act: "achievements", icon: "../assets/images/trophy.svg",       scale: 0.92 },
+        { act: "settings",     icon: "../assets/images/settingsicon.svg",  scale: 0.92 }
     ]
+
+    // The host owns navigation; the drawer just says which tile was pressed.
+    signal navDiscover()
+    signal navAchievements()
+    signal navSettings()
 
     function runAction(i) {
         var a = actions[i];
         if (!a) return;
         if (a.act === "toggleHidden") {
+            // Stays open: this one changes the panel rather than leaving it.
             showHiddenTab = !showHiddenTab;
             playToggle();
+            return;
         }
+        closeDrawer();
+        if (a.act === "discover")          navDiscover();
+        else if (a.act === "achievements") navAchievements();
+        else if (a.act === "settings")     navSettings();
     }
 
     property real navRowHeight: vpx(56)
@@ -951,26 +965,29 @@ id: root
         }
 
         // ── Action bar ────────────────────────────────────────────────────
-        // The row of boxes along the foot of the guide. One placeholder button
-        // for now, driven by a Repeater so more slot in without touching the
-        // navigation code.
+        // Square tiles along the foot, as the guide has. Left to right:
+        // show/hide hidden, Discover, achievements, settings.
         Row {
         id: actionBar
 
             anchors {
-                left: parent.left; leftMargin: root.tabStripInset
-                right: parent.right; rightMargin: root.tabStripInset
-                bottom: parent.bottom; bottomMargin: vpx(12)
+                horizontalCenter: parent.horizontalCenter
+                bottom: parent.bottom; bottomMargin: vpx(14)
             }
-            height: vpx(46)
-            spacing: vpx(6)
+            // Square by construction: height follows whatever width the tiles
+            // end up with, so they stay square at any panel width.
+            readonly property real tileSize:
+                Math.min(vpx(58),
+                         (panel.width - root.tabStripInset * 2
+                          - spacing * (root.actions.length - 1)) / root.actions.length)
+            height: tileSize
+            spacing: vpx(10)
 
             Repeater {
                 model: root.actions
                 delegate: Rectangle {
-                    width: (actionBar.width - (actionBar.spacing * (root.actions.length - 1)))
-                           / Math.max(1, root.actions.length)
-                    height: actionBar.height
+                    width: actionBar.tileSize
+                    height: actionBar.tileSize
                     readonly property bool current: root.zone === root.zoneActions
                                                     && root.actionIndex === index
                     radius: vpx(6)
@@ -978,24 +995,26 @@ id: root
                     border.width: current ? vpx(2) : 0
                     border.color: theme.accent
 
-                    Row {
+                    Image {
                         anchors.centerIn: parent
-                        spacing: vpx(10)
-                        // Placeholder glyph until the real icons are decided.
-                        Rectangle {
-                            anchors.verticalCenter: parent.verticalCenter
-                            width: vpx(18); height: vpx(6)
-                            radius: vpx(3)
-                            color: modelData.on ? theme.accent : "white"
-                        }
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: modelData.label
-                            color: "white"
-                            font.family: subtitleFont.name
-                            font.pixelSize: fpx(14)
-                            font.bold: true
-                        }
+                        width: actionBar.tileSize * 0.5
+                               * (modelData.scale !== undefined ? modelData.scale : 1)
+                        height: width
+                        source: modelData.icon
+                        sourceSize { width: Math.round(width * 2); height: Math.round(width * 2) }
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                    }
+
+                    // Accent pip marks the toggle's on-state; the icon itself
+                    // is identical either way.
+                    Rectangle {
+                        anchors { bottom: parent.bottom; bottomMargin: vpx(5)
+                                  horizontalCenter: parent.horizontalCenter }
+                        width: vpx(14); height: vpx(3)
+                        radius: height / 2
+                        color: theme.accent
+                        visible: modelData.on === true
                     }
 
                     MouseArea {
