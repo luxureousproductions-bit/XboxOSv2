@@ -1321,6 +1321,20 @@ id: root
             if (root.state === "allgamesscreen") return;
             allGamesScreen();
         }
+        // Action tiles. Each pushes onto the back stack the same way the rest
+        // of the theme does, so Back returns to wherever the drawer was opened.
+        onNavDiscover: {
+            if (root.state === "discoverscreen") return;
+            discoverScreen(null);
+        }
+        onNavAchievements: {
+            if (root.state === "achievementsscreen") return;
+            achievementsScreen();
+        }
+        onNavSettings: {
+            if (root.state === "settingsscreen") return;
+            settingsScreen();
+        }
         // Last-resort recovery: re-apply the current state so every loader's
         // `focus: shown` binding re-evaluates and the active screen takes focus
         // back. Only fires if the captured item is gone.
