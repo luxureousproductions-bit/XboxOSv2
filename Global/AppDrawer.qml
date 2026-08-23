@@ -148,7 +148,7 @@ id: root
             { icon: "../assets/images/icon_other.svg",  filter: "other",    label: "Other", scale: 1.02 }
         ];
         if (hiddenCount > 0 && showHiddenTab)
-            base.push({ icon: "../assets/images/icon_hidden.svg", filter: "hidden", label: "Hidden", scale: 0.75 });
+            base.push({ icon: "../assets/images/icon_hidden.svg", filter: "hidden", label: "Hidden", scale: 0.84 });
         return base;
     }
 
