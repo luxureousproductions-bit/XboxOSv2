@@ -694,22 +694,15 @@ id: root
                 onEntered: gv_discoverbutton.focus = true; onExited: gv_discoverbutton.focus = false;
                 onClicked: discoverScreen();
             }
-            Canvas {
+            Image {
                 anchors { fill: parent; margins: vpx(5) }
-                onPaint: {
-                    var ctx = getContext("2d"); ctx.reset();
-                    var cx = width/2, cy = height/2, r = Math.min(cx,cy)-1;
-                    ctx.globalAlpha = gv_discoverbutton.focus ? 1.0 : 0.85;
-                    ctx.strokeStyle = navCol; ctx.lineWidth = 1.5;
-                    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
-                    ctx.fillStyle = navCol;
-                    ctx.beginPath(); ctx.moveTo(cx, cy-r*0.65); ctx.lineTo(cx+r*0.30, cy+r*0.10); ctx.lineTo(cx, cy+r*0.20); ctx.lineTo(cx-r*0.30, cy+r*0.10); ctx.closePath(); ctx.fill();
-                    ctx.globalAlpha = 0.35;
-                    ctx.beginPath(); ctx.moveTo(cx, cy+r*0.65); ctx.lineTo(cx-r*0.30, cy-r*0.10); ctx.lineTo(cx, cy-r*0.20); ctx.lineTo(cx+r*0.30, cy-r*0.10); ctx.closePath(); ctx.fill();
-                }
-                property string navCol: whiteBackground ? "black" : "white"
-                onNavColChanged: requestPaint()
-                Connections { target: gv_discoverbutton; onFocusChanged: parent.requestPaint() }
+                source: "../assets/images/icon_discover.svg"
+                // Rasterised above display size so it stays sharp on a TV.
+                sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
+                layer.enabled: whiteBackground
+                layer.effect: ColorOverlay { color: "black" }
+                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+                opacity: gv_discoverbutton.focus ? 1.0 : 0.85
             }
         }
 
