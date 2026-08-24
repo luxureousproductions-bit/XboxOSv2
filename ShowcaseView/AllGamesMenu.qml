@@ -747,15 +747,25 @@ id: root
         }
 
         // Icon + title (top row) — matches the platform page's clean header rhythm
-        Image {
+        Item {
         id: libIcon
-            source: "../assets/images/gamesandapps.png"
             anchors { top: parent.top; topMargin: vpx(10); left: parent.left; leftMargin: globalMargin }
+            // Box stays vpx(40): the title and the game counter anchor to this,
+            // so shrinking it would shift the whole header. The artwork is inset
+            // instead — the old PNG's canvas was ~half padding, so filling this
+            // box with the SVG would render it ~1.6x larger than before.
             height: vpx(40); width: vpx(40)
-            fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
-            // White-lettering logo flips to black on a white background
-            layer.enabled: whiteBackground
-            layer.effect: ColorOverlay { color: "black" }
+
+            Image {
+                anchors.centerIn: parent
+                width: vpx(25); height: vpx(25)
+                source: "../assets/images/icon_gamesandapps.svg"
+                sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
+                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+                // White-lettering logo flips to black on a white background
+                layer.enabled: whiteBackground
+                layer.effect: ColorOverlay { color: "black" }
+            }
         }
         Text {
             anchors { left: libIcon.right; leftMargin: vpx(12); verticalCenter: libIcon.verticalCenter }
@@ -824,22 +834,15 @@ id: root
                 if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); homebutton.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: discoverScreen(); }
-            Canvas {
+            Image {
                 anchors { fill: parent; margins: vpx(6) }
-                onPaint: {
-                    var ctx = getContext("2d"); ctx.reset();
-                    var cx = width/2, cy = height/2, r = Math.min(cx,cy)-1;
-                    ctx.globalAlpha = discoverbutton.focus ? 1.0 : 0.85;
-                    ctx.strokeStyle = navCol; ctx.lineWidth = 1.5;
-                    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
-                    ctx.fillStyle = navCol;
-                    ctx.beginPath(); ctx.moveTo(cx, cy-r*0.65); ctx.lineTo(cx+r*0.30, cy+r*0.10); ctx.lineTo(cx, cy+r*0.20); ctx.lineTo(cx-r*0.30, cy+r*0.10); ctx.closePath(); ctx.fill();
-                    ctx.globalAlpha = 0.35;
-                    ctx.beginPath(); ctx.moveTo(cx, cy+r*0.65); ctx.lineTo(cx-r*0.30, cy-r*0.10); ctx.lineTo(cx, cy-r*0.20); ctx.lineTo(cx+r*0.30, cy-r*0.10); ctx.closePath(); ctx.fill();
-                }
-                property string navCol: whiteBackground ? "black" : "white"
-                onNavColChanged: requestPaint()
-                Connections { target: discoverbutton; onFocusChanged: parent.requestPaint() }
+                source: "../assets/images/icon_discover.svg"
+                // Rasterised above display size so it stays sharp on a TV.
+                sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
+                layer.enabled: whiteBackground
+                layer.effect: ColorOverlay { color: "black" }
+                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+                opacity: discoverbutton.focus ? 1.0 : 0.85
             }
         }
 
