@@ -135,7 +135,7 @@ id: root
 
     readonly property var navItems: [
         { label: "Home",             icon: "../assets/images/icon_home.svg",     scale: 1.0 },
-        { label: "My games & apps",  icon: "../assets/images/gamesandapps.png", scale: 1.35 }
+        { label: "My games & apps",  icon: "../assets/images/icon_gamesandapps.svg", scale: 1.02 }
     ]
 
     // Tab strip. The logo is real; the rest are throwaway shapes drawn with
