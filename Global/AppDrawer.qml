@@ -94,7 +94,7 @@ id: root
     readonly property var actions: [
         { act: "toggleHidden", icon: "../assets/images/icon_hidden.svg",   scale: 0.84,
           on: root.showHiddenTab },
-        { act: "discover",     icon: "../assets/images/icon_discover.svg", scale: 0.92 },
+        { act: "discover",     icon: "../assets/images/icon_discover.svg", scale: 0.80 },
         { act: "achievements", icon: "../assets/images/trophy.svg",       scale: 0.92 },
         { act: "settings",     icon: "../assets/images/settingsicon.svg",  scale: 0.92 }
     ]
