@@ -592,10 +592,10 @@ id: root
                 onClicked: allGamesScreen();
             }
             Image {
-                // Margin raised from vpx(2): the old PNG wasted ~half its canvas
-                // on empty padding, so the SVG would otherwise render ~1.6x
-                // larger in the same box.
-                anchors { fill: parent; margins: vpx(9) }
+                // vpx(6) margin on a vpx(36) button = a vpx(24) icon box, the
+                // same box trophy.svg and settingsicon.svg use, so all four nav
+                // icons are inset identically.
+                anchors { fill: parent; margins: vpx(6) }
                 source: "../assets/images/icon_gamesandapps.svg"
                 sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
                 layer.enabled: showcaseWhiteBackground
