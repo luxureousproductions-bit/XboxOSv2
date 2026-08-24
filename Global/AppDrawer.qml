@@ -971,17 +971,20 @@ id: root
         id: actionBar
 
             anchors {
-                horizontalCenter: parent.horizontalCenter
+                left: parent.left; leftMargin: root.tabStripInset
+                right: parent.right; rightMargin: root.tabStripInset
                 bottom: parent.bottom; bottomMargin: vpx(14)
             }
-            // Square by construction: height follows whatever width the tiles
-            // end up with, so they stay square at any panel width.
+            // Fills the panel edge to edge: the tiles divide whatever width is
+            // left after the insets and gaps, and height follows so they stay
+            // square. No cap — capping them was what left them clustered in the
+            // middle with dead space either side.
             readonly property real tileSize:
-                Math.min(vpx(58),
-                         (panel.width - root.tabStripInset * 2
-                          - spacing * (root.actions.length - 1)) / root.actions.length)
+                (width - spacing * (root.actions.length - 1)) / root.actions.length
             height: tileSize
-            spacing: vpx(10)
+            // Wider gaps shrink the tiles; this is the knob for their size now
+            // that the row is width-locked.
+            spacing: vpx(14)
 
             Repeater {
                 model: root.actions
@@ -1114,16 +1117,32 @@ id: root
     // same one the virtual keyboard uses.
     property int quickMenuKey: 1048587
 
+    // Human-readable name for a category key, used in the menu header.
+    function categoryLabel(cat) {
+        if (cat === "game")     return "Games";
+        if (cat === "emulator") return "Emulators";
+        if (cat === "system")   return "System";
+        if (cat === "favorite") return "Favorites";
+        return "Other";
+    }
+
     readonly property var quickActions: {
         var pkg = root.quickApp ? root.quickApp.pkg : "";
         return [
-            { label: root.isFavorite(pkg) ? "Remove from Favorites" : "Add to Favorites", act: "fav" },
-            { label: root.isHidden(pkg)   ? "Unhide app"            : "Hide app",         act: "hide" },
-            { label: "Move to Games",     act: "cat", cat: "game" },
-            { label: "Move to Emulators", act: "cat", cat: "emulator" },
-            { label: "Move to System",    act: "cat", cat: "system" },
-            { label: "Move to Apps",      act: "cat", cat: "other" },
-            { label: "Reset to automatic", act: "reset" }
+            { label: root.isFavorite(pkg) ? "Remove from Favorites" : "Add to Favorites",
+              act: "fav",  icon: "../assets/images/icon_heart.svg",     scale: 0.90 },
+            { label: root.isHidden(pkg)   ? "Unhide app" : "Hide app",
+              act: "hide", icon: "../assets/images/icon_hidden.svg",    scale: 0.95 },
+            { label: "Move to Games",      act: "cat", cat: "game",
+              icon: "../assets/images/icon_games.svg",    scale: 1.15 },
+            { label: "Move to Emulators",  act: "cat", cat: "emulator",
+              icon: "../assets/images/icon_emulator.svg", scale: 1.45 },
+            { label: "Move to System",     act: "cat", cat: "system",
+              icon: "../assets/images/icon_system.svg",   scale: 1.05 },
+            { label: "Move to Other",      act: "cat", cat: "other",
+              icon: "../assets/images/icon_other.svg",    scale: 1.10 },
+            { label: "Reset to automatic", act: "reset",
+              icon: "../assets/images/icon_reset.svg",    scale: 1.05 }
         ];
     }
 
@@ -1170,8 +1189,8 @@ id: root
     id: quickMenu
 
         anchors.centerIn: parent
-        width: vpx(330)
-        height: quickCol.height + vpx(28)
+        width: vpx(380)
+        height: quickCol.height + vpx(30)
         radius: vpx(10)
         color: root.colMenu
         border.width: vpx(1)
@@ -1188,22 +1207,49 @@ id: root
             anchors { top: parent.top; topMargin: vpx(14); left: parent.left; right: parent.right }
             spacing: vpx(2)
 
-            Text {
-                anchors { left: parent.left; leftMargin: vpx(18); right: parent.right; rightMargin: vpx(18) }
-                text: root.quickApp ? root.quickApp.title : ""
-                color: Qt.rgba(1, 1, 1, 0.55)
-                font.family: subtitleFont.name
-                font.pixelSize: fpx(13)
-                font.bold: true
-                elide: Text.ElideRight
-                bottomPadding: vpx(8)
+            // Header: which app this menu is acting on, and where it currently
+            // sits, so a reclassification can be judged before it's made.
+            Item {
+                width: quickCol.width
+                height: hdrRow.height + vpx(14)
+
+                Row {
+                id: hdrRow
+
+                    anchors { left: parent.left; leftMargin: vpx(20)
+                              right: parent.right; rightMargin: vpx(20)
+                              top: parent.top }
+                    spacing: vpx(10)
+
+                    Text {
+                        id: hdrTitle
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.min(implicitWidth, hdrRow.width - hdrCat.width - vpx(10))
+                        text: root.quickApp ? root.quickApp.title : ""
+                        color: "white"
+                        font.family: titleFont.name
+                        font.pixelSize: fpx(19)
+                        font.bold: true
+                        elide: Text.ElideRight
+                    }
+                    Text {
+                        id: hdrCat
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.quickApp
+                              ? root.categoryLabel(root.categoryMap[root.quickApp.pkg]) : ""
+                        color: theme.accent
+                        font.family: subtitleFont.name
+                        font.pixelSize: fpx(15)
+                        font.bold: true
+                    }
+                }
             }
 
             Repeater {
                 model: root.quickActions
                 delegate: Item {
                     width: quickCol.width
-                    height: vpx(40)
+                    height: vpx(46)
                     readonly property bool current: root.quickIndex === index
 
                     Rectangle {
@@ -1217,17 +1263,37 @@ id: root
                         border.width: parent.current ? vpx(2) : 0
                         border.color: theme.accent
                     }
-                    Text {
+                    Row {
                         anchors {
                             left: parent.left; leftMargin: vpx(22)
                             right: parent.right; rightMargin: vpx(18)
                             verticalCenter: parent.verticalCenter
                         }
-                        text: modelData.label
-                        color: "white"
-                        font.family: subtitleFont.name
-                        font.pixelSize: fpx(15)
-                        elide: Text.ElideRight
+                        spacing: vpx(14)
+
+                        Item {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: vpx(22); height: vpx(22)
+                            Image {
+                                anchors.centerIn: parent
+                                width: vpx(20) * (modelData.scale !== undefined ? modelData.scale : 1)
+                                height: width
+                                source: modelData.icon
+                                sourceSize { width: Math.round(width * 2); height: Math.round(width * 2) }
+                                fillMode: Image.PreserveAspectFit
+                                smooth: true
+                                opacity: 0.9
+                            }
+                        }
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: parent.width - vpx(22) - vpx(14)
+                            text: modelData.label
+                            color: "white"
+                            font.family: subtitleFont.name
+                            font.pixelSize: fpx(16)
+                            elide: Text.ElideRight
+                        }
                     }
                     MouseArea {
                         anchors.fill: parent
