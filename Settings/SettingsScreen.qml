@@ -138,11 +138,18 @@ id: root
             settingName: "Omit genre: Application from Showcase"
             setting: "No,Yes"
             note: "Reload Required"
+            info: "Keeps applications out of the Showcase content rows (Recently Played, Recommended and so on).\n\n"
+                + "Two things are filtered: any game tagged with the genre \"Application\", and everything in a collection included in the App Drawer.\n\n"
+                + "The second rule matters because apps imported by Pegasus usually have no genre at all, so the genre tag alone would miss them.\n\n"
+                + "While this is off, apps appear in the rows and launch straight away instead of opening a details page."
         }
         ListElement {
             settingName: "Omit genre: Emulator from Showcase"
             setting: "No,Yes"
             note: "Reload Required"
+            info: "Keeps emulators out of the Showcase content rows.\n\n"
+                + "This one matches on the genre tag \"Emulator\" only, so an emulator needs that genre set in its metadata to be caught.\n\n"
+                + "Emulators launched as games from a ROM collection are not affected."
         }
         ListElement {
             settingName: "Show WiFi Indicator"
@@ -163,6 +170,64 @@ id: root
         ListElement {
             settingName: "UI Scale"
             setting: "1.0,1.1,1.25,1.4,1.5"
+        }
+    }
+
+    // ── Systems ───────────────────────────────────────────────────────────
+    // Built at runtime: the rows depend on which collections the user actually
+    // has, so this can't be a static ListModel like the other pages.
+    ListModel { id: systemsSettingsModel }
+
+    // Seeds a key with its real default the first time it's seen. Without this
+    // the row would show index 0 ("Exclude"/"Show") while the theme was
+    // actually defaulting the Android collection to Include — the display and
+    // the behaviour would disagree until the user touched the row.
+    function seedSysKey(key, values, wanted) {
+        if (api.memory.has(key)) return;
+        var idx = values.indexOf(wanted);
+        if (idx < 0) idx = 0;
+        api.memory.set(key, values[idx]);
+        api.memory.set(key + "Index", idx);
+    }
+
+    function buildSystemsModel() {
+        systemsSettingsModel.clear();
+        for (var i = 0; i < api.collections.count; i++) {
+            var c = api.collections.get(i);
+            var sn = c.shortName || "?";
+            var nm = c.name || sn;
+            // Resolve defaults through the theme so they match exactly.
+            seedSysKey("Sys " + sn + " - Drawer", ["Exclude","Include"],
+                       inDrawer(c) ? "Include" : "Exclude");
+            seedSysKey("Sys " + sn + " - Tile", ["Show","Hide"],
+                       showsTile(c) ? "Show" : "Hide");
+            systemsSettingsModel.append({
+                settingName: "Sys " + sn + " - Tile",
+                label: nm + " \u2014 System tile",
+                setting: "Show,Hide",
+                info: "Show or hide the " + nm + " tile in the Showcase system row.\n\n"
+                    + "Collections included in the App Drawer are hidden here by "
+                    + "default, so the same apps don't appear in two places."
+            });
+            systemsSettingsModel.append({
+                settingName: "Sys " + sn + " - Drawer",
+                label: nm + " \u2014 App Drawer",
+                setting: "Exclude,Include",
+                info: "Include this collection in the App Drawer (Select button).\n\n"
+                    + "The drawer combines every collection set to Include. By "
+                    + "default only the collection Pegasus creates for installed "
+                    + "Android apps is included.\n\n"
+                    + "Including a collection also hides its system tile, unless "
+                    + "you override that above."
+            });
+        }
+    }
+    Component.onCompleted: buildSystemsModel()
+
+    property var systemsPage: {
+        return {
+            pageName: "Systems",
+            listmodel: systemsSettingsModel
         }
     }
 
@@ -561,7 +626,7 @@ id: root
         }
     }
 
-    property var settingsArr: [generalPage, showcasePage, collectionsPage, featuredPage, gridPage, gamePage, allGamesPage, mediaCarouselPage, audioPage, advancedPage, raPage]
+    property var settingsArr: [generalPage, showcasePage, collectionsPage, featuredPage, gridPage, gamePage, allGamesPage, mediaCarouselPage, systemsPage, audioPage, advancedPage, raPage]
 
     property real itemheight: vpx(50)
     property color settingsTextColor: "white"   // locked white: the settings background is locked black, so text must never follow the Color Layout light/dark flip
@@ -959,6 +1024,10 @@ id: root
                     // Either of these changing can lock/unlock the randomize row
                     if (settingName === "Showcase Background Art" || settingName === "Custom Background")
                         settingsList.settingsVersion++;
+                    // Per-collection roles feed the system row, the drawer and
+                    // the Showcase filter; bump so all three re-evaluate now.
+                    if (settingName.indexOf("Sys ") === 0)
+                        collRolesVersion++;
                 }
 
                 function nextSetting() {
@@ -1159,6 +1228,15 @@ id: root
                             saveSetting();
                         }
                     }
+                    // Info — only rows that define an `info` string respond.
+                    if (api.keys.isDetails(event) && !event.isAutoRepeat) {
+                        var txt = (typeof info !== 'undefined') ? info : "";
+                        if (txt !== "") {
+                            event.accepted = true;
+                            playToggle();
+                            root.openInfo(displayLabel, txt);
+                        }
+                    }
                     // Back
                     if (api.keys.isCancel(event) && !event.isAutoRepeat) {
                         event.accepted = true;
@@ -1191,8 +1269,18 @@ id: root
             }
         } 
 
-        Keys.onUpPressed: { playNav(); decrementCurrentIndex() }
-        Keys.onDownPressed: { playNav(); incrementCurrentIndex() }
+        // Wrap both ends, matching the page list on the left — dead-ending
+        // partway down a long page was the odd one out.
+        Keys.onUpPressed: {
+            playNav();
+            if (currentIndex === 0) currentIndex = count - 1;
+            else decrementCurrentIndex();
+        }
+        Keys.onDownPressed: {
+            playNav();
+            if (currentIndex === count - 1) currentIndex = 0;
+            else incrementCurrentIndex();
+        }
     }
 
     // ── On-screen keyboard overlay ────────────────────────────────────────
@@ -1238,11 +1326,111 @@ id: root
         id: settingsHelpModel
 
         ListElement {
+            name: "Info"
+            button: "details"
+        }
+        ListElement {
             name: "Back"
             button: "cancel"
         }
     }
     
     onFocusChanged: { if (focus) currentHelpbarModel = settingsHelpModel; }
+
+    // ── Info panel ────────────────────────────────────────────────────────
+    // Explains a setting in plain language. Opened with X on any row that
+    // defines an `info` string; closed with B or A.
+    property bool   infoOpen:  false
+    property string infoTitle: ""
+    property string infoBody:  ""
+
+    function openInfo(title, body) {
+        infoTitle = title;
+        infoBody  = body;
+        infoOpen  = true;
+        infoPanel.forceActiveFocus();
+    }
+    function closeInfo() {
+        infoOpen = false;
+        settingsList.forceActiveFocus();
+    }
+
+    FocusScope {
+    id: infoPanel
+
+        anchors.fill: parent
+        visible: root.infoOpen
+        enabled: root.infoOpen
+        z: 60
+
+        Rectangle {
+            anchors.fill: parent
+            color: "#000000"
+            opacity: root.infoOpen ? 0.6 : 0
+            Behavior on opacity { NumberAnimation { duration: 130 } }
+            MouseArea { anchors.fill: parent; onClicked: root.closeInfo() }
+        }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: Math.min(parent.width * 0.62, vpx(620))
+            height: infoCol.height + vpx(46)
+            radius: vpx(10)
+            color: "#242424"
+            border.width: vpx(1)
+            border.color: Qt.rgba(1, 1, 1, 0.14)
+            opacity: root.infoOpen ? 1 : 0
+            scale: root.infoOpen ? 1 : 0.95
+            Behavior on opacity { NumberAnimation { duration: 140 } }
+            Behavior on scale { NumberAnimation { duration: 170; easing.type: Easing.OutBack; easing.overshoot: 2 } }
+
+            Column {
+            id: infoCol
+
+                anchors { top: parent.top; topMargin: vpx(22)
+                          left: parent.left; leftMargin: vpx(26)
+                          right: parent.right; rightMargin: vpx(26) }
+                spacing: vpx(14)
+
+                Text {
+                    width: parent.width
+                    text: root.infoTitle
+                    color: theme.accent
+                    font.family: titleFont.name
+                    font.pixelSize: vpx(22)
+                    font.bold: true
+                    wrapMode: Text.WordWrap
+                }
+                Text {
+                    width: parent.width
+                    text: root.infoBody
+                    color: root.settingsTextColor
+                    font.family: subtitleFont.name
+                    font.pixelSize: vpx(16)
+                    lineHeight: 1.25
+                    wrapMode: Text.WordWrap
+                }
+                Text {
+                    width: parent.width
+                    text: "Press B to close"
+                    color: Qt.rgba(1, 1, 1, 0.45)
+                    font.family: subtitleFont.name
+                    font.pixelSize: vpx(13)
+                    horizontalAlignment: Text.AlignRight
+                }
+            }
+        }
+
+        // Swallows everything while open so the list underneath can't move.
+        Keys.onPressed: {
+            if (event.isAutoRepeat) return;
+            event.accepted = true;
+            if (api.keys.isCancel(event) || api.keys.isAccept(event)
+                || api.keys.isDetails(event)) {
+                playBack();
+                root.closeInfo();
+            }
+        }
+    }
 
 }
