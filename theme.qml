@@ -173,6 +173,33 @@ id: root
         return !!c && (c.name || "").toLowerCase() === appsCollectionName.toLowerCase();
     }
 
+    // Which collections the App Drawer options apply to. Only app-style
+    // collections get these settings — a ROM system has no business being in
+    // an app drawer, and generating a row for every collection buries the two
+    // that matter.
+    //
+    // Name is checked first, then the actual content: Pegasus's provider gives
+    // its entries "android:<package>" paths, and hand-written app collections
+    // use .app files. The content test is what catches a collection the user
+    // named something else entirely.
+    function isAppLikeCollection(c) {
+        if (!c) return false;
+        var nm = (c.name || "").toLowerCase();
+        var sn = (c.shortName || "").toLowerCase();
+        if (nm.indexOf("android") >= 0 || sn.indexOf("android") >= 0) return true;
+        var gl = c.games;
+        if (!gl || gl.count < 1) return false;
+        var n = Math.min(gl.count, 3);
+        for (var i = 0; i < n; i++) {
+            var g = gl.get(i);
+            if (!g || !g.files || g.files.count < 1) continue;
+            var p = (g.files.get(0).path || "").toLowerCase();
+            if (p.indexOf("android:") === 0) return true;
+            if (p.length > 4 && p.lastIndexOf(".app") === p.length - 4) return true;
+        }
+        return false;
+    }
+
     // Included in the drawer? Defaults to the auto-detected apps collection.
     function inDrawer(c) {
         if (!c) return false;
