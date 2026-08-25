@@ -152,9 +152,65 @@ id: root
     // hand-written "Android Apps" collection both report shortName "android",
     // so shortName can't tell them apart. Hand-made app collections are left
     // alone on purpose — only the provider's own tile is replaced.
+    // ── Collection roles ──────────────────────────────────────────────────
+    // Which collections feed the app drawer, and which get a system tile.
+    //
+    // Keyed by shortName rather than display name: shortName is what the user
+    // controls in metadata and is stable if they rename a collection.
+    //
+    // Settings rows are generated per collection by SettingsScreen, using these
+    // exact key names.
+    function collKey(c, suffix) {
+        return "Sys " + ((c && c.shortName) ? c.shortName : "?") + " - " + suffix;
+    }
+
+    // The apps collection Pegasus's own provider creates. Used only as the
+    // DEFAULT for the drawer when the user hasn't chosen anything yet — once
+    // they set the per-collection options, their choice wins.
     readonly property string appsCollectionName: "Android"
-    function isDrawerCollection(c) {
+
+    function isAutoDrawerCollection(c) {
         return !!c && (c.name || "").toLowerCase() === appsCollectionName.toLowerCase();
+    }
+
+    // Included in the drawer? Defaults to the auto-detected apps collection.
+    function inDrawer(c) {
+        if (!c) return false;
+        var k = collKey(c, "Drawer");
+        if (api.memory.has(k)) return api.memory.get(k) === "Include";
+        return isAutoDrawerCollection(c);
+    }
+
+    // Shows a system tile? Everything does by default EXCEPT whatever the
+    // drawer already covers — a tile for a collection the drawer owns is the
+    // duplicate this was built to avoid.
+    function showsTile(c) {
+        if (!c) return false;
+        var k = collKey(c, "Tile");
+        if (api.memory.has(k)) return api.memory.get(k) === "Show";
+        return !inDrawer(c);
+    }
+
+    // Bumped by SettingsScreen after a Sys row is saved, so the bindings below
+    // re-evaluate without a theme reload.
+    property int collRolesVersion: 0
+
+    // Every collection the drawer draws from. The drawer, the system row and
+    // the Showcase omit filter all read THIS — previously each re-derived the
+    // answer separately and they could disagree.
+    readonly property var drawerCollections: {
+        var v = collRolesVersion;
+        var out = [];
+        for (var i = 0; i < api.collections.count; i++) {
+            var c = api.collections.get(i);
+            if (inDrawer(c)) out.push(c);
+        }
+        return out;
+    }
+
+    function isDrawerCollection(c) {
+        var v = collRolesVersion;
+        return inDrawer(c);
     }
 
     // Titles of everything in the drawer's collection, used to keep installed
@@ -169,10 +225,9 @@ id: root
     // most of them carry no genre for that test to match on.
     readonly property var appTitleSet: {
         var set = {};
-        var n = api.collections.count;          // referenced so this re-runs if collections reload
-        for (var i = 0; i < n; i++) {
-            var c = api.collections.get(i);
-            if (!isDrawerCollection(c)) continue;
+        var cols = drawerCollections;           // single source of truth
+        for (var i = 0; i < cols.length; i++) {
+            var c = cols[i];
             var gl = c.games;
             for (var j = 0; j < gl.count; j++) {
                 var t = gl.get(j).title;
@@ -185,14 +240,14 @@ id: root
     // Shared system order (home/platform page + grid LB/RB cycle), per the
     // "System sort" setting. Collections are read THROUGH this index array so
     // every screen orders systems identically without altering Pegasus's order.
-    property var sortedColl: buildSortedColl()
+    property var sortedColl: { var v = collRolesVersion; return buildSortedColl(); }
     function buildSortedColl() {
         var n = api.collections.count;
         var items = [];
         for (var i = 0; i < n; i++) {
             var c = api.collections.get(i);
-            // The drawer owns this collection; it gets no system tile.
-            if (isDrawerCollection(c)) continue;
+            // Per-collection setting; defaults to hiding whatever the drawer owns.
+            if (!showsTile(c)) continue;
             items.push({
                 idx:   i,
                 name:  (c.name || "").toLowerCase(),
@@ -1292,10 +1347,9 @@ id: root
     id: appDrawer
 
         z: 500
-        // Same constant the system-row filter uses, so the collection the
-        // drawer shows is exactly the one hidden from the row — they can't
-        // drift apart.
-        collectionMatch: root.appsCollectionName
+        // Fed the resolved list directly. Nothing is matched by name any more,
+        // so the drawer's contents and the system row cannot disagree.
+        collections: root.drawerCollections
         title: "My games & apps"
 
         // Reuses the Discover launch path, which deliberately does NOT push
