@@ -183,15 +183,40 @@ id: root
         api.memory.set(key + "Index", idx);
     }
 
+    // Which collections these options apply to. Deliberately local rather than
+    // calling the theme's copy: this must not depend on cross-file scope
+    // resolution, and it must never let a ROM system into the App Drawer.
+    //
+    // Name is checked first, then actual content — Pegasus's provider gives its
+    // entries "android:<package>" paths and hand-written app collections use
+    // .app files, which catches a collection named something else.
+    function isAppCollection(c) {
+        if (!c) return false;
+        var nm = (c.name || "").toLowerCase();
+        var sn = (c.shortName || "").toLowerCase();
+        if (nm.indexOf("android") >= 0 || sn.indexOf("android") >= 0) return true;
+        var gl = c.games;
+        if (!gl || gl.count < 1) return false;
+        var n = Math.min(gl.count, 3);
+        for (var i = 0; i < n; i++) {
+            var g = gl.get(i);
+            if (!g || !g.files || g.files.count < 1) continue;
+            var p = (g.files.get(0).path || "").toLowerCase();
+            if (p.indexOf("android:") === 0) return true;
+            if (p.length > 4 && p.lastIndexOf(".app") === p.length - 4) return true;
+        }
+        return false;
+    }
+
     function buildSystemsModel() {
         systemsSettingsModel.clear();
         for (var i = 0; i < api.collections.count; i++) {
             var c = api.collections.get(i);
-            // App-style collections only — ROM systems don't belong here.
-            if (!isAppLikeCollection(c)) continue;
+            if (!isAppCollection(c)) continue;
             var sn = c.shortName || "?";
             var nm = c.name || sn;
-            // Resolve defaults through the theme so they match exactly.
+            // Seed defaults through the theme so the row shows what's actually
+            // in effect rather than index 0.
             seedSysKey("Sys " + sn + " - Drawer", ["Exclude","Include"],
                        inDrawer(c) ? "Include" : "Exclude");
             seedSysKey("Sys " + sn + " - Tile", ["Show","Hide"],
@@ -199,9 +224,7 @@ id: root
             systemsSettingsModel.append({
                 settingName: "Sys " + sn + " - Tile",
                 label: nm + " \u2014 System tile",
-                setting: "Show,Hide" + nm + " tile in the Showcase system row.\n\n"
-                    + "Collections included in the App Drawer are hidden here by "
-                    + "default, so the same apps don't appear in two places."
+                setting: "Show,Hide"
             });
             systemsSettingsModel.append({
                 settingName: "Sys " + sn + " - Drawer",
@@ -210,7 +233,6 @@ id: root
             });
         }
     }
-    Component.onCompleted: { buildSystemsModel(); rebuildHelpbar(); }
 
     property var systemsPage: {
         return {
