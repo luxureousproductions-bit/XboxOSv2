@@ -187,6 +187,8 @@ id: root
         systemsSettingsModel.clear();
         for (var i = 0; i < api.collections.count; i++) {
             var c = api.collections.get(i);
+            // App-style collections only — ROM systems don't belong here.
+            if (!isAppLikeCollection(c)) continue;
             var sn = c.shortName || "?";
             var nm = c.name || sn;
             // Resolve defaults through the theme so they match exactly.
@@ -208,11 +210,11 @@ id: root
             });
         }
     }
-    Component.onCompleted: buildSystemsModel()
+    Component.onCompleted: { buildSystemsModel(); rebuildHelpbar(); }
 
     property var systemsPage: {
         return {
-            pageName: "Systems",
+            pageName: "App Collections",
             listmodel: systemsSettingsModel
         }
     }
@@ -824,6 +826,7 @@ id: root
         onCurrentIndexChanged: {
             if (settingsArr[currentIndex] && settingsArr[currentIndex].pageName === "Retro Achievements")
                 cheevosData.verify();
+            root.rebuildHelpbar();
         }
         delegate: Component {
         id: pageDelegate
@@ -890,6 +893,8 @@ id: root
 
             }
         } 
+
+        onFocusChanged: root.rebuildHelpbar()
 
         // Wrap around both ends of the page list (General <-> Retro Achievements)
         // instead of dead-ending at the first/last entry.
@@ -1304,6 +1309,9 @@ id: root
             }
         } 
 
+        onCurrentIndexChanged: root.rebuildHelpbar()
+        onFocusChanged: root.rebuildHelpbar()
+
         // Wrap both ends, matching the page list on the left — dead-ending
         // partway down a long page was the odd one out.
         Keys.onUpPressed: {
@@ -1356,18 +1364,27 @@ id: root
         }
     }
 
-    // Helpbar buttons
-    ListModel {
-        id: settingsHelpModel
+    // Helpbar buttons. Rebuilt as the cursor moves: "More info" only appears on
+    // rows that actually have help text, so the prompt never advertises a
+    // button that would do nothing.
+    ListModel { id: settingsHelpModel }
 
-        ListElement {
-            name: "Info"
-            button: "details"
-        }
-        ListElement {
-            name: "Back"
-            button: "cancel"
-        }
+    function currentRowHasInfo() {
+        if (!settingsList.focus) return false;
+        var page = settingsArr[pagelist.currentIndex];
+        if (!page || !page.listmodel) return false;
+        var i = settingsList.currentIndex;
+        if (i < 0 || i >= page.listmodel.count) return false;
+        var row = page.listmodel.get(i);
+        return !!row && infoText(row.settingName) !== "";
+    }
+
+    function rebuildHelpbar() {
+        settingsHelpModel.clear();
+        // Listed before Back so it sits to its left in the bar.
+        if (currentRowHasInfo())
+            settingsHelpModel.append({ name: "More info", button: "details" });
+        settingsHelpModel.append({ name: "Back", button: "cancel" });
     }
     
     onFocusChanged: { if (focus) currentHelpbarModel = settingsHelpModel; }
