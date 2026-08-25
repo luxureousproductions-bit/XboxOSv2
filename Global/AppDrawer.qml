@@ -238,6 +238,66 @@ id: root
     // The host resolves it now and both read the same answer.
     property var collections: []
 
+    property bool open: false
+
+    // Emitted with the chosen Game, so launching goes through the theme's own
+    // launch path (transitions, saved state) rather than this component
+    // deciding for itself.
+    signal appChosen(var game)
+    signal closed()
+    // Emitted when focus couldn't be handed back — the host re-asserts it.
+    signal focusRestoreFailed()
+
+    anchors.fill: parent
+    // Closed, the drawer must not sit in front of the screen eating input.
+    visible: slide > 0.001
+    enabled: open
+
+    // The screens take focus through `focus: shown` bindings, which do NOT
+    // re-assert themselves once something else steals active focus. So the item
+    // that had focus is captured on open and handed back on close — this works
+    // whatever screen is showing, with no per-state bookkeeping in theme.qml.
+    //
+    // Only safe because the screen Loaders stay loaded while the drawer is
+    // open; they used to unload, which destroyed the captured item and left
+    // the screen black on return.
+    property var previousFocusItem: null
+
+    function openDrawer() {
+        previousFocusItem = Window.activeFocusItem;
+        // Always opens on Home rather than wherever it was left, so the first
+        // press of Down is predictable.
+        zone = zoneNav;
+        navIndex = 0;
+        open = true;
+        forceActiveFocus();
+    }
+    function closeDrawer() {
+        open = false;
+        // A destroyed QObject reads as null here, so this also covers the case
+        // where the screen went away while the drawer was open.
+        if (previousFocusItem) {
+            previousFocusItem.forceActiveFocus();
+        } else {
+            focusRestoreFailed();
+        }
+        previousFocusItem = null;
+        closed();
+    }
+    function chooseCurrent() {
+        if (list.currentIndex < 0 || list.currentIndex >= filteredApps.length) return;
+        var e = filteredApps[list.currentIndex];
+        var g = e ? e.g : null;
+        if (!g) return;
+        // Launching suspends Pegasus; close now so returning doesn't land back
+        // in a half-open drawer.
+        open = false;
+        // Deliberately NOT restoring focus here: the host's launch path moves
+        // to the launch screen, whose own binding claims focus.
+        previousFocusItem = null;
+        appChosen(g);
+    }
+
     // ── Saved state ───────────────────────────────────────────────────────
     // Favorites, hidden apps and reclassifications are theme-side concepts —
     // Pegasus knows nothing about them — so they live in api.memory, which
@@ -305,6 +365,31 @@ id: root
 
     Component.onCompleted: loadState()
 
+    // ── Categories ────────────────────────────────────────────────────────
+    // Pegasus leaves genre, developer and publisher empty on provider apps, but
+    // it does expose the package name via files — "android:com.dsemu.drastic".
+    // That's the only usable signal, so categories are derived from it.
+    //
+    // System and emulator detect reliably. "Game vs ordinary app" has NO signal
+    // in the data, so games are listed explicitly below; anything unmatched
+    // still shows under the All tab, so nothing is ever hidden.
+    property var systemPrefixes: [
+        "com.android.", "com.google.android.", "com.qualcomm.", "com.mediatek.",
+        "com.samsung.", "com.sec.", "com.odin.", "com.ayn.", "org.lineageos.", "android."
+    ]
+    property var emulatorKeywords: [
+        "citra", "dolphin", "drastic", "duckstation", "aethersx2", "ppsspp", "retroarch",
+        "vita3k", "yuzu", "ryujinx", "eden", "sudachi", "redream", "mupen", "melonds",
+        "flycast", "pcsx", "epsxe", "mame", "xemu", "winlator", "lime3ds", "azahar",
+        "panda3ds", "skyline", "nethersx2", "snes9x", "mgba", "fpse", "dsemu", "mm.jr",
+        "emu", "emulator", "gamenative"
+    ]
+    // Package -> category. Wins over every rule; this is where games go, and
+    // where anything the rules get wrong gets corrected.
+    property var categoryOverrides: ({
+        "com.lojical.AM2R": "game"
+    })
+
     function packageOf(game) {
         if (!game || !game.files || game.files.count < 1) return "";
         var p = game.files.get(0).path || "";
@@ -338,6 +423,8 @@ id: root
         var t = tabs[tabIndex];
         return (t && t.filter !== undefined) ? t.filter : "all";
     }
+    readonly property int appCount: filteredApps.length
+
     readonly property var filteredApps: {
         var out = [];
         var idx = appIndex;
