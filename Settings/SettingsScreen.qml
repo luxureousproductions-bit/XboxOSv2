@@ -138,18 +138,11 @@ id: root
             settingName: "Omit genre: Application from Showcase"
             setting: "No,Yes"
             note: "Reload Required"
-            info: "Keeps applications out of the Showcase content rows (Recently Played, Recommended and so on).\n\n"
-                + "Two things are filtered: any game tagged with the genre \"Application\", and everything in a collection included in the App Drawer.\n\n"
-                + "The second rule matters because apps imported by Pegasus usually have no genre at all, so the genre tag alone would miss them.\n\n"
-                + "While this is off, apps appear in the rows and launch straight away instead of opening a details page."
         }
         ListElement {
             settingName: "Omit genre: Emulator from Showcase"
             setting: "No,Yes"
             note: "Reload Required"
-            info: "Keeps emulators out of the Showcase content rows.\n\n"
-                + "This one matches on the genre tag \"Emulator\" only, so an emulator needs that genre set in its metadata to be caught.\n\n"
-                + "Emulators launched as games from a ROM collection are not affected."
         }
         ListElement {
             settingName: "Show WiFi Indicator"
@@ -204,21 +197,14 @@ id: root
             systemsSettingsModel.append({
                 settingName: "Sys " + sn + " - Tile",
                 label: nm + " \u2014 System tile",
-                setting: "Show,Hide",
-                info: "Show or hide the " + nm + " tile in the Showcase system row.\n\n"
+                setting: "Show,Hide" + nm + " tile in the Showcase system row.\n\n"
                     + "Collections included in the App Drawer are hidden here by "
                     + "default, so the same apps don't appear in two places."
             });
             systemsSettingsModel.append({
                 settingName: "Sys " + sn + " - Drawer",
                 label: nm + " \u2014 App Drawer",
-                setting: "Exclude,Include",
-                info: "Include this collection in the App Drawer (Select button).\n\n"
-                    + "The drawer combines every collection set to Include. By "
-                    + "default only the collection Pegasus creates for installed "
-                    + "Android apps is included.\n\n"
-                    + "Including a collection also hides its system tile, unless "
-                    + "you override that above."
+                setting: "Exclude,Include"
             });
         }
     }
@@ -229,6 +215,55 @@ id: root
             pageName: "Systems",
             listmodel: systemsSettingsModel
         }
+    }
+
+    // ── Help text ─────────────────────────────────────────────────────────
+    // Kept in a function rather than on the ListElements: a ListElement only
+    // accepts literal values, so any string built with + is rejected outright
+    // and the whole screen fails to load. This also keeps every explanation in
+    // one place instead of scattered through the models.
+    function infoText(name) {
+        if (name === "Omit genre: Application from Showcase") {
+            return "Keeps applications out of the Showcase content rows "
+                 + "(Recently Played, Recommended and so on).\n\n"
+                 + "Two separate rules apply:\n\n"
+                 + "1. Anything in a collection you've set to Include in the App "
+                 + "Drawer. This takes effect immediately.\n\n"
+                 + "2. Any game tagged with the genre \"Application\" in its "
+                 + "metadata. This one needs a theme reload to take effect.\n\n"
+                 + "Both rules exist because apps imported by Pegasus usually "
+                 + "have no genre at all, so the genre tag alone would miss them.\n\n"
+                 + "While this is off, apps appear in the rows and launch straight "
+                 + "away instead of opening a details page.";
+        }
+        if (name === "Omit genre: Emulator from Showcase") {
+            return "Keeps emulators out of the Showcase content rows.\n\n"
+                 + "This matches on the genre tag \"Emulator\" only, so an "
+                 + "emulator needs that genre set in its metadata to be caught. "
+                 + "Changes need a theme reload to take effect.\n\n"
+                 + "Emulators launched as games from a ROM collection are not "
+                 + "affected.";
+        }
+        if (name.indexOf("Sys ") === 0 && name.indexOf(" - Tile") !== -1) {
+            return "Show or hide this collection's tile in the Showcase system "
+                 + "row.\n\n"
+                 + "Collections included in the App Drawer are hidden here by "
+                 + "default, so the same apps don't appear in two places. Set "
+                 + "this to Show if you want both.\n\n"
+                 + "Takes effect immediately.";
+        }
+        if (name.indexOf("Sys ") === 0 && name.indexOf(" - Drawer") !== -1) {
+            return "Include this collection in the App Drawer, opened with the "
+                 + "Select button.\n\n"
+                 + "The drawer combines every collection set to Include, so you "
+                 + "can mix the apps Pegasus imports with collections you've "
+                 + "written yourself.\n\n"
+                 + "By default only the collection Pegasus creates for installed "
+                 + "Android apps is included.\n\n"
+                 + "Including a collection also hides its system tile unless you "
+                 + "override that above. Takes effect immediately.";
+        }
+        return "";
     }
 
     property var advancedPage: {
@@ -1230,7 +1265,7 @@ id: root
                     }
                     // Info — only rows that define an `info` string respond.
                     if (api.keys.isDetails(event) && !event.isAutoRepeat) {
-                        var txt = (typeof info !== 'undefined') ? info : "";
+                        var txt = root.infoText(settingName);
                         if (txt !== "") {
                             event.accepted = true;
                             playToggle();
