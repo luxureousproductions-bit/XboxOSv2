@@ -173,17 +173,22 @@ id: root
     // cached here instead.
     readonly property var appIndex: {
         var out = [];
-        if (!appModel) return out;
-        for (var i = 0; i < appModel.count; i++) {
-            var g = appModel.get(i);
-            var t = g.title || "";
-            out.push({
-                g: g,
-                pkg: packageOf(g),
-                art: artFor(g),
-                title: t,
-                initial: t.length > 0 ? t.charAt(0).toUpperCase() : "?"
-            });
+        var cols = collections;
+        if (!cols) return out;
+        for (var ci = 0; ci < cols.length; ci++) {
+            var gl = cols[ci].games;
+            if (!gl) continue;
+            for (var i = 0; i < gl.count; i++) {
+                var g = gl.get(i);
+                var t = g.title || "";
+                out.push({
+                    g: g,
+                    pkg: packageOf(g),
+                    art: artFor(g),
+                    title: t,
+                    initial: t.length > 0 ? t.charAt(0).toUpperCase() : "?"
+                });
+            }
         }
         return out;
     }
@@ -227,125 +232,11 @@ id: root
     // instead. Pegasus doesn't guarantee what it calls that collection, so the
     // match is loose and case-insensitive — set collection explicitly (or
     // change this string) if it ever grabs the wrong one.
-    property string collectionMatch: "android"
-
-    property bool open: false
-
-    // Emitted with the chosen Game. Wired to the host so launching can go
-    // through the theme's own launch path (transitions, saved state) rather
-    // than this component deciding. If you'd rather it be self-contained,
-    // call game.launch() in the handler — that's the plain Pegasus API.
-    signal appChosen(var game)
-    signal closed()
-
-    anchors.fill: parent
-    // Closed, the drawer must not sit in front of the screen eating input.
-    visible: slide > 0.001
-    enabled: open
-
-    // The screens take focus through `focus: shown` bindings, which do NOT
-    // re-assert themselves once something else steals active focus. So the item
-    // that had focus is captured on open and handed it back on close — this
-    // works whatever screen is showing, with no per-state bookkeeping.
-    //
-    // This only holds because the screen Loaders stay loaded while the drawer
-    // is open. They used to unload (active was chained to focus via opacity),
-    // which destroyed the component the captured item lived in and left the
-    // screen black on return.
-    property var previousFocusItem: null
-
-    // Emitted when focus couldn't be handed back — the host should re-assert it.
-    signal focusRestoreFailed()
-
-    function openDrawer() {
-        previousFocusItem = Window.activeFocusItem;
-        // Always opens on Home rather than wherever it was left, so the first
-        // press of Down is predictable.
-        zone = zoneNav;
-        navIndex = 0;
-        open = true;
-        forceActiveFocus();
-    }
-    function closeDrawer() {
-        open = false;
-        // A destroyed QObject reads as null here, so this also covers the case
-        // where the screen went away while the drawer was open.
-        if (previousFocusItem) {
-            previousFocusItem.forceActiveFocus();
-        } else {
-            focusRestoreFailed();
-        }
-        previousFocusItem = null;
-        closed();
-    }
-    function chooseCurrent() {
-        if (list.currentIndex < 0 || list.currentIndex >= filteredApps.length) return;
-        var e = filteredApps[list.currentIndex];
-        var g = e ? e.g : null;
-        if (!g) return;
-        // Launching suspends Pegasus; close now so returning doesn't land
-        // back in a half-open drawer.
-        open = false;
-        // Deliberately NOT restoring focus here. The host's launch path moves
-        // to the launch screen, and that Loader's own `focus` binding claims
-        // focus — handing it back to the previous screen would fight that.
-        previousFocusItem = null;
-        appChosen(g);
-    }
-
-    // ── Data ──────────────────────────────────────────────────────────────
-    // An explicit collection always wins; the name search is only a fallback.
-    readonly property var resolvedCollection: {
-        if (collection) return collection;
-        if (collectionMatch === "") return null;
-        var needle = collectionMatch.toLowerCase();
-        var i, c;
-        // Exact name wins. The apps provider's collection and the hand-written
-        // ROM collections can all share the shortName "android", so a substring
-        // match would just return whichever happened to be enumerated first —
-        // which is not a stable thing to depend on.
-        for (i = 0; i < api.collections.count; i++) {
-            c = api.collections.get(i);
-            if ((c.name || "").toLowerCase() === needle) return c;
-        }
-        for (i = 0; i < api.collections.count; i++) {
-            c = api.collections.get(i);
-            if ((c.shortName || "").toLowerCase() === needle) return c;
-        }
-        // Substring only as a last resort.
-        for (i = 0; i < api.collections.count; i++) {
-            c = api.collections.get(i);
-            if ((c.name || "").toLowerCase().indexOf(needle) >= 0) return c;
-        }
-        return null;
-    }
-    readonly property var appModel: resolvedCollection ? resolvedCollection.games : null
-    readonly property int appCount: filteredApps.length
-
-    // ── Categories ────────────────────────────────────────────────────────
-    // Pegasus leaves genre, developer and publisher empty on provider apps, but
-    // it does expose the package name via files — "android:com.dsemu.drastic".
-    // That's the only usable signal, so categories are derived from it.
-    //
-    // System and emulator detect reliably. "Game vs ordinary app" has NO signal
-    // in the data, so games are listed explicitly below; anything unmatched
-    // still shows under the All tab, so nothing is ever hidden.
-    property var systemPrefixes: [
-        "com.android.", "com.google.android.", "com.qualcomm.", "com.mediatek.",
-        "com.samsung.", "com.sec.", "com.odin.", "com.ayn.", "org.lineageos.", "android."
-    ]
-    property var emulatorKeywords: [
-        "citra", "dolphin", "drastic", "duckstation", "aethersx2", "ppsspp", "retroarch",
-        "vita3k", "yuzu", "ryujinx", "eden", "sudachi", "redream", "mupen", "melonds",
-        "flycast", "pcsx", "epsxe", "mame", "xemu", "winlator", "lime3ds", "azahar",
-        "panda3ds", "skyline", "nethersx2", "snes9x", "mgba", "fpse", "dsemu", "mm.jr",
-        "emu", "emulator", "gamenative"
-    ]
-    // Package -> category. Wins over every rule; this is where games go, and
-    // where anything the rules get wrong gets corrected.
-    property var categoryOverrides: ({
-        "com.lojical.AM2R": "game"
-    })
+    // Collections the drawer draws from, supplied by the host. Previously the
+    // drawer matched a name itself, with fallbacks — which meant it could land
+    // on a different collection than the one theme.qml hid from the system row.
+    // The host resolves it now and both read the same answer.
+    property var collections: []
 
     // ── Saved state ───────────────────────────────────────────────────────
     // Favorites, hidden apps and reclassifications are theme-side concepts —
@@ -774,12 +665,12 @@ id: root
                 right: parent.right; rightMargin: vpx(20)
             }
             visible: root.appCount === 0
-            text: root.resolvedCollection
+            text: (root.collections && root.collections.length > 0)
                   ? (root.activeFilter === "all"
-                     ? "No apps in this collection."
+                     ? "No apps in the selected collections."
                      : "Nothing in this category yet.")
-                  : "No app collection found.\nEnable system apps in Pegasus settings, "
-                    + "or set the collection on this drawer."
+                  : "No collections are set to appear here.\nSettings > Systems, "
+                    + "then set a collection's App Drawer option to Include."
             color: Qt.rgba(1, 1, 1, 0.5)
             font.family: subtitleFont.name
             font.pixelSize: fpx(15)
