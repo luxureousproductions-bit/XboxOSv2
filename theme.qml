@@ -121,6 +121,7 @@ id: root
             CarouselWheel:                 api.memory.has("Logo") ? api.memory.get("Logo") : "Yes",
             OmitApplicationFromShowcase:   api.memory.has("Omit genre: Application from Showcase") ? api.memory.get("Omit genre: Application from Showcase") : "No",
             OmitEmulatorFromShowcase:      api.memory.has("Omit genre: Emulator from Showcase") ? api.memory.get("Omit genre: Emulator from Showcase") : "No",
+            HideAndroidSystemTile:         api.memory.has("Hide Android System Tile") ? api.memory.get("Hide Android System Tile") : "Yes",
             MoreByGenreDisplay:            api.memory.has("More by Genre Display") ? api.memory.get("More by Genre Display") : "Full",
             AllowDiscoverVideoAudio:         api.memory.has("Play discover video audio") ? api.memory.get("Play discover video audio") : "No",
             MenuSounds:                      api.memory.has("Menu sounds") ? api.memory.get("Menu sounds") : "Yes",
@@ -191,8 +192,9 @@ id: root
         var items = [];
         for (var i = 0; i < n; i++) {
             var c = api.collections.get(i);
-            // The drawer owns this collection; it gets no system tile.
-            if (isDrawerCollection(c)) continue;
+            // The drawer covers this collection, so its tile is redundant by
+            // default — but only skip it while the setting says so.
+            if (settings.HideAndroidSystemTile !== "No" && isDrawerCollection(c)) continue;
             items.push({
                 idx:   i,
                 name:  (c.name || "").toLowerCase(),
@@ -405,6 +407,15 @@ id: root
             } else {
                 root.state = "showcasescreen";
             }
+        }
+
+        // Launched from the app drawer: always land on the Showcase, whatever
+        // screen it was opened from. Checked after the redirect above so it
+        // wins over the restored state.
+        if (api.memory.has('From App Drawer')) {
+            lastState  = ["showcasescreen"];
+            root.state = "showcasescreen";
+            api.memory.unset('From App Drawer');
         }
 
         // Remove these from memory so as to not clog it up
@@ -899,6 +910,20 @@ id: root
         }
     }
 
+    // Drawer launches always come back to the Showcase, wherever they were
+    // started from. Flagged in memory rather than by rewriting lastState, so
+    // the normal return path is left completely alone.
+    function launchAppFromDrawer(game) {
+        if (game === null) return;
+        playAccept();
+        launchingGame = game;
+        launchSuspended = false;
+        root.state = "launchgamescreen";
+        saveCurrentState(game);
+        api.memory.set('From App Drawer', 'True');
+        launchDelay.restart();
+    }
+
     onStateChanged: {
         if (state !== "gameviewscreen") forceFullDetails = false;
     }
@@ -1302,7 +1327,7 @@ id: root
         // onto lastState — so coming back from an app returns to the screen
         // that was showing, rather than re-entering wherever the drawer was
         // opened from.
-        onAppChosen: launchGameFromDiscover(game)
+        onAppChosen: launchAppFromDrawer(game)
         onClosed: playTabLeft()
 
         // Home resets the back stack rather than pushing onto it — otherwise
