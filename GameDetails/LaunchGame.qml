@@ -47,7 +47,7 @@ id: root
         property var randoScreenshot: game ? game.assets.screenshotList[randoScreenshotNumber] : ""
         property var randoFanart: game ? game.assets.backgroundList[randoFanartNumber] : ""
         property var actualBackground: (settings.GameBackground === "Screenshot") ? randoScreenshot : Utils.fanArt(game) || randoFanart;
-        source: actualBackground || ""
+        source: root.useAppFallback ? "" : (actualBackground || "")
         sourceSize: Qt.size(root.width, root.height)
         fillMode: Image.PreserveAspectCrop
         smooth: false
@@ -72,8 +72,11 @@ id: root
         var a = game.assets;
         return a.boxFront || a.logo || a.poster || a.banner || "";
     }
+    // Every imported app gets this treatment, not just the ones missing art, so
+    // they read as one consistent group rather than a mix of styles. Still
+    // requires an icon — without one there'd be nothing to show.
     readonly property bool useAppFallback:
-        isImportedApp && appIcon !== "" && !screenshot.actualBackground
+        isImportedApp && appIcon !== ""
 
     Item {
     id: appFallback
