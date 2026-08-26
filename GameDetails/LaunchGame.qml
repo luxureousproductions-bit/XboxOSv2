@@ -54,6 +54,89 @@ id: root
         Behavior on opacity { NumberAnimation { duration: 500 } }
     }
 
+    // ── Fallback splash ───────────────────────────────────────────────────
+    // Imported Android apps have no fanart or screenshots, so the splash was a
+    // black screen. Falls back to the app's own icon: blurred and blown up as a
+    // backdrop, crisp in the middle, with the title underneath.
+    //
+    // Scoped by file path rather than by collection: Pegasus gives imported
+    // apps an "android:<package>" path, so this can't catch a ROM or a
+    // hand-written entry even if they sit in the same collection.
+    readonly property bool isImportedApp: {
+        if (!game || !game.files || game.files.count < 1) return false;
+        var p = game.files.get(0).path || "";
+        return p.indexOf("android:") === 0;
+    }
+    readonly property string appIcon: {
+        if (!game || !game.assets) return "";
+        var a = game.assets;
+        return a.boxFront || a.logo || a.poster || a.banner || "";
+    }
+    readonly property bool useAppFallback:
+        isImportedApp && appIcon !== "" && !screenshot.actualBackground
+
+    Item {
+    id: appFallback
+
+        anchors.fill: parent
+        visible: root.useAppFallback
+
+        // Blurred backdrop. Decoded small on purpose — it's about to be blurred
+        // beyond any detail, so a full-size decode would be wasted work.
+        Image {
+        id: fallbackSource
+
+            anchors.fill: parent
+            source: root.useAppFallback ? root.appIcon : ""
+            sourceSize: Qt.size(192, 192)
+            fillMode: Image.PreserveAspectCrop
+            asynchronous: true
+            visible: false
+        }
+        FastBlur {
+            anchors.fill: parent
+            source: fallbackSource
+            radius: vpx(110)
+            cached: true
+            visible: fallbackSource.status === Image.Ready
+        }
+        // Knocks the backdrop back so the icon and title stay legible.
+        Rectangle {
+            anchors.fill: parent
+            color: "#000000"
+            opacity: 0.5
+        }
+
+        Image {
+        id: fallbackIcon
+
+            anchors { horizontalCenter: parent.horizontalCenter
+                      verticalCenter: parent.verticalCenter
+                      verticalCenterOffset: -vpx(30) }
+            width: vpx(190); height: vpx(190)
+            source: root.useAppFallback ? root.appIcon : ""
+            sourceSize: Qt.size(Math.round(vpx(190) * 2), Math.round(vpx(190) * 2))
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            asynchronous: true
+        }
+
+        Text {
+            anchors { top: fallbackIcon.bottom; topMargin: vpx(26)
+                      horizontalCenter: parent.horizontalCenter }
+            width: parent.width * 0.7
+            text: game ? game.title : ""
+            color: "white"
+            font.family: titleFont.name
+            font.pixelSize: vpx(34)
+            font.bold: true
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+            maximumLineCount: 2
+            wrapMode: Text.WordWrap
+        }
+    }
+
     // Scanlines
     Image {
     id: scanlines
@@ -77,6 +160,7 @@ id: root
         source: game ? Utils.logo(game) : ""
         fillMode: Image.PreserveAspectFit
         asynchronous: true
+        visible: !root.useAppFallback
     }
 
     DropShadow {
@@ -90,6 +174,7 @@ id: root
         color: "#000000"
         source: logo
         opacity: 1
+        visible: !root.useAppFallback
     }
 
     // (Launch splash text removed — logo-only splash. Only B backs out, after a 1s delay.)
