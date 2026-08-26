@@ -152,24 +152,9 @@ id: root
     // hand-written "Android Apps" collection both report shortName "android",
     // so shortName can't tell them apart. Hand-made app collections are left
     // alone on purpose — only the provider's own tile is replaced.
-    // ── Drawer collection ─────────────────────────────────────────────────
-    // Back to the original rule: the collection Pegasus's own apps provider
-    // creates, matched on exact name. No settings, no per-collection state.
     readonly property string appsCollectionName: "Android"
-
     function isDrawerCollection(c) {
         return !!c && (c.name || "").toLowerCase() === appsCollectionName.toLowerCase();
-    }
-
-    // The drawer takes a list, so this is just the matching collection wrapped
-    // in one. Kept as a list purely so AppDrawer needs no change.
-    readonly property var drawerCollections: {
-        var out = [];
-        for (var i = 0; i < api.collections.count; i++) {
-            var c = api.collections.get(i);
-            if (isDrawerCollection(c)) out.push(c);
-        }
-        return out;
     }
 
     // Titles of everything in the drawer's collection, used to keep installed
@@ -184,13 +169,10 @@ id: root
     // most of them carry no genre for that test to match on.
     readonly property var appTitleSet: {
         var set = {};
-        // Only the Showcase omit filter consumes this. Building it when the
-        // setting is off meant walking every game in every drawer collection
-        // for a map nothing would read.
-        if (settings.OmitApplicationFromShowcase !== "Yes") return set;
-        var cols = drawerCollections;           // single source of truth
-        for (var i = 0; i < cols.length; i++) {
-            var c = cols[i];
+        var n = api.collections.count;          // referenced so this re-runs if collections reload
+        for (var i = 0; i < n; i++) {
+            var c = api.collections.get(i);
+            if (!isDrawerCollection(c)) continue;
             var gl = c.games;
             for (var j = 0; j < gl.count; j++) {
                 var t = gl.get(j).title;
@@ -970,6 +952,31 @@ id: root
                             "| games:", c.games.count);
             }
 
+            // What the apps provider actually gives us per app. Deciding how to
+            // split them into tabs (system / games / emulators) depends on which
+            // of these fields is populated — package names would be ideal, genre
+            // is patchy given how many store lookups fail. First 15 is enough to
+            // see the shape without flooding the log.
+            for (var ai = 0; ai < api.collections.count; ai++) {
+                var ac = api.collections.get(ai);
+                if (!isDrawerCollection(ac)) continue;
+                var agl = ac.games;
+                var lim = Math.min(agl.count, 15);
+                console.log("[apps] dumping", lim, "of", agl.count, "from", ac.name);
+                for (var aj = 0; aj < lim; aj++) {
+                    var ag = agl.get(aj);
+                    var nfiles = ag.files ? ag.files.count : 0;
+                    var af = nfiles > 0 ? ag.files.get(0) : null;
+                    console.log("[apps]", aj,
+                                "| title:", ag.title,
+                                "| genre:", ag.genre,
+                                "| dev:", ag.developer,
+                                "| pub:", ag.publisher,
+                                "| files:", nfiles,
+                                "| path:", af ? af.path : "-",
+                                "| name:", af ? af.name : "-");
+                }
+            }
         }
     }
 
@@ -1285,9 +1292,10 @@ id: root
     id: appDrawer
 
         z: 500
-        // Fed the resolved list directly. Nothing is matched by name any more,
-        // so the drawer's contents and the system row cannot disagree.
-        collections: root.drawerCollections
+        // Same constant the system-row filter uses, so the collection the
+        // drawer shows is exactly the one hidden from the row — they can't
+        // drift apart.
+        collectionMatch: root.appsCollectionName
         title: "My games & apps"
 
         // Reuses the Discover launch path, which deliberately does NOT push
@@ -1349,7 +1357,7 @@ id: root
     // caught — but the collection dump is worth one more run to confirm which
     // collection the Android apps provider creates once it's enabled.
     property bool logKeys: false
-    property bool logCollections: false
+    property bool logCollections: true
 
     Keys.onPressed: {
         if (event.isAutoRepeat) return;
