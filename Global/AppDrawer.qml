@@ -173,7 +173,7 @@ id: root
     // cached here instead.
     readonly property var appIndex: {
         var out = [];
-        var cols = collections;
+        var cols = activeCollections;
         if (!cols) return out;
         for (var ci = 0; ci < cols.length; ci++) {
             var gl = cols[ci].games;
@@ -236,7 +236,39 @@ id: root
     // drawer matched a name itself, with fallbacks — which meant it could land
     // on a different collection than the one theme.qml hid from the system row.
     // The host resolves it now and both read the same answer.
+    // Two ways to supply the source, so this works with either host wiring:
+    //   collections     - an explicit list, wins when non-empty
+    //   collectionMatch - a name to resolve, which is what theme.qml passes
     property var collections: []
+    property string collectionMatch: "Android"
+
+    // Resolved by exact name, then exact shortName, then substring. Exact-first
+    // matters because a provider collection and a hand-written one can share a
+    // shortName, and substring alone would return whichever came first.
+    readonly property var resolvedCollection: {
+        if (collectionMatch === "") return null;
+        var needle = collectionMatch.toLowerCase();
+        var i, c;
+        for (i = 0; i < api.collections.count; i++) {
+            c = api.collections.get(i);
+            if ((c.name || "").toLowerCase() === needle) return c;
+        }
+        for (i = 0; i < api.collections.count; i++) {
+            c = api.collections.get(i);
+            if ((c.shortName || "").toLowerCase() === needle) return c;
+        }
+        for (i = 0; i < api.collections.count; i++) {
+            c = api.collections.get(i);
+            if ((c.name || "").toLowerCase().indexOf(needle) >= 0) return c;
+        }
+        return null;
+    }
+
+    readonly property var activeCollections: {
+        if (collections && collections.length > 0) return collections;
+        var c = resolvedCollection;
+        return c ? [c] : [];
+    }
 
     property bool open: false
 
@@ -752,7 +784,7 @@ id: root
                 right: parent.right; rightMargin: vpx(20)
             }
             visible: root.appCount === 0
-            text: (root.collections && root.collections.length > 0)
+            text: (root.activeCollections && root.activeCollections.length > 0)
                   ? (root.activeFilter === "all"
                      ? "No apps in the selected collections."
                      : "Nothing in this category yet.")
