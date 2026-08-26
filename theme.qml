@@ -152,92 +152,24 @@ id: root
     // hand-written "Android Apps" collection both report shortName "android",
     // so shortName can't tell them apart. Hand-made app collections are left
     // alone on purpose — only the provider's own tile is replaced.
-    // ── Collection roles ──────────────────────────────────────────────────
-    // Which collections feed the app drawer, and which get a system tile.
-    //
-    // Keyed by shortName rather than display name: shortName is what the user
-    // controls in metadata and is stable if they rename a collection.
-    //
-    // Settings rows are generated per collection by SettingsScreen, using these
-    // exact key names.
-    function collKey(c, suffix) {
-        return "Sys " + ((c && c.shortName) ? c.shortName : "?") + " - " + suffix;
-    }
-
-    // The apps collection Pegasus's own provider creates. Used only as the
-    // DEFAULT for the drawer when the user hasn't chosen anything yet — once
-    // they set the per-collection options, their choice wins.
+    // ── Drawer collection ─────────────────────────────────────────────────
+    // Back to the original rule: the collection Pegasus's own apps provider
+    // creates, matched on exact name. No settings, no per-collection state.
     readonly property string appsCollectionName: "Android"
 
-    function isAutoDrawerCollection(c) {
+    function isDrawerCollection(c) {
         return !!c && (c.name || "").toLowerCase() === appsCollectionName.toLowerCase();
     }
 
-    // Which collections the App Drawer options apply to. Only app-style
-    // collections get these settings — a ROM system has no business being in
-    // an app drawer, and generating a row for every collection buries the two
-    // that matter.
-    //
-    // Name is checked first, then the actual content: Pegasus's provider gives
-    // its entries "android:<package>" paths, and hand-written app collections
-    // use .app files. The content test is what catches a collection the user
-    // named something else entirely.
-    function isAppLikeCollection(c) {
-        if (!c) return false;
-        var nm = (c.name || "").toLowerCase();
-        var sn = (c.shortName || "").toLowerCase();
-        if (nm.indexOf("android") >= 0 || sn.indexOf("android") >= 0) return true;
-        var gl = c.games;
-        if (!gl || gl.count < 1) return false;
-        var n = Math.min(gl.count, 3);
-        for (var i = 0; i < n; i++) {
-            var g = gl.get(i);
-            if (!g || !g.files || g.files.count < 1) continue;
-            var p = (g.files.get(0).path || "").toLowerCase();
-            if (p.indexOf("android:") === 0) return true;
-            if (p.length > 4 && p.lastIndexOf(".app") === p.length - 4) return true;
-        }
-        return false;
-    }
-
-    // Included in the drawer? Defaults to the auto-detected apps collection.
-    function inDrawer(c) {
-        if (!c) return false;
-        var k = collKey(c, "Drawer");
-        if (api.memory.has(k)) return api.memory.get(k) === "Include";
-        return isAutoDrawerCollection(c);
-    }
-
-    // Shows a system tile? Everything does by default EXCEPT whatever the
-    // drawer already covers — a tile for a collection the drawer owns is the
-    // duplicate this was built to avoid.
-    function showsTile(c) {
-        if (!c) return false;
-        var k = collKey(c, "Tile");
-        if (api.memory.has(k)) return api.memory.get(k) === "Show";
-        return !inDrawer(c);
-    }
-
-    // Bumped by SettingsScreen after a Sys row is saved, so the bindings below
-    // re-evaluate without a theme reload.
-    property int collRolesVersion: 0
-
-    // Every collection the drawer draws from. The drawer, the system row and
-    // the Showcase omit filter all read THIS — previously each re-derived the
-    // answer separately and they could disagree.
+    // The drawer takes a list, so this is just the matching collection wrapped
+    // in one. Kept as a list purely so AppDrawer needs no change.
     readonly property var drawerCollections: {
-        var v = collRolesVersion;
         var out = [];
         for (var i = 0; i < api.collections.count; i++) {
             var c = api.collections.get(i);
-            if (inDrawer(c)) out.push(c);
+            if (isDrawerCollection(c)) out.push(c);
         }
         return out;
-    }
-
-    function isDrawerCollection(c) {
-        var v = collRolesVersion;
-        return inDrawer(c);
     }
 
     // Titles of everything in the drawer's collection, used to keep installed
@@ -252,6 +184,10 @@ id: root
     // most of them carry no genre for that test to match on.
     readonly property var appTitleSet: {
         var set = {};
+        // Only the Showcase omit filter consumes this. Building it when the
+        // setting is off meant walking every game in every drawer collection
+        // for a map nothing would read.
+        if (settings.OmitApplicationFromShowcase !== "Yes") return set;
         var cols = drawerCollections;           // single source of truth
         for (var i = 0; i < cols.length; i++) {
             var c = cols[i];
@@ -267,14 +203,14 @@ id: root
     // Shared system order (home/platform page + grid LB/RB cycle), per the
     // "System sort" setting. Collections are read THROUGH this index array so
     // every screen orders systems identically without altering Pegasus's order.
-    property var sortedColl: { var v = collRolesVersion; return buildSortedColl(); }
+    property var sortedColl: buildSortedColl()
     function buildSortedColl() {
         var n = api.collections.count;
         var items = [];
         for (var i = 0; i < n; i++) {
             var c = api.collections.get(i);
-            // Per-collection setting; defaults to hiding whatever the drawer owns.
-            if (!showsTile(c)) continue;
+            // The drawer owns this collection; it gets no system tile.
+            if (isDrawerCollection(c)) continue;
             items.push({
                 idx:   i,
                 name:  (c.name || "").toLowerCase(),
@@ -1034,31 +970,6 @@ id: root
                             "| games:", c.games.count);
             }
 
-            // What the apps provider actually gives us per app. Deciding how to
-            // split them into tabs (system / games / emulators) depends on which
-            // of these fields is populated — package names would be ideal, genre
-            // is patchy given how many store lookups fail. First 15 is enough to
-            // see the shape without flooding the log.
-            for (var ai = 0; ai < api.collections.count; ai++) {
-                var ac = api.collections.get(ai);
-                if (!isDrawerCollection(ac)) continue;
-                var agl = ac.games;
-                var lim = Math.min(agl.count, 15);
-                console.log("[apps] dumping", lim, "of", agl.count, "from", ac.name);
-                for (var aj = 0; aj < lim; aj++) {
-                    var ag = agl.get(aj);
-                    var nfiles = ag.files ? ag.files.count : 0;
-                    var af = nfiles > 0 ? ag.files.get(0) : null;
-                    console.log("[apps]", aj,
-                                "| title:", ag.title,
-                                "| genre:", ag.genre,
-                                "| dev:", ag.developer,
-                                "| pub:", ag.publisher,
-                                "| files:", nfiles,
-                                "| path:", af ? af.path : "-",
-                                "| name:", af ? af.name : "-");
-                }
-            }
         }
     }
 
@@ -1438,7 +1349,7 @@ id: root
     // caught — but the collection dump is worth one more run to confirm which
     // collection the Android apps provider creates once it's enabled.
     property bool logKeys: false
-    property bool logCollections: true
+    property bool logCollections: false
 
     Keys.onPressed: {
         if (event.isAutoRepeat) return;
