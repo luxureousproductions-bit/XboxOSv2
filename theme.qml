@@ -1319,10 +1319,16 @@ id: root
 
         height: vpx(50)
         anchors {
-            left: parent.left; right: parent.right; rightMargin: globalMargin
+            left: parent.left; leftMargin: globalMargin
+            right: parent.right; rightMargin: globalMargin
             bottom: parent.bottom
         }
         visible: settings.HideButtonHelp === "No" && root.state !== "launchgamescreen"
+
+        // Pinned bottom-left, away from the right-hand prompts. Showcase only —
+        // the drawer opens from there.
+        leftPromptText: (root.state === "showcasescreen") ? "Apps" : ""
+        leftPromptIcon: "../assets/images/icon_select.svg"
     }
 
     // ── App drawer ────────────────────────────────────────────────────────
