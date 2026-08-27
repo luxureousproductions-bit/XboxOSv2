@@ -1669,21 +1669,35 @@ id: root
     ListModel {
         id: gridviewHelpModel
 
+        // `icon` must be declared on the FIRST element: a ListModel fixes its
+        // roles from element one, so a role introduced later is ignored.
+        // Empty means "use the controller glyph for `button`".
+        //
+        // The bar lays out right-to-left, so the LAST entry sits furthest left.
         ListElement {
             name: "Discover"
             button: "cancel"
+            icon: ""
         }
         ListElement {
             name: "Settings"
             button: "filters"
+            icon: ""
         }
         ListElement {
             name: "Refresh"
             button: "details"
+            icon: ""
         }
         ListElement {
             name: "Select"
             button: "accept"
+            icon: ""
+        }
+        ListElement {
+            name: "Apps"
+            button: "accept"          // unused; the icon below wins
+            icon: "../assets/images/icon_select.svg"
         }
     }
 
