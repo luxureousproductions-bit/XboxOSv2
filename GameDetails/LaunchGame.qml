@@ -86,25 +86,39 @@ id: root
 
         // Blurred backdrop. Decoded small on purpose — it's about to be blurred
         // beyond any detail, so a full-size decode would be wasted work.
-        Image {
+        // Blur source. Wrapped so the artwork can be oversized INSIDE a
+        // fixed-size item: the effect maps the source's bounds onto its own, so
+        // scaling the image directly would just be undone.
+        Item {
         id: fallbackSource
 
             anchors.fill: parent
-            source: root.useAppFallback ? root.appIcon : ""
-            sourceSize: Qt.size(192, 192)
-            fillMode: Image.PreserveAspectCrop
-            asynchronous: true
             visible: false
+
+            Image {
+            id: fallbackArt
+
+                anchors.centerIn: parent
+                // Bigger than the frame, so the blurred shape reads larger.
+                width:  parent.width  * 1.4
+                height: parent.height * 1.4
+                source: root.useAppFallback ? root.appIcon : ""
+                // Decoded small on purpose: the upscale to full screen softens
+                // it further, which is extra blur for free. FastBlur's radius
+                // is hard-capped at 64, so this is the only way to go softer.
+                sourceSize: Qt.size(110, 110)
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+            }
         }
         FastBlur {
             anchors.fill: parent
             source: fallbackSource
-            // FastBlur's radius maxes out at 64. vpx(110) scales well past that,
-            // which is why the backdrop rendered as nothing and the splash came
-            // out black. The working blur in AllGamesMenu uses 64 flat.
+            // Hard maximum is 64 — vpx(110) scaled past it, which is why the
+            // backdrop rendered as nothing and the splash came out black.
             radius: 64
             cached: true
-            visible: fallbackSource.status === Image.Ready
+            visible: fallbackArt.status === Image.Ready
         }
         // Knocks the backdrop back so the icon and title stay legible.
         Rectangle {
