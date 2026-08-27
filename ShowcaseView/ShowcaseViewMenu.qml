@@ -223,7 +223,13 @@ id: root
         smooth: true
         z: -1
         source: (settings.CustomBackground === "Yes") ? "../assets/images/backgrounds/background.png" : ""
-        opacity: (settings.CustomBackground === "Yes" && settings.ShowcaseBackgroundArt !== "Yes") ? 1 : 0
+        // Always the base layer when enabled, rather than switching off the
+        // moment background art is on. The fanart layers above crossfade to
+        // transparent when an entry has no art — imported apps, for instance —
+        // so this shows through instead of leaving a blank screen. Fanart is
+        // opaque and full-bleed, so it still covers this completely when
+        // present, and turning background art off looks exactly as before.
+        opacity: (settings.CustomBackground === "Yes") ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: 400 } }
     }
 
