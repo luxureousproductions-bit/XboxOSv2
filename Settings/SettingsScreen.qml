@@ -574,6 +574,20 @@ id: root
     // literal values, so any string built with + is rejected and the whole
     // screen fails to load.
     function infoText(name) {
+        if (name === "Custom Background") {
+            return "Shows your own image behind the Showcase.\n\n"
+                 + "TO USE YOUR OWN\n"
+                 + "Rename the image to background.png and put it in the "
+                 + "theme's assets/images/backgrounds folder.\n\n"
+                 + "It sits underneath everything, so it stays visible behind "
+                 + "entries that have no fanart of their own \u2014 apps "
+                 + "imported by Pegasus, for instance \u2014 instead of "
+                 + "leaving a blank screen.\n\n"
+                 + "Entries that do have fanart cover it completely, so this "
+                 + "works alongside Showcase Background Art rather than "
+                 + "replacing it. Turn that off to see your image on every "
+                 + "screen.";
+        }
         if (name === "Hide Android System Tile") {
             return "Hides the tile for the collection the App Drawer uses, so "
                  + "the same apps aren't in two places at once. Set this to No "
@@ -629,7 +643,8 @@ id: root
     // Cheap yes/no test. infoText() concatenates a lot of literals to build its
     // result, which is wasteful when all that's needed is whether one exists.
     function hasInfo(name) {
-        return name === "Hide Android System Tile"
+        return name === "Custom Background"
+            || name === "Hide Android System Tile"
             || name === "Omit genre: Application from Showcase"
             || name === "Omit genre: Emulator from Showcase";
     }
@@ -977,13 +992,16 @@ id: root
 
                 // Greyed-out/inert state — "Randomize System Tile Fanart" only has
                 // an effect while the fanart background is showing, so it locks
-                // when Showcase Background Art is off or Custom Background is on.
+                // when Showcase Background Art is off.
+                //
+                // It no longer locks on Custom Background: the two used to be
+                // mutually exclusive, but the custom image is a base layer now
+                // and fanart still runs on top of it.
                 property bool rowDisabled: {
                     var _v = settingsList.settingsVersion;   // re-evaluate after any save
                     if (settingName === "Randomize System Tile Fanart") {
                         var bgArt  = api.memory.has("Showcase Background Art") ? api.memory.get("Showcase Background Art") : "Yes";
-                        var custom = api.memory.has("Custom Background") ? api.memory.get("Custom Background") : "No";
-                        return bgArt === "No" || custom === "Yes";
+                        return bgArt === "No";
                     }
                     // A collection's Ratio row is inert when its shape is Square
                     if (settingName.indexOf("Collection ") === 0 && settingName.indexOf(" - Ratio") !== -1) {
