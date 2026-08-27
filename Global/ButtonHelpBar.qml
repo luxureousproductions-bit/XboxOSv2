@@ -25,9 +25,18 @@ id: root
         Row {
             spacing: 10
             Image {
-                source: "../assets/images/controller/" + processButtonArt(button) + ".png"
+                // An entry may supply its own icon instead of a controller
+                // glyph — used for buttons Pegasus has no mapping for, like
+                // Select. Only the taken branch of the ternary evaluates, so
+                // processButtonArt() isn't called for custom-icon entries.
+                source: (typeof icon !== 'undefined' && icon !== "")
+                        ? icon
+                        : "../assets/images/controller/" + processButtonArt(button) + ".png"
                 width: vpx(30)
                 height: vpx(30)
+                sourceSize { width: Math.round(vpx(30) * 2); height: Math.round(vpx(30) * 2) }
+                fillMode: Image.PreserveAspectFit
+                smooth: true
                 asynchronous: true
             }
             Text { 
