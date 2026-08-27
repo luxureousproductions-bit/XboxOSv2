@@ -517,11 +517,49 @@ id: root
                 source: artScreenshot
                 fillMode: Image.PreserveAspectCrop   // crop to a clean square
                 smooth: true
-                visible: status === Image.Ready
+                visible: status === Image.Ready && !appIconMode
                 layer.enabled: true
                 layer.smooth: true
                 layer.effect: OpacityMask {
                     maskSource: Rectangle { width: artScreenshotImg.width; height: artScreenshotImg.height; radius: vpx(10) }
+                }
+            }
+
+            // Imported app icon, filling the square.
+            //
+            // The image is oversized INSIDE a fixed-size wrapper rather than
+            // scaled: `scale` on a layered Image transforms the already-masked
+            // result, so the rounded edge scales up too and the icon spills
+            // past the frame. Oversizing within a masked wrapper keeps the clip
+            // at the frame's real bounds.
+            Item {
+            id: appIconWrap
+
+                anchors.fill: parent
+                visible: appIconMode && appIconImg.status === Image.Ready
+                layer.enabled: visible
+                layer.smooth: true
+                layer.effect: OpacityMask {
+                    maskSource: Rectangle { width: appIconWrap.width; height: appIconWrap.height; radius: vpx(10) }
+                }
+
+                // Backs the icon's transparent corners so the square reads solid.
+                Rectangle { anchors.fill: parent; color: "#2E2E2E" }
+
+                Image {
+                id: appIconImg
+
+                    anchors.centerIn: parent
+                    // Icons arrive as a circle on a transparent square, so the
+                    // visible art must be blown past the frame to fill it. A
+                    // circle needs ~1.41x to cover its square.
+                    width:  parent.width  * 1.45
+                    height: parent.height * 1.45
+                    source: appIconMode ? artScreenshot : ""
+                    sourceSize: Qt.size(Math.round(width), Math.round(height))
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    asynchronous: true
                 }
             }
             Rectangle {   // fallback fill when no screenshot
@@ -1494,10 +1532,13 @@ id: root
                 filterPanel.forceActiveFocus();
             }
         }
-        // Y — game details page, opened with the full details pane expanded
+        // Y — game details page, opened with the full details pane expanded.
+        // Inert for imported apps: they carry no metadata, so the page would be
+        // empty. The helpbar drops the prompt to match.
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus) { gameDetailsFull(currentGame); }
+            if (!filterOpen && gamelist.focus && !currentIsImportedApp)
+                gameDetailsFull(currentGame);
         }
         // LT — previous letter group
         if (api.keys.isPageUp(event) && !event.isAutoRepeat) {
@@ -1524,10 +1565,34 @@ id: root
         ListElement { name: "Filters";      button: "details" }
         ListElement { name: "Launch";       button: "accept"  }
     }
+    // Same bar without More Details, for imported apps. Two static models
+    // swapped on demand rather than one model rebuilt as the cursor moves.
+    ListModel {
+        id: allGamesAppHelpModel
+        ListElement { name: "Back";    button: "cancel"  }
+        ListElement { name: "Filters"; button: "details" }
+        ListElement { name: "Launch";  button: "accept"  }
+    }
+
+    // True when the highlighted entry is an app Pegasus imported.
+    readonly property bool currentIsImportedApp: {
+        if (!currentGame || !currentGame.files || currentGame.files.count < 1) return false;
+        var p = currentGame.files.get(0).path || "";
+        return p.indexOf("android:") === 0;
+    }
+    function refreshHelpbar() {
+        if (!focus) return;
+        currentHelpbarModel = currentIsImportedApp ? allGamesAppHelpModel
+                                                   : allGamesHelpModel;
+    }
+    // Only fires when crossing between an app and a normal entry, not on every
+    // cursor move.
+    onCurrentIsImportedAppChanged: refreshHelpbar()
 
     onFocusChanged: {
         if (focus) {
-            currentHelpbarModel     = allGamesHelpModel;
+            currentHelpbarModel     = currentIsImportedApp ? allGamesAppHelpModel
+                                                            : allGamesHelpModel;
             currentCustomCollection = listAllGames.collection;
             // Returning from game details: re-center the list on the current game
             restoreViewTimer.restart();
