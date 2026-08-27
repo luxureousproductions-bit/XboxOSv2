@@ -111,9 +111,30 @@ id: root
     property var    systemOptions:     []   // [{name, index}, ...] built lazily
     property int    systemPickerIndex: 0
 
+    // ── Imported apps ──
+    // Apps imported by Pegasus get their icon and nothing else: no screenshot,
+    // no 3D box, no logo. They have no such art, and the composite looks broken
+    // when two of its three layers are missing.
+    //
+    // Detected by file path — Pegasus writes imported entries as
+    // "android:<package>" — so a ROM or a hand-written .app entry can't match,
+    // even sitting in the same collection.
+    property bool appIsImported: {
+        if (!settledGame || !settledGame.files || settledGame.files.count < 1) return false;
+        var p = settledGame.files.get(0).path || "";
+        return p.indexOf("android:") === 0;
+    }
+    property string appIconArt: {
+        if (!settledGame || !settledGame.assets) return "";
+        var a = settledGame.assets;
+        return a.boxFront || a.logo || a.poster || a.banner || "";
+    }
+    readonly property bool appIconMode: appIsImported && appIconArt !== ""
+
     // ── Game preview art (miximage-style composite) ──
     // Backdrop = fanart (falls back to a screenshot); framed square = a screenshot.
     property string artBackdrop: {
+        if (appIconMode) return appIconArt;
         if (!settledGame) return "";
         var f = Utils.fanArt(settledGame);
         if (f) return f;
@@ -121,13 +142,17 @@ id: root
         return (s2 && s2.length) ? s2[0] : "";
     }
     property string artScreenshot: {
+        if (appIconMode) return appIconArt;
         if (!settledGame) return "";
         var ss = settledGame.assets.screenshotList;
         if (ss && ss.length) return ss[0];
         return Utils.fanArt(settledGame) || "";
     }
-    property string artLogo: settledGame ? (Utils.logo(settledGame) || settledGame.assets.logo || "") : ""
+    // Both empty in icon mode: each Image hides itself on a non-Ready status.
+    property string artLogo: appIconMode ? ""
+        : (settledGame ? (Utils.logo(settledGame) || settledGame.assets.logo || "") : "")
     property string artBoxSource: {
+        if (appIconMode) return "";
         if (!settledGame) return "";
         var three = Utils.get3dBoxArt(settledGame);
         if (three) return three;                       // 3D box
@@ -480,7 +505,9 @@ id: root
             width:  boxArt.shotSide
             height: boxArt.shotSide
             anchors.centerIn: parent
-            anchors.horizontalCenterOffset: vpx(28)
+            // The offset exists to leave room for the 3D box overhanging the
+            // left. In icon mode there's no box, so it centres properly.
+            anchors.horizontalCenterOffset: appIconMode ? 0 : vpx(28)
 
             Image {
             id: artScreenshotImg
