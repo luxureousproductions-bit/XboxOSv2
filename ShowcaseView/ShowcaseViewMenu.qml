@@ -1672,8 +1672,6 @@ id: root
         // `icon` must be declared on the FIRST element: a ListModel fixes its
         // roles from element one, so a role introduced later is ignored.
         // Empty means "use the controller glyph for `button`".
-        //
-        // The bar lays out right-to-left, so the LAST entry sits furthest left.
         ListElement {
             name: "Discover"
             button: "cancel"
@@ -1693,11 +1691,6 @@ id: root
             name: "Select"
             button: "accept"
             icon: ""
-        }
-        ListElement {
-            name: "Apps"
-            button: "accept"          // unused; the icon below wins
-            icon: "../assets/images/icon_select.svg"
         }
     }
 
