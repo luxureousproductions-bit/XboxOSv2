@@ -99,7 +99,10 @@ id: root
         FastBlur {
             anchors.fill: parent
             source: fallbackSource
-            radius: vpx(110)
+            // FastBlur's radius maxes out at 64. vpx(110) scales well past that,
+            // which is why the backdrop rendered as nothing and the splash came
+            // out black. The working blur in AllGamesMenu uses 64 flat.
+            radius: 64
             cached: true
             visible: fallbackSource.status === Image.Ready
         }
