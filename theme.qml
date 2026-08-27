@@ -915,10 +915,13 @@ id: root
     // the normal return path is left completely alone.
     function launchAppFromDrawer(game) {
         if (game === null) return;
-        playAccept();
         launchingGame = game;
-        launchSuspended = false;
-        root.state = "launchgamescreen";
+        // MUST go through launchGameScreen(): it pushes the current state onto
+        // lastState before switching. Setting root.state directly pushed
+        // nothing, so cancelling the splash popped an entry that was never
+        // there — the stack emptied and the next cancel had nothing to return
+        // to, leaving the launch to go ahead anyway.
+        launchGameScreen();
         saveCurrentState(game);
         api.memory.set('From App Drawer', 'True');
         launchDelay.restart();
@@ -937,6 +940,18 @@ id: root
 
     function previousScreen() {
         playBack();
+        // A cancelled drawer launch never returns, so clear the flag here or a
+        // later, unrelated return would be redirected to the Showcase.
+        if (api.memory.has('From App Drawer'))
+            api.memory.unset('From App Drawer');
+
+        // Guard against an empty stack. Reading past the end sets state to
+        // undefined, which leaves the screen stuck exactly where it was.
+        if (lastState.length === 0) {
+            state = "showcasescreen";
+            return;
+        }
+
         if (state == lastState[lastState.length-1])
             popLastGame();
 
