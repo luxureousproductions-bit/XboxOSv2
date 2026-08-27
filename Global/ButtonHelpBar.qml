@@ -59,6 +59,38 @@ id: root
         spacing: vpx(20)
     }
 
+    // Standalone prompt pinned to the far left, clear of the right-aligned
+    // group above. Set leftPromptText to show it; empty hides it entirely.
+    property string leftPromptText: ""
+    property string leftPromptIcon: ""
+
+    Row {
+        anchors {
+            left: parent.left
+            verticalCenter: parent.verticalCenter
+        }
+        spacing: 10
+        visible: leftPromptText !== ""
+
+        Image {
+            anchors.verticalCenter: parent.verticalCenter
+            source: leftPromptIcon
+            width: vpx(30); height: vpx(30)
+            sourceSize { width: Math.round(vpx(30) * 2); height: Math.round(vpx(30) * 2) }
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            asynchronous: true
+            visible: leftPromptIcon !== ""
+        }
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: leftPromptText
+            font.family: subtitleFont.name
+            font.pixelSize: fpx(16)
+            color: (root.state === "settingsscreen") ? "#ebebeb" : theme.text
+        }
+    }
+
     visible: currentHelpbarModel ? true : false
 
     // Processes the button and will display the correct art based on the button mappings set in Pegasus
