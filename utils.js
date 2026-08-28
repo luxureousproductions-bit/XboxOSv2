@@ -532,13 +532,46 @@ function uniqueGameValues(fieldName) {
   return [...set.values()].sort();
 }
 
-function uniqueValuesArray(fieldName) {
-  let arr = [];
-  var allGames = api.allGames.toVarArray();
-  for(var i=0;i<allGames.length;i++) {
-    arr.push(allGames[i][fieldName]);
+// Distinct, non-empty values for a field.
+//
+// This used to push one entry per GAME — empties and duplicates included — so a
+// random pick was usually blank ("Top Games by ") on a library where most games
+// carry no publisher, and was weighted by how many games shared a value.
+//
+// omitApplication / omitEmulator skip games the Showcase filters out anyway;
+// without that a value can be picked whose every game is then filtered away,
+// producing an empty row.
+function uniqueValuesArray(fieldName, omitApplication, omitEmulator) {
+  const seen = new Set();
+  const allGames = api.allGames.toVarArray();
+  for (let i = 0; i < allGames.length; i++) {
+    const game = allGames[i];
+
+    if (omitApplication || omitEmulator) {
+      const genres = game['genreList'] || [];
+      let skip = false;
+      for (let j = 0; j < genres.length; j++) {
+        const g = (genres[j] || "").toLowerCase();
+        if (omitApplication && g === "application") { skip = true; break; }
+        if (omitEmulator    && g === "emulator")    { skip = true; break; }
+      }
+      if (skip) continue;
+    }
+
+    const v = game[fieldName];
+    if (!v) continue;                  // drops "" and undefined
+    const trimmed = String(v).trim();
+    if (trimmed) seen.add(trimmed);
   }
-  return arr;
+  return [...seen].sort();
+}
+
+// Escapes a string for literal use in a RegExp. Genre and publisher names carry
+// characters that are regex syntax — "Role-Playing (RPG)" as a raw pattern
+// becomes a capture group and matches nothing, which is why some rows came up
+// empty.
+function escapeRegExp(str) {
+  return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function shuffleArray(array) {
@@ -586,10 +619,17 @@ function uniqueGenreValues(omitEmulator) {
       const separatorIdx = g.search(/\s*[/,]\s*/);
       if (separatorIdx !== -1) {
         const separatorMatch = g.match(/\s*[/,]\s*/);
+        // The parts get the same test as the whole. "Emulator / Utility"
+        // otherwise contributed a selectable "Emulator" genre whose games the
+        // list then filtered away, leaving an empty row.
         const parentGenre = g.substring(0, separatorIdx).trim();
-        if (parentGenre) seen.add(parentGenre);
+        const pl = parentGenre.toLowerCase();
+        if (parentGenre && pl !== "application" && !(omitEmulator && pl === "emulator"))
+          seen.add(parentGenre);
         const subgenre = g.substring(separatorIdx + separatorMatch[0].length).trim();
-        if (subgenre) seen.add(subgenre);
+        const sl = subgenre.toLowerCase();
+        if (subgenre && sl !== "application" && !(omitEmulator && sl === "emulator"))
+          seen.add(subgenre);
       }
     }
   }
