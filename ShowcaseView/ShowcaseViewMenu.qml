@@ -146,15 +146,22 @@ id: root
     // Pegasus populates api.allGames fully before any QML runs, so these
     // property initializers evaluate once at component creation with the
     // complete game library available — no timer or debounce needed.
-    property string randoPub:    Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || ''
-    property string randoDev:    Utils.returnRandom(Utils.uniqueValuesArray('developer')) || ''
-    property string randoGenre:  Utils.returnRandom(Utils.uniqueGenreValues()) || ''
-    property string randoGenre2: Utils.returnRandom(Utils.uniqueGenreValues()) || ''
+    // Candidate pools exclude games the rows filter out anyway, so a value whose
+    // every game would be filtered away can't be picked — that produced rows
+    // like "Top Games by Sony" with nothing under them.
+    readonly property bool poolOmitApp: settings.OmitApplicationFromShowcase === "Yes"
+    readonly property bool poolOmitEmu: settings.OmitEmulatorFromShowcase === "Yes"
+
+    property string randoPub:    Utils.returnRandom(Utils.uniqueValuesArray('publisher', poolOmitApp, poolOmitEmu)) || ''
+    property string randoDev:    Utils.returnRandom(Utils.uniqueValuesArray('developer', poolOmitApp, poolOmitEmu)) || ''
+    property string randoGenre:  Utils.returnRandom(Utils.uniqueGenreValues(poolOmitEmu)) || ''
+    property string randoGenre2: Utils.returnRandom(Utils.uniqueGenreValues(poolOmitEmu)) || ''
 
     function refreshLists() {
         var omitEmu = settings.OmitEmulatorFromShowcase === "Yes";
-        var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || '';
-        var dev = Utils.returnRandom(Utils.uniqueValuesArray('developer')) || '';
+        var omitApp = settings.OmitApplicationFromShowcase === "Yes";
+        var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher', omitApp, omitEmu)) || '';
+        var dev = Utils.returnRandom(Utils.uniqueValuesArray('developer', omitApp, omitEmu)) || '';
         var genres = Utils.uniqueGenreValues(omitEmu);
         var genre = Utils.returnRandom(genres) || '';
         var filtered = genres.filter(function(g) { return g !== genre; });
