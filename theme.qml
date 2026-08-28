@@ -1328,7 +1328,10 @@ id: root
         // Pinned bottom-left, away from the right-hand prompts. Showcase only —
         // the drawer opens from there.
         leftPromptText: (root.state === "showcasescreen") ? "Apps" : ""
-        leftPromptIcon: "../assets/images/icon_select.svg"
+        // Controller-art PNG rather than the SVG, so it matches the other
+        // prompts on the row exactly — same 46px canvas, same black disc and
+        // ring construction as the A/B/X/Y glyphs beside it.
+        leftPromptIcon: "assets/images/controller/10.png"
     }
 
     // ── App drawer ────────────────────────────────────────────────────────
