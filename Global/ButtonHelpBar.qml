@@ -64,16 +64,19 @@ id: root
     property string leftPromptText: ""
     property string leftPromptIcon: ""
 
+    // Mirrors buttonhelpDelegate exactly: same spacing, same sizes, and the
+    // same vertical treatment. The ListView above anchors.fill and lays its
+    // rows out from the TOP of the bar, so centring this one instead is what
+    // made "Apps" sit lower than everything else.
     Row {
         anchors {
             left: parent.left
-            verticalCenter: parent.verticalCenter
+            top: parent.top
         }
         spacing: 10
         visible: leftPromptText !== ""
 
         Image {
-            anchors.verticalCenter: parent.verticalCenter
             source: leftPromptIcon
             width: vpx(30); height: vpx(30)
             sourceSize { width: Math.round(vpx(30) * 2); height: Math.round(vpx(30) * 2) }
@@ -83,11 +86,12 @@ id: root
             visible: leftPromptIcon !== ""
         }
         Text {
-            anchors.verticalCenter: parent.verticalCenter
             text: leftPromptText
             font.family: subtitleFont.name
             font.pixelSize: fpx(16)
             color: (root.state === "settingsscreen") ? "#ebebeb" : theme.text
+            height: parent.height
+            verticalAlignment: Text.AlignVCenter
         }
     }
 
