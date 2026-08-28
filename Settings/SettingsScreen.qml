@@ -585,8 +585,18 @@ id: root
                  + "leaving a blank screen.\n\n"
                  + "Entries that do have fanart cover it completely, so this "
                  + "works alongside Showcase Background Art rather than "
-                 + "replacing it. Turn that off to see your image on every "
-                 + "screen.";
+                 + "replacing it. Turn that off to see your image behind the "
+                 + "whole Showcase.\n\n"
+                 + "This applies to the Showcase only \u2014 other screens "
+                 + "have their own backgrounds.";
+        }
+        if (name === "Randomize System Tile Fanart") {
+            return "Picks a random image from the highlighted collection's own "
+                 + "fanart each time, instead of always using the same one.\n\n"
+                 + "The pick comes from that collection's games, so it changes "
+                 + "as you move along the system row.\n\n"
+                 + "Needs Showcase Background Art on \u2014 with it off there "
+                 + "is no fanart to choose from, and this row locks.";
         }
         if (name === "Hide Android System Tile") {
             return "Hides the tile for the collection the App Drawer uses, so "
@@ -644,6 +654,7 @@ id: root
     // result, which is wasteful when all that's needed is whether one exists.
     function hasInfo(name) {
         return name === "Custom Background"
+            || name === "Randomize System Tile Fanart"
             || name === "Hide Android System Tile"
             || name === "Omit genre: Application from Showcase"
             || name === "Omit genre: Emulator from Showcase";
@@ -1034,17 +1045,10 @@ id: root
                     if (isTextInput || rowDisabled) return;
                     api.memory.set(settingName + 'Index', savedIndex);
                     api.memory.set(settingName, settingList[savedIndex]);
-                    // Mutual exclusion: fanart and custom background can't both be on
-                    if (settingName === "Showcase Background Art" && settingList[savedIndex] === "Yes") {
-                        api.memory.set("Custom Background", "No");
-                        api.memory.set("Custom BackgroundIndex", "0");
-                        settingsList.settingsVersion++;
-                    }
-                    if (settingName === "Custom Background" && settingList[savedIndex] === "Yes") {
-                        api.memory.set("Showcase Background Art", "No");
-                        api.memory.set("Showcase Background ArtIndex", "1");
-                        settingsList.settingsVersion++;
-                    }
+                    // These two used to be mutually exclusive, each forcing the
+                    // other off when enabled. They now layer instead: the custom
+                    // image is the base and fanart paints over it, showing
+                    // through only for entries that have no art of their own.
                     // Either of these changing can lock/unlock the randomize row
                     if (settingName === "Showcase Background Art" || settingName === "Custom Background")
                         settingsList.settingsVersion++;
@@ -1364,10 +1368,11 @@ id: root
         if (want === helpState) return;
         helpState = want;
         settingsHelpModel.clear();
-        // Listed first so it sits to the left of Back.
+        // The bar lays out right-to-left, so the LAST entry appended is the
+        // one furthest left. Back goes first to sit on the right of it.
+        settingsHelpModel.append({ name: "Back", button: "cancel" });
         if (want === 1)
             settingsHelpModel.append({ name: "More info", button: "details" });
-        settingsHelpModel.append({ name: "Back", button: "cancel" });
     }
 
     Component.onCompleted: rebuildHelpbar()
