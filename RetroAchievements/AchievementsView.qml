@@ -483,8 +483,8 @@ id: root
     ListModel {
     id: localHelpModel
         ListElement { name: "Details"; button: "accept"  }
-        ListElement { name: "Search";  button: "filters" }
-        ListElement { name: "Refresh"; button: "details" }
+        ListElement { name: "Search";  button: "details" }
+        ListElement { name: "Refresh"; button: "filters" }
         ListElement { name: "Back";    button: "cancel"  }
     }
 
@@ -511,8 +511,8 @@ id: root
             gameList.currentIndex++;
     }
     Keys.onPressed: {
-        // Y — open the library search
-        if (api.keys.isFilters(event) && !event.isAutoRepeat) {
+        // X — open the library search
+        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
             playAccept();
             searchOverlay.openSearch();
@@ -527,7 +527,8 @@ id: root
             event.accepted = true;
             previousScreen();
         }
-        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
+        // Y — refresh
+        if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
             playAccept();
             initialized = false;
@@ -616,6 +617,7 @@ id: root
         }
 
         function commitSearch() {
+            playAccept();
             runSearch();
             if (results.length > 0) {
                 showingResults = true;
@@ -723,6 +725,9 @@ id: root
         // Results
         ListView {
             id: resultList
+            // One hook covers d-pad steps, Left/Right page jumps and the
+            // LT/RT letter jumps, the same way the games list does it above.
+            onCurrentIndexChanged: if (searchOverlay.showingResults) playNav()
             anchors {
                 top: queryBox.bottom; topMargin: vpx(14)
                 left: parent.left; leftMargin: vpx(60)
@@ -964,16 +969,19 @@ id: root
             }
             if (api.keys.isNextPage(event)) {          // RT — next letter
                 event.accepted = true;
+                playToggle();
                 searchOverlay.jumpLetter(1);
                 return;
             }
             if (api.keys.isPrevPage(event)) {          // LT — previous letter
                 event.accepted = true;
+                playToggle();
                 searchOverlay.jumpLetter(-1);
                 return;
             }
             if (api.keys.isCancel(event)) {            // back to a blank keyboard
                 event.accepted = true;
+                playBack();
                 searchOverlay.resetSearch();
                 return;
             }
