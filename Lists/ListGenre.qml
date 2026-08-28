@@ -15,6 +15,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import QtQuick 2.15
+import "../utils.js" as Utils
 import SortFilterProxyModel 0.2
 
 Item {
@@ -35,7 +36,7 @@ id: root
 
         sourceModel: api.allGames
         filters: [
-            RegExpFilter { roleName: "genre"; pattern: genre; caseSensitivity: Qt.CaseInsensitive },
+            RegExpFilter { roleName: "genre"; pattern: Utils.escapeRegExp(genre); caseSensitivity: Qt.CaseInsensitive },
             ExpressionFilter {
                 expression: {
                     if (root.omitApplication && root.appTitles[model.title] === true) return false;
