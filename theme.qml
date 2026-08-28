@@ -1331,7 +1331,12 @@ id: root
         // Controller-art PNG rather than the SVG, so it matches the other
         // prompts on the row exactly — same 46px canvas, same black disc and
         // ring construction as the A/B/X/Y glyphs beside it.
-        leftPromptIcon: "assets/images/controller/10.png"
+        //
+        // Path is relative to ButtonHelpBar.qml, NOT this file: the string is
+        // converted to a url by the `source:` binding inside that component, so
+        // it resolves against that component's folder. Same "../" the delegate
+        // beside it uses.
+        leftPromptIcon: "../assets/images/controller/10.png"
     }
 
     // ── App drawer ────────────────────────────────────────────────────────
