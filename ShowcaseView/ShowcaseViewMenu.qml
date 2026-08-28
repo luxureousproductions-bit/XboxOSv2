@@ -223,13 +223,14 @@ id: root
         smooth: true
         z: -1
         source: (settings.CustomBackground === "Yes") ? "../assets/images/backgrounds/background.png" : ""
-        // Always the base layer when enabled, rather than switching off the
-        // moment background art is on. The fanart layers above crossfade to
-        // transparent when an entry has no art — imported apps, for instance —
-        // so this shows through instead of leaving a blank screen. Fanart is
-        // opaque and full-bleed, so it still covers this completely when
-        // present, and turning background art off looks exactly as before.
-        opacity: (settings.CustomBackground === "Yes") ? 1 : 0
+        // Shown only while NO fanart is on screen. Two images never overlap, so
+        // fanart blends with the theme colour beneath rather than with this —
+        // which is what caused the colour shift and the flash between fades.
+        //
+        // bgShownImg is null whenever the fanart layers are cleared, which is
+        // exactly the case for entries with no art of their own (imported apps),
+        // and whenever background art is switched off entirely.
+        opacity: (settings.CustomBackground === "Yes" && bgShownImg === null) ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: 400 } }
     }
 
@@ -361,11 +362,13 @@ id: root
         }
     }
 
-    // Dim overlay so content stays readable
+    // Dim overlay so content stays readable. Lowered from 0.45: it sits above
+    // everything, so it was darkening the chosen theme colour and the custom
+    // image as much as it was taming bright fanart.
     Rectangle {
         anchors.fill: parent
         color: "black"
-        opacity: 0.45
+        opacity: 0.25
         z: 1
     }
 
