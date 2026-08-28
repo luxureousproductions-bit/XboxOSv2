@@ -1,4 +1,12 @@
 # XboxOSv2 (a fork of a fork of gameOS)
+<img width="1920" height="1080" alt="IMG_0693" src="https://github.com/user-attachments/assets/f661e9ad-abad-4708-8369-76f6ed3bd4a0" />
+• Have all you system apps imported by enabling Pegasus data source
+
+• For manual Apps it’s recommended to us shortname : Android collection name : Android to see you apps in the app drawer
+
+• For Android games it’s recommended to use shortname : androidgames if you don’t want your manual imports in the app drawer
+
+
 <img width="1920" height="1080" alt="Screenshot_20260607-104924" src="https://github.com/user-attachments/assets/c05192cc-8d24-41a6-b384-990ed581ad0b" />
 
  - A complete overhaul to the showcase
