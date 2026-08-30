@@ -40,6 +40,25 @@ id: root
     }
 
     // Load settings
+    // Bumped by SettingsScreen after any save. Bindings that reference it become
+    // live; everything else keeps reading the `settings` snapshot below.
+    //
+    // `settings` itself can never re-evaluate: api.memory.has/get are method
+    // CALLS, so QML records no dependency on them. That is why most settings
+    // are marked "Reload Required". Opting one binding in at a time is far
+    // safer than making the whole object reactive, which would invalidate all
+    // 224 settings.* bindings at once — including several that walk the full
+    // game list.
+    property int settingsEpoch: 0
+
+    // Live copy of the featured box mode. Read by ShowcaseViewMenu's carousel
+    // and by FavoritesHeader, so switching it applies without a reload.
+    readonly property string featuredBoxContent: {
+        var e = settingsEpoch;
+        return api.memory.has("Featured Box Content")
+             ? api.memory.get("Featured Box Content") : "Favorites";
+    }
+
     property var settings: {
         return {
             PlatformView:                  api.memory.has("Game View") ? api.memory.get("Game View") : "Grid",
