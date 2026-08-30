@@ -50,7 +50,9 @@ id: root
     // Settings > Featured > "Featured Box Content" selects what it shows. Favorites
     // still degrades gracefully when none are set: videos, else art slideshow.
     readonly property string boxMode: {
-        var m = settings.FeaturedBoxContent;
+        // Live value, not the settings snapshot — this is what made a switch
+        // to Discover Videos need a theme reload.
+        var m = featuredBoxContent;
         if (m === "Fanart Slideshow") return "art";
         if (m === "Discover Videos")  return useVideoFallback ? "video" : "art";
         if (favCount > 0)             return "favorites";       // Favorites mode
@@ -108,7 +110,7 @@ id: root
     }
     // Builds whichever list the current mode actually needs, once.
     function ensureFallbacks() {
-        var m = settings.FeaturedBoxContent;
+        var m = featuredBoxContent;
         if (m === "Fanart Slideshow") { buildArtList(); return; }
         if (m === "Discover Videos")  { if (!videosScanned) buildVideoList(); return; }
         if (favCount === 0 && !videosScanned) buildVideoList();   // Favorites w/ none set
