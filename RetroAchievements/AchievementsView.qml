@@ -435,11 +435,14 @@ id: root
     }
 
     // ── Page counter ─────────────────────────────────────────────────────
+    // Top right, above the list. It used to sit bottom-right, which left the
+    // bottom row crowded once the shared Apps prompt appeared bottom-left on
+    // every screen.
     Text {
         visible: cheevosData.raUserName !== "" && cheevosData.raRecentGames.count > 0
         anchors {
             right:  parent.right; rightMargin: globalMargin
-            bottom: parent.bottom; bottomMargin: vpx(10)
+            bottom: gameList.top; bottomMargin: vpx(4)
         }
         text: (gameList.currentIndex + 1) + " of " + cheevosData.raRecentGames.count
         color: theme.text
@@ -449,10 +452,12 @@ id: root
         opacity: 0.75
     }
 
-    // ── Local help bar (bottom-left) ─────────────────────────────────────
+    // ── Local help bar (bottom-right) ────────────────────────────────────
+    // Right-aligned: the shared button bar puts the Apps prompt bottom-left on
+    // every screen, and these used to start there too and overlap it.
     Row {
         anchors {
-            left: parent.left; leftMargin: globalMargin
+            right: parent.right; rightMargin: globalMargin
             bottom: parent.bottom; bottomMargin: vpx(10)
         }
         spacing: vpx(20)

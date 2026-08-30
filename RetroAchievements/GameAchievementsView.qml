@@ -628,11 +628,14 @@ id: root
     }
 
     // ── Page counter ─────────────────────────────────────────────────────
+    // Top right, directly above the game icon. It used to sit bottom-right,
+    // which left the bottom row crowded once the shared Apps prompt appeared
+    // on the left of every screen.
     Text {
         visible: root.displayList.length > 0
         anchors {
-            right:  parent.right; rightMargin: globalMargin
-            bottom: parent.bottom; bottomMargin: vpx(10)
+            horizontalCenter: summaryIcon.horizontalCenter
+            bottom: gameSummary.top; bottomMargin: vpx(6)
         }
         text: (root.currentIndex + 1) + " of " + root.displayList.length
         color: theme.text
@@ -643,9 +646,11 @@ id: root
     }
 
     // ── Local help bar ────────────────────────────────────────────────────
+    // Right-aligned: the shared button bar puts the Apps prompt bottom-left on
+    // every screen, and these used to start there too and overlap it.
     Row {
         anchors {
-            left: parent.left; leftMargin: globalMargin
+            right: parent.right; rightMargin: globalMargin
             bottom: parent.bottom; bottomMargin: vpx(10)
         }
         spacing: vpx(16)
