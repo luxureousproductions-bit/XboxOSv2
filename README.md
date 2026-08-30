@@ -12,8 +12,9 @@
 • For manual Apps it’s recommended to us shortname : Android collection name : Android to see you apps in the app drawer
 
 • For Android games it’s recommended to use shortname : androidgames if you don’t want your manual imports in the app drawer
-<img width="1920" height="1080" alt="Screenshot_20260607-105125" src="https://github.com/user-attachments/assets/00c91574-67bc-4945-bd20-284f68ddf507" />
-<img width="1920" height="1080" alt="Screenshot_20260607-105012" src="https://github.com/user-attachments/assets/f5ba37a4-3a25-4c1e-8bd0-170d11568f3e" />
+<img width="1920" height="1080" alt="1000769048" src="https://github.com/user-attachments/assets/9969e245-9211-47fb-9569-0219d07547e2" />
+<img width="1920" height="1080" alt="1000769049" src="https://github.com/user-attachments/assets/d90b8805-cd6a-4995-b659-a34b083c0d2b" />
+
 
 - Crossfade background art, or use your own custom background:
     - Place Background.png to assests/images/backgrounds
