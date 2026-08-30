@@ -633,8 +633,11 @@ id: root
     // on the left of every screen.
     Text {
         visible: root.displayList.length > 0
+        // Anchored to parent, not to summaryIcon: that icon is a child of
+        // gameSummary, and QML can only anchor to a parent or a sibling. The
+        // cross-parent anchor was ignored, dropping this to x=0 on the left.
         anchors {
-            horizontalCenter: summaryIcon.horizontalCenter
+            right:  parent.right; rightMargin: globalMargin
             bottom: gameSummary.top; bottomMargin: vpx(6)
         }
         text: (root.currentIndex + 1) + " of " + root.displayList.length
