@@ -586,9 +586,7 @@ id: root
                  + "Entries that do have fanart cover it completely, so this "
                  + "works alongside Showcase Background Art rather than "
                  + "replacing it. Turn that off to see your image behind the "
-                 + "whole Showcase.\n\n"
-                 + "This applies to the Showcase only \u2014 other screens "
-                 + "have their own backgrounds.";
+                 + "whole Showcase.";
         }
         if (name === "Randomize System Tile Fanart") {
             return "Picks a random image from the highlighted collection's own "
@@ -641,10 +639,7 @@ id: root
             return "Keeps emulators out of the Showcase content rows.\n\n"
                  + "This matches on the genre tag \"Emulator\" only, so an "
                  + "emulator needs that genre set in its metadata to be "
-                 + "caught. Emulators imported by Pegasus usually have no "
-                 + "genre, so tag them yourself if you want them filtered.\n\n"
-                 + "Emulators launched as games from a ROM collection are not "
-                 + "affected.\n\n"
+                 + "caught.\n\n"
                  + "Needs a theme reload to take effect.";
         }
         return "";
