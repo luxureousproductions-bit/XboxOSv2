@@ -37,7 +37,7 @@
   <img width="1920" height="1080" alt="1000769057" src="https://github.com/user-attachments/assets/3cccd40c-4d91-436d-b760-85654e27b336" />
 - New settings and ui
 
-- 
+  
 <img width="1920" height="1080" alt="Screenshot_20260607-105428" src="https://github.com/user-attachments/assets/74a4465d-a825-4be8-959a-d2e01ac53583" />
 - Discover classics and hidden gems and jump right in with the Discover page
 
