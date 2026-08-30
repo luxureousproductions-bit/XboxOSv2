@@ -28,9 +28,12 @@
 
 <img width="1920" height="1080" alt="1000769056" src="https://github.com/user-attachments/assets/b8054f54-f3d6-47a1-9e18-4df74ec67e89" />
 <img width="1920" height="1080" alt="1000769055" src="https://github.com/user-attachments/assets/1f43b6fc-37b3-470b-9d2c-cd0729f55628" />
+<img width="1920" height="1080" alt="1000769058" src="https://github.com/user-attachments/assets/7dcf2d6d-ce19-4a8b-ac76-6516966e9d8a" />
+
 
 - Updated RA page
-<img width="1920" height="1080" alt="Screenshot_20260607-105247" src="https://github.com/user-attachments/assets/a515aed5-e992-4cf3-8e4a-0168b5a9e13a" />
+  <img width="1920" height="1080" alt="1000769057" src="https://github.com/user-attachments/assets/3cccd40c-4d91-436d-b760-85654e27b336" />
+
 - New settings and ui
 <img width="1920" height="1080" alt="Screenshot_20260607-105428" src="https://github.com/user-attachments/assets/74a4465d-a825-4be8-959a-d2e01ac53583" />
 - Discover classics and hidden gems and jump right in with the Discover page
