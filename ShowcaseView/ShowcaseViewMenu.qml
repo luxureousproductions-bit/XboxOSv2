@@ -237,7 +237,12 @@ id: root
         // bgShownImg is null whenever the fanart layers are cleared, which is
         // exactly the case for entries with no art of their own (imported apps),
         // and whenever background art is switched off entirely.
-        opacity: (settings.CustomBackground === "Yes" && bgShownImg === null) ? 1 : 0
+        // Follows Showcase Background Opacity, same as the fanart layers, so one
+        // setting governs how strong the background reads whichever source is
+        // showing. Same parseFloat fallback startBgFade() uses.
+        opacity: (settings.CustomBackground === "Yes" && bgShownImg === null)
+                 ? (parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55)
+                 : 0
         Behavior on opacity { PropertyAnimation { duration: 400 } }
     }
 
