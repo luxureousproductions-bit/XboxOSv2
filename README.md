@@ -19,10 +19,16 @@
 - Crossfade background art, or use your own custom background:
     - Place Background.png to assests/images/backgrounds
   
-<img width="1920" height="1080" alt="Screenshot_20260607-105541" src="https://github.com/user-attachments/assets/6aaac017-1e3e-4a6a-b012-5f011e6a010e" />
-<img width="1920" height="1080" alt="Screenshot_20260607-105234" src="https://github.com/user-attachments/assets/d09b55c9-39bc-43c4-a8b8-3d50c453311a" />
+<img width="1920" height="1080" alt="1000769052" src="https://github.com/user-attachments/assets/670b3345-50e9-4312-93a3-7cbeca3d304a" />
+
+<img width="1920" height="1080" alt="1000769053" src="https://github.com/user-attachments/assets/a8dab62b-bc7b-41a0-acb2-f708d1bfdd75" />
+
 - New Full Library section with advance filters
-<img width="1920" height="1080" alt="Screenshot_20260607-105335" src="https://github.com/user-attachments/assets/8b552c4d-df91-433a-8d7f-f281d3843eb5" />
+  <img width="1920" height="1080" alt="1000769054" src="https://github.com/user-attachments/assets/e841d5e2-1afe-4f1d-9637-8496333637d7" />
+
+<img width="1920" height="1080" alt="1000769056" src="https://github.com/user-attachments/assets/b8054f54-f3d6-47a1-9e18-4df74ec67e89" />
+<img width="1920" height="1080" alt="1000769055" src="https://github.com/user-attachments/assets/1f43b6fc-37b3-470b-9d2c-cd0729f55628" />
+
 - Updated RA page
 <img width="1920" height="1080" alt="Screenshot_20260607-105247" src="https://github.com/user-attachments/assets/a515aed5-e992-4cf3-8e4a-0168b5a9e13a" />
 - New settings and ui
