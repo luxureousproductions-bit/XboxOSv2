@@ -1575,10 +1575,21 @@ id: root
     }
 
     // True when the highlighted entry is an app Pegasus imported.
+    // Derived from the LIST, not from the shared currentGame property.
+    //
+    // currentGame is assigned imperatively when the proxy model finishes
+    // filling, which happens asynchronously and may be after this screen takes
+    // focus. If the first row is an imported app the index never changes, so
+    // nothing re-triggered and the bar kept the stale value until the cursor
+    // moved. Reading currentIndex and count makes this re-evaluate the moment
+    // the model populates, whatever the ordering.
     readonly property bool currentIsImportedApp: {
-        if (!currentGame || !currentGame.files || currentGame.files.count < 1) return false;
-        var p = currentGame.files.get(0).path || "";
-        return p.indexOf("android:") === 0;
+        var idx = gamelist.currentIndex;
+        var cnt = gamelist.count;
+        if (cnt <= 0 || idx < 0) return false;
+        var g = getCurrentGame(idx);
+        if (!g || !g.files || g.files.count < 1) return false;
+        return (g.files.get(0).path || "").indexOf("android:") === 0;
     }
     function refreshHelpbar() {
         if (!focus) return;
@@ -1591,12 +1602,9 @@ id: root
 
     onFocusChanged: {
         if (focus) {
+            // Covers focus arriving before the model has populated; once it
+            // does, currentIsImportedApp changes and refreshes this again.
             refreshHelpbar();
-            // Re-check once the list has settled. On entry the view sets its
-            // index and currentGame AFTER focus arrives, so if the first entry
-            // is an imported app the flag is still false at this point and the
-            // bar shows "More Details" until the cursor moves.
-            Qt.callLater(refreshHelpbar);
             currentCustomCollection = listAllGames.collection;
             // Returning from game details: re-center the list on the current game
             restoreViewTimer.restart();
