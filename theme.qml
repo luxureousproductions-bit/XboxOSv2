@@ -1325,9 +1325,15 @@ id: root
         }
         visible: settings.HideButtonHelp === "No" && root.state !== "launchgamescreen"
 
-        // Pinned bottom-left, away from the right-hand prompts. Showcase only —
-        // the drawer opens from there.
-        leftPromptText: (root.state === "showcasescreen") ? "Apps" : ""
+        // Pinned bottom-left, away from the right-hand prompts. Shown on every
+        // screen because Select opens the drawer from anywhere — the root key
+        // handler catches it wherever the focused screen doesn't.
+        //
+        // The bar itself already hides on the launch screen and when the user
+        // turns button help off, so this needs no state test of its own. It is
+        // suppressed while the drawer is open, where Select closes rather than
+        // opens and the prompt would be misleading.
+        leftPromptText: appDrawer.open ? "" : "Apps"
         // Path is relative to ButtonHelpBar.qml, NOT this file: the string is
         // converted to a url by the `source:` binding inside that component, so
         // it resolves against that component's folder. Same "../" the delegate
