@@ -1052,6 +1052,8 @@ id: root
                     // Either of these changing can lock/unlock the randomize row
                     if (settingName === "Showcase Background Art" || settingName === "Custom Background")
                         settingsList.settingsVersion++;
+                    // Wakes any binding that opted into live updates.
+                    settingsEpoch++;
                 }
 
                 function nextSetting() {
