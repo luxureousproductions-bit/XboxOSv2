@@ -1591,8 +1591,12 @@ id: root
 
     onFocusChanged: {
         if (focus) {
-            currentHelpbarModel     = currentIsImportedApp ? allGamesAppHelpModel
-                                                            : allGamesHelpModel;
+            refreshHelpbar();
+            // Re-check once the list has settled. On entry the view sets its
+            // index and currentGame AFTER focus arrives, so if the first entry
+            // is an imported app the flag is still false at this point and the
+            // bar shows "More Details" until the cursor moves.
+            Qt.callLater(refreshHelpbar);
             currentCustomCollection = listAllGames.collection;
             // Returning from game details: re-center the list on the current game
             restoreViewTimer.restart();
