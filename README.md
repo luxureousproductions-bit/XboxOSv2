@@ -11,7 +11,7 @@
 
 • For manual Apps it’s recommended to us shortname : Android collection name : Android to see you apps in the app drawer
 
-• For Android games it’s recommended to use shortname : androidgames if you don’t want your manual imports in the app drawer
+• For Android games it’s recommended to use shortname : androidgames and a collection name that differ from just “Android” if you don’t want your manual imports in the app drawer
 <img width="1920" height="1080" alt="1000769048" src="https://github.com/user-attachments/assets/9969e245-9211-47fb-9569-0219d07547e2" />
 <img width="1920" height="1080" alt="1000769049" src="https://github.com/user-attachments/assets/d90b8805-cd6a-4995-b659-a34b083c0d2b" />
 
