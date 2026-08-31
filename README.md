@@ -9,7 +9,7 @@
 <img width="1920" height="1080" alt="IMG_0693" src="https://github.com/user-attachments/assets/f661e9ad-abad-4708-8369-76f6ed3bd4a0" />
 • Have all you system apps imported by enabling Pegasus data source
 
-• For manual Apps it’s recommended to us shortname : Android collection name : Android to see you apps in the app drawer
+• For manual Apps it’s recommended to us shortname : Android and collection name : Android to see you apps in the app drawer
 
 • For Android games it’s recommended to use shortname : androidgames and a collection name that differ from just “Android” if you don’t want your manual imports in the app drawer
 <img width="1920" height="1080" alt="1000769048" src="https://github.com/user-attachments/assets/9969e245-9211-47fb-9569-0219d07547e2" />
