@@ -138,13 +138,11 @@ id: root
             settingName: "Omit genre: Application from Showcase"
             label: "Omit Applications from Showcase"
             setting: "No,Yes"
-            note: "May Need Reload"
         }
         ListElement {
             settingName: "Omit genre: Emulator from Showcase"
             label: "Omit Emulators from Showcase"
             setting: "No,Yes"
-            note: "Reload Required"
         }
         ListElement {
             settingName: "Hide Android System Tile"
@@ -620,13 +618,12 @@ id: root
         if (name === "Omit genre: Application from Showcase") {
             return "Keeps applications out of the Showcase content rows "
                  + "(Recently Played, Recommended and so on).\n\n"
-                 + "It works two ways, and only one of them needs a reload:\n\n"
-                 + "\u2022 Apps imported by Pegasus \u2014 filtered by "
-                 + "collection. Applies immediately, no reload.\n\n"
-                 + "\u2022 Apps you list yourself with genre: Application "
-                 + "\u2014 filtered by that tag. Needs a theme reload.\n\n"
+                 + "It works two ways: apps imported by Pegasus are filtered "
+                 + "by collection, and apps you list yourself are filtered by "
+                 + "the genre: Application tag.\n\n"
                  + "Both rules exist because imported apps carry no genre at "
                  + "all, so the tag alone would miss them.\n\n"
+                 + "May need a theme reload.\n\n"
                  + "WHICH COLLECTION IS USED\n"
                  + "In order: the Pegasus import named \"Android\" wins if app "
                  + "importing is on; otherwise a collection you named "
@@ -637,10 +634,12 @@ id: root
         }
         if (name === "Omit genre: Emulator from Showcase") {
             return "Keeps emulators out of the Showcase content rows.\n\n"
-                 + "This matches on the genre tag \"Emulator\" only, so an "
-                 + "emulator needs that genre set in its metadata to be "
-                 + "caught.\n\n"
-                 + "Needs a theme reload to take effect.";
+                 + "It works two ways: emulators among the apps imported by "
+                 + "Pegasus are recognised automatically, and emulators you "
+                 + "list yourself are filtered by the genre: Emulator tag.\n\n"
+                 + "Both rules exist because imported apps carry no genre at "
+                 + "all, so the tag alone would miss them.\n\n"
+                 + "May need a theme reload.";
         }
         return "";
     }
