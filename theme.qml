@@ -59,6 +59,80 @@ id: root
              ? api.memory.get("Featured Box Content") : "Favorites";
     }
 
+    // Titles of emulators among the imported apps.
+    //
+    // The genre rule can never catch these: Pegasus imports carry NO genre at
+    // all, so an emulator like Citra or DraStic has nothing to match on. This
+    // is the emulator equivalent of appTitleSet, identified by package name
+    // using the same keywords the App Drawer categorises with.
+    readonly property var emulatorKeywords: [
+        "citra", "dolphin", "drastic", "duckstation", "aethersx2", "ppsspp", "retroarch",
+        "vita3k", "yuzu", "ryujinx", "eden", "sudachi", "redream", "mupen", "melonds",
+        "flycast", "pcsx", "epsxe", "mame", "xemu", "winlator", "lime3ds", "azahar",
+        "panda3ds", "skyline", "nethersx2", "snes9x", "mgba", "fpse", "dsemu", "mm.jr",
+        "emu", "emulator", "gamenative"
+    ]
+    readonly property var emulatorTitleSet: {
+        var set = {};
+        if (!omitEmulatorLive) return set;      // nothing reads it when off
+        var cols = drawerCollections;
+        for (var i = 0; i < cols.length; i++) {
+            var gl = cols[i].games;
+            for (var j = 0; j < gl.count; j++) {
+                var g = gl.get(j);
+                if (!g.files || g.files.count < 1) continue;
+                var path = (g.files.get(0).path || "").toLowerCase();
+                var title = (g.title || "");
+                var t = title.toLowerCase();
+                for (var k = 0; k < emulatorKeywords.length; k++) {
+                    var kw = emulatorKeywords[k];
+                    if (path.indexOf(kw) >= 0 || t.indexOf(kw) >= 0) { set[title] = true; break; }
+                }
+            }
+        }
+        return set;
+    }
+
+    // One pass over the library, replacing the per-row genre work.
+    //
+    // Each Showcase row used to walk every game itself, lowercasing each genre
+    // string to compare it — 7 rows x 4300 games on every change, twice over.
+    // The answer is the same for every row, so it's computed once here and the
+    // rows do a single hash lookup each.
+    readonly property var omitTitleSet: {
+        var set = {};
+        var oApp = (settings.OmitApplicationFromShowcase === "Yes");
+        var oEmu = omitEmulatorLive;
+        if (!oApp && !oEmu) return set;         // nothing to do
+
+        // Imported apps and emulators, by collection/package.
+        if (oApp) { var a = appTitleSet;      for (var k in a) set[k] = true; }
+        if (oEmu) { var e = emulatorTitleSet; for (var k2 in e) set[k2] = true; }
+
+        // Genre-tagged entries. Lowercased once per game, not once per row.
+        var all = api.allGames;
+        for (var i = 0; i < all.count; i++) {
+            var g = all.get(i);
+            var t = g.title;
+            if (!t || set[t] === true) continue;
+            var gl = g.genreList;
+            for (var j = 0; j < gl.length; j++) {
+                var gg = (gl[j] || "").toLowerCase();
+                if (oApp && gg === "application") { set[t] = true; break; }
+                if (oEmu && gg === "emulator")    { set[t] = true; break; }
+            }
+        }
+        return set;
+    }
+
+    // Live copy of the Emulator omit setting. Read by the Showcase rows, so
+    // toggling it applies without a reload.
+    readonly property bool omitEmulatorLive: {
+        var e = settingsEpoch;
+        return (api.memory.has("Omit genre: Emulator from Showcase")
+              ? api.memory.get("Omit genre: Emulator from Showcase") : "No") === "Yes";
+    }
+
     property var settings: {
         return {
             PlatformView:                  api.memory.has("Game View") ? api.memory.get("Game View") : "Grid",
