@@ -54,13 +54,18 @@ id: root
         }
     }
 
-    Image {
+    Rectangle {
     id: border
-
+        // Traced in the theme accent rather than the old per-layout PNG frame,
+        // so the highlight always matches the rest of the theme's accent
+        // colour instead of a separate "Color Layout" choice.
         anchors.fill: parent
-        source: "../assets/images/colorspng/" + mapLayoutImage(settings.ColorLayout) + ".png"
+        color: "transparent"
+        radius: vpx(6)
+        border.width: vpx(3)
+        border.color: theme.accent
         visible: selected
-        asynchronous: true
+        z: 20
 
         Rectangle {
         id: titlecontainer
@@ -159,15 +164,15 @@ id: root
             sourceComponent: selected && isVideo ? videoPreviewWrapper : undefined
             asynchronous: true
         }
-
-        Rectangle {
-            anchors.fill: parent
-            color: "black"
-            opacity: selected ? 0 : 0.7
-            z: selected ? 0 : 10
-        }
         
     }
+
+    // Unselected tiles stay fully visible — just translucent — instead of being
+    // darkened under a black scrim. This dims the whole item (image + border
+    // trace together) rather than one layer, so the accent outline fades with
+    // the photo instead of staying full-strength over a dim picture.
+    opacity: selected ? 1.0 : 0.55
+    Behavior on opacity { NumberAnimation { duration: 100 } }
     
     // List specific input
     Keys.onPressed: {
