@@ -54,16 +54,13 @@ id: root
         }
     }
 
-    Rectangle {
+    // Anchor for the title bubble only. The accent trace itself is applied to
+    // the image below as a layer effect, so it follows the artwork's real
+    // silhouette — a round disc or a transparent logo gets outlined by its
+    // actual shape rather than boxed in a square frame.
+    Item {
     id: border
-        // Traced in the theme accent rather than the old per-layout PNG frame,
-        // so the highlight always matches the rest of the theme's accent
-        // colour instead of a separate "Color Layout" choice.
         anchors.fill: parent
-        color: "transparent"
-        radius: vpx(6)
-        border.width: vpx(3)
-        border.color: theme.accent
         visible: selected
         z: 20
 
@@ -109,6 +106,21 @@ id: root
         }
     }
 
+    // Traces the accent around whatever is actually visible in the artwork.
+    // Glow blurs the SOURCE'S ALPHA and colours it, drawing the result behind
+    // the source — so transparent regions are ignored and the outline hugs the
+    // real shape instead of the item's bounding box.
+    Component {
+    id: accentTraceEffect
+
+        Glow {
+            samples: 17
+            spread: 0.45
+            color: theme.accent
+            transparentBorder: true
+        }
+    }
+
     Image {
     id: bg
 
@@ -117,6 +129,11 @@ id: root
         source: isVideo ? "" : mediaItem
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
+
+        // Only the selected tile is traced; unselected ones render plainly so
+        // there is no per-tile effect cost across the whole row.
+        layer.enabled: selected
+        layer.effect: accentTraceEffect
 
         Rectangle {
         id: videopreview
