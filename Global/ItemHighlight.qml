@@ -33,12 +33,16 @@ id: root
         }
     }
 
-    // Stops the preview when its screen stops being current. Covers both
-    // hosts this component is used in (Showcase rows and the box-art grid).
-    readonly property bool screenShowing: activeScreen === "showcasescreen"
-                                       || activeScreen === "gridviewscreen"
-    onScreenShowingChanged: {
-        if (!screenShowing) {
+    // Stops the preview when its screen stops being current.
+    //
+    // Assignable, not readonly: HorizontalCollection sets it explicitly (it is
+    // Showcase-only), while GridViewMenu instantiates this without setting it
+    // and relies on the default below. The default covers both hosts, so an
+    // unset caller still behaves correctly.
+    property bool playbackActive: activeScreen === "showcasescreen"
+                               || activeScreen === "gridviewscreen"
+    onPlaybackActiveChanged: {
+        if (!playbackActive) {
             videoPreviewLoader.sourceComponent = undefined;
             videoDelay.stop();
         } else if (playVideo && selected) {
