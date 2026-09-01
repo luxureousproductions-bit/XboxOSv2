@@ -575,7 +575,10 @@ id: root
                 anchors.margins: vpx(3)   // inset so the square video corners stay inside the
                                           // rounded screenshot; corners then show the backdrop
                                           // (transparent) without ever masking the video itself
-                source: (settings.AllGamesVideoPreview !== "No" && videoArmed && videoSource !== "") ? videoSource : ""
+                // Cleared off-screen, same reason as the other players.
+                source: (settings.AllGamesVideoPreview !== "No" && videoArmed
+                         && videoSource !== "" && activeScreen === "allgamesscreen")
+                        ? videoSource : ""
                 fillMode: VideoOutput.PreserveAspectCrop
                 muted: settings.AllGamesVideoAudio !== "Yes"
                 loops: MediaPlayer.Infinite
