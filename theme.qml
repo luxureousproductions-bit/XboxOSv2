@@ -237,6 +237,14 @@ id: root
     property int currentCollectionIndex: 0
     property bool collectionVisited: false   // strip stays on the hero until a collection is actually opened
     property int currentGameIndex: 0
+
+    // Mirrors `state` under a name child components can reference. `state` is
+    // shadowed by every Item's own state property, so a child asking for it
+    // gets its own, not the theme's. Video players use this to stop when their
+    // screen isn't current — the screen Loaders stay resident once visited, so
+    // without this a preview keeps playing (and its audio with it) under
+    // whatever screen you move to.
+    readonly property string activeScreen: state
     property var currentCollection: api.collections.get(currentCollectionIndex)
 
     // The app drawer replaces Pegasus's own installed-apps tile, so that
