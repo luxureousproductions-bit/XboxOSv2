@@ -391,7 +391,10 @@ id: root
     property string bgSource: {
         if (settings.ShowcaseBackgroundArt !== "Yes") return "";
         if (!highlightedGame) return "";
-        return highlightedGame.assets.background || highlightedGame.assets.screenshots[0] || "";
+        // Fanart only — no screenshot fallback. A screenshot is a poor
+        // full-bleed background, and entries without fanart now reveal the
+        // custom background underneath instead of falling back to one.
+        return highlightedGame.assets.background || "";
     }
 
     // Single crossfade driver — bulletproof version:
