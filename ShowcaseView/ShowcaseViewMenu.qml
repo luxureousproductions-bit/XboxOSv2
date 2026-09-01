@@ -1722,6 +1722,11 @@ id: root
         if (activeFocus) {
             currentHelpbarModel = gridviewHelpModel;
             listRecommended.maybeRefresh();   // re-pick Recommended only if the showcased count changed
+            // Re-read live settings on every return to this screen. Coming back
+            // from Settings always lands here, so the featured box picks up a
+            // changed "Featured Box Content" without depending on the settings
+            // screen having bumped the counter itself.
+            settingsEpoch++;
         }
     }
 
