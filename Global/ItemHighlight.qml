@@ -33,6 +33,19 @@ id: root
         }
     }
 
+    // Stops the preview when its screen stops being current. Covers both
+    // hosts this component is used in (Showcase rows and the box-art grid).
+    readonly property bool screenShowing: activeScreen === "showcasescreen"
+                                       || activeScreen === "gridviewscreen"
+    onScreenShowingChanged: {
+        if (!screenShowing) {
+            videoPreviewLoader.sourceComponent = undefined;
+            videoDelay.stop();
+        } else if (playVideo && selected) {
+            videoDelay.restart();
+        }
+    }
+
     onSelectedChanged: {
         if (selected) {
             videoPreviewLoader.sourceComponent = undefined;
