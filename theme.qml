@@ -1434,7 +1434,11 @@ id: root
         // turns button help off, so this needs no state test of its own. It is
         // suppressed while the drawer is open, where Select closes rather than
         // opens and the prompt would be misleading.
-        leftPromptText: appDrawer.open ? "" : "Apps"
+        // Hidden when the drawer is open (Select closes rather than opens), and
+        // when a screen has cleared the helpbar entirely — Discover's X toggle
+        // nulls the model to hide its UI, and this prompt has to go with it
+        // rather than sitting there alone.
+        leftPromptText: (appDrawer.open || currentHelpbarModel === null) ? "" : "Apps"
         // Path is relative to ButtonHelpBar.qml, NOT this file: the string is
         // converted to a url by the `source:` binding inside that component, so
         // it resolves against that component's folder. Same "../" the delegate
