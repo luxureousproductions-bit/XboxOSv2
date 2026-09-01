@@ -46,6 +46,13 @@ id: root
     // When "Featured Box Content" forces a Discover/slideshow mode the box
     // isn't showing favourites, so there's nothing to page through — Left and
     // Right must pass straight over it instead of scrolling unseen entries.
+    //
+    // Reads the LIVE value (theme.qml's featuredBoxContent), not the settings
+    // snapshot — FavoritesHeader.boxMode already does, and the two disagreeing
+    // was the actual bug: switching modes updated what the box displayed
+    // immediately, but left this stuck on the old mode until a reload. That
+    // desync is what made paging and the auto-rotate timer work right after
+    // switching one direction and silently break after switching the other.
     readonly property int favPageCount:
         (featuredBoxContent === "Discover Videos"
       || featuredBoxContent === "Fanart Slideshow") ? 0 : favCount
@@ -197,6 +204,8 @@ id: root
                 height: collectionList.cellHeight
                 game: search ? search.currentGame(collectionList.currentIndex) : ""
                 selected: collectionList.focus && !collectionList.onFavoritesHeader
+                // Showcase only: its loader stays alive behind other screens.
+                playbackActive: activeScreen === "showcasescreen"
             }
         }
 
