@@ -204,8 +204,10 @@ id: root
                 height: collectionList.cellHeight
                 game: search ? search.currentGame(collectionList.currentIndex) : ""
                 selected: collectionList.focus && !collectionList.onFavoritesHeader
-                // Showcase only: its loader stays alive behind other screens.
-                playbackActive: activeScreen === "showcasescreen"
+                // Playback gating is left to ItemHighlight's own default, which
+                // already stops the preview when neither the Showcase nor the
+                // grid is the current screen. Setting it from here as well only
+                // duplicated that and coupled the two files together.
             }
         }
 
