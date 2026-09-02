@@ -234,7 +234,14 @@ id: root
 
                 anchors.fill: parent
                 visible: boxMode === "video"
-                source: (boxMode === "video" && fallbackGame) ? fallbackGame.assets.video : ""
+                // Source cleared — not merely muted — when the Showcase isn't
+                // the current screen or Pegasus is in the background. Muting
+                // alone left this decoding on every screen, and `selected`
+                // reads the row's SCOPED focus, which stays true while another
+                // screen has active focus — so mute could not be relied on.
+                source: (boxMode === "video" && fallbackGame
+                         && activeScreen === "showcasescreen" && appActive)
+                        ? fallbackGame.assets.video : ""
                 fillMode: VideoOutput.PreserveAspectCrop
                 // Audio only while this header is the highlighted item AND the
                 // Showcase "Video thumbnail audio" setting is on — the same

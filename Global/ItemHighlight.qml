@@ -48,7 +48,7 @@ id: root
     // Defaults to empty, which keeps playing — a host that forgets to set it
     // loses the gating but nothing breaks or fails to load.
     property string ownScreen: ""
-    property bool playbackActive: ownScreen === "" || activeScreen === ownScreen
+    property bool playbackActive: (ownScreen === "" || activeScreen === ownScreen) && appActive
     onPlaybackActiveChanged: {
         if (!playbackActive) {
             videoPreviewLoader.sourceComponent = undefined;
