@@ -570,6 +570,7 @@ id: root
             id: dynamicDelegate
 
                 DynamicGridItem {
+                ownScreen: "softwaregridscreen"
                 id: dynamicdelegatecontainer
 
                     selected: GridView.isCurrentItem && gamegrid.focus
@@ -596,7 +597,7 @@ id: root
 
                 ItemHighlight {
                 // Stops this grid's preview when the grid isn't the screen showing.
-                ownScreen: "gridviewscreen"
+                ownScreen: "softwaregridscreen"
                     width: gamegrid.cellWidth
                     height: gamegrid.cellHeight
                     game: list.currentGame(gamegrid.currentIndex)
