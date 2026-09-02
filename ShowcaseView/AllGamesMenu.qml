@@ -577,7 +577,7 @@ id: root
                                           // (transparent) without ever masking the video itself
                 // Cleared off-screen, same reason as the other players.
                 source: (settings.AllGamesVideoPreview !== "No" && videoArmed
-                         && videoSource !== "" && activeScreen === "allgamesscreen")
+                         && videoSource !== "" && activeScreen === "allgamesscreen" && appActive)
                         ? videoSource : ""
                 fillMode: VideoOutput.PreserveAspectCrop
                 muted: settings.AllGamesVideoAudio !== "Yes"

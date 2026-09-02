@@ -104,7 +104,7 @@ id: root
         // Cleared off-screen: this loader stays resident, so without this
         // guard the video (and its audio) kept running under whatever screen
         // you moved to.
-        source: (currentGame && activeScreen === "discoverscreen")
+        source: (currentGame && activeScreen === "discoverscreen" && appActive)
                 ? currentGame.assets.video : ""
         fillMode: VideoOutput.PreserveAspectFit
         muted: settings.AllowDiscoverVideoAudio !== "Yes"

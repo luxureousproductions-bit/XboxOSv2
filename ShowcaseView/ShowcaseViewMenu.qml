@@ -257,6 +257,11 @@ id: root
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         smooth: true
+        // Decoded at 60% of the display size instead of the file's native
+        // resolution. Fanart is often 1080p+, and this layer is shown dimmed,
+        // behind a scrim and often blurred, so the loss is invisible while the
+        // per-highlight decode cost drops by roughly 3x.
+        sourceSize { width: Math.round(width * 0.6); height: Math.round(height * 0.6) }
         opacity: 0
         z: 0
         property bool pendingFade: false
@@ -274,6 +279,11 @@ id: root
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         smooth: true
+        // Decoded at 60% of the display size instead of the file's native
+        // resolution. Fanart is often 1080p+, and this layer is shown dimmed,
+        // behind a scrim and often blurred, so the loss is invisible while the
+        // per-highlight decode cost drops by roughly 3x.
+        sourceSize { width: Math.round(width * 0.6); height: Math.round(height * 0.6) }
         opacity: 0
         z: 0
         property bool pendingFade: false
