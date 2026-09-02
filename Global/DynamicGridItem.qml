@@ -78,14 +78,28 @@ id: root
     Behavior on scale { NumberAnimation { duration: 100 } }
     z: selected ? 10 : 1
 
+    // The art fades out under the video preview so the video shows cleanly.
+    // It must come back whenever the preview ISN'T actually covering it —
+    // not only on deselect. Leaving the Showcase for Settings kept the tile
+    // selected, so the art stayed hidden while the preview was torn down, and
+    // the tile sat as an empty black box until the preview reloaded on return.
+    // Which screen hosts this tile, relayed by the row. Empty means unknown,
+    // which falls back to the old behaviour (covering whenever selected).
+    property string ownScreen: ""
+    readonly property bool previewCovering: selected && playVideo && appActive
+                                          && (ownScreen === "" || activeScreen === ownScreen)
+    function restoreArt() {
+        fadescreenshot.stop();
+        screenshot.opacity = 1;
+        container.opacity = 1;
+    }
+    onPreviewCoveringChanged: {
+        if (previewCovering) fadescreenshot.restart();
+        else restoreArt();
+    }
     onSelectedChanged: {
-        if (selected && playVideo)
-            fadescreenshot.restart();
-        else {
-            fadescreenshot.stop();
-            screenshot.opacity = 1;
-            container.opacity = 1;
-        }
+        // Deselect always restores immediately; selection is handled above.
+        if (!selected) restoreArt();
     }
 
     // NOTE: Fade out the bg so there is a smooth transition into the video

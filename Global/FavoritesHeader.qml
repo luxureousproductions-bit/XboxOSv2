@@ -234,15 +234,22 @@ id: root
 
                 anchors.fill: parent
                 visible: boxMode === "video"
-                // Source cleared — not merely muted — when the Showcase isn't
-                // the current screen or Pegasus is in the background. Muting
-                // alone left this decoding on every screen, and `selected`
-                // reads the row's SCOPED focus, which stays true while another
-                // screen has active focus — so mute could not be relied on.
-                source: (boxMode === "video" && fallbackGame
-                         && activeScreen === "showcasescreen" && appActive)
-                        ? fallbackGame.assets.video : ""
+                source: (boxMode === "video" && fallbackGame) ? fallbackGame.assets.video : ""
                 fillMode: VideoOutput.PreserveAspectCrop
+
+                // PAUSED off-screen rather than having its source cleared.
+                // Clearing the source stopped it, but made every return to the
+                // Showcase a cold restart — reopen the file, decode to a first
+                // frame — which showed as a black box for a beat. Pausing keeps
+                // the decoder and its last frame, so it resumes instantly and
+                // still produces no audio while paused. `appActive` covers
+                // Pegasus itself going to the background.
+                readonly property bool shouldPlay:
+                    activeScreen === "showcasescreen" && appActive
+                onShouldPlayChanged: {
+                    if (shouldPlay) { if (source != "") play(); }
+                    else pause();
+                }
                 // Audio only while this header is the highlighted item AND the
                 // Showcase "Video thumbnail audio" setting is on — the same
                 // toggle the row previews use, so one setting governs both.
@@ -257,9 +264,12 @@ id: root
                 muted: !(selected
                          && activeScreen === "showcasescreen"
                          && settings.AllowThumbVideoAudio === "Yes")
-                autoPlay: true
+                autoPlay: false          // started explicitly by shouldPlay/onSourceChanged
                 opacity: selected ? 1 : 0.5
-                onSourceChanged: play()
+                // Only start if this screen is showing — otherwise a source
+                // change while off-screen (Discover advancing) would restart
+                // playback behind another screen, audio included.
+                onSourceChanged: if (shouldPlay) play(); else pause()
                 onStatusChanged: { if (status === MediaPlayer.EndOfMedia) fallbackJump(); }
             }
 

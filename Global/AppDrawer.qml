@@ -807,13 +807,11 @@ id: root
             }
             visible: root.appCount > 0
             clip: true
-            // Emptied while the drawer is fully closed. A ListView builds its
-            // delegates regardless of visibility, so otherwise a dozen rows —
-            // each with an image and a mask layer — stayed allocated for the
-            // whole session, for a panel nobody was looking at. Keyed to slide
-            // rather than open so rows survive the close animation instead of
-            // vanishing mid-slide.
-            model: root.slide > 0.001 ? root.filteredApps : 0
+            // Kept resident while closed. Emptying the model on close saved a
+            // dozen tiny decoded icons, but meant every open rebuilt all the
+            // delegates and re-decoded every icon — they visibly popped in one
+            // by one. A dozen 64px images is negligible; the reopen cost isn't.
+            model: root.filteredApps
             currentIndex: 0
             // Keeps the focused row off the very edge when scrolling.
             preferredHighlightBegin: height * 0.25

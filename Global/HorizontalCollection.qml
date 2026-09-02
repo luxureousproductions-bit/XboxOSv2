@@ -177,6 +177,9 @@ id: root
             selected: ListView.isCurrentItem && collectionList.focus && !collectionList.onFavoritesHeader
             width: itemWidth
             height: itemHeight
+            // Same relay the highlight gets, so the tile knows when its
+            // preview has actually been torn down and restores its art.
+            ownScreen: root.ownScreen
             
             onHighlighted: {
                 collectionList.onFavoritesHeader = false;
