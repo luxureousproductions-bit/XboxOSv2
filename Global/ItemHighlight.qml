@@ -39,8 +39,16 @@ id: root
     // Showcase-only), while GridViewMenu instantiates this without setting it
     // and relies on the default below. The default covers both hosts, so an
     // unset caller still behaves correctly.
-    property bool playbackActive: activeScreen === "showcasescreen"
-                               || activeScreen === "gridviewscreen"
+    // Which screen this instance lives on, set by its host. A shared list of
+    // screens cannot work here: the same component is used by the Showcase,
+    // the grid and GameView, so "any of those three is active" left a Showcase
+    // preview running while GameView was on top. It has to compare against
+    // its OWN screen.
+    //
+    // Defaults to empty, which keeps playing — a host that forgets to set it
+    // loses the gating but nothing breaks or fails to load.
+    property string ownScreen: ""
+    property bool playbackActive: ownScreen === "" || activeScreen === ownScreen
     onPlaybackActiveChanged: {
         if (!playbackActive) {
             videoPreviewLoader.sourceComponent = undefined;

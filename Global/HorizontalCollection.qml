@@ -38,6 +38,8 @@ id: root
     // and behaves exactly as before.
     property var favoritesData: null
     property bool showFavoritesHeader: favoritesData !== null
+    // Set by the hosting screen ("showcasescreen", "gameviewscreen").
+    property string ownScreen: ""
 
     // Paging state lives HERE (not inside FavoritesHeader) so key handling
     // never depends on reaching into ListView.headerItem, which can be null.
@@ -204,10 +206,10 @@ id: root
                 height: collectionList.cellHeight
                 game: search ? search.currentGame(collectionList.currentIndex) : ""
                 selected: collectionList.focus && !collectionList.onFavoritesHeader
-                // Playback gating is left to ItemHighlight's own default, which
-                // already stops the preview when neither the Showcase nor the
-                // grid is the current screen. Setting it from here as well only
-                // duplicated that and coupled the two files together.
+                // Relayed from whichever screen owns this row, so a preview
+                // stops when THAT screen is left — the Showcase and GameView
+                // both use this component and must not keep each other alive.
+                ownScreen: root.ownScreen
             }
         }
 

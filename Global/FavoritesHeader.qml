@@ -116,10 +116,16 @@ id: root
         if (favCount === 0 && !videosScanned) buildVideoList();   // Favorites w/ none set
     }
 
-    // boxMode re-evaluates whenever the setting or favourite count changes, so
-    // watching it covers every path that could need a different list built.
-    // (settings is a plain JS object, not a QObject — a Connections on it
-    // would never fire.) The builders are self-guarding, so this can't loop.
+    // Watching boxMode alone is NOT enough, despite what an earlier comment
+    // claimed. Switching to Discover Videos before the video list exists makes
+    // boxMode resolve to "art" — and if it was already "art" (Fanart
+    // Slideshow, or Favorites with none set) that's no change, no signal, and
+    // ensureFallbacks() never runs. The list is never built, so it stays on
+    // art forever. Mirroring the setting locally and watching THAT closes the
+    // gap: the setting itself changed even when the resolved mode did not.
+    readonly property string wantedMode: featuredBoxContent
+    onWantedModeChanged: ensureFallbacks()
+
     onFavCountChanged: ensureFallbacks()
     onBoxModeChanged: ensureFallbacks()
     Component.onCompleted: ensureFallbacks()
