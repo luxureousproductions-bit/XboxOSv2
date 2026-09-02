@@ -1292,6 +1292,7 @@ id: root
 
         HorizontalCollection {
         id: list1
+            ownScreen: "showcasescreen"
             property bool selected: ListView.isCurrentItem
             property var currentList: list1
             property var collection: collection1
@@ -1324,6 +1325,7 @@ id: root
 
         HorizontalCollection {
         id: list2
+            ownScreen: "showcasescreen"
             property bool selected: ListView.isCurrentItem
             property var currentList: list2
             property var collection: collection2
@@ -1356,6 +1358,7 @@ id: root
 
         HorizontalCollection {
         id: list3
+            ownScreen: "showcasescreen"
             property bool selected: ListView.isCurrentItem
             property var currentList: list3
             property var collection: collection3
@@ -1388,6 +1391,7 @@ id: root
 
         HorizontalCollection {
         id: list4
+            ownScreen: "showcasescreen"
             property bool selected: ListView.isCurrentItem
             property var currentList: list4
             property var collection: collection4
@@ -1420,6 +1424,7 @@ id: root
 
         HorizontalCollection {
         id: list5
+            ownScreen: "showcasescreen"
             property bool selected: ListView.isCurrentItem
             property var currentList: list5
             property var collection: collection5
@@ -1452,6 +1457,7 @@ id: root
 
         HorizontalCollection {
         id: list6
+            ownScreen: "showcasescreen"
             property bool selected: ListView.isCurrentItem
             property var currentList: list6
             property var collection: collection6
