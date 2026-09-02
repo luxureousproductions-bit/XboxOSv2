@@ -249,7 +249,11 @@ id: root
     // False while Pegasus is in the background (another app in front, screen
     // off). Video players gate on this too — otherwise a preview kept playing,
     // audio and all, after switching away from Pegasus entirely.
+    // Also false while the app drawer is open: every video player already
+    // pauses on this flag, so folding the drawer in here silences and pauses
+    // all of them at once with no per-player changes. They resume on close.
     readonly property bool appActive: Qt.application.state === Qt.ApplicationActive
+                                      && !appDrawer.open
 
     // Set by a screen that hides its whole UI (Discover's X toggle), so the
     // bottom-left Apps prompt goes with it. Deliberately explicit rather than
@@ -1476,7 +1480,7 @@ id: root
         // that was showing, rather than re-entering wherever the drawer was
         // opened from.
         onAppChosen: launchAppFromDrawer(game)
-        onClosed: playTabLeft()
+        onClosed: { playBack(); playTabLeft(); }
 
         // Home resets the back stack rather than pushing onto it — otherwise
         // backing out of the Showcase would return to whatever screen you were
@@ -1543,6 +1547,7 @@ id: root
         if (appDrawer.open) {
             appDrawer.closeDrawer();
         } else {
+            playAccept();
             playTabRight();
             appDrawer.openDrawer();
         }
