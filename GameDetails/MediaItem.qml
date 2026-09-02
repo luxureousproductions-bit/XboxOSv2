@@ -114,8 +114,12 @@ id: root
     id: accentTraceEffect
 
         Glow {
-            samples: 17
-            spread: 0.45
+            // radius drives how far the trace extends; samples must stay ahead
+            // of it or the edge bands. spread pushes the colour toward solid so
+            // it reads as a border rather than a soft halo.
+            radius: vpx(10)
+            samples: 25
+            spread: 0.6
             color: theme.accent
             transparentBorder: true
         }
@@ -127,7 +131,13 @@ id: root
         anchors.fill: parent
         anchors.margins: vpx(4)
         source: isVideo ? "" : mediaItem
-        fillMode: Image.PreserveAspectCrop
+        // Fit, not Crop. Crop scaled every image up to fill the tile and cut
+        // off whatever didn't match its aspect — a clear logo or a round disc
+        // lost its edges and read as a bigger, cropped square. Fit keeps the
+        // whole picture intact at whatever size fits, and the margin it leaves
+        // is transparent, which is also what lets the accent trace follow the
+        // artwork's real silhouette rather than the tile's edge.
+        fillMode: Image.PreserveAspectFit
         asynchronous: true
 
         // Only the selected tile is traced; unselected ones render plainly so
@@ -188,7 +198,7 @@ id: root
     // darkened under a black scrim. This dims the whole item (image + border
     // trace together) rather than one layer, so the accent outline fades with
     // the photo instead of staying full-strength over a dim picture.
-    opacity: selected ? 1.0 : 0.55
+    opacity: selected ? 1.0 : 0.78
     Behavior on opacity { NumberAnimation { duration: 100 } }
     
     // List specific input

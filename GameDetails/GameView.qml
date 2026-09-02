@@ -908,6 +908,7 @@ id: root
 
         HorizontalCollection {
         id: media
+            ownScreen: "gameviewscreen"
 
             width: root.width - vpx(70) - globalMargin
             height: ((root.width - globalMargin * 2) / 6.0) + vpx(60)
@@ -945,6 +946,7 @@ id: root
         // Falls back to "More Recommended Games" when no publisher/developer results exist.
         HorizontalCollection {
         id: list1
+            ownScreen: "gameviewscreen"
 
             property bool selected: ListView.isCurrentItem
             focus: selected
@@ -981,6 +983,7 @@ id: root
         // --- BEGIN: More by Genre (Option B: genre token controlled by setting) ---
         HorizontalCollection {
         id: list2
+            ownScreen: "gameviewscreen"
 
             property bool selected: ListView.isCurrentItem
             focus: selected
