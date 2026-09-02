@@ -307,7 +307,7 @@ id: root
 
             property bool videoExists: game ? game.assets.videos.length : false
             // Cleared off-screen, same reason as the other players.
-            source: (videoExists && activeScreen === "gameviewscreen")
+            source: (videoExists && activeScreen === "gameviewscreen" && appActive)
                     ? game.assets.videos[0] : ""
             anchors.fill: parent
             fillMode: VideoOutput.PreserveAspectCrop
