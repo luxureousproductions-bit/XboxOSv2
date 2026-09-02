@@ -246,6 +246,11 @@ id: root
     // whatever screen you move to.
     readonly property string activeScreen: state
 
+    // False while Pegasus is in the background (another app in front, screen
+    // off). Video players gate on this too — otherwise a preview kept playing,
+    // audio and all, after switching away from Pegasus entirely.
+    readonly property bool appActive: Qt.application.state === Qt.ApplicationActive
+
     // Set by a screen that hides its whole UI (Discover's X toggle), so the
     // bottom-left Apps prompt goes with it. Deliberately explicit rather than
     // inferred from currentHelpbarModel being null: the RA screens null that
