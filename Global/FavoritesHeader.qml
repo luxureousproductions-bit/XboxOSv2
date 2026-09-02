@@ -236,7 +236,20 @@ id: root
                 visible: boxMode === "video"
                 source: (boxMode === "video" && fallbackGame) ? fallbackGame.assets.video : ""
                 fillMode: VideoOutput.PreserveAspectCrop
-                muted: true              // ambient background element — never plays audio
+                // Audio only while this header is the highlighted item AND the
+                // Showcase "Video thumbnail audio" setting is on — the same
+                // toggle the row previews use, so one setting governs both.
+                // Unfocused it stays silent as before: the box also runs as an
+                // ambient slideshow, and that must never make noise.
+                //
+                // Three conditions, all read directly rather than via helpers,
+                // so this can't fire when the screen isn't even showing:
+                //   selected      — the row's focus is on this header
+                //   activeScreen  — the Showcase is the current screen
+                //   setting       — user opted in
+                muted: !(selected
+                         && activeScreen === "showcasescreen"
+                         && settings.AllowThumbVideoAudio === "Yes")
                 autoPlay: true
                 opacity: selected ? 1 : 0.5
                 onSourceChanged: play()
