@@ -464,6 +464,13 @@ id: root
     function playTabLeft()  { if (sfxVolume <= 0) return; sfxTabLeft.stop();  sfxTabLeft.play(); }
     function playTabRight() { if (sfxVolume <= 0) return; sfxTabRight.stop(); sfxTabRight.play(); }
 
+    // The drawer plays two sounds in sequence. Called back-to-back they land on
+    // the same instant and sound stacked, so the second is delayed just long
+    // enough for the first to be heard as its own note. SoundEffect exposes no
+    // duration, hence a fixed gap; adjust interval to taste.
+    Timer { id: drawerOpenChime;  interval: 140; onTriggered: playTabRight() }
+    Timer { id: drawerCloseChime; interval: 140; onTriggered: playTabLeft()  }
+
     function launchGame(game) {
         launchingGame = (game !== null) ? game : currentGame;
         launchGameScreen();
@@ -1480,7 +1487,7 @@ id: root
         // that was showing, rather than re-entering wherever the drawer was
         // opened from.
         onAppChosen: launchAppFromDrawer(game)
-        onClosed: { playBack(); playTabLeft(); }
+        onClosed: { playBack(); drawerCloseChime.restart(); }   // tabLeft follows back
 
         // Home resets the back stack rather than pushing onto it — otherwise
         // backing out of the Showcase would return to whatever screen you were
@@ -1548,7 +1555,7 @@ id: root
             appDrawer.closeDrawer();
         } else {
             playAccept();
-            playTabRight();
+            drawerOpenChime.restart();    // tabRight follows once accept has sounded
             appDrawer.openDrawer();
         }
     }
