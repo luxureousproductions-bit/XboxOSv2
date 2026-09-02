@@ -122,12 +122,49 @@ id: root
     }
 
     // Mouse/touch functionality
+    //
+    // This used to be a single MouseArea whose onClicked always called close() —
+    // MouseArea.onClicked fires on release regardless of how far the pointer
+    // moved first, so a swipe across the screen was indistinguishable from a
+    // tap and just closed the view before the gesture could do anything.
+    //
+    // Swipes are handled explicitly here rather than left to the ListView's own
+    // Flickable dragging, because a MouseArea covering the whole screen (needed
+    // for tap-to-close) would otherwise compete with the ListView underneath
+    // for the same drag — a classic QML input-stealing problem. Tracking start
+    // position and moving by one item on release, the same way the arrow keys
+    // already do, sidesteps that entirely.
     MouseArea {
+        id: swipeArea
         anchors.fill: parent
         hoverEnabled: true
         onEntered: {}
         onExited: {}
-        onClicked: close();
+
+        property real startX: 0
+        property bool dragging: false
+        // Below this, a press-release is a tap; at or above it, a swipe.
+        readonly property real swipeThreshold: vpx(60)
+
+        onPressed: {
+            startX = mouse.x;
+            dragging = false;
+        }
+        onPositionChanged: {
+            if (Math.abs(mouse.x - startX) >= swipeThreshold) dragging = true;
+        }
+        onReleased: {
+            var dx = mouse.x - startX;
+            if (Math.abs(dx) >= swipeThreshold) {
+                sfxNav.play();
+                // Dragged right (positive dx) reveals what was to the left —
+                // same direction sense as swiping a photo gallery.
+                if (dx > 0) medialist.decrementCurrentIndex();
+                else        medialist.incrementCurrentIndex();
+            } else if (!dragging) {
+                close();
+            }
+        }
     }
 
     // Input handling

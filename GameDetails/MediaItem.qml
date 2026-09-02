@@ -54,13 +54,15 @@ id: root
         }
     }
 
-    Image {
+    // Anchor for the title bubble only. The accent trace itself is applied to
+    // the image below as a layer effect, so it follows the artwork's real
+    // silhouette — a round disc or a transparent logo gets outlined by its
+    // actual shape rather than boxed in a square frame.
+    Item {
     id: border
-
         anchors.fill: parent
-        source: "../assets/images/colorspng/" + mapLayoutImage(settings.ColorLayout) + ".png"
         visible: selected
-        asynchronous: true
+        z: 20
 
         Rectangle {
         id: titlecontainer
@@ -104,14 +106,44 @@ id: root
         }
     }
 
+    // Traces the accent around whatever is actually visible in the artwork.
+    // Glow blurs the SOURCE'S ALPHA and colours it, drawing the result behind
+    // the source — so transparent regions are ignored and the outline hugs the
+    // real shape instead of the item's bounding box.
+    Component {
+    id: accentTraceEffect
+
+        Glow {
+            // radius drives how far the trace extends; samples must stay ahead
+            // of it or the edge bands. spread pushes the colour toward solid so
+            // it reads as a border rather than a soft halo.
+            radius: vpx(10)
+            samples: 25
+            spread: 0.6
+            color: theme.accent
+            transparentBorder: true
+        }
+    }
+
     Image {
     id: bg
 
         anchors.fill: parent
         anchors.margins: vpx(4)
         source: isVideo ? "" : mediaItem
-        fillMode: Image.PreserveAspectCrop
+        // Fit, not Crop. Crop scaled every image up to fill the tile and cut
+        // off whatever didn't match its aspect — a clear logo or a round disc
+        // lost its edges and read as a bigger, cropped square. Fit keeps the
+        // whole picture intact at whatever size fits, and the margin it leaves
+        // is transparent, which is also what lets the accent trace follow the
+        // artwork's real silhouette rather than the tile's edge.
+        fillMode: Image.PreserveAspectFit
         asynchronous: true
+
+        // Only the selected tile is traced; unselected ones render plainly so
+        // there is no per-tile effect cost across the whole row.
+        layer.enabled: selected
+        layer.effect: accentTraceEffect
 
         Rectangle {
         id: videopreview
@@ -159,15 +191,15 @@ id: root
             sourceComponent: selected && isVideo ? videoPreviewWrapper : undefined
             asynchronous: true
         }
-
-        Rectangle {
-            anchors.fill: parent
-            color: "black"
-            opacity: selected ? 0 : 0.7
-            z: selected ? 0 : 10
-        }
         
     }
+
+    // Unselected tiles stay fully visible — just translucent — instead of being
+    // darkened under a black scrim. This dims the whole item (image + border
+    // trace together) rather than one layer, so the accent outline fades with
+    // the photo instead of staying full-strength over a dim picture.
+    opacity: selected ? 1.0 : 0.78
+    Behavior on opacity { NumberAnimation { duration: 100 } }
     
     // List specific input
     Keys.onPressed: {

@@ -25,9 +25,18 @@ id: root
         Row {
             spacing: 10
             Image {
-                source: "../assets/images/controller/" + processButtonArt(button) + ".png"
+                // An entry may supply its own icon instead of a controller
+                // glyph — used for buttons Pegasus has no mapping for, like
+                // Select. Only the taken branch of the ternary evaluates, so
+                // processButtonArt() isn't called for custom-icon entries.
+                source: (typeof icon !== 'undefined' && icon !== "")
+                        ? icon
+                        : "../assets/images/controller/" + processButtonArt(button) + ".png"
                 width: vpx(30)
                 height: vpx(30)
+                sourceSize { width: Math.round(vpx(30) * 2); height: Math.round(vpx(30) * 2) }
+                fillMode: Image.PreserveAspectFit
+                smooth: true
                 asynchronous: true
             }
             Text { 
@@ -48,6 +57,42 @@ id: root
         orientation: ListView.Horizontal
         layoutDirection: Qt.RightToLeft
         spacing: vpx(20)
+    }
+
+    // Standalone prompt pinned to the far left, clear of the right-aligned
+    // group above. Set leftPromptText to show it; empty hides it entirely.
+    property string leftPromptText: ""
+    property string leftPromptIcon: ""
+
+    // Mirrors buttonhelpDelegate exactly: same spacing, same sizes, and the
+    // same vertical treatment. The ListView above anchors.fill and lays its
+    // rows out from the TOP of the bar, so centring this one instead is what
+    // made "Apps" sit lower than everything else.
+    Row {
+        anchors {
+            left: parent.left
+            top: parent.top
+        }
+        spacing: 10
+        visible: leftPromptText !== ""
+
+        Image {
+            source: leftPromptIcon
+            width: vpx(30); height: vpx(30)
+            sourceSize { width: Math.round(vpx(30) * 2); height: Math.round(vpx(30) * 2) }
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            asynchronous: true
+            visible: leftPromptIcon !== ""
+        }
+        Text {
+            text: leftPromptText
+            font.family: subtitleFont.name
+            font.pixelSize: fpx(16)
+            color: (root.state === "settingsscreen") ? "#ebebeb" : theme.text
+            height: parent.height
+            verticalAlignment: Text.AlignVCenter
+        }
     }
 
     visible: currentHelpbarModel ? true : false

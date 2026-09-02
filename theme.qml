@@ -40,6 +40,99 @@ id: root
     }
 
     // Load settings
+    // Bumped by SettingsScreen after any save. Bindings that reference it become
+    // live; everything else keeps reading the `settings` snapshot below.
+    //
+    // `settings` itself can never re-evaluate: api.memory.has/get are method
+    // CALLS, so QML records no dependency on them. That is why most settings
+    // are marked "Reload Required". Opting one binding in at a time is far
+    // safer than making the whole object reactive, which would invalidate all
+    // 224 settings.* bindings at once — including several that walk the full
+    // game list.
+    property int settingsEpoch: 0
+
+    // Live copy of the featured box mode. Read by ShowcaseViewMenu's carousel
+    // and by FavoritesHeader, so switching it applies without a reload.
+    readonly property string featuredBoxContent: {
+        var e = settingsEpoch;
+        return api.memory.has("Featured Box Content")
+             ? api.memory.get("Featured Box Content") : "Favorites";
+    }
+
+    // Titles of emulators among the imported apps.
+    //
+    // The genre rule can never catch these: Pegasus imports carry NO genre at
+    // all, so an emulator like Citra or DraStic has nothing to match on. This
+    // is the emulator equivalent of appTitleSet, identified by package name
+    // using the same keywords the App Drawer categorises with.
+    readonly property var emulatorKeywords: [
+        "citra", "dolphin", "drastic", "duckstation", "aethersx2", "ppsspp", "retroarch",
+        "vita3k", "yuzu", "ryujinx", "eden", "sudachi", "redream", "mupen", "melonds",
+        "flycast", "pcsx", "epsxe", "mame", "xemu", "winlator", "lime3ds", "azahar",
+        "panda3ds", "skyline", "nethersx2", "snes9x", "mgba", "fpse", "dsemu", "mm.jr",
+        "emu", "emulator", "gamenative"
+    ]
+    readonly property var emulatorTitleSet: {
+        var set = {};
+        if (!omitEmulatorLive) return set;      // nothing reads it when off
+        var cols = drawerCollections;
+        for (var i = 0; i < cols.length; i++) {
+            var gl = cols[i].games;
+            for (var j = 0; j < gl.count; j++) {
+                var g = gl.get(j);
+                if (!g.files || g.files.count < 1) continue;
+                var path = (g.files.get(0).path || "").toLowerCase();
+                var title = (g.title || "");
+                var t = title.toLowerCase();
+                for (var k = 0; k < emulatorKeywords.length; k++) {
+                    var kw = emulatorKeywords[k];
+                    if (path.indexOf(kw) >= 0 || t.indexOf(kw) >= 0) { set[title] = true; break; }
+                }
+            }
+        }
+        return set;
+    }
+
+    // One pass over the library, replacing the per-row genre work.
+    //
+    // Each Showcase row used to walk every game itself, lowercasing each genre
+    // string to compare it — 7 rows x 4300 games on every change, twice over.
+    // The answer is the same for every row, so it's computed once here and the
+    // rows do a single hash lookup each.
+    readonly property var omitTitleSet: {
+        var set = {};
+        var oApp = (settings.OmitApplicationFromShowcase === "Yes");
+        var oEmu = omitEmulatorLive;
+        if (!oApp && !oEmu) return set;         // nothing to do
+
+        // Imported apps and emulators, by collection/package.
+        if (oApp) { var a = appTitleSet;      for (var k in a) set[k] = true; }
+        if (oEmu) { var e = emulatorTitleSet; for (var k2 in e) set[k2] = true; }
+
+        // Genre-tagged entries. Lowercased once per game, not once per row.
+        var all = api.allGames;
+        for (var i = 0; i < all.count; i++) {
+            var g = all.get(i);
+            var t = g.title;
+            if (!t || set[t] === true) continue;
+            var gl = g.genreList;
+            for (var j = 0; j < gl.length; j++) {
+                var gg = (gl[j] || "").toLowerCase();
+                if (oApp && gg === "application") { set[t] = true; break; }
+                if (oEmu && gg === "emulator")    { set[t] = true; break; }
+            }
+        }
+        return set;
+    }
+
+    // Live copy of the Emulator omit setting. Read by the Showcase rows, so
+    // toggling it applies without a reload.
+    readonly property bool omitEmulatorLive: {
+        var e = settingsEpoch;
+        return (api.memory.has("Omit genre: Emulator from Showcase")
+              ? api.memory.get("Omit genre: Emulator from Showcase") : "No") === "Yes";
+    }
+
     property var settings: {
         return {
             PlatformView:                  api.memory.has("Game View") ? api.memory.get("Game View") : "Grid",
@@ -53,14 +146,14 @@ id: root
             GameBlurBackground:            api.memory.has("Blur Background") ? api.memory.get("Blur Background") : "No",
             VideoPreview:                  api.memory.has("Video preview") ? api.memory.get("Video preview") : "Yes",
             AllowThumbVideo:               api.memory.has("Allow video thumbnails") ? api.memory.get("Allow video thumbnails") : "Yes",
-            AllowThumbVideoAudio:          api.memory.has("Play video thumbnail audio") ? api.memory.get("Play video thumbnail audio") : "No",
+            AllowThumbVideoAudio:          api.memory.has("Video thumbnail audio") ? api.memory.get("Video thumbnail audio") : "No",
             HideLogo:                      api.memory.has("Hide logo when thumbnail video plays") ? api.memory.get("Hide logo when thumbnail video plays") : "No",
             HideButtonHelp:                api.memory.has("Hide button help") ? api.memory.get("Hide button help") : "No",
             ColorLayout:                   api.memory.has("Color Layout") ? api.memory.get("Color Layout") : "Dark Green",
             MouseHover:                    api.memory.has("Enable mouse hover") ? api.memory.get("Enable mouse hover") : "No",
             AlwaysShowTitles:              api.memory.has("Always show titles") ? api.memory.get("Always show titles") : "No",
             AnimateHighlight:              api.memory.has("Animate highlight") ? api.memory.get("Animate highlight") : "No",
-            AllowVideoPreviewAudio:        api.memory.has("Video preview audio") ? api.memory.get("Video preview audio") : "No",
+            AllowVideoPreviewAudio:        api.memory.has("Game details video preview audio") ? api.memory.get("Game details video preview audio") : "No",
             ShowScanlines:                 api.memory.has("Show scanlines") ? api.memory.get("Show scanlines") : "Yes",
             DetailsDefault:                api.memory.has("Default to full details") ? api.memory.get("Default to full details") : "No",
             LaunchScreenDelay:             api.memory.has("Launch screen delay") ? api.memory.get("Launch screen delay") : "0.6",
@@ -121,8 +214,9 @@ id: root
             CarouselWheel:                 api.memory.has("Logo") ? api.memory.get("Logo") : "Yes",
             OmitApplicationFromShowcase:   api.memory.has("Omit genre: Application from Showcase") ? api.memory.get("Omit genre: Application from Showcase") : "No",
             OmitEmulatorFromShowcase:      api.memory.has("Omit genre: Emulator from Showcase") ? api.memory.get("Omit genre: Emulator from Showcase") : "No",
+            HideAndroidSystemTile:         api.memory.has("Hide Android System Tile") ? api.memory.get("Hide Android System Tile") : "Yes",
             MoreByGenreDisplay:            api.memory.has("More by Genre Display") ? api.memory.get("More by Genre Display") : "Full",
-            AllowDiscoverVideoAudio:         api.memory.has("Play discover video audio") ? api.memory.get("Play discover video audio") : "No",
+            AllowDiscoverVideoAudio:         api.memory.has("Discover video audio") ? api.memory.get("Discover video audio") : "No",
             MenuSounds:                      api.memory.has("Menu sounds") ? api.memory.get("Menu sounds") : "Yes",
             MenuVolume:                      api.memory.has("Menu Volume") ? api.memory.get("Menu Volume") : "1.0",
             StartupChime:                    api.memory.has("Start up chime") ? api.memory.get("Start up chime") : "Yes",
@@ -143,7 +237,52 @@ id: root
     property int currentCollectionIndex: 0
     property bool collectionVisited: false   // strip stays on the hero until a collection is actually opened
     property int currentGameIndex: 0
+
+    // Mirrors `state` under a name child components can reference. `state` is
+    // shadowed by every Item's own state property, so a child asking for it
+    // gets its own, not the theme's. Video players use this to stop when their
+    // screen isn't current — the screen Loaders stay resident once visited, so
+    // without this a preview keeps playing (and its audio with it) under
+    // whatever screen you move to.
+    readonly property string activeScreen: state
     property var currentCollection: api.collections.get(currentCollectionIndex)
+
+    // The app drawer replaces Pegasus's own installed-apps tile, so that
+    // collection is kept out of the system row everywhere.
+    //
+    // Matched on NAME, not shortName: the provider's collection and a
+    // hand-written "Android Apps" collection both report shortName "android",
+    // so shortName can't tell them apart. Hand-made app collections are left
+    // alone on purpose — only the provider's own tile is replaced.
+    readonly property string appsCollectionName: "Android"
+    function isDrawerCollection(c) {
+        return !!c && (c.name || "").toLowerCase() === appsCollectionName.toLowerCase();
+    }
+
+    // Titles of everything in the drawer's collection, used to keep installed
+    // apps out of the Showcase rows when "Omit genre: Application" is on.
+    //
+    // Keyed by TITLE rather than collection because the Showcase rows filter
+    // through SortFilterProxyModel, and an ExpressionFilter there only sees
+    // model *roles* — a game's collections aren't reachable from inside one.
+    //
+    // Needed at all because the existing filter tests genre, and the provider's
+    // apps get genres from Play Store lookups that frequently fail outright, so
+    // most of them carry no genre for that test to match on.
+    readonly property var appTitleSet: {
+        var set = {};
+        var n = api.collections.count;          // referenced so this re-runs if collections reload
+        for (var i = 0; i < n; i++) {
+            var c = api.collections.get(i);
+            if (!isDrawerCollection(c)) continue;
+            var gl = c.games;
+            for (var j = 0; j < gl.count; j++) {
+                var t = gl.get(j).title;
+                if (t) set[t] = true;
+            }
+        }
+        return set;
+    }
 
     // Shared system order (home/platform page + grid LB/RB cycle), per the
     // "System sort" setting. Collections are read THROUGH this index array so
@@ -154,6 +293,9 @@ id: root
         var items = [];
         for (var i = 0; i < n; i++) {
             var c = api.collections.get(i);
+            // The drawer covers this collection, so its tile is redundant by
+            // default — but only skip it while the setting says so.
+            if (settings.HideAndroidSystemTile !== "No" && isDrawerCollection(c)) continue;
             items.push({
                 idx:   i,
                 name:  (c.name || "").toLowerCase(),
@@ -366,6 +508,15 @@ id: root
             } else {
                 root.state = "showcasescreen";
             }
+        }
+
+        // Launched from the app drawer: always land on the Showcase, whatever
+        // screen it was opened from. Checked after the redirect above so it
+        // wins over the restored state.
+        if (api.memory.has('From App Drawer')) {
+            lastState  = ["showcasescreen"];
+            root.state = "showcasescreen";
+            api.memory.unset('From App Drawer');
         }
 
         // Remove these from memory so as to not clog it up
@@ -821,6 +972,23 @@ id: root
         gameDetails(game);
     }
 
+    // Installed apps carry almost no metadata, so a details page for them is an
+    // empty screen and an extra button press. When they're allowed into the
+    // rows, open them straight away instead.
+    //
+    // Gated on the Omit setting deliberately: with omit ON, apps aren't in the
+    // rows at all, so this must not change how anything else behaves.
+    function isAppGame(game) {
+        return !!game && appTitleSet[game.title] === true;
+    }
+    function openGame(game) {
+        if (!game) return;
+        if (settings.OmitApplicationFromShowcase !== "Yes" && isAppGame(game))
+            launchGame(game);
+        else
+            gameDetails(game);
+    }
+
     function gameDetailsFromDiscover(game) {
         playAccept();
         if (lastState.length != 0)
@@ -843,6 +1011,23 @@ id: root
         }
     }
 
+    // Drawer launches always come back to the Showcase, wherever they were
+    // started from. Flagged in memory rather than by rewriting lastState, so
+    // the normal return path is left completely alone.
+    function launchAppFromDrawer(game) {
+        if (game === null) return;
+        launchingGame = game;
+        // MUST go through launchGameScreen(): it pushes the current state onto
+        // lastState before switching. Setting root.state directly pushed
+        // nothing, so cancelling the splash popped an entry that was never
+        // there — the stack emptied and the next cancel had nothing to return
+        // to, leaving the launch to go ahead anyway.
+        launchGameScreen();
+        saveCurrentState(game);
+        api.memory.set('From App Drawer', 'True');
+        launchDelay.restart();
+    }
+
     onStateChanged: {
         if (state !== "gameviewscreen") forceFullDetails = false;
     }
@@ -856,6 +1041,18 @@ id: root
 
     function previousScreen() {
         playBack();
+        // A cancelled drawer launch never returns, so clear the flag here or a
+        // later, unrelated return would be redirected to the Showcase.
+        if (api.memory.has('From App Drawer'))
+            api.memory.unset('From App Drawer');
+
+        // Guard against an empty stack. Reading past the end sets state to
+        // undefined, which leaves the screen stuck exactly where it was.
+        if (lastState.length === 0) {
+            state = "showcasescreen";
+            return;
+        }
+
         if (state == lastState[lastState.length-1])
             popLastGame();
 
@@ -876,6 +1073,52 @@ id: root
 
         if (fromGame)
             returnedFromGame();
+
+        // currentCollectionIndex defaults to 0, which can now be the hidden
+        // apps collection. Set once (not bound) so it lands on the first
+        // system that actually has a tile, without resetting on re-sorts.
+        if (sortedColl.length > 0)
+            currentCollectionIndex = sortedColl[0];
+
+        // Temporary, paired with logKeys: dumps every collection so the apps
+        // one can be identified by its exact name. Several collections here
+        // contain "android" (the ROM folders as well as the system apps
+        // provider), so the drawer's loose name match can land on the wrong
+        // one. Remove once the drawer is pointed at the right collection.
+        if (logCollections) {
+            for (var i = 0; i < api.collections.count; i++) {
+                var c = api.collections.get(i);
+                console.log("[theme] collection", i, "name:", c.name,
+                            "| shortName:", c.shortName,
+                            "| games:", c.games.count);
+            }
+
+            // What the apps provider actually gives us per app. Deciding how to
+            // split them into tabs (system / games / emulators) depends on which
+            // of these fields is populated — package names would be ideal, genre
+            // is patchy given how many store lookups fail. First 15 is enough to
+            // see the shape without flooding the log.
+            for (var ai = 0; ai < api.collections.count; ai++) {
+                var ac = api.collections.get(ai);
+                if (!isDrawerCollection(ac)) continue;
+                var agl = ac.games;
+                var lim = Math.min(agl.count, 15);
+                console.log("[apps] dumping", lim, "of", agl.count, "from", ac.name);
+                for (var aj = 0; aj < lim; aj++) {
+                    var ag = agl.get(aj);
+                    var nfiles = ag.files ? ag.files.count : 0;
+                    var af = nfiles > 0 ? ag.files.get(0) : null;
+                    console.log("[apps]", aj,
+                                "| title:", ag.title,
+                                "| genre:", ag.genre,
+                                "| dev:", ag.developer,
+                                "| pub:", ag.publisher,
+                                "| files:", nfiles,
+                                "| path:", af ? af.path : "-",
+                                "| name:", af ? af.name : "-");
+                }
+            }
+        }
     }
 
     // Background
@@ -906,8 +1149,9 @@ id: root
     Loader  {
     id: showcaseLoader
 
-        focus: (root.state === "showcasescreen")
-        opacity: focus ? 1 : 0
+        readonly property bool shown: (root.state === "showcasescreen")
+        focus: shown
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -917,9 +1161,10 @@ id: root
     Loader {
     id: allgamesloader
 
-        focus: (root.state === "allgamesscreen")
+        readonly property bool shown: (root.state === "allgamesscreen")
+        focus: shown
         active: opacity !== 0
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -930,9 +1175,10 @@ id: root
     Loader  {
     id: gridviewloader
 
-        focus: (root.state === "softwaregridscreen")
+        readonly property bool shown: (root.state === "softwaregridscreen")
+        focus: shown
         active: opacity !== 0
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -943,9 +1189,10 @@ id: root
     Loader  {
     id: listviewloader
 
-        focus: (root.state === "softwarescreen")
+        readonly property bool shown: (root.state === "softwarescreen")
+        focus: shown
         active: opacity !== 0
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -956,7 +1203,8 @@ id: root
     Loader  {
     id: gameviewloader
 
-        focus: (root.state === "gameviewscreen")
+        readonly property bool shown: (root.state === "gameviewscreen")
+        focus: shown
         // Stay alive once loaded: the first visit sets gameviewLoaded = true via onLoaded,
         // after which active is always true so the component is never destroyed.
         // This prevents the blank-screen bug that occurred when returning from Settings
@@ -964,7 +1212,7 @@ id: root
         // popLastGame() and left currentGame pointing at the wrong game).
         active: (root.state === "gameviewscreen") || gameviewLoaded
         onLoaded: gameviewLoaded = true
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         // Skip GPU compositing entirely while fully hidden to keep memory overhead low.
         visible: opacity > 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
@@ -982,9 +1230,10 @@ id: root
         // top of them — otherwise launching from the achievements page shows
         // the RA page for the whole splash delay instead of the launch screen.
         z: 100
-        focus: (root.state === "launchgamescreen")
+        readonly property bool shown: (root.state === "launchgamescreen")
+        focus: shown
         active: opacity !== 0
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -1025,9 +1274,10 @@ id: root
     Loader  {
     id: settingsloader
 
-        focus: (root.state === "settingsscreen")
+        readonly property bool shown: (root.state === "settingsscreen")
+        focus: shown
         active: opacity !== 0
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -1038,9 +1288,10 @@ id: root
     Loader {
     id: achievementsloader
 
-        focus: (root.state === "achievementsscreen")
+        readonly property bool shown: (root.state === "achievementsscreen")
+        focus: shown
         active: opacity !== 0
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -1051,9 +1302,10 @@ id: root
     Loader {
     id: gameachievementsloader
 
-        focus: (root.state === "gameachievementsscreen")
+        readonly property bool shown: (root.state === "gameachievementsscreen")
+        focus: shown
         active: opacity !== 0
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -1064,9 +1316,10 @@ id: root
     Loader {
     id: raentryloader
 
-        focus: (root.state === "raentryscreen")
+        readonly property bool shown: (root.state === "raentryscreen")
+        focus: shown
         active: opacity !== 0
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -1140,9 +1393,10 @@ id: root
     Loader {
     id: discoverviewloader
 
-        focus: (root.state === "discoverscreen")
+        readonly property bool shown: (root.state === "discoverscreen")
+        focus: shown
         active: opacity !== 0
-        opacity: focus ? 1 : 0
+        opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -1166,10 +1420,120 @@ id: root
 
         height: vpx(50)
         anchors {
-            left: parent.left; right: parent.right; rightMargin: globalMargin
+            left: parent.left; leftMargin: globalMargin
+            right: parent.right; rightMargin: globalMargin
             bottom: parent.bottom
         }
         visible: settings.HideButtonHelp === "No" && root.state !== "launchgamescreen"
+
+        // Pinned bottom-left, away from the right-hand prompts. Shown on every
+        // screen because Select opens the drawer from anywhere — the root key
+        // handler catches it wherever the focused screen doesn't.
+        //
+        // The bar itself already hides on the launch screen and when the user
+        // turns button help off, so this needs no state test of its own. It is
+        // suppressed while the drawer is open, where Select closes rather than
+        // opens and the prompt would be misleading.
+        // Hidden when the drawer is open (Select closes rather than opens), and
+        // when a screen has cleared the helpbar entirely — Discover's X toggle
+        // nulls the model to hide its UI, and this prompt has to go with it
+        // rather than sitting there alone.
+        leftPromptText: (appDrawer.open || currentHelpbarModel === null) ? "" : "Apps"
+        // Path is relative to ButtonHelpBar.qml, NOT this file: the string is
+        // converted to a url by the `source:` binding inside that component, so
+        // it resolves against that component's folder. Same "../" the delegate
+        // beside it uses.
+        leftPromptIcon: "../assets/images/icon_select.svg"
+    }
+
+    // ── App drawer ────────────────────────────────────────────────────────
+    // One instance at the top level so it overlays every screen. z sits above
+    // launchgameloader (z: 100) and the help bar so nothing draws over it.
+    AppDrawer {
+    id: appDrawer
+
+        z: 500
+        // Same constant the system-row filter uses, so the collection the
+        // drawer shows is exactly the one hidden from the row — they can't
+        // drift apart.
+        collectionMatch: root.appsCollectionName
+        title: "My games & apps"
+
+        // Reuses the Discover launch path, which deliberately does NOT push
+        // onto lastState — so coming back from an app returns to the screen
+        // that was showing, rather than re-entering wherever the drawer was
+        // opened from.
+        onAppChosen: launchAppFromDrawer(game)
+        onClosed: playTabLeft()
+
+        // Home resets the back stack rather than pushing onto it — otherwise
+        // backing out of the Showcase would return to whatever screen you were
+        // on when you opened the drawer, which isn't what "Home" means. Seeded
+        // rather than emptied because previousScreen() reads the top of the
+        // stack without checking it's non-empty.
+        onNavHome: {
+            if (root.state === "showcasescreen") return;
+            playAccept();
+            lastState = ["showcasescreen"];
+            root.state = "showcasescreen";
+        }
+        // Library pushes normally, so Back returns where you came from.
+        onNavLibrary: {
+            if (root.state === "allgamesscreen") return;
+            allGamesScreen();
+        }
+        // Action tiles. Each pushes onto the back stack the same way the rest
+        // of the theme does, so Back returns to wherever the drawer was opened.
+        onNavDiscover: {
+            if (root.state === "discoverscreen") return;
+            discoverScreen(null);
+        }
+        onNavAchievements: {
+            if (root.state === "achievementsscreen") return;
+            achievementsScreen();
+        }
+        onNavSettings: {
+            if (root.state === "settingsscreen") return;
+            settingsScreen();
+        }
+        // Last-resort recovery: re-apply the current state so every loader's
+        // `focus: shown` binding re-evaluates and the active screen takes focus
+        // back. Only fires if the captured item is gone.
+        onFocusRestoreFailed: {
+            var s = root.state;
+            root.state = "";
+            root.state = s;
+        }
+    }
+
+    // Trigger. Screens accept the keys they use, so anything they ignore
+    // bubbles up to here — which is why this works from any screen without
+    // touching the individual views.
+    //
+    // 1048586 = Select, captured from the device log. Tab is kept for
+    // desktop testing.
+    readonly property var appDrawerKeys: [ 1048586, Qt.Key_Tab ]
+
+    // Diagnostics, both off-switchable. Key logging is done — Select was
+    // caught — but the collection dump is worth one more run to confirm which
+    // collection the Android apps provider creates once it's enabled.
+    property bool logKeys: false
+    property bool logCollections: true
+
+    Keys.onPressed: {
+        if (event.isAutoRepeat) return;
+
+        if (logKeys)
+            console.log("[theme] key code:", event.key, "text:", event.text);
+
+        if (appDrawerKeys.indexOf(event.key) === -1) return;
+        event.accepted = true;
+        if (appDrawer.open) {
+            appDrawer.closeDrawer();
+        } else {
+            playTabRight();
+            appDrawer.openDrawer();
+        }
     }
 
     ///////////////////

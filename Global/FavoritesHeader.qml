@@ -50,7 +50,9 @@ id: root
     // Settings > Featured > "Featured Box Content" selects what it shows. Favorites
     // still degrades gracefully when none are set: videos, else art slideshow.
     readonly property string boxMode: {
-        var m = settings.FeaturedBoxContent;
+        // Live value, not the settings snapshot — this is what made a switch
+        // to Discover Videos need a theme reload.
+        var m = featuredBoxContent;
         if (m === "Fanart Slideshow") return "art";
         if (m === "Discover Videos")  return useVideoFallback ? "video" : "art";
         if (favCount > 0)             return "favorites";       // Favorites mode
@@ -108,16 +110,22 @@ id: root
     }
     // Builds whichever list the current mode actually needs, once.
     function ensureFallbacks() {
-        var m = settings.FeaturedBoxContent;
+        var m = featuredBoxContent;
         if (m === "Fanart Slideshow") { buildArtList(); return; }
         if (m === "Discover Videos")  { if (!videosScanned) buildVideoList(); return; }
         if (favCount === 0 && !videosScanned) buildVideoList();   // Favorites w/ none set
     }
 
-    // boxMode re-evaluates whenever the setting or favourite count changes, so
-    // watching it covers every path that could need a different list built.
-    // (settings is a plain JS object, not a QObject — a Connections on it
-    // would never fire.) The builders are self-guarding, so this can't loop.
+    // Watching boxMode alone is NOT enough, despite what an earlier comment
+    // claimed. Switching to Discover Videos before the video list exists makes
+    // boxMode resolve to "art" — and if it was already "art" (Fanart
+    // Slideshow, or Favorites with none set) that's no change, no signal, and
+    // ensureFallbacks() never runs. The list is never built, so it stays on
+    // art forever. Mirroring the setting locally and watching THAT closes the
+    // gap: the setting itself changed even when the resolved mode did not.
+    readonly property string wantedMode: featuredBoxContent
+    onWantedModeChanged: ensureFallbacks()
+
     onFavCountChanged: ensureFallbacks()
     onBoxModeChanged: ensureFallbacks()
     Component.onCompleted: ensureFallbacks()
@@ -228,7 +236,20 @@ id: root
                 visible: boxMode === "video"
                 source: (boxMode === "video" && fallbackGame) ? fallbackGame.assets.video : ""
                 fillMode: VideoOutput.PreserveAspectCrop
-                muted: true              // ambient background element — never plays audio
+                // Audio only while this header is the highlighted item AND the
+                // Showcase "Video thumbnail audio" setting is on — the same
+                // toggle the row previews use, so one setting governs both.
+                // Unfocused it stays silent as before: the box also runs as an
+                // ambient slideshow, and that must never make noise.
+                //
+                // Three conditions, all read directly rather than via helpers,
+                // so this can't fire when the screen isn't even showing:
+                //   selected      — the row's focus is on this header
+                //   activeScreen  — the Showcase is the current screen
+                //   setting       — user opted in
+                muted: !(selected
+                         && activeScreen === "showcasescreen"
+                         && settings.AllowThumbVideoAudio === "Yes")
                 autoPlay: true
                 opacity: selected ? 1 : 0.5
                 onSourceChanged: play()

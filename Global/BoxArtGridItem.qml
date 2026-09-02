@@ -102,9 +102,9 @@ id: root
         // transparent centre matches the tile on ANY aspect — square, tall, or
         // wide — with no gap. 1.1228 = 1 + 2*0.0614 keeps the same bleed as the
         // system tiles.
-        anchors.centerIn: container
-        width:  container.width  * 1.1228
-        height: container.height * 1.1228
+        anchors.centerIn: artBounds
+        width:  artBounds.width  * 1.1228
+        height: artBounds.height * 1.1228
         source: "../assets/images/focus_halo.png"
         smooth: true
         mipmap: false
@@ -131,6 +131,23 @@ id: root
         opacity: (gameData && gameData.favorite && !selected && settings.FavoritedTileAccent !== "No") ? 0.35 : 0
         visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+    }
+
+    // Tracks the art as actually drawn. cellHeight is derived from ONE sample
+    // box (fakebox in GridViewMenu), so every cell is the same size while the
+    // art inside varies — PreserveAspectFit then letterboxes anything with a
+    // different aspect, and accents anchored to the cell float away from it.
+    //
+    // Falls back to the container while the image is still loading or missing,
+    // so nothing collapses to zero.
+    Item {
+    id: artBounds
+
+        readonly property bool ready: screenshot.status === Image.Ready
+                                      && screenshot.paintedWidth > 0
+        width:  ready ? screenshot.paintedWidth  : container.width
+        height: ready ? screenshot.paintedHeight : container.height
+        anchors.centerIn: container
     }
 
     Item 
@@ -163,9 +180,11 @@ id: root
         Item {
         id: favicon
 
+            // Corner of the ART, not the cell — otherwise it floats in the
+            // letterbox gap on anything narrower than the cell.
             anchors {
-                right: container.right; rightMargin: vpx(7)
-                bottom: container.bottom; bottomMargin: vpx(7)
+                right: artBounds.right; rightMargin: vpx(7)
+                bottom: artBounds.bottom; bottomMargin: vpx(7)
             }
             width: vpx(20)
             height: width
@@ -212,7 +231,7 @@ id: root
     // (not just on focus), so favorites stand out while scrolling past.
     Rectangle {
         id: favBorder
-        anchors.fill: container
+        anchors.fill: artBounds
         color: "transparent"
         border.width: vpx(2)
         border.color: theme.accent
@@ -221,7 +240,7 @@ id: root
 
     Loader {
         active: selected
-        anchors.fill: container
+        anchors.fill: artBounds
         sourceComponent: border
         asynchronous: true
     }

@@ -111,9 +111,30 @@ id: root
     property var    systemOptions:     []   // [{name, index}, ...] built lazily
     property int    systemPickerIndex: 0
 
+    // ── Imported apps ──
+    // Apps imported by Pegasus get their icon and nothing else: no screenshot,
+    // no 3D box, no logo. They have no such art, and the composite looks broken
+    // when two of its three layers are missing.
+    //
+    // Detected by file path — Pegasus writes imported entries as
+    // "android:<package>" — so a ROM or a hand-written .app entry can't match,
+    // even sitting in the same collection.
+    property bool appIsImported: {
+        if (!settledGame || !settledGame.files || settledGame.files.count < 1) return false;
+        var p = settledGame.files.get(0).path || "";
+        return p.indexOf("android:") === 0;
+    }
+    property string appIconArt: {
+        if (!settledGame || !settledGame.assets) return "";
+        var a = settledGame.assets;
+        return a.boxFront || a.logo || a.poster || a.banner || "";
+    }
+    readonly property bool appIconMode: appIsImported && appIconArt !== ""
+
     // ── Game preview art (miximage-style composite) ──
     // Backdrop = fanart (falls back to a screenshot); framed square = a screenshot.
     property string artBackdrop: {
+        if (appIconMode) return appIconArt;
         if (!settledGame) return "";
         var f = Utils.fanArt(settledGame);
         if (f) return f;
@@ -121,13 +142,17 @@ id: root
         return (s2 && s2.length) ? s2[0] : "";
     }
     property string artScreenshot: {
+        if (appIconMode) return appIconArt;
         if (!settledGame) return "";
         var ss = settledGame.assets.screenshotList;
         if (ss && ss.length) return ss[0];
         return Utils.fanArt(settledGame) || "";
     }
-    property string artLogo: settledGame ? (Utils.logo(settledGame) || settledGame.assets.logo || "") : ""
+    // Both empty in icon mode: each Image hides itself on a non-Ready status.
+    property string artLogo: appIconMode ? ""
+        : (settledGame ? (Utils.logo(settledGame) || settledGame.assets.logo || "") : "")
     property string artBoxSource: {
+        if (appIconMode) return "";
         if (!settledGame) return "";
         var three = Utils.get3dBoxArt(settledGame);
         if (three) return three;                       // 3D box
@@ -480,7 +505,9 @@ id: root
             width:  boxArt.shotSide
             height: boxArt.shotSide
             anchors.centerIn: parent
-            anchors.horizontalCenterOffset: vpx(28)
+            // The offset exists to leave room for the 3D box overhanging the
+            // left. In icon mode there's no box, so it centres properly.
+            anchors.horizontalCenterOffset: appIconMode ? 0 : vpx(28)
 
             Image {
             id: artScreenshotImg
@@ -490,11 +517,49 @@ id: root
                 source: artScreenshot
                 fillMode: Image.PreserveAspectCrop   // crop to a clean square
                 smooth: true
-                visible: status === Image.Ready
+                visible: status === Image.Ready && !appIconMode
                 layer.enabled: true
                 layer.smooth: true
                 layer.effect: OpacityMask {
                     maskSource: Rectangle { width: artScreenshotImg.width; height: artScreenshotImg.height; radius: vpx(10) }
+                }
+            }
+
+            // Imported app icon, filling the square.
+            //
+            // The image is oversized INSIDE a fixed-size wrapper rather than
+            // scaled: `scale` on a layered Image transforms the already-masked
+            // result, so the rounded edge scales up too and the icon spills
+            // past the frame. Oversizing within a masked wrapper keeps the clip
+            // at the frame's real bounds.
+            Item {
+            id: appIconWrap
+
+                anchors.fill: parent
+                visible: appIconMode && appIconImg.status === Image.Ready
+                layer.enabled: visible
+                layer.smooth: true
+                layer.effect: OpacityMask {
+                    maskSource: Rectangle { width: appIconWrap.width; height: appIconWrap.height; radius: vpx(10) }
+                }
+
+                // Backs the icon's transparent corners so the square reads solid.
+                Rectangle { anchors.fill: parent; color: "#2E2E2E" }
+
+                Image {
+                id: appIconImg
+
+                    anchors.centerIn: parent
+                    // Icons arrive as a circle on a transparent square, so the
+                    // visible art must be blown past the frame to fill it. A
+                    // circle needs ~1.41x to cover its square.
+                    width:  parent.width  * 1.45
+                    height: parent.height * 1.45
+                    source: appIconMode ? artScreenshot : ""
+                    sourceSize: Qt.size(Math.round(width), Math.round(height))
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    asynchronous: true
                 }
             }
             Rectangle {   // fallback fill when no screenshot
@@ -510,7 +575,10 @@ id: root
                 anchors.margins: vpx(3)   // inset so the square video corners stay inside the
                                           // rounded screenshot; corners then show the backdrop
                                           // (transparent) without ever masking the video itself
-                source: (settings.AllGamesVideoPreview !== "No" && videoArmed && videoSource !== "") ? videoSource : ""
+                // Cleared off-screen, same reason as the other players.
+                source: (settings.AllGamesVideoPreview !== "No" && videoArmed
+                         && videoSource !== "" && activeScreen === "allgamesscreen")
+                        ? videoSource : ""
                 fillMode: VideoOutput.PreserveAspectCrop
                 muted: settings.AllGamesVideoAudio !== "Yes"
                 loops: MediaPlayer.Infinite
@@ -747,15 +815,25 @@ id: root
         }
 
         // Icon + title (top row) — matches the platform page's clean header rhythm
-        Image {
+        Item {
         id: libIcon
-            source: "../assets/images/gamesandapps.png"
             anchors { top: parent.top; topMargin: vpx(10); left: parent.left; leftMargin: globalMargin }
+            // Box stays vpx(40): the title and the game counter anchor to this,
+            // so shrinking it would shift the whole header. The artwork is inset
+            // instead — the old PNG's canvas was ~half padding, so filling this
+            // box with the SVG would render it ~1.6x larger than before.
             height: vpx(40); width: vpx(40)
-            fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
-            // White-lettering logo flips to black on a white background
-            layer.enabled: whiteBackground
-            layer.effect: ColorOverlay { color: "black" }
+
+            Image {
+                anchors.centerIn: parent
+                width: vpx(25); height: vpx(25)
+                source: "../assets/images/icon_gamesandapps.svg"
+                sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
+                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+                // White-lettering logo flips to black on a white background
+                layer.enabled: whiteBackground
+                layer.effect: ColorOverlay { color: "black" }
+            }
         }
         Text {
             anchors { left: libIcon.right; leftMargin: vpx(12); verticalCenter: libIcon.verticalCenter }
@@ -824,22 +902,15 @@ id: root
                 if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); homebutton.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: discoverScreen(); }
-            Canvas {
+            Image {
                 anchors { fill: parent; margins: vpx(6) }
-                onPaint: {
-                    var ctx = getContext("2d"); ctx.reset();
-                    var cx = width/2, cy = height/2, r = Math.min(cx,cy)-1;
-                    ctx.globalAlpha = discoverbutton.focus ? 1.0 : 0.85;
-                    ctx.strokeStyle = navCol; ctx.lineWidth = 1.5;
-                    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
-                    ctx.fillStyle = navCol;
-                    ctx.beginPath(); ctx.moveTo(cx, cy-r*0.65); ctx.lineTo(cx+r*0.30, cy+r*0.10); ctx.lineTo(cx, cy+r*0.20); ctx.lineTo(cx-r*0.30, cy+r*0.10); ctx.closePath(); ctx.fill();
-                    ctx.globalAlpha = 0.35;
-                    ctx.beginPath(); ctx.moveTo(cx, cy+r*0.65); ctx.lineTo(cx-r*0.30, cy-r*0.10); ctx.lineTo(cx, cy-r*0.20); ctx.lineTo(cx+r*0.30, cy-r*0.10); ctx.closePath(); ctx.fill();
-                }
-                property string navCol: whiteBackground ? "black" : "white"
-                onNavColChanged: requestPaint()
-                Connections { target: discoverbutton; onFocusChanged: parent.requestPaint() }
+                source: "../assets/images/icon_discover.svg"
+                // Rasterised above display size so it stays sharp on a TV.
+                sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
+                layer.enabled: whiteBackground
+                layer.effect: ColorOverlay { color: "black" }
+                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+                opacity: discoverbutton.focus ? 1.0 : 0.85
             }
         }
 
@@ -1464,10 +1535,13 @@ id: root
                 filterPanel.forceActiveFocus();
             }
         }
-        // Y — game details page, opened with the full details pane expanded
+        // Y — game details page, opened with the full details pane expanded.
+        // Inert for imported apps: they carry no metadata, so the page would be
+        // empty. The helpbar drops the prompt to match.
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus) { gameDetailsFull(currentGame); }
+            if (!filterOpen && gamelist.focus && !currentIsImportedApp)
+                gameDetailsFull(currentGame);
         }
         // LT — previous letter group
         if (api.keys.isPageUp(event) && !event.isAutoRepeat) {
@@ -1494,10 +1568,46 @@ id: root
         ListElement { name: "Filters";      button: "details" }
         ListElement { name: "Launch";       button: "accept"  }
     }
+    // Same bar without More Details, for imported apps. Two static models
+    // swapped on demand rather than one model rebuilt as the cursor moves.
+    ListModel {
+        id: allGamesAppHelpModel
+        ListElement { name: "Back";    button: "cancel"  }
+        ListElement { name: "Filters"; button: "details" }
+        ListElement { name: "Launch";  button: "accept"  }
+    }
+
+    // True when the highlighted entry is an app Pegasus imported.
+    // Derived from the LIST, not from the shared currentGame property.
+    //
+    // currentGame is assigned imperatively when the proxy model finishes
+    // filling, which happens asynchronously and may be after this screen takes
+    // focus. If the first row is an imported app the index never changes, so
+    // nothing re-triggered and the bar kept the stale value until the cursor
+    // moved. Reading currentIndex and count makes this re-evaluate the moment
+    // the model populates, whatever the ordering.
+    readonly property bool currentIsImportedApp: {
+        var idx = gamelist.currentIndex;
+        var cnt = gamelist.count;
+        if (cnt <= 0 || idx < 0) return false;
+        var g = getCurrentGame(idx);
+        if (!g || !g.files || g.files.count < 1) return false;
+        return (g.files.get(0).path || "").indexOf("android:") === 0;
+    }
+    function refreshHelpbar() {
+        if (!focus) return;
+        currentHelpbarModel = currentIsImportedApp ? allGamesAppHelpModel
+                                                   : allGamesHelpModel;
+    }
+    // Only fires when crossing between an app and a normal entry, not on every
+    // cursor move.
+    onCurrentIsImportedAppChanged: refreshHelpbar()
 
     onFocusChanged: {
         if (focus) {
-            currentHelpbarModel     = allGamesHelpModel;
+            // Covers focus arriving before the model has populated; once it
+            // does, currentIsImportedApp changes and refreshes this again.
+            refreshHelpbar();
             currentCustomCollection = listAllGames.collection;
             // Returning from game details: re-center the list on the current game
             restoreViewTimer.restart();

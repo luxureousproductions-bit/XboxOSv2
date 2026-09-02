@@ -435,11 +435,14 @@ id: root
     }
 
     // ── Page counter ─────────────────────────────────────────────────────
+    // Top right, above the list. It used to sit bottom-right, which left the
+    // bottom row crowded once the shared Apps prompt appeared bottom-left on
+    // every screen.
     Text {
         visible: cheevosData.raUserName !== "" && cheevosData.raRecentGames.count > 0
         anchors {
             right:  parent.right; rightMargin: globalMargin
-            bottom: parent.bottom; bottomMargin: vpx(10)
+            bottom: gameList.top; bottomMargin: vpx(4)
         }
         text: (gameList.currentIndex + 1) + " of " + cheevosData.raRecentGames.count
         color: theme.text
@@ -449,10 +452,12 @@ id: root
         opacity: 0.75
     }
 
-    // ── Local help bar (bottom-left) ─────────────────────────────────────
+    // ── Local help bar (bottom-right) ────────────────────────────────────
+    // Right-aligned: the shared button bar puts the Apps prompt bottom-left on
+    // every screen, and these used to start there too and overlap it.
     Row {
         anchors {
-            left: parent.left; leftMargin: globalMargin
+            right: parent.right; rightMargin: globalMargin
             bottom: parent.bottom; bottomMargin: vpx(10)
         }
         spacing: vpx(20)
@@ -483,8 +488,8 @@ id: root
     ListModel {
     id: localHelpModel
         ListElement { name: "Details"; button: "accept"  }
-        ListElement { name: "Search";  button: "filters" }
-        ListElement { name: "Refresh"; button: "details" }
+        ListElement { name: "Search";  button: "details" }
+        ListElement { name: "Refresh"; button: "filters" }
         ListElement { name: "Back";    button: "cancel"  }
     }
 
@@ -511,8 +516,8 @@ id: root
             gameList.currentIndex++;
     }
     Keys.onPressed: {
-        // Y — open the library search
-        if (api.keys.isFilters(event) && !event.isAutoRepeat) {
+        // X — open the library search
+        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
             playAccept();
             searchOverlay.openSearch();
@@ -527,7 +532,8 @@ id: root
             event.accepted = true;
             previousScreen();
         }
-        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
+        // Y — refresh
+        if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
             playAccept();
             initialized = false;
@@ -616,6 +622,7 @@ id: root
         }
 
         function commitSearch() {
+            playAccept();
             runSearch();
             if (results.length > 0) {
                 showingResults = true;
@@ -723,6 +730,9 @@ id: root
         // Results
         ListView {
             id: resultList
+            // One hook covers d-pad steps, Left/Right page jumps and the
+            // LT/RT letter jumps, the same way the games list does it above.
+            onCurrentIndexChanged: if (searchOverlay.showingResults) playNav()
             anchors {
                 top: queryBox.bottom; topMargin: vpx(14)
                 left: parent.left; leftMargin: vpx(60)
@@ -964,16 +974,19 @@ id: root
             }
             if (api.keys.isNextPage(event)) {          // RT — next letter
                 event.accepted = true;
+                playToggle();
                 searchOverlay.jumpLetter(1);
                 return;
             }
             if (api.keys.isPrevPage(event)) {          // LT — previous letter
                 event.accepted = true;
+                playToggle();
                 searchOverlay.jumpLetter(-1);
                 return;
             }
             if (api.keys.isCancel(event)) {            // back to a blank keyboard
                 event.accepted = true;
+                playBack();
                 searchOverlay.resetSearch();
                 return;
             }

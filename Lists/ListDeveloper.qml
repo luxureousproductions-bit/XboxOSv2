@@ -15,6 +15,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import QtQuick 2.15
+import "../utils.js" as Utils
 import SortFilterProxyModel 0.2
 
 Item {
@@ -27,15 +28,19 @@ id: root
     property string developer: ""
     property bool omitApplication: true
     property bool omitEmulator: true
+    // Titles of installed apps, supplied by the theme. Apps whose store lookup
+    // failed carry no genre, so the genre test below can't catch them.
+    property var appTitles: ({})
 
     SortFilterProxyModel {
     id: developerGames
 
         sourceModel: api.allGames
         filters: [
-            RegExpFilter { roleName: "developer"; pattern: developer; caseSensitivity: Qt.CaseInsensitive },
+            RegExpFilter { roleName: "developer"; pattern: Utils.escapeRegExp(developer); caseSensitivity: Qt.CaseInsensitive },
             ExpressionFilter {
                 expression: {
+                    if (root.omitApplication && root.appTitles[model.title] === true) return false;
                     var genres = model.genreList;
                     for (var i = 0; i < genres.length; i++) {
                         var g = genres[i].toLowerCase();

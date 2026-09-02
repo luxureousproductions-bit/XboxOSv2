@@ -136,13 +136,17 @@ id: root
         id: advancedSettingsModel
         ListElement {
             settingName: "Omit genre: Application from Showcase"
+            label: "Omit Applications from Showcase"
             setting: "No,Yes"
-            note: "Reload Required"
         }
         ListElement {
             settingName: "Omit genre: Emulator from Showcase"
+            label: "Omit Emulators from Showcase"
             setting: "No,Yes"
-            note: "Reload Required"
+        }
+        ListElement {
+            settingName: "Hide Android System Tile"
+            setting: "Yes,No"
         }
         ListElement {
             settingName: "Show WiFi Indicator"
@@ -563,6 +567,93 @@ id: root
 
     property var settingsArr: [generalPage, showcasePage, collectionsPage, featuredPage, gridPage, gamePage, allGamesPage, mediaCarouselPage, audioPage, advancedPage, raPage]
 
+    // ── Help text ─────────────────────────────────────────────────────────
+    // In a function, not on the ListElements: a ListElement only accepts
+    // literal values, so any string built with + is rejected and the whole
+    // screen fails to load.
+    function infoText(name) {
+        if (name === "Custom Background") {
+            return "Shows your own image behind the Showcase.\n\n"
+                 + "TO USE YOUR OWN\n"
+                 + "Rename the image to background.png and put it in the "
+                 + "theme's assets/images/backgrounds folder.\n\n"
+                 + "It sits underneath everything, so it stays visible behind "
+                 + "entries that have no fanart of their own \u2014 apps "
+                 + "imported by Pegasus, for instance \u2014 instead of "
+                 + "leaving a blank screen.\n\n"
+                 + "Entries that do have fanart cover it completely, so this "
+                 + "works alongside Showcase Background Art rather than "
+                 + "replacing it. Turn that off to see your image behind the "
+                 + "whole Showcase.";
+        }
+        if (name === "Randomize System Tile Fanart") {
+            return "Picks a random image from the highlighted collection's own "
+                 + "fanart each time, instead of always using the same one.\n\n"
+                 + "The pick comes from that collection's games, so it changes "
+                 + "as you move along the system row.\n\n"
+                 + "Needs Showcase Background Art on \u2014 with it off there "
+                 + "is no fanart to choose from, and this row locks.";
+        }
+        if (name === "Hide Android System Tile") {
+            return "Hides the tile for the collection the App Drawer uses, so "
+                 + "the same apps aren't in two places at once. Set this to No "
+                 + "to keep the tile as well.\n\n"
+                 + "The drawer uses the collection named exactly \"Android\" "
+                 + "\u2014 the one Pegasus creates when you enable app "
+                 + "importing in its own settings.\n\n"
+                 + "SHORTNAME GUIDE\n"
+                 + "\u2022 androidgames \u2014 for a collection of games you "
+                 + "list yourself\n"
+                 + "\u2022 android or androidapps \u2014 for apps you list "
+                 + "yourself\n\n"
+                 + "IMPORTANT\n"
+                 + "The match is on the collection NAME, not the shortname. A "
+                 + "collection using shortname \"android\" but named something "
+                 + "else \u2014 \"Android Apps\", say \u2014 is NOT the one "
+                 + "the drawer picks up while Pegasus app importing is on, "
+                 + "because the imported \"Android\" collection wins.\n\n"
+                 + "Turn Pegasus app importing off and your own collection is "
+                 + "used instead.";
+        }
+        if (name === "Omit genre: Application from Showcase") {
+            return "Keeps applications out of the Showcase content rows "
+                 + "(Recently Played, Recommended and so on).\n\n"
+                 + "It works two ways: apps imported by Pegasus are filtered "
+                 + "by collection, and apps you list yourself are filtered by "
+                 + "the genre: Application tag.\n\n"
+                 + "Both rules exist because imported apps carry no genre at "
+                 + "all, so the tag alone would miss them.\n\n"
+                 + "May need a theme reload.\n\n"
+                 + "WHICH COLLECTION IS USED\n"
+                 + "In order: the Pegasus import named \"Android\" wins if app "
+                 + "importing is on; otherwise a collection you named "
+                 + "\"Android\"; otherwise one whose shortname is android or "
+                 + "androidgames.\n\n"
+                 + "While this is off, apps appear in the rows and launch "
+                 + "straight away instead of opening a details page.";
+        }
+        if (name === "Omit genre: Emulator from Showcase") {
+            return "Keeps emulators out of the Showcase content rows.\n\n"
+                 + "It works two ways: emulators among the apps imported by "
+                 + "Pegasus are recognised automatically, and emulators you "
+                 + "list yourself are filtered by the genre: Emulator tag.\n\n"
+                 + "Both rules exist because imported apps carry no genre at "
+                 + "all, so the tag alone would miss them.\n\n"
+                 + "May need a theme reload.";
+        }
+        return "";
+    }
+
+    // Cheap yes/no test. infoText() concatenates a lot of literals to build its
+    // result, which is wasteful when all that's needed is whether one exists.
+    function hasInfo(name) {
+        return name === "Custom Background"
+            || name === "Randomize System Tile Fanart"
+            || name === "Hide Android System Tile"
+            || name === "Omit genre: Application from Showcase"
+            || name === "Omit genre: Emulator from Showcase";
+    }
+
     property real itemheight: vpx(50)
     property color settingsTextColor: "white"   // locked white: the settings background is locked black, so text must never follow the Color Layout light/dark flip
 
@@ -906,13 +997,16 @@ id: root
 
                 // Greyed-out/inert state — "Randomize System Tile Fanart" only has
                 // an effect while the fanart background is showing, so it locks
-                // when Showcase Background Art is off or Custom Background is on.
+                // when Showcase Background Art is off.
+                //
+                // It no longer locks on Custom Background: the two used to be
+                // mutually exclusive, but the custom image is a base layer now
+                // and fanart still runs on top of it.
                 property bool rowDisabled: {
                     var _v = settingsList.settingsVersion;   // re-evaluate after any save
                     if (settingName === "Randomize System Tile Fanart") {
                         var bgArt  = api.memory.has("Showcase Background Art") ? api.memory.get("Showcase Background Art") : "Yes";
-                        var custom = api.memory.has("Custom Background") ? api.memory.get("Custom Background") : "No";
-                        return bgArt === "No" || custom === "Yes";
+                        return bgArt === "No";
                     }
                     // A collection's Ratio row is inert when its shape is Square
                     if (settingName.indexOf("Collection ") === 0 && settingName.indexOf(" - Ratio") !== -1) {
@@ -945,20 +1039,15 @@ id: root
                     if (isTextInput || rowDisabled) return;
                     api.memory.set(settingName + 'Index', savedIndex);
                     api.memory.set(settingName, settingList[savedIndex]);
-                    // Mutual exclusion: fanart and custom background can't both be on
-                    if (settingName === "Showcase Background Art" && settingList[savedIndex] === "Yes") {
-                        api.memory.set("Custom Background", "No");
-                        api.memory.set("Custom BackgroundIndex", "0");
-                        settingsList.settingsVersion++;
-                    }
-                    if (settingName === "Custom Background" && settingList[savedIndex] === "Yes") {
-                        api.memory.set("Showcase Background Art", "No");
-                        api.memory.set("Showcase Background ArtIndex", "1");
-                        settingsList.settingsVersion++;
-                    }
+                    // These two used to be mutually exclusive, each forcing the
+                    // other off when enabled. They now layer instead: the custom
+                    // image is the base and fanart paints over it, showing
+                    // through only for entries that have no art of their own.
                     // Either of these changing can lock/unlock the randomize row
                     if (settingName === "Showcase Background Art" || settingName === "Custom Background")
                         settingsList.settingsVersion++;
+                    // Wakes any binding that opted into live updates.
+                    settingsEpoch++;
                 }
 
                 function nextSetting() {
@@ -1159,6 +1248,14 @@ id: root
                             saveSetting();
                         }
                     }
+                    // More info
+                    if (api.keys.isDetails(event) && !event.isAutoRepeat
+                        && root.hasInfo(settingName)) {
+                        event.accepted = true;
+                        playToggle();
+                        root.openInfo(displayLabel, root.infoText(settingName));
+                        return;
+                    }
                     // Back
                     if (api.keys.isCancel(event) && !event.isAutoRepeat) {
                         event.accepted = true;
@@ -1191,8 +1288,21 @@ id: root
             }
         } 
 
-        Keys.onUpPressed: { playNav(); decrementCurrentIndex() }
-        Keys.onDownPressed: { playNav(); incrementCurrentIndex() }
+        onCurrentIndexChanged: root.rebuildHelpbar()
+        onFocusChanged: root.rebuildHelpbar()
+
+        // Wrap both ends, matching the page list on the left — dead-ending
+        // partway down a long page was the odd one out.
+        Keys.onUpPressed: {
+            playNav();
+            if (currentIndex === 0) currentIndex = count - 1;
+            else decrementCurrentIndex();
+        }
+        Keys.onDownPressed: {
+            playNav();
+            if (currentIndex === count - 1) currentIndex = 0;
+            else incrementCurrentIndex();
+        }
     }
 
     // ── On-screen keyboard overlay ────────────────────────────────────────
@@ -1234,15 +1344,123 @@ id: root
     }
 
     // Helpbar buttons
-    ListModel {
-        id: settingsHelpModel
+    ListModel { id: settingsHelpModel }
 
-        ListElement {
-            name: "Back"
-            button: "cancel"
+    // Only rebuilt when the answer actually changes: clearing and repopulating
+    // the model recreates the help bar's delegates, and doing that on every
+    // cursor move is a hitch on every keypress.
+    property int helpState: -1      // -1 unset, 0 without info, 1 with
+
+    function rebuildHelpbar() {
+        var want = 0;
+        if (settingsList.focus) {
+            var page = settingsArr[pagelist.currentIndex];
+            var i = settingsList.currentIndex;
+            if (page && page.listmodel && i >= 0 && i < page.listmodel.count) {
+                var row = page.listmodel.get(i);
+                if (row && hasInfo(row.settingName)) want = 1;
+            }
+        }
+        if (want === helpState) return;
+        helpState = want;
+        settingsHelpModel.clear();
+        // The bar lays out right-to-left, so the LAST entry appended is the
+        // one furthest left. Back goes first to sit on the right of it.
+        settingsHelpModel.append({ name: "Back", button: "cancel" });
+        if (want === 1)
+            settingsHelpModel.append({ name: "More info", button: "details" });
+    }
+
+    Component.onCompleted: rebuildHelpbar()
+
+    onFocusChanged: { if (focus) currentHelpbarModel = settingsHelpModel; }
+
+    // ── Info panel ────────────────────────────────────────────────────────
+    property bool   infoOpen:  false
+    property string infoTitle: ""
+    property string infoBody:  ""
+
+    function openInfo(title, body) {
+        infoTitle = title;
+        infoBody  = body;
+        infoOpen  = true;
+        infoPanel.forceActiveFocus();
+    }
+    function closeInfo() {
+        infoOpen = false;
+        settingsList.forceActiveFocus();
+    }
+
+    FocusScope {
+    id: infoPanel
+
+        anchors.fill: parent
+        visible: root.infoOpen
+        enabled: root.infoOpen
+        z: 60
+
+        Rectangle {
+            anchors.fill: parent
+            color: "#000000"
+            opacity: 0.65
+            MouseArea { anchors.fill: parent; onClicked: root.closeInfo() }
+        }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: Math.min(parent.width * 0.6, vpx(600))
+            height: infoCol.height + vpx(44)
+            radius: vpx(10)
+            color: "#242424"
+            border.width: vpx(1)
+            border.color: Qt.rgba(1, 1, 1, 0.14)
+
+            Column {
+            id: infoCol
+
+                anchors { top: parent.top; topMargin: vpx(22)
+                          left: parent.left; leftMargin: vpx(26)
+                          right: parent.right; rightMargin: vpx(26) }
+                spacing: vpx(12)
+
+                Text {
+                    width: parent.width
+                    text: root.infoTitle
+                    color: theme.accent
+                    font.family: titleFont.name
+                    font.pixelSize: vpx(21)
+                    font.bold: true
+                    wrapMode: Text.WordWrap
+                }
+                Text {
+                    width: parent.width
+                    text: root.infoBody
+                    color: root.settingsTextColor
+                    font.family: subtitleFont.name
+                    font.pixelSize: vpx(15)
+                    wrapMode: Text.WordWrap
+                }
+                Text {
+                    width: parent.width
+                    text: "Press B to close"
+                    color: Qt.rgba(1, 1, 1, 0.45)
+                    font.family: subtitleFont.name
+                    font.pixelSize: vpx(12)
+                    horizontalAlignment: Text.AlignRight
+                }
+            }
+        }
+
+        // Swallows input so the list underneath can't move while it's open.
+        Keys.onPressed: {
+            if (event.isAutoRepeat) return;
+            event.accepted = true;
+            if (api.keys.isCancel(event) || api.keys.isAccept(event)
+                || api.keys.isDetails(event)) {
+                playBack();
+                root.closeInfo();
+            }
         }
     }
-    
-    onFocusChanged: { if (focus) currentHelpbarModel = settingsHelpModel; }
 
 }

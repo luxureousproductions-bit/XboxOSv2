@@ -26,6 +26,9 @@ id: root
 
     property bool omitApplication: true
     property bool omitEmulator: true
+    // Titles of installed apps, supplied by the theme. Apps whose store lookup
+    // failed carry no genre, so the genre test below can't catch them.
+    property var appTitles: ({})
 
     SortFilterProxyModel {
     id: lastPlayedGames
@@ -34,6 +37,7 @@ id: root
         sorters: RoleSorter { roleName: "lastPlayed"; sortOrder: Qt.DescendingOrder }
         filters: ExpressionFilter {
             expression: {
+                if (root.omitApplication && root.appTitles[model.title] === true) return false;
                 var genres = model.genreList;
                 for (var i = 0; i < genres.length; i++) {
                     var g = genres[i].toLowerCase();

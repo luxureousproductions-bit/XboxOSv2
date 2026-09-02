@@ -36,13 +36,13 @@ id: root
     // every favorited game (unlike the "Favorites" collection category above,
     // which is deliberately capped to a normal row's worth of tiles).
     ListFavorites   { id: listFavoritesAll }
-    ListLastPlayed  { id: listLastPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
-    ListMostPlayed  { id: listMostPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
-    ListRecommended { id: listRecommended; active: true; max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
-    ListPublisher   { id: listPublisher;   max: settings.ShowcaseColumns; publisher: randoPub;   omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
-    ListDeveloper   { id: listDeveloper;   max: settings.ShowcaseColumns; developer: randoDev;   omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
-    ListGenre       { id: listGenre;       max: settings.ShowcaseColumns; genre: randoGenre;     omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
-    ListGenre       { id: listGenre2;      max: settings.ShowcaseColumns; genre: randoGenre2;    omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes" }
+    ListLastPlayed  { id: listLastPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
+    ListMostPlayed  { id: listMostPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
+    ListRecommended { id: listRecommended; active: true; max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
+    ListPublisher   { id: listPublisher;   max: settings.ShowcaseColumns; publisher: randoPub;   omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
+    ListDeveloper   { id: listDeveloper;   max: settings.ShowcaseColumns; developer: randoDev;   omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
+    ListGenre       { id: listGenre;       max: settings.ShowcaseColumns; genre: randoGenre;     omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
+    ListGenre       { id: listGenre2;      max: settings.ShowcaseColumns; genre: randoGenre2;    omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
 
     property var highlightedGame: null
 
@@ -146,15 +146,22 @@ id: root
     // Pegasus populates api.allGames fully before any QML runs, so these
     // property initializers evaluate once at component creation with the
     // complete game library available — no timer or debounce needed.
-    property string randoPub:    Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || ''
-    property string randoDev:    Utils.returnRandom(Utils.uniqueValuesArray('developer')) || ''
-    property string randoGenre:  Utils.returnRandom(Utils.uniqueGenreValues()) || ''
-    property string randoGenre2: Utils.returnRandom(Utils.uniqueGenreValues()) || ''
+    // Candidate pools exclude games the rows filter out anyway, so a value whose
+    // every game would be filtered away can't be picked — that produced rows
+    // like "Top Games by Sony" with nothing under them.
+    readonly property bool poolOmitApp: settings.OmitApplicationFromShowcase === "Yes"
+    readonly property bool poolOmitEmu: settings.OmitEmulatorFromShowcase === "Yes"
+
+    property string randoPub:    Utils.returnRandom(Utils.uniqueValuesArray('publisher', poolOmitApp, poolOmitEmu)) || ''
+    property string randoDev:    Utils.returnRandom(Utils.uniqueValuesArray('developer', poolOmitApp, poolOmitEmu)) || ''
+    property string randoGenre:  Utils.returnRandom(Utils.uniqueGenreValues(poolOmitEmu)) || ''
+    property string randoGenre2: Utils.returnRandom(Utils.uniqueGenreValues(poolOmitEmu)) || ''
 
     function refreshLists() {
         var omitEmu = settings.OmitEmulatorFromShowcase === "Yes";
-        var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher')) || '';
-        var dev = Utils.returnRandom(Utils.uniqueValuesArray('developer')) || '';
+        var omitApp = settings.OmitApplicationFromShowcase === "Yes";
+        var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher', omitApp, omitEmu)) || '';
+        var dev = Utils.returnRandom(Utils.uniqueValuesArray('developer', omitApp, omitEmu)) || '';
         var genres = Utils.uniqueGenreValues(omitEmu);
         var genre = Utils.returnRandom(genres) || '';
         var filtered = genres.filter(function(g) { return g !== genre; });
@@ -223,7 +230,19 @@ id: root
         smooth: true
         z: -1
         source: (settings.CustomBackground === "Yes") ? "../assets/images/backgrounds/background.png" : ""
-        opacity: (settings.CustomBackground === "Yes" && settings.ShowcaseBackgroundArt !== "Yes") ? 1 : 0
+        // Shown only while NO fanart is on screen. Two images never overlap, so
+        // fanart blends with the theme colour beneath rather than with this —
+        // which is what caused the colour shift and the flash between fades.
+        //
+        // bgShownImg is null whenever the fanart layers are cleared, which is
+        // exactly the case for entries with no art of their own (imported apps),
+        // and whenever background art is switched off entirely.
+        // Follows Showcase Background Opacity, same as the fanart layers, so one
+        // setting governs how strong the background reads whichever source is
+        // showing. Same parseFloat fallback startBgFade() uses.
+        opacity: (settings.CustomBackground === "Yes" && bgShownImg === null)
+                 ? (parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55)
+                 : 0
         Behavior on opacity { PropertyAnimation { duration: 400 } }
     }
 
@@ -355,11 +374,13 @@ id: root
         }
     }
 
-    // Dim overlay so content stays readable
+    // Dim overlay so content stays readable. Lowered from 0.45: it sits above
+    // everything, so it was darkening the chosen theme colour and the custom
+    // image as much as it was taming bright fanart.
     Rectangle {
         anchors.fill: parent
         color: "black"
-        opacity: 0.45
+        opacity: 0.25
         z: 1
     }
 
@@ -370,7 +391,10 @@ id: root
     property string bgSource: {
         if (settings.ShowcaseBackgroundArt !== "Yes") return "";
         if (!highlightedGame) return "";
-        return highlightedGame.assets.background || highlightedGame.assets.screenshots[0] || "";
+        // Fanart only — no screenshot fallback. A screenshot is a poor
+        // full-bleed background, and entries without fanart now reveal the
+        // custom background underneath instead of falling back to one.
+        return highlightedGame.assets.background || "";
     }
 
     // Single crossfade driver — bulletproof version:
@@ -592,8 +616,12 @@ id: root
                 onClicked: allGamesScreen();
             }
             Image {
-                anchors { fill: parent; margins: vpx(2) }
-                source: "../assets/images/gamesandapps.png"
+                // vpx(6) margin on a vpx(36) button = a vpx(24) icon box, the
+                // same box trophy.svg and settingsicon.svg use, so all four nav
+                // icons are inset identically.
+                anchors { fill: parent; margins: vpx(6) }
+                source: "../assets/images/icon_gamesandapps.svg"
+                sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
                 layer.enabled: showcaseWhiteBackground
                 layer.effect: ColorOverlay { color: "black" }
                 fillMode: Image.PreserveAspectFit
@@ -637,22 +665,15 @@ id: root
                 onEntered: discoverbutton.focus = true; onExited: discoverbutton.focus = false;
                 onClicked: discoverScreen();
             }
-            Canvas {
+            Image {
                 anchors { fill: parent; margins: vpx(6) }
-                onPaint: {
-                    var ctx = getContext("2d"); ctx.reset();
-                    var cx = width/2, cy = height/2, r = Math.min(cx,cy)-1;
-                    ctx.globalAlpha = discoverbutton.focus ? 1.0 : 0.85;
-                    ctx.strokeStyle = navCol; ctx.lineWidth = 1.5;
-                    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
-                    ctx.fillStyle = navCol;
-                    ctx.beginPath(); ctx.moveTo(cx, cy-r*0.65); ctx.lineTo(cx+r*0.30, cy+r*0.10); ctx.lineTo(cx, cy+r*0.20); ctx.lineTo(cx-r*0.30, cy+r*0.10); ctx.closePath(); ctx.fill();
-                    ctx.globalAlpha = 0.35;
-                    ctx.beginPath(); ctx.moveTo(cx, cy+r*0.65); ctx.lineTo(cx-r*0.30, cy-r*0.10); ctx.lineTo(cx, cy-r*0.20); ctx.lineTo(cx+r*0.30, cy-r*0.10); ctx.closePath(); ctx.fill();
-                }
-                property string navCol: showcaseWhiteBackground ? "black" : "white"
-                onNavColChanged: requestPaint()
-                Connections { target: discoverbutton; onFocusChanged: parent.requestPaint() }
+                source: "../assets/images/icon_discover.svg"
+                // Rasterised above display size so it stays sharp on a TV.
+                sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
+                layer.enabled: showcaseWhiteBackground
+                layer.effect: ColorOverlay { color: "black" }
+                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+                opacity: discoverbutton.focus ? 1.0 : 0.85
             }
         }
 
@@ -931,7 +952,11 @@ id: root
 
             Component.onCompleted: alignToIndex(savedIndex)
 
-            model: api.collections.count + 1   // index 0 = hero, 1.. = platforms
+            // Driven by sortedColl, NOT api.collections.count — the two differ
+            // now that the apps collection is filtered out of the system row.
+            // Using the raw count left a trailing tile whose sortedColl lookup
+            // was undefined: blank, and impossible to enter.
+            model: sortedColl.length + 1   // index 0 = hero, 1.. = platforms
             delegate: Rectangle {
                 id: tile
                 property bool isHero: index === 0
@@ -1267,6 +1292,7 @@ id: root
 
         HorizontalCollection {
         id: list1
+            ownScreen: "showcasescreen"
             property bool selected: ListView.isCurrentItem
             property var currentList: list1
             property var collection: collection1
@@ -1299,6 +1325,7 @@ id: root
 
         HorizontalCollection {
         id: list2
+            ownScreen: "showcasescreen"
             property bool selected: ListView.isCurrentItem
             property var currentList: list2
             property var collection: collection2
@@ -1331,6 +1358,7 @@ id: root
 
         HorizontalCollection {
         id: list3
+            ownScreen: "showcasescreen"
             property bool selected: ListView.isCurrentItem
             property var currentList: list3
             property var collection: collection3
@@ -1363,6 +1391,7 @@ id: root
 
         HorizontalCollection {
         id: list4
+            ownScreen: "showcasescreen"
             property bool selected: ListView.isCurrentItem
             property var currentList: list4
             property var collection: collection4
@@ -1395,6 +1424,7 @@ id: root
 
         HorizontalCollection {
         id: list5
+            ownScreen: "showcasescreen"
             property bool selected: ListView.isCurrentItem
             property var currentList: list5
             property var collection: collection5
@@ -1427,6 +1457,7 @@ id: root
 
         HorizontalCollection {
         id: list6
+            ownScreen: "showcasescreen"
             property bool selected: ListView.isCurrentItem
             property var currentList: list6
             property var collection: collection6
@@ -1668,21 +1699,28 @@ id: root
     ListModel {
         id: gridviewHelpModel
 
+        // `icon` must be declared on the FIRST element: a ListModel fixes its
+        // roles from element one, so a role introduced later is ignored.
+        // Empty means "use the controller glyph for `button`".
         ListElement {
             name: "Discover"
             button: "cancel"
+            icon: ""
         }
         ListElement {
             name: "Settings"
             button: "filters"
+            icon: ""
         }
         ListElement {
             name: "Refresh"
             button: "details"
+            icon: ""
         }
         ListElement {
             name: "Select"
             button: "accept"
+            icon: ""
         }
     }
 
@@ -1690,6 +1728,11 @@ id: root
         if (activeFocus) {
             currentHelpbarModel = gridviewHelpModel;
             listRecommended.maybeRefresh();   // re-pick Recommended only if the showcased count changed
+            // Re-read live settings on every return to this screen. Coming back
+            // from Settings always lands here, so the featured box picks up a
+            // changed "Featured Box Content" without depending on the settings
+            // screen having bumped the counter itself.
+            settingsEpoch++;
         }
     }
 

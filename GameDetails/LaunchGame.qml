@@ -47,11 +47,114 @@ id: root
         property var randoScreenshot: game ? game.assets.screenshotList[randoScreenshotNumber] : ""
         property var randoFanart: game ? game.assets.backgroundList[randoFanartNumber] : ""
         property var actualBackground: (settings.GameBackground === "Screenshot") ? randoScreenshot : Utils.fanArt(game) || randoFanart;
-        source: actualBackground || ""
+        source: root.useAppFallback ? "" : (actualBackground || "")
         sourceSize: Qt.size(root.width, root.height)
         fillMode: Image.PreserveAspectCrop
         smooth: false
         Behavior on opacity { NumberAnimation { duration: 500 } }
+    }
+
+    // ── Fallback splash ───────────────────────────────────────────────────
+    // Imported Android apps have no fanart or screenshots, so the splash was a
+    // black screen. Falls back to the app's own icon: blurred and blown up as a
+    // backdrop, crisp in the middle, with the title underneath.
+    //
+    // Scoped by file path rather than by collection: Pegasus gives imported
+    // apps an "android:<package>" path, so this can't catch a ROM or a
+    // hand-written entry even if they sit in the same collection.
+    readonly property bool isImportedApp: {
+        if (!game || !game.files || game.files.count < 1) return false;
+        var p = game.files.get(0).path || "";
+        return p.indexOf("android:") === 0;
+    }
+    readonly property string appIcon: {
+        if (!game || !game.assets) return "";
+        var a = game.assets;
+        return a.boxFront || a.logo || a.poster || a.banner || "";
+    }
+    // Every imported app gets this treatment, not just the ones missing art, so
+    // they read as one consistent group rather than a mix of styles. Still
+    // requires an icon — without one there'd be nothing to show.
+    readonly property bool useAppFallback:
+        isImportedApp && appIcon !== ""
+
+    Item {
+    id: appFallback
+
+        anchors.fill: parent
+        visible: root.useAppFallback
+
+        // Blurred backdrop. Decoded small on purpose — it's about to be blurred
+        // beyond any detail, so a full-size decode would be wasted work.
+        // Blur source. Wrapped so the artwork can be oversized INSIDE a
+        // fixed-size item: the effect maps the source's bounds onto its own, so
+        // scaling the image directly would just be undone.
+        Item {
+        id: fallbackSource
+
+            anchors.fill: parent
+            visible: false
+
+            Image {
+            id: fallbackArt
+
+                anchors.centerIn: parent
+                // Bigger than the frame, so the blurred shape reads larger.
+                width:  parent.width  * 1.4
+                height: parent.height * 1.4
+                source: root.useAppFallback ? root.appIcon : ""
+                // Decoded small on purpose: the upscale to full screen softens
+                // it further, which is extra blur for free. FastBlur's radius
+                // is hard-capped at 64, so this is the only way to go softer.
+                sourceSize: Qt.size(110, 110)
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+            }
+        }
+        FastBlur {
+            anchors.fill: parent
+            source: fallbackSource
+            // Hard maximum is 64 — vpx(110) scaled past it, which is why the
+            // backdrop rendered as nothing and the splash came out black.
+            radius: 64
+            cached: true
+            visible: fallbackArt.status === Image.Ready
+        }
+        // Knocks the backdrop back so the icon and title stay legible.
+        Rectangle {
+            anchors.fill: parent
+            color: "#000000"
+            opacity: 0.5
+        }
+
+        Image {
+        id: fallbackIcon
+
+            anchors { horizontalCenter: parent.horizontalCenter
+                      verticalCenter: parent.verticalCenter
+                      verticalCenterOffset: -vpx(30) }
+            width: vpx(190); height: vpx(190)
+            source: root.useAppFallback ? root.appIcon : ""
+            sourceSize: Qt.size(Math.round(vpx(190) * 2), Math.round(vpx(190) * 2))
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            asynchronous: true
+        }
+
+        Text {
+            anchors { top: fallbackIcon.bottom; topMargin: vpx(26)
+                      horizontalCenter: parent.horizontalCenter }
+            width: parent.width * 0.7
+            text: game ? game.title : ""
+            color: "white"
+            font.family: titleFont.name
+            font.pixelSize: vpx(34)
+            font.bold: true
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight
+            maximumLineCount: 2
+            wrapMode: Text.WordWrap
+        }
     }
 
     // Scanlines
@@ -77,6 +180,7 @@ id: root
         source: game ? Utils.logo(game) : ""
         fillMode: Image.PreserveAspectFit
         asynchronous: true
+        visible: !root.useAppFallback
     }
 
     DropShadow {
@@ -90,6 +194,7 @@ id: root
         color: "#000000"
         source: logo
         opacity: 1
+        visible: !root.useAppFallback
     }
 
     // (Launch splash text removed — logo-only splash. Only B backs out, after a 1s delay.)

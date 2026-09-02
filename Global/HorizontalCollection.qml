@@ -38,6 +38,8 @@ id: root
     // and behaves exactly as before.
     property var favoritesData: null
     property bool showFavoritesHeader: favoritesData !== null
+    // Set by the hosting screen ("showcasescreen", "gameviewscreen").
+    property string ownScreen: ""
 
     // Paging state lives HERE (not inside FavoritesHeader) so key handling
     // never depends on reaching into ListView.headerItem, which can be null.
@@ -46,9 +48,16 @@ id: root
     // When "Featured Box Content" forces a Discover/slideshow mode the box
     // isn't showing favourites, so there's nothing to page through — Left and
     // Right must pass straight over it instead of scrolling unseen entries.
+    //
+    // Reads the LIVE value (theme.qml's featuredBoxContent), not the settings
+    // snapshot — FavoritesHeader.boxMode already does, and the two disagreeing
+    // was the actual bug: switching modes updated what the box displayed
+    // immediately, but left this stuck on the old mode until a reload. That
+    // desync is what made paging and the auto-rotate timer work right after
+    // switching one direction and silently break after switching the other.
     readonly property int favPageCount:
-        (settings.FeaturedBoxContent === "Discover Videos"
-      || settings.FeaturedBoxContent === "Fanart Slideshow") ? 0 : favCount
+        (featuredBoxContent === "Discover Videos"
+      || featuredBoxContent === "Fanart Slideshow") ? 0 : favCount
     onFavCountChanged: { if (favIndex >= favCount) favIndex = Math.max(0, favCount - 1); }
 
     // Cycles the favourites automatically whenever the carousel isn't the
@@ -179,7 +188,9 @@ id: root
             onActivated: {
                 if (selected) {
                     activateSelected();
-                    gameDetails(search.currentGame(currentIndex));
+                    // Apps launch straight from the row; everything else opens
+                    // its details page. See openGame() in theme.qml.
+                    openGame(search.currentGame(currentIndex));
                 } else {
                     activate(index);
                     collectionList.currentIndex = index;
@@ -195,6 +206,10 @@ id: root
                 height: collectionList.cellHeight
                 game: search ? search.currentGame(collectionList.currentIndex) : ""
                 selected: collectionList.focus && !collectionList.onFavoritesHeader
+                // Relayed from whichever screen owns this row, so a preview
+                // stops when THAT screen is left — the Showcase and GameView
+                // both use this component and must not keep each other alive.
+                ownScreen: root.ownScreen
             }
         }
 
@@ -274,7 +289,7 @@ id: root
                 event.accepted = true;
                 if (root.favTargetGame) {
                     activateSelected();
-                    gameDetails(root.favTargetGame);
+                    openGame(root.favTargetGame);
                 }
             }
         }

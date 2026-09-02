@@ -1,21 +1,44 @@
 # XboxOSv2 (a fork of a fork of gameOS)
-<img width="1920" height="1080" alt="Screenshot_20260607-104924" src="https://github.com/user-attachments/assets/c05192cc-8d24-41a6-b384-990ed581ad0b" />
+
+
 
  - A complete overhaul to the showcase
+   
+<img width="1920" height="1080" alt="1000769042" src="https://github.com/user-attachments/assets/69d9e558-15bd-46af-bf64-8975ef7a8608" />
+<img width="1920" height="1080" alt="1000769043" src="https://github.com/user-attachments/assets/b0f621c9-63c9-43e3-b05b-a7f514c1e593" />
+<img width="1920" height="1080" alt="IMG_0693" src="https://github.com/user-attachments/assets/f661e9ad-abad-4708-8369-76f6ed3bd4a0" />
+• Have all you system apps imported by enabling Pegasus data source
 
-<img width="1920" height="1080" alt="Screenshot_20260607-105125" src="https://github.com/user-attachments/assets/00c91574-67bc-4945-bd20-284f68ddf507" />
-<img width="1920" height="1080" alt="Screenshot_20260607-105012" src="https://github.com/user-attachments/assets/f5ba37a4-3a25-4c1e-8bd0-170d11568f3e" />
+• For manual Apps it’s recommended to us shortname : Android and collection name : Android to see you apps in the app drawer
+
+• For Android games it’s recommended to use shortname : androidgames and a collection name that differ from just “Android” if you don’t want your manual imports in the app drawer
+<img width="1920" height="1080" alt="1000769048" src="https://github.com/user-attachments/assets/9969e245-9211-47fb-9569-0219d07547e2" />
+<img width="1920" height="1080" alt="1000769049" src="https://github.com/user-attachments/assets/d90b8805-cd6a-4995-b659-a34b083c0d2b" />
+
 
 - Crossfade background art, or use your own custom background:
     - Place Background.png to assests/images/backgrounds
   
-<img width="1920" height="1080" alt="Screenshot_20260607-105541" src="https://github.com/user-attachments/assets/6aaac017-1e3e-4a6a-b012-5f011e6a010e" />
-<img width="1920" height="1080" alt="Screenshot_20260607-105234" src="https://github.com/user-attachments/assets/d09b55c9-39bc-43c4-a8b8-3d50c453311a" />
+<img width="1920" height="1080" alt="1000769052" src="https://github.com/user-attachments/assets/670b3345-50e9-4312-93a3-7cbeca3d304a" />
+
+<img width="1920" height="1080" alt="1000769053" src="https://github.com/user-attachments/assets/a8dab62b-bc7b-41a0-acb2-f708d1bfdd75" />
+
 - New Full Library section with advance filters
-<img width="1920" height="1080" alt="Screenshot_20260607-105335" src="https://github.com/user-attachments/assets/8b552c4d-df91-433a-8d7f-f281d3843eb5" />
-- Updated RA page
-<img width="1920" height="1080" alt="Screenshot_20260607-105247" src="https://github.com/user-attachments/assets/a515aed5-e992-4cf3-8e4a-0168b5a9e13a" />
+  
+<img width="1920" height="1080" alt="1000769705" src="https://github.com/user-attachments/assets/6454db8f-92ba-454e-b258-3c90426eee07" />
+<img width="1920" height="1080" alt="1000769706" src="https://github.com/user-attachments/assets/a7a219b6-e640-4281-b2b4-a1326d7f1051" />
+<img width="1920" height="1080" alt="1000769709" src="https://github.com/user-attachments/assets/de21c340-c31e-4c30-9677-c8c9fb065a64" />
+<img width="1920" height="1080" alt="1000769710" src="https://github.com/user-attachments/assets/fc77a177-b55d-4315-85ab-37cc1f2e3a70" />
+
+
+
+- Updated RA page and search function
+
+- 
+  <img width="1920" height="1080" alt="1000769057" src="https://github.com/user-attachments/assets/3cccd40c-4d91-436d-b760-85654e27b336" />
 - New settings and ui
+
+  
 <img width="1920" height="1080" alt="Screenshot_20260607-105428" src="https://github.com/user-attachments/assets/74a4465d-a825-4be8-959a-d2e01ac53583" />
 - Discover classics and hidden gems and jump right in with the Discover page
 

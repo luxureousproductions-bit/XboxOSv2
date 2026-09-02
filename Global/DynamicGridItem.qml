@@ -49,6 +49,18 @@ id: root
 
     property bool selected
     property var gameData: modelData
+
+    // Apps imported by Pegasus, matched on file path — "android:<package>".
+    readonly property bool isImportedApp: {
+        if (!gameData || !gameData.files || gameData.files.count < 1) return false;
+        var p = gameData.files.get(0).path || "";
+        return p.indexOf("android:") === 0;
+    }
+    readonly property string appIconArt: {
+        if (!gameData || !gameData.assets) return "";
+        var a = gameData.assets;
+        return a.boxFront || a.logo || a.poster || a.banner || "";
+    }
     // Art type to display. Defaults to the showcase art setting so the showcase
     // (HorizontalCollection) is unchanged; GridViewMenu overrides this with the
     // platform-page "Grid art" setting (Fanart / Screenshot / Boxfront).
@@ -200,11 +212,94 @@ id: root
             }
         }
 
+        // ── Imported apps ──
+        // Apps Pegasus imports have only an icon: no screenshot, no logo. The
+        // normal tile renders that icon stretched to a wide box, which looks
+        // broken. Instead the icon is blurred to fill the tile, whatever its
+        // shape, with a small round copy centred on top.
+        //
+        // Detected by file path ("android:<package>"), so a ROM or a
+        // hand-written .app entry can't match.
+        Item {
+        id: appTile
+
+            anchors.fill: parent
+            anchors.margins: vpx(2)
+            visible: root.isImportedApp && appTileArt.status === Image.Ready
+            z: 5
+
+            // Blurred backdrop. Oversized INSIDE this clipping item rather than
+            // scaled: the effect maps its source's bounds onto its own, so
+            // scaling the image directly would simply be undone.
+            Item {
+            id: appBlurSrc
+
+                anchors.fill: parent
+                visible: false
+                Image {
+                id: appTileArt
+                    anchors.centerIn: parent
+                    width:  parent.width  * 1.4
+                    height: parent.height * 1.4
+                    source: root.appIconArt
+                    // Decoded small: it's about to be blurred past any detail,
+                    // and the upscale softens it further.
+                    sourceSize { width: 128; height: 128 }
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
+                }
+            }
+            FastBlur {
+                anchors.fill: parent
+                source: appBlurSrc
+                radius: 48          // hard cap is 64
+                cached: true
+            }
+            // Knocks the backdrop back so the round icon stays legible.
+            Rectangle {
+                anchors.fill: parent
+                color: "#000000"
+                opacity: 0.42
+            }
+
+            // Round icon, sized off the SHORTER side so it stays circular and
+            // proportionate whether the tile is square, wide or tall.
+            Item {
+            id: appRound
+
+                anchors.centerIn: parent
+                width:  Math.min(parent.width, parent.height) * 0.52
+                height: width
+                layer.enabled: true
+                layer.smooth: true
+                layer.effect: OpacityMask {
+                    maskSource: Rectangle {
+                        width: appRound.width; height: appRound.height
+                        radius: width / 2
+                    }
+                }
+                Rectangle { anchors.fill: parent; color: "#2E2E2E" }
+                Image {
+                    anchors.centerIn: parent
+                    // Icons are a circle on a transparent square, so the art is
+                    // blown past the frame to fill the round mask.
+                    width:  parent.width  * 1.45
+                    height: parent.height * 1.45
+                    source: root.appIconArt
+                    sourceSize { width: 256; height: 256 }
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    asynchronous: true
+                }
+            }
+        }
+
         Image {
         id: screenshot
 
             anchors.fill: parent
             anchors.margins: vpx(2)
+            visible: !appTile.visible
             source: modelData ? (
                       artMode === "Screenshot" ? (modelData.assets.screenshots[0] || modelData.assets.background || "")
                     : artMode === "Boxfront"   ? (modelData.assets.boxFront || modelData.assets.background || modelData.assets.screenshots[0] || "")
@@ -220,7 +315,7 @@ id: root
         Image {
         id: favelogo
 
-            visible: showLogo
+            visible: showLogo && !appTile.visible
             anchors.fill: parent
             anchors.centerIn: parent
             anchors.margins: root.width/10

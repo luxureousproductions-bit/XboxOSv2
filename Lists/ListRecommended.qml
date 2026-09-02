@@ -26,6 +26,9 @@ id: root
 
     property bool omitApplication: false
     property bool omitEmulator: false
+    // Titles of installed apps, supplied by the theme — see the genre note in
+    // refresh(). Apps whose store lookup failed carry no genre at all.
+    property var appTitles: ({})
 
     // Lazy: the proxy does NO work (no full-library rating sort / per-row filter)
     // until armed. GameView sets this true only when the Recommended fallback is
@@ -53,8 +56,11 @@ id: root
             var g = api.allGames.get(ri);
             var skip = false;
             if (g) {
+                // Apps first: many carry no genre, so the genre loop below
+                // would let them through.
+                if (omitApplication && appTitles[g.title] === true) skip = true;
                 var genres = g.genreList;
-                for (var j = 0; j < genres.length; j++) {
+                for (var j = 0; !skip && j < genres.length; j++) {
                     var gg = genres[j].toLowerCase();
                     if (omitApplication && gg === "application") { skip = true; break; }
                     if (omitEmulator    && gg === "emulator")    { skip = true; break; }
