@@ -46,6 +46,8 @@ id: root
             currentHelpbarModel = discoverHelpModel;
         else
             currentHelpbarModel = null;
+        // Hide the shared Apps prompt along with this screen's own UI.
+        hideAppsPrompt = !showInfo;
     }
 
     // List of games with video assets; populated on first load
@@ -233,6 +235,8 @@ id: root
     onActiveFocusChanged: {
         if (activeFocus)
             currentHelpbarModel = discoverHelpModel;
+        else
+            hideAppsPrompt = false;   // safety net for any other exit path
     }
 
     // Navigation: left/right and LT/RT all jump to a discover game
@@ -249,6 +253,9 @@ id: root
         // Cancel – return to showcase
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
+            // Clear on the way out, or leaving with the UI hidden would keep
+            // the Apps prompt suppressed on every other screen.
+            hideAppsPrompt = false;
             previousScreen();
         }
         // Details (X) – toggle info overlay
