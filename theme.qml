@@ -245,6 +245,13 @@ id: root
     // without this a preview keeps playing (and its audio with it) under
     // whatever screen you move to.
     readonly property string activeScreen: state
+
+    // Set by a screen that hides its whole UI (Discover's X toggle), so the
+    // bottom-left Apps prompt goes with it. Deliberately explicit rather than
+    // inferred from currentHelpbarModel being null: the RA screens null that
+    // too because they draw their own local help bars, and inferring hid the
+    // prompt there as well.
+    property bool hideAppsPrompt: false
     property var currentCollection: api.collections.get(currentCollectionIndex)
 
     // The app drawer replaces Pegasus's own installed-apps tile, so that
@@ -1438,7 +1445,7 @@ id: root
         // when a screen has cleared the helpbar entirely — Discover's X toggle
         // nulls the model to hide its UI, and this prompt has to go with it
         // rather than sitting there alone.
-        leftPromptText: (appDrawer.open || currentHelpbarModel === null) ? "" : "Apps"
+        leftPromptText: (appDrawer.open || hideAppsPrompt) ? "" : "Apps"
         // Path is relative to ButtonHelpBar.qml, NOT this file: the string is
         // converted to a url by the `source:` binding inside that component, so
         // it resolves against that component's folder. Same "../" the delegate
