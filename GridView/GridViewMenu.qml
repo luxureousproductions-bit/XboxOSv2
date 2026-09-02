@@ -595,6 +595,8 @@ id: root
             id: highlightcomponent
 
                 ItemHighlight {
+                // Stops this grid's preview when the grid isn't the screen showing.
+                ownScreen: "gridviewscreen"
                     width: gamegrid.cellWidth
                     height: gamegrid.cellHeight
                     game: list.currentGame(gamegrid.currentIndex)
