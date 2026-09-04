@@ -113,7 +113,7 @@ id: root
             playToggle();
             return;
         }
-        closeDrawer();
+        closeDrawer(false);
         if (a.act === "discover")          navDiscover();
         else if (a.act === "achievements") navAchievements();
         else if (a.act === "settings")     navSettings();
@@ -222,7 +222,7 @@ id: root
     // Closes first, so the drawer isn't sitting open over the screen it just
     // navigated to.
     function triggerNav(i) {
-        closeDrawer();
+        closeDrawer(false);
         if (i === 0) navHome();
         else         navLibrary();
     }
@@ -276,7 +276,11 @@ id: root
     // launch path (transitions, saved state) rather than this component
     // deciding for itself.
     signal appChosen(var game)
-    signal closed()
+    // byUser: true when dismissed (B, Select, scrim) — the host plays a back
+    // sound. False when closing because a destination was chosen — the
+    // destination plays its own accept, so a back sound here would land on
+    // top of it.
+    signal closed(bool byUser)
     // Emitted when focus couldn't be handed back — the host re-asserts it.
     signal focusRestoreFailed()
 
@@ -304,7 +308,8 @@ id: root
         open = true;
         forceActiveFocus();
     }
-    function closeDrawer() {
+    function closeDrawer(byUser) {
+        if (byUser === undefined) byUser = true;   // plain close = dismissal
         open = false;
         // A destroyed QObject reads as null here, so this also covers the case
         // where the screen went away while the drawer was open.
@@ -314,7 +319,7 @@ id: root
             focusRestoreFailed();
         }
         previousFocusItem = null;
-        closed();
+        closed(byUser);
     }
     function chooseCurrent() {
         if (list.currentIndex < 0 || list.currentIndex >= filteredApps.length) return;
