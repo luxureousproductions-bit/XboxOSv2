@@ -244,11 +244,38 @@ id: root
                 // the decoder and its last frame, so it resumes instantly and
                 // still produces no audio while paused. `appActive` covers
                 // Pegasus itself going to the background.
-                readonly property bool shouldPlay:
-                    activeScreen === "showcasescreen" && appActive
+                // Phase 2: also yields while a row preview is playing, so the
+                // Showcase runs one video decoder at a time. Pauses (last frame
+                // held) and resumes the moment the row preview goes away.
+                readonly property bool shouldPlay: playbackOwner === "showcasescreen"
+                                                && showcaseRowPreviews === 0
                 onShouldPlayChanged: {
-                    if (shouldPlay) { if (source != "") play(); }
-                    else pause();
+                    if (shouldPlay) {
+                        // Arriving: if Discover left something to resume, jump
+                        // to that game and position instead of continuing ours.
+                        resumeFromHandoff();
+                        if (source != "") play();
+                    } else {
+                        pause();
+                        // Leaving: publish where we are so Discover can resume.
+                        // Only while genuinely in video mode with a game up.
+                        if (boxMode === "video" && fallbackGame) {
+                            handoffGame = fallbackGame;
+                            handoffPosition = position;
+                        }
+                    }
+                }
+                property int pendingSeek: -1
+                function resumeFromHandoff() {
+                    var g = takeHandoff();
+                    if (!g) return;
+                    var idx = fallbackList.indexOf(g);
+                    if (idx < 0)                         // different wrapper? match by title
+                        for (var k = 0; k < fallbackList.length; k++)
+                            if (fallbackList[k].title === g.title) { idx = k; break; }
+                    if (idx < 0) return;                 // not in our video list
+                    pendingSeek = handoffPosition;
+                    fallbackIndex = idx;                 // changes source
                 }
                 // Audio only while this header is the highlighted item AND the
                 // Showcase "Video thumbnail audio" setting is on — the same
@@ -262,7 +289,7 @@ id: root
                 //   activeScreen  — the Showcase is the current screen
                 //   setting       — user opted in
                 muted: !(selected
-                         && activeScreen === "showcasescreen"
+                         && playbackOwner === "showcasescreen"
                          && settings.AllowThumbVideoAudio === "Yes")
                 autoPlay: false          // started explicitly by shouldPlay/onSourceChanged
                 opacity: selected ? 1 : 0.5
@@ -270,7 +297,20 @@ id: root
                 // change while off-screen (Discover advancing) would restart
                 // playback behind another screen, audio included.
                 onSourceChanged: if (shouldPlay) play(); else pause()
-                onStatusChanged: { if (status === MediaPlayer.EndOfMedia) fallbackJump(); }
+
+                // First-load fix. onSourceChanged fires the instant the source is
+                // assigned, before the media has loaded, and a play() at that
+                // point is dropped on Android — nothing then retried it, so a
+                // Discover video never started until something flipped
+                // shouldPlay (opening the drawer, changing screen). Retry once
+                // the media reports ready; harmless if already playing.
+                onStatusChanged: {
+                    if (status === MediaPlayer.EndOfMedia) { fallbackJump(); return; }
+                    if (status === MediaPlayer.Loaded || status === MediaPlayer.Buffered) {
+                        if (pendingSeek >= 0) { seek(pendingSeek); pendingSeek = -1; }
+                        if (shouldPlay && playbackState !== MediaPlayer.PlayingState) play();
+                    }
+                }
             }
 
             // Darkening wash so the logo/title stay legible over bright art.

@@ -86,16 +86,30 @@ id: root
     // Which screen hosts this tile, relayed by the row. Empty means unknown,
     // which falls back to the old behaviour (covering whenever selected).
     property string ownScreen: ""
-    readonly property bool previewCovering: selected && playVideo && appActive
-                                          && (ownScreen === "" || activeScreen === ownScreen)
+    readonly property bool previewCovering: selected && playVideo
+                                          && (ownScreen === "" || playbackOwner === ownScreen)
     function restoreArt() {
         fadescreenshot.stop();
         screenshot.opacity = 1;
         container.opacity = 1;
     }
-    onPreviewCoveringChanged: {
-        if (previewCovering) fadescreenshot.restart();
+    // Fade the art the instant the preview is genuinely playing — not on the
+    // old 3s timer, which let the video run audibly behind opaque art. The
+    // Behaviors on the art give the 180ms crossfade; the preview fades in over
+    // the same window, so it reads as one dissolve.
+    readonly property bool videoShowing: previewCovering && rowPreviewPlaying
+    onVideoShowingChanged: {
+        if (videoShowing) fadeArt();
         else restoreArt();
+    }
+    function fadeArt() {
+        fadescreenshot.stop();
+        if (settings.HideLogo == "Yes") container.opacity = 0;
+        else screenshot.opacity = 0;
+    }
+    onPreviewCoveringChanged: {
+        // No timer any more; the reveal is driven by videoShowing above.
+        if (!previewCovering) restoreArt();
     }
     onSelectedChanged: {
         // Deselect always restores immediately; selection is handled above.

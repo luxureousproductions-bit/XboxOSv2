@@ -27,10 +27,8 @@ id: root
     property bool playVideo: (settings.AllowThumbVideo === "Yes") && !boxArt
 
     onGameChanged: {
-        videoPreviewLoader.sourceComponent = undefined;
-        if (playVideo && selected) {
-            videoDelay.restart();
-        }
+        if (playVideo && selected && playbackActive) beginPreview();
+        else unloadPreview();
     }
 
     // Stops the preview when its screen stops being current.
@@ -48,35 +46,80 @@ id: root
     // Defaults to empty, which keeps playing — a host that forgets to set it
     // loses the gating but nothing breaks or fails to load.
     property string ownScreen: ""
-    property bool playbackActive: (ownScreen === "" || activeScreen === ownScreen) && appActive
+
+    // Reports to the coordinator whenever this preview is actually loaded.
+    // Derived from the Loader's own state rather than the six places that set
+    // it, so it cannot drift from what's really on screen. Showcase only: the
+    // featured box is the only thing that yields, and it lives there.
+    readonly property bool previewLoaded: videoPreviewLoader.sourceComponent !== undefined
+    onPreviewLoadedChanged: {
+        if (ownScreen !== "showcasescreen") return;
+        showcaseRowPreviews += previewLoaded ? 1 : -1;
+    }
+    // If destroyed while loaded, release the count so the box isn't left paused.
+    Component.onDestruction: {
+        if (ownScreen === "showcasescreen" && previewLoaded) showcaseRowPreviews -= 1;
+    }
+    property bool playbackActive: ownScreen === "" || playbackOwner === ownScreen
+
+    // True once the reveal delay has elapsed. The Video is created earlier
+    // (to warm the decoder) but only starts when this is set.
+    property bool armed: false
+
+    // How long a tile must stay highlighted before its preview plays, and how
+    // far ahead of that the decoder starts warming. Warming is deliberately
+    // NOT from t=0: the featured box yields while a preview is loaded, so an
+    // early warm-up would freeze it for the whole wait. One second is ample
+    // for the decoder to reach ready, and keeps the box's pause short.
+    property int previewDelay:  2500
+    property int previewWarmup: 1000
+    function unloadPreview() {
+        armed = false;
+        rowPreviewPlaying = false;
+        videoPreviewLoader.sourceComponent = undefined;
+        warmupDelay.stop();
+        videoDelay.stop();
+    }
+    // Start warming immediately; the delay now only gates the reveal.
+    function beginPreview() {
+        armed = false;
+        warmupDelay.restart();
+        videoDelay.restart();
+    }
     onPlaybackActiveChanged: {
-        if (!playbackActive) {
-            videoPreviewLoader.sourceComponent = undefined;
-            videoDelay.stop();
-        } else if (playVideo && selected) {
-            videoDelay.restart();
-        }
+        if (!playbackActive) unloadPreview();
+        else if (playVideo && selected) beginPreview();
     }
 
     onSelectedChanged: {
-        if (selected) {
-            videoPreviewLoader.sourceComponent = undefined;
-            if (playVideo) videoDelay.restart();
-        } else {
-            videoPreviewLoader.sourceComponent = undefined;
-            videoDelay.stop();
-        }
+        if (selected && playVideo && playbackActive) beginPreview();
+        else unloadPreview();
     }
 
     // Timer to show the video
     Timer {
     id: videoDelay
 
-        interval: 600
+        interval: root.previewDelay
         onTriggered: {
-            if (game && game.assets.videos.length) {
+            // Re-check at fire time: the owner can change during the delay
+            // (drawer closing hands the Showcase back before the target screen
+            // takes over). If it did, drop the warmed decoder rather than arm.
+            if (!playbackActive || !selected) { unloadPreview(); return; }
+            armed = true;
+        }
+    }
+
+    // Creates the Video (autoPlay off) shortly before the reveal so the
+    // decoder is ready when videoDelay arms it.
+    Timer {
+    id: warmupDelay
+
+        interval: Math.max(0, root.previewDelay - root.previewWarmup)
+        onTriggered: {
+            if (!playbackActive || !selected) return;
+            if (game && game.assets.videos.length)
                 videoPreviewLoader.sourceComponent = videoPreviewWrapper;
-            }
         }
     }
 
@@ -84,10 +127,7 @@ id: root
     id: stopvideo
 
         interval: 1000
-        onTriggered: {
-            videoPreviewLoader.sourceComponent = undefined;
-            videoDelay.stop();
-        }
+        onTriggered: unloadPreview()
     }
 
     // NOTE: Video Preview
@@ -105,11 +145,35 @@ id: root
                                       // the VideoOutput (which renders black on weak GPUs).
             source: game.assets.videoList.length ? game.assets.videoList[0] : ""
             fillMode: VideoOutput.PreserveAspectCrop
-            muted: settings.AllowThumbVideoAudio === "No"
+            muted: settings.AllowThumbVideoAudio === "No" || !root.playbackActive
             loops: MediaPlayer.Infinite
-            autoPlay: true
 
-            //onPlaying: videocomponent.seek(5000)
+            // Preload: created at the START of the reveal delay with autoPlay
+            // off, so the hardware decoder initialises during the wait. play()
+            // then fires once both the delay has elapsed AND the media reports
+            // ready — audio and video start together instead of audio leading
+            // while the first frame is still being decoded.
+            autoPlay: false
+            readonly property bool ready: status === MediaPlayer.Loaded
+                                       || status === MediaPlayer.Buffered
+            readonly property bool go: root.armed && ready && root.playbackActive
+            onGoChanged: if (go && playbackState !== MediaPlayer.PlayingState) play()
+            onReadyChanged: if (go && playbackState !== MediaPlayer.PlayingState) play()
+
+            // Invisible until playing; a loaded-but-idle VideoOutput paints
+            // black. Snaps to opaque rather than fading: this sits UNDER the
+            // tile art, so it's hidden anyway until the art fades. Fading it
+            // in at the same time as the art faded out left a midpoint where
+            // neither was opaque and the Showcase background showed through.
+            opacity: playbackState === MediaPlayer.PlayingState ? 1 : 0
+
+            // Report "on screen" only once frames are actually flowing, not on
+            // PlayingState — that fires before the first frame is painted, and
+            // fading the art then exposed a blank video for a beat. Position
+            // advancing is the reliable sign that decode output has started.
+            readonly property bool framesFlowing:
+                playbackState === MediaPlayer.PlayingState && position > 0
+            onFramesFlowingChanged: rowPreviewPlaying = framesFlowing
         }
 
     }
