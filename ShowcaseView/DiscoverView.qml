@@ -83,11 +83,36 @@ id: root
         currentIndex = newIndex;
     }
 
+    // Position to apply once the resumed media has loaded (seeking earlier is
+    // dropped by the backend).
+    property int pendingSeek: -1
+
+    function indexOfGame(g) {
+        if (!g) return -1;
+        var i = gameList.indexOf(g);
+        if (i >= 0) return i;
+        // Fall back to title in case the two lists hold different wrappers.
+        for (var k = 0; k < gameList.length; k++)
+            if (gameList[k].title === g.title) return k;
+        return -1;
+    }
+    function pickInitial() {
+        // Resume from the Showcase featured box if it was showing a Discover
+        // video, so the two feel like one stream. Otherwise start randomly.
+        var idx = indexOfGame(takeHandoff());
+        if (idx >= 0) {
+            pendingSeek = handoffPosition;
+            currentIndex = idx;
+        } else if (gameList.length > 0) {
+            currentIndex = Math.floor(Math.random() * gameList.length);
+        }
+    }
     Component.onCompleted: {
         buildList();
-        // Start on a discover game
-        if (gameList.length > 0)
-            currentIndex = Math.floor(Math.random() * gameList.length);
+        // Deferred one tick: the featured box publishes its handoff during the
+        // same state-change cascade that creates this screen, and QML doesn't
+        // guarantee which runs first. By the next tick it's certainly there.
+        Qt.callLater(pickInitial);
     }
 
     // Black background
@@ -104,7 +129,7 @@ id: root
         // Cleared off-screen: this loader stays resident, so without this
         // guard the video (and its audio) kept running under whatever screen
         // you moved to.
-        source: (currentGame && activeScreen === "discoverscreen" && appActive)
+        source: (currentGame && playbackOwner === "discoverscreen")
                 ? currentGame.assets.video : ""
         fillMode: VideoOutput.PreserveAspectFit
         muted: settings.AllowDiscoverVideoAudio !== "Yes"
@@ -115,8 +140,15 @@ id: root
 
         // Auto-advance to the next discover game when the video finishes
         onStatusChanged: {
-            if (status === MediaPlayer.EndOfMedia)
+            if (status === MediaPlayer.EndOfMedia) {
                 discoverJump(false);   // auto-advance on video end: no nav sound
+                return;
+            }
+            if ((status === MediaPlayer.Loaded || status === MediaPlayer.Buffered)
+                && pendingSeek >= 0) {
+                seek(pendingSeek);
+                pendingSeek = -1;
+            }
         }
     }
 
@@ -256,6 +288,11 @@ id: root
             // Clear on the way out, or leaving with the UI hidden would keep
             // the Apps prompt suppressed on every other screen.
             hideAppsPrompt = false;
+            // Hand our game and position back so the featured box resumes here.
+            if (currentGame) {
+                handoffGame = currentGame;
+                handoffPosition = videoPlayer.position;
+            }
             previousScreen();
         }
         // Details (X) – toggle info overlay
