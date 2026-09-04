@@ -307,12 +307,12 @@ id: root
 
             property bool videoExists: game ? game.assets.videos.length : false
             // Cleared off-screen, same reason as the other players.
-            source: (videoExists && activeScreen === "gameviewscreen" && appActive)
+            source: (videoExists && playbackOwner === "gameviewscreen")
                     ? game.assets.videos[0] : ""
             anchors.fill: parent
             fillMode: VideoOutput.PreserveAspectCrop
             muted: settings.AllowVideoPreviewAudio === "No"
-                   || activeScreen !== "gameviewscreen"
+                   || playbackOwner !== "gameviewscreen"
             loops: MediaPlayer.Infinite
             autoPlay: true
             //onPlaying: videocomponent.seek(5000)
