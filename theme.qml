@@ -255,6 +255,44 @@ id: root
     readonly property bool appActive: Qt.application.state === Qt.ApplicationActive
                                       && !appDrawer.open
 
+    // ── Playback coordinator ──────────────────────────────────────────────
+    // Names the ONE screen whose video players are allowed to run right now,
+    // or "" for none. Every player asks a single question — "am I the owner?"
+    // — instead of each re-deriving the rule from activeScreen + appActive +
+    // its own guesses. Before this, that rule lived in eight places and every
+    // playback regression came from one of them disagreeing with the rest.
+    //
+    // To add a global rule (pause while the keyboard is up, a mute switch),
+    // change THIS line. Nothing else needs to know.
+    readonly property string playbackOwner: appActive ? state : ""
+
+    // Phase 2 — within the Showcase, the featured box yields to a row preview.
+    // Count of row previews currently loaded on the Showcase (0 or 1 in
+    // practice; a counter so an overlap during a row change can't leave it
+    // wrong). While non-zero the featured video pauses, so the Showcase never
+    // runs two decoders at once — the guarantee that matters on weaker chips.
+    property int showcaseRowPreviews: 0
+
+    // True while a row preview video is actually PLAYING (not just loaded).
+    // The tile under it fades its art on this, so the reveal is tied to the
+    // first frame rather than to a fixed timer — previously the video ran
+    // audibly for ~2.4s behind still-opaque art waiting on a 3s clock.
+    property bool rowPreviewPlaying: false
+
+    // ── Discover handoff ──────────────────────────────────────────────────
+    // Lets the Showcase featured box (in Discover Videos mode) and the Discover
+    // screen pick up where the other left off, in both directions. Whichever
+    // side is leaving writes the game and position; whichever side is arriving
+    // consumes and clears them. Null game means "nothing to resume — pick
+    // randomly as before".
+    property var handoffGame: null
+    property int handoffPosition: 0
+    function takeHandoff() {
+        var g = handoffGame;
+        handoffGame = null;
+        return g;
+    }
+
     // Set by a screen that hides its whole UI (Discover's X toggle), so the
     // bottom-left Apps prompt goes with it. Deliberately explicit rather than
     // inferred from currentHelpbarModel being null: the RA screens null that
