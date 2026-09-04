@@ -126,17 +126,26 @@ id: root
     id: videoPlayer
 
         anchors.fill: parent
-        // Cleared off-screen: this loader stays resident, so without this
-        // guard the video (and its audio) kept running under whatever screen
-        // you moved to.
-        source: (currentGame && playbackOwner === "discoverscreen")
-                ? currentGame.assets.video : ""
+        source: currentGame ? currentGame.assets.video : ""
         fillMode: VideoOutput.PreserveAspectFit
-        muted: settings.AllowDiscoverVideoAudio !== "Yes"
-        autoPlay: true
+        // Silent whenever this isn't the owner — a paused Video produces no
+        // audio anyway, but this also covers any moment between pause and
+        // the state settling.
+        muted: settings.AllowDiscoverVideoAudio !== "Yes" || !shouldPlay
+        autoPlay: false
 
-        // Restart playback whenever the source changes
-        onSourceChanged: play()
+        // PAUSED when not the owner rather than having the source cleared.
+        // Clearing the source went black the instant the drawer opened over
+        // this screen; pausing keeps the decoder and its last frame, so the
+        // picture stays and playback resumes in place on close. Same
+        // treatment the Showcase featured box already has.
+        readonly property bool shouldPlay: playbackOwner === "discoverscreen"
+        onShouldPlayChanged: {
+            if (shouldPlay) { if (source != "") play(); }
+            else pause();
+        }
+        // Only start on a source change if we're actually the owner.
+        onSourceChanged: if (shouldPlay) play(); else pause()
 
         // Auto-advance to the next discover game when the video finishes
         onStatusChanged: {
@@ -144,10 +153,10 @@ id: root
                 discoverJump(false);   // auto-advance on video end: no nav sound
                 return;
             }
-            if ((status === MediaPlayer.Loaded || status === MediaPlayer.Buffered)
-                && pendingSeek >= 0) {
-                seek(pendingSeek);
-                pendingSeek = -1;
+            if (status === MediaPlayer.Loaded || status === MediaPlayer.Buffered) {
+                if (pendingSeek >= 0) { seek(pendingSeek); pendingSeek = -1; }
+                // A play() issued before the media loaded is dropped; retry now.
+                if (shouldPlay && playbackState !== MediaPlayer.PlayingState) play();
             }
         }
     }
