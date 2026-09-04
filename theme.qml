@@ -1525,7 +1525,11 @@ id: root
         // that was showing, rather than re-entering wherever the drawer was
         // opened from.
         onAppChosen: launchAppFromDrawer(game)
-        onClosed: { playBack(); drawerCloseChime.restart(); }   // tabLeft follows back
+        // Dismissal (B / Select / scrim): back, then the slide. Navigation
+        // (Home, Library, Discover, RA, Settings): the destination plays its
+        // own accept, so only the slide is added here — a back sound as well
+        // was landing on top of that accept.
+        onClosed: { if (byUser) playBack(); drawerCloseChime.restart(); }
 
         // Home resets the back stack rather than pushing onto it — otherwise
         // backing out of the Showcase would return to whatever screen you were
