@@ -126,34 +126,119 @@ id: root
             color: "#000000"
             opacity: 0.5
         }
-
-        Image {
-        id: fallbackIcon
-
-            anchors { horizontalCenter: parent.horizontalCenter
-                      verticalCenter: parent.verticalCenter
-                      verticalCenterOffset: -vpx(30) }
-            width: vpx(190); height: vpx(190)
-            source: root.useAppFallback ? root.appIcon : ""
-            sourceSize: Qt.size(Math.round(vpx(190) * 2), Math.round(vpx(190) * 2))
-            fillMode: Image.PreserveAspectFit
-            smooth: true
-            asynchronous: true
+        // Accent tint over the blur, so every launch carries the theme colour
+        // rather than reading as a generic blur. A tinted rectangle: free.
+        Rectangle {
+            anchors.fill: parent
+            color: theme.accent
+            opacity: 0.16
         }
 
-        Text {
-            anchors { top: fallbackIcon.bottom; topMargin: vpx(26)
-                      horizontalCenter: parent.horizontalCenter }
-            width: parent.width * 0.7
-            text: game ? game.title : ""
-            color: "white"
-            font.family: titleFont.name
-            font.pixelSize: vpx(34)
-            font.bold: true
-            horizontalAlignment: Text.AlignHCenter
-            elide: Text.ElideRight
-            maximumLineCount: 2
-            wrapMode: Text.WordWrap
+        // ── Entrance ─────────────────────────────────────────────────────
+        // The icon scales in and the title follows a beat later. Transforms
+        // and opacity only, so both modes get it; HQ overshoots slightly.
+        Item {
+        id: fallbackStage
+            anchors.fill: parent
+            property bool entered: false
+            Component.onCompleted: entered = true
+
+            // Shadow under the icon: a dark rounded plate, offset beneath. It
+            // never sources the icon — a DropShadow of the masked icon received
+            // the icon's RAW layer texture (the unmasked square), which drew a
+            // sharp-cornered copy under the rounded one. Base shows the plate
+            // as-is; HQ blurs it into a soft shadow.
+            Rectangle {
+            id: fallbackShadow
+                anchors { horizontalCenter: fallbackIcon.horizontalCenter; horizontalCenterOffset: vpx(2)
+                          verticalCenter:   fallbackIcon.verticalCenter;   verticalCenterOffset: vpx(10) }
+                width: fallbackIcon.width; height: fallbackIcon.height
+                radius: fallbackIcon.radius
+                color: "#000000"; opacity: hqMode ? 0.55 : 0.35
+                scale: fallbackIcon.scale
+                layer.enabled: hqMode
+                layer.effect: FastBlur { radius: 40; transparentBorder: true }
+            }
+
+            // Rounded-square icon, cropped the same way the drawer tiles and the
+            // Showcase app tile are — zoomed to fill a rounded-rect mask — so an
+            // app looks the same everywhere it appears. Was a bare circle.
+            Rectangle {
+            id: fallbackIcon
+                anchors { horizontalCenter: parent.horizontalCenter
+                          verticalCenter: parent.verticalCenter
+                          verticalCenterOffset: -vpx(30) }
+                width: vpx(190); height: vpx(190)
+                radius: vpx(34)
+                color: "#2E2E2E"                  // backs transparent corners
+                clip: false
+                layer.enabled: true
+                layer.smooth: true
+                layer.effect: OpacityMask {
+                    maskSource: Rectangle { width: fallbackIcon.width; height: fallbackIcon.height; radius: fallbackIcon.radius }
+                }
+                Image {
+                    anchors.centerIn: parent
+                    // Icons arrive as a circle on a transparent square; blown past
+                    // the frame so the visible art fills the rounded square.
+                    width:  parent.width  * 1.45
+                    height: parent.height * 1.45
+                    source: root.useAppFallback ? root.appIcon : ""
+                    sourceSize: Qt.size(Math.round(vpx(190) * 1.45 * (hqMode ? 2 : 1.4)),
+                                        Math.round(vpx(190) * 1.45 * (hqMode ? 2 : 1.4)))
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    asynchronous: true
+                }
+                scale: fallbackStage.entered ? 1.0 : 0.88
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: hqMode ? 420 : 300
+                        easing.type: hqMode ? Easing.OutBack : Easing.OutCubic
+                        easing.overshoot: 1.1
+                    }
+                }
+            }
+
+            Text {
+            id: fallbackTitle
+                anchors { top: fallbackIcon.bottom; topMargin: vpx(38)
+                          horizontalCenter: parent.horizontalCenter }
+                width: parent.width * 0.7
+                text: game ? game.title : ""
+                color: "white"
+                font.family: titleFont.name
+                font.pixelSize: vpx(34)
+                font.bold: true
+                horizontalAlignment: Text.AlignHCenter
+                elide: Text.ElideRight
+                maximumLineCount: 2
+                wrapMode: Text.WordWrap
+                opacity: fallbackStage.entered ? 1 : 0
+                Behavior on opacity { NumberAnimation { duration: 350 } }
+            }
+
+            // Launching spinner: a small 270° arc turning beneath the title,
+            // clear of the icon. A ring around the icon crossed the square's
+            // corners. SVG rotated by an animation — no Canvas (it doesn't
+            // render on this device).
+            Image {
+                anchors { top: fallbackTitle.bottom; topMargin: vpx(22)
+                          horizontalCenter: parent.horizontalCenter }
+                width: vpx(30); height: width
+                source: "../assets/images/icon_launch_arc.svg"
+                sourceSize: Qt.size(Math.round(width * 2), Math.round(width * 2))
+                smooth: true
+                opacity: fallbackStage.entered ? 0.9 : 0
+                Behavior on opacity { NumberAnimation { duration: 400 } }
+                RotationAnimation on rotation {
+                    from: 0; to: 360; duration: 1200
+                    loops: Animation.Infinite
+                    running: root.useAppFallback
+                }
+                layer.enabled: true
+                layer.effect: ColorOverlay { color: theme.accent }
+            }
         }
     }
 

@@ -52,13 +52,42 @@ id: root
     Component {
     id: videoWrapper
 
+      // Single root for the Component; holds the video and its HQ sharpen.
+      Item {
+        anchors.fill: parent
+
         Video {
+        id: carouselVideo
             source: isVideo ? mediaModel[mediaIndex] : ""
             anchors.fill: parent
             fillMode: VideoOutput.PreserveAspectFit
-            muted: false
-            autoPlay: true
+            // Through the playback coordinator like every other player. This
+            // was the one video with no gate: root.focus is SCOPED focus, so
+            // it stays true when the drawer or another app takes active
+            // focus, and the audio carried on underneath.
+            readonly property bool shouldPlay: playbackOwner === "gameviewscreen"
+            muted: !shouldPlay
+            autoPlay: false
+            onShouldPlayChanged: { if (shouldPlay) { if (source != "") play(); } else pause(); }
+            onSourceChanged: if (shouldPlay) play(); else pause()
+            onStatusChanged: {
+                if ((status === MediaPlayer.Loaded || status === MediaPlayer.Buffered)
+                    && shouldPlay && playbackState !== MediaPlayer.PlayingState) play();
+            }
         }
+
+        // High Quality Mode: sharpen over the enlarged video. Full-screen and
+        // PreserveAspectFit, so the same safe case as Discover. Fail-safe
+        // Loader: with HQ off none of this exists.
+        Loader {
+            anchors.fill: carouselVideo
+            active: hqMode
+            sourceComponent: VideoSharpen {
+                source: carouselVideo
+                amount: 0.5
+            }
+        }
+      }
 
     }
 
@@ -169,6 +198,10 @@ id: root
 
     // Input handling
     Keys.onPressed: {
+        // Swallow the drawer key while fullscreen media is up. A global panel
+        // sliding over a modal fullscreen overlay is an odd state that left
+        // the screen dark on close; the Apps prompt is hidden here to match.
+        if (appDrawerKeys.indexOf(event.key) >= 0) { event.accepted = true; return; }   // theme-root list
         // Back
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;

@@ -139,6 +139,12 @@ id: root
         // artwork's real silhouette rather than the tile's edge.
         fillMode: Image.PreserveAspectFit
         asynchronous: true
+        // HQ: dissolve in on load instead of snapping. Video tiles are exempt:
+        // their source is empty, so status never reaches Ready — and the video
+        // preview Loader is a CHILD of this Image, so it inherited the 0 and
+        // the playing video was invisible.
+        opacity: (hqFadeIn && !isVideo) ? (status === Image.Ready ? 1 : 0) : 1
+        Behavior on opacity { enabled: hqFadeIn; NumberAnimation { duration: 180 } }
 
         // Only the selected tile is traced; unselected ones render plainly so
         // there is no per-tile effect cost across the whole row.
@@ -149,7 +155,9 @@ id: root
         id: videopreview
 
             anchors.fill: parent
-            color: theme.secondary
+            // The theme's own background colour, so the video tile sits as a
+            // hole in the page rather than a charcoal card on it.
+            color: theme.main
             visible: isVideo && !selected
         }
 

@@ -299,8 +299,16 @@ id: root
     }
 
     // NOTE: Video Preview
+    // High Quality Mode kill switch for the sharpen below. Lives here, not in
+    // the Component: a Component can't declare properties (that's what failed
+    // to load). See the DEVICE CHECK note by the Loader.
+    property bool gameViewSharpen: true
+
     Component {
     id: videoPreviewWrapper
+
+      Item {
+        anchors.fill: parent
 
         Video {
         id: videocomponent
@@ -317,6 +325,25 @@ id: root
             autoPlay: true
             //onPlaying: videocomponent.seek(5000)
         }
+
+        // High Quality Mode: sharpen over the Game View video. Same fail-safe
+        // Loader as Discover — with HQ off none of this exists.
+        //
+        // DEVICE CHECK NEEDED: this video is PreserveAspectCrop, and capturing
+        // a cropped VideoOutput through an FBO has been seen to lose the crop
+        // on this stack (pillarbox bars appear — see the note in
+        // ItemHighlight). If bars show with HQ on, set gameViewSharpen to
+        // false at the top of this file; the proper fix is then to crop via
+        // the effect's geometry rather than the VideoOutput.
+        Loader {
+            anchors.fill: videocomponent
+            active: hqMode && gameViewSharpen
+            sourceComponent: VideoSharpen {
+                source: videocomponent
+                amount: 0.5
+            }
+        }
+      }
 
     }
 
@@ -1077,6 +1104,9 @@ id: root
         anchors.fill: parent
         Behavior on opacity { NumberAnimation { duration: 100 } }
         visible: opacity != 0
+        // The drawer can't open over fullscreen media (MediaView swallows the
+        // key), so don't advertise it. Restored when the overlay closes.
+        onVisibleChanged: hideAppsPrompt = visible
 
         mediaModel: mediaList;
         mediaIndex: media.currentIndex != -1 ? media.currentIndex : 0
