@@ -408,6 +408,10 @@ id: root
             settingName: "Game Counter"
             setting: "Yes,No"
         }
+        ListElement {
+            settingName: "LB/RB Function"
+            setting: "Cycle Platforms,Nav Bar"
+        }
     }
 
     property var gridPage: {
@@ -661,6 +665,13 @@ id: root
                  + "showing.\n\n"
                  + "Subtle, and works fine on any device.";
         }
+        if (name === "LB/RB Function") {
+            return "What the shoulder buttons do on the Platform page.\n\n"
+                 + "CYCLE PLATFORMS moves to the previous or next system.\n\n"
+                 + "NAV BAR steps through the icons along the top \u2014 Home, "
+                 + "Discover, Achievements, Settings \u2014 from wherever you "
+                 + "are. Press Down to return to the games.";
+        }
         if (name === "Hide Android System Tile") {
             return "Hides the tile for the collection the App Drawer uses, so "
                  + "the same apps aren't in two places at once. Set this to No "
@@ -715,6 +726,7 @@ id: root
     // result, which is wasteful when all that's needed is whether one exists.
     function hasInfo(name) {
         return name === "Custom Background"
+            || name === "LB/RB Function"
             || name === "Showcase Background Art"
             || name === "Screenshot Fallback"
             || name === "Dynamic Background"
