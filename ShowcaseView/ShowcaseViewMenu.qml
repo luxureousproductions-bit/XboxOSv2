@@ -243,7 +243,53 @@ id: root
         opacity: (settings.CustomBackground === "Yes" && bgShownImg === null)
                  ? (parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55)
                  : 0
-        Behavior on opacity { PropertyAnimation { duration: 400 } }
+        Behavior on opacity { PropertyAnimation { duration: hqBgFadeMs; easing.type: hqMode ? Easing.InOutQuad : Easing.Linear } }
+
+        // ── Dynamic Background on the custom image ────────────────────────
+        // Same drift as the fanart layers. One difference: this image has no
+        // crossfade to restart it, and can be on screen indefinitely (Showcase
+        // Background Art off), so it ping-pongs — each pass flips direction —
+        // for as long as it's showing, and resets when it fades out.
+        transformOrigin: Item.Center
+        transform: Translate { id: customBg_pan; x: 0; y: 0 }
+        property real panX: 0
+        property real panY: 0
+        property bool zoomIn: true
+        readonly property bool showing: opacity > 0
+        ParallelAnimation {
+        id: customBg_drift
+            NumberAnimation { target: customBg;     property: "scale"
+                              from: customBg.zoomIn ? 1.0 : dynamicBgZoom; to: customBg.zoomIn ? dynamicBgZoom : 1.0
+                              duration: dynamicBgMs; easing.type: Easing.InOutSine }
+            NumberAnimation { target: customBg_pan; property: "x"
+                              from: customBg.zoomIn ? 0 : customBg.panX; to: customBg.zoomIn ? customBg.panX : 0
+                              duration: dynamicBgMs; easing.type: Easing.InOutSine }
+            NumberAnimation { target: customBg_pan; property: "y"
+                              from: customBg.zoomIn ? 0 : customBg.panY; to: customBg.zoomIn ? customBg.panY : 0
+                              duration: dynamicBgMs; easing.type: Easing.InOutSine }
+            // Keep going while shown, alternating direction each pass.
+            onFinished: if (customBg.showing && dynamicBg) customBg.beginDrift()
+        }
+        function beginDrift() {
+            customBg_drift.stop();
+            dynamicBgFlip = !dynamicBgFlip;
+            zoomIn = dynamicBgFlip;
+            panX = (Math.random() < 0.5 ? -1 : 1) * width  * dynamicBgPan;
+            panY = (Math.random() < 0.5 ? -1 : 1) * height * dynamicBgPan;
+            scale = zoomIn ? 1.0 : dynamicBgZoom;
+            customBg_pan.x = zoomIn ? 0 : panX;
+            customBg_pan.y = zoomIn ? 0 : panY;
+            customBg_drift.start();
+        }
+        function endDrift() {
+            customBg_drift.stop();
+            scale = 1.0; customBg_pan.x = 0; customBg_pan.y = 0;
+        }
+        onShowingChanged: {
+            if (showing && dynamicBg) beginDrift();
+            else if (!showing) endDrift();
+        }
+        Component.onCompleted: if (showing && dynamicBg) beginDrift()
     }
 
     // Fanart / screenshot background with crossfade. The fade is started by
@@ -257,16 +303,62 @@ id: root
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         smooth: true
+
+        // ── Dynamic Background: slow drift ────────────────────────────────
+        // A gentle zoom from 1.0 to 1.08 with a small diagonal pan, over ~28s,
+        // restarted each time this layer becomes the shown one. Scale never
+        // drops below 1.0 and the pan is a fraction of the zoom headroom, so
+        // no edge is ever exposed. It's one transform on an already-drawn
+        // texture: effectively free, so it's available in both modes.
+        transformOrigin: Item.Center
+        transform: Translate { id: bgImage1_pan; x: 0; y: 0 }
+        property real panX: 0
+        property real panY: 0
+        // zoomIn: 1.0 -> zoom with the pan easing out to its target.
+        // Otherwise the reverse: starts zoomed and panned, settles to rest.
+        property bool zoomIn: true
+        ParallelAnimation {
+        id: bgImage1_drift
+            NumberAnimation { target: bgImage1;     property: "scale"
+                              from: bgImage1.zoomIn ? 1.0 : dynamicBgZoom; to: bgImage1.zoomIn ? dynamicBgZoom : 1.0
+                              duration: dynamicBgMs; easing.type: Easing.InOutSine }
+            NumberAnimation { target: bgImage1_pan; property: "x"
+                              from: bgImage1.zoomIn ? 0 : bgImage1.panX; to: bgImage1.zoomIn ? bgImage1.panX : 0
+                              duration: dynamicBgMs; easing.type: Easing.InOutSine }
+            NumberAnimation { target: bgImage1_pan; property: "y"
+                              from: bgImage1.zoomIn ? 0 : bgImage1.panY; to: bgImage1.zoomIn ? bgImage1.panY : 0
+                              duration: dynamicBgMs; easing.type: Easing.InOutSine }
+        }
+        function beginDrift() {
+            bgImage1_drift.stop();
+            // Alternate direction with every new image.
+            dynamicBgFlip = !dynamicBgFlip;
+            zoomIn = dynamicBgFlip;
+            // Random diagonal, inside the headroom the zoom provides.
+            panX = (Math.random() < 0.5 ? -1 : 1) * width  * dynamicBgPan;
+            panY = (Math.random() < 0.5 ? -1 : 1) * height * dynamicBgPan;
+            // Put the layer at the animation's starting pose before it runs.
+            scale = zoomIn ? 1.0 : dynamicBgZoom;
+            bgImage1_pan.x = zoomIn ? 0 : panX;
+            bgImage1_pan.y = zoomIn ? 0 : panY;
+            bgImage1_drift.start();
+        }
+        function endDrift() {
+            bgImage1_drift.stop();
+            scale = 1.0; bgImage1_pan.x = 0; bgImage1_pan.y = 0;
+        }
+        // Reset at rest only once this layer is fully faded out.
+        onOpacityChanged: if (opacity === 0) endDrift()
         // Decoded at 60% of the display size instead of the file's native
         // resolution. Fanart is often 1080p+, and this layer is shown dimmed,
         // behind a scrim and often blurred, so the loss is invisible while the
         // per-highlight decode cost drops by roughly 3x.
-        sourceSize { width: Math.round(width * 0.6); height: Math.round(height * 0.6) }
+        sourceSize: fanartDecodeSize   // shared with the prefetcher — must match
         opacity: 0
         z: 0
         property bool pendingFade: false
         property bool animate: true
-        Behavior on opacity { enabled: bgImage1.animate; PropertyAnimation { duration: 700 } }
+        Behavior on opacity { enabled: bgImage1.animate; PropertyAnimation { duration: hqFanartFadeMs; easing.type: hqMode ? Easing.InOutQuad : Easing.Linear } }
         onStatusChanged: {
             if (status === Image.Ready && pendingFade) startBgFade(bgImage1);
             else if (status === Image.Error && pendingFade) { pendingFade = false; lastBgShown = ""; }
@@ -279,16 +371,62 @@ id: root
         fillMode: Image.PreserveAspectCrop
         asynchronous: true
         smooth: true
+
+        // ── Dynamic Background: slow drift ────────────────────────────────
+        // A gentle zoom from 1.0 to 1.08 with a small diagonal pan, over ~28s,
+        // restarted each time this layer becomes the shown one. Scale never
+        // drops below 1.0 and the pan is a fraction of the zoom headroom, so
+        // no edge is ever exposed. It's one transform on an already-drawn
+        // texture: effectively free, so it's available in both modes.
+        transformOrigin: Item.Center
+        transform: Translate { id: bgImage2_pan; x: 0; y: 0 }
+        property real panX: 0
+        property real panY: 0
+        // zoomIn: 1.0 -> zoom with the pan easing out to its target.
+        // Otherwise the reverse: starts zoomed and panned, settles to rest.
+        property bool zoomIn: true
+        ParallelAnimation {
+        id: bgImage2_drift
+            NumberAnimation { target: bgImage2;     property: "scale"
+                              from: bgImage2.zoomIn ? 1.0 : dynamicBgZoom; to: bgImage2.zoomIn ? dynamicBgZoom : 1.0
+                              duration: dynamicBgMs; easing.type: Easing.InOutSine }
+            NumberAnimation { target: bgImage2_pan; property: "x"
+                              from: bgImage2.zoomIn ? 0 : bgImage2.panX; to: bgImage2.zoomIn ? bgImage2.panX : 0
+                              duration: dynamicBgMs; easing.type: Easing.InOutSine }
+            NumberAnimation { target: bgImage2_pan; property: "y"
+                              from: bgImage2.zoomIn ? 0 : bgImage2.panY; to: bgImage2.zoomIn ? bgImage2.panY : 0
+                              duration: dynamicBgMs; easing.type: Easing.InOutSine }
+        }
+        function beginDrift() {
+            bgImage2_drift.stop();
+            // Alternate direction with every new image.
+            dynamicBgFlip = !dynamicBgFlip;
+            zoomIn = dynamicBgFlip;
+            // Random diagonal, inside the headroom the zoom provides.
+            panX = (Math.random() < 0.5 ? -1 : 1) * width  * dynamicBgPan;
+            panY = (Math.random() < 0.5 ? -1 : 1) * height * dynamicBgPan;
+            // Put the layer at the animation's starting pose before it runs.
+            scale = zoomIn ? 1.0 : dynamicBgZoom;
+            bgImage2_pan.x = zoomIn ? 0 : panX;
+            bgImage2_pan.y = zoomIn ? 0 : panY;
+            bgImage2_drift.start();
+        }
+        function endDrift() {
+            bgImage2_drift.stop();
+            scale = 1.0; bgImage2_pan.x = 0; bgImage2_pan.y = 0;
+        }
+        // Reset at rest only once this layer is fully faded out.
+        onOpacityChanged: if (opacity === 0) endDrift()
         // Decoded at 60% of the display size instead of the file's native
         // resolution. Fanart is often 1080p+, and this layer is shown dimmed,
         // behind a scrim and often blurred, so the loss is invisible while the
         // per-highlight decode cost drops by roughly 3x.
-        sourceSize { width: Math.round(width * 0.6); height: Math.round(height * 0.6) }
+        sourceSize: fanartDecodeSize   // shared with the prefetcher — must match
         opacity: 0
         z: 0
         property bool pendingFade: false
         property bool animate: true
-        Behavior on opacity { enabled: bgImage2.animate; PropertyAnimation { duration: 700 } }
+        Behavior on opacity { enabled: bgImage2.animate; PropertyAnimation { duration: hqFanartFadeMs; easing.type: hqMode ? Easing.InOutQuad : Easing.Linear } }
         onStatusChanged: {
             if (status === Image.Ready && pendingFade) startBgFade(bgImage2);
             else if (status === Image.Error && pendingFade) { pendingFade = false; lastBgShown = ""; }
@@ -372,16 +510,28 @@ id: root
         var coll = api.collections.get(sortedColl[idx - 1]);
         if (!coll) return;
         if (settings.RandomizeSystemTileFanart === "Yes") {
-            // Original behavior: a randomly picked game's fanart from the system
-            if (coll.games.count > 0)
-                highlightedGame = coll.games.get(Math.floor(Math.random() * coll.games.count));
-            sysTileBgActive = false;   // handler runs the crossfade if needed
-        } else {
-            // Default: the system's own background art (matches the tile)
-            sysBgFallbackColl = coll;
-            sysTileBgActive   = true;
-            sysBgResolver.request("../assets/images/systembackground/" + Utils.processPlatformName(coll.shortName));
+            // A random game that HAS a background. It used to pick any game
+            // and use whatever it had — once the screenshot fallback went,
+            // a game with no fanart yielded nothing at all. A few random
+            // tries rather than a full scan, so a big collection stays cheap;
+            // if none land, the system's own art is used instead.
+            var pick = null, n = coll.games.count;
+            for (var t = 0; t < 12 && n > 0 && !pick; t++) {
+                var g = coll.games.get(Math.floor(Math.random() * n));
+                if (fanartFor(g) !== "") pick = g;
+            }
+            if (pick) {
+                highlightedGame = pick;
+                sysTileBgActive = false;   // handler runs the crossfade if needed
+                return;
+            }
+            // none found: fall through to the system art below
         }
+        // Default (and the randomiser's fallback): the system's own background
+        // art, which matches the tile.
+        sysBgFallbackColl = coll;
+        sysTileBgActive   = true;
+        sysBgResolver.request("../assets/images/systembackground/" + Utils.processPlatformName(coll.shortName));
     }
 
     // Dim overlay so content stays readable. Lowered from 0.45: it sits above
@@ -401,10 +551,9 @@ id: root
     property string bgSource: {
         if (settings.ShowcaseBackgroundArt !== "Yes") return "";
         if (!highlightedGame) return "";
-        // Fanart only — no screenshot fallback. A screenshot is a poor
-        // full-bleed background, and entries without fanart now reveal the
-        // custom background underneath instead of falling back to one.
-        return highlightedGame.assets.background || "";
+        // Shared resolver: fanart, or a screenshot if Screenshot Fallback is
+        // on, else "" (which reveals the custom background, if any).
+        return fanartFor(highlightedGame);
     }
 
     // Single crossfade driver — bulletproof version:
@@ -457,6 +606,12 @@ id: root
         img.opacity = parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55;
         other.opacity = 0;
         bgShownImg = img;
+        // Dynamic Background: the new image starts its drift fresh. The one
+        // fading out is left alone — it keeps drifting through the crossfade
+        // and resets only once fully hidden (see onOpacityChanged on the
+        // layers). Resetting it here snapped it back to 1.0 while it was
+        // still on screen.
+        if (dynamicBg) img.beginDrift(); else img.endDrift();
     }
 
     onBgSourceChanged: {
@@ -906,6 +1061,10 @@ id: root
 
         ListView {
         id: platformlist
+            // HQ: every platform tile built up front, so none pops in on
+            // scroll. The row is ~30 tiles; a full-width buffer keeps all of
+            // them decoded. OFF leaves the default (a screen's worth).
+            cacheBuffer: hqResidentRows ? width * 3 : width
 
             focus: topRow.focus
             property var resumeGame: listLastPlayed.games.count > 0 ? listLastPlayed.currentGame(0) : null
@@ -1129,7 +1288,11 @@ id: root
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true; smooth: true
                     source: basePath !== "" ? basePath + exts[extIdx] : ""
-                    opacity: selected ? 0.9 : 0.6
+                    // HQ: dissolve in once decoded instead of snapping. The
+                    // target opacity is unchanged; the Behavior only animates
+                    // the change, and only when HQ is on.
+                    opacity: (status === Image.Ready) ? (selected ? 0.9 : 0.6) : 0
+                    Behavior on opacity { enabled: hqFadeIn; NumberAnimation { duration: 180 } }
                     // Rounded-corner clip just on the image
                     layer.enabled: !isHero
                     layer.smooth: true
@@ -1152,7 +1315,8 @@ id: root
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                     smooth: true
-                    opacity: selected ? 1 : 0.2
+                    opacity: (status === Image.Ready) ? (selected ? 1 : 0.2) : 0
+                    Behavior on opacity { enabled: hqFadeIn; NumberAnimation { duration: 180 } }
                 }
                 Text {
                 id: platformname

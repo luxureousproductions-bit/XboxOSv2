@@ -177,7 +177,7 @@ id: root
     property bool   hideLogoForVideo: videoPlaying && settings.AllGamesHideLogoOnVideo === "Yes"
     Timer {
     id: videoDebounce
-        interval: 2000; repeat: false
+        interval: hqAllGamesVideoMs; repeat: false   // HQ: preview starts sooner
         onTriggered: videoArmed = true
     }
 
@@ -187,7 +187,7 @@ id: root
     property var settledGame: null
     Timer {
     id: artDebounce
-        interval: 150; repeat: false
+        interval: hqAllGamesArtMs; repeat: false      // HQ: art follows the cursor more closely
         onTriggered: settledGame = currentGame
     }
 
@@ -575,14 +575,30 @@ id: root
                 anchors.margins: vpx(3)   // inset so the square video corners stay inside the
                                           // rounded screenshot; corners then show the backdrop
                                           // (transparent) without ever masking the video itself
-                // Cleared off-screen, same reason as the other players.
-                source: (settings.AllGamesVideoPreview !== "No" && videoArmed
+                // HQ: the source is set as soon as the art settles (warm), so
+                // the decoder initialises during the rest; play() fires only
+                // once the rest has elapsed AND the media is ready — audio and
+                // video start together. OFF keeps the original: source on arm,
+                // autoPlay, audio a beat ahead of the first frame.
+                // Warm only once the cursor has rested (art debounce fired on
+                // THIS game), not on every move — otherwise fast scrolling
+                // would open and close a decoder per row.
+                readonly property bool warm: hqAllGamesWarm && settledGame === currentGame
+                source: (settings.AllGamesVideoPreview !== "No" && (videoArmed || warm)
                          && videoSource !== "" && playbackOwner === "allgamesscreen")
                         ? videoSource : ""
                 fillMode: VideoOutput.PreserveAspectCrop
                 muted: settings.AllGamesVideoAudio !== "Yes"
                 loops: MediaPlayer.Infinite
-                autoPlay: true
+                autoPlay: !hqAllGamesWarm
+                readonly property bool ready: status === MediaPlayer.Loaded
+                                           || status === MediaPlayer.Buffered
+                readonly property bool go: hqAllGamesWarm && videoArmed && ready
+                                        && playbackOwner === "allgamesscreen"
+                onGoChanged:    if (go && playbackState !== MediaPlayer.PlayingState) play()
+                onReadyChanged: if (go && playbackState !== MediaPlayer.PlayingState) play()
+                // Already invisible until playing, so a warmed-but-idle player
+                // never paints black over the screenshot.
                 visible: playbackState === MediaPlayer.PlayingState
                 // No layer/OpacityMask here: rendering a VideoOutput through an FBO+mask
                 // shows audio-only (black frame) on some low-end Android GPUs. Square
@@ -1006,6 +1022,10 @@ id: root
     id: gamelist
         focus: true
         currentIndex: currentGameIndex
+        // HQ: keep a few rows built past each edge so fast scrolling doesn't
+        // build delegates on the fly. 0 (the default) leaves the list as it
+        // was, so HQ off changes nothing here.
+        cacheBuffer: itemheight * hqAllGamesCacheRows
 
         onCurrentIndexChanged: {
             if (currentIndex !== -1) {

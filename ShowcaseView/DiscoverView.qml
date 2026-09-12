@@ -161,6 +161,19 @@ id: root
         }
     }
 
+    // High Quality Mode: contrast-adaptive sharpen over the video. Behind a
+    // Loader so that with HQ off nothing here exists — no capture, no shader,
+    // no second draw. Placed directly after the video, beneath the overlays,
+    // so the title and prompts are never sharpened.
+    Loader {
+        anchors.fill: videoPlayer
+        active: hqMode
+        sourceComponent: VideoSharpen {
+            source: videoPlayer
+            amount: 0.5
+        }
+    }
+
     // Top gradient for game title readability
     Rectangle {
         anchors { left: parent.left; right: parent.right; top: parent.top }
