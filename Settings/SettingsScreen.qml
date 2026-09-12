@@ -145,6 +145,10 @@ id: root
             setting: "No,Yes"
         }
         ListElement {
+            settingName: "Added App Launch"
+            setting: "Instant,Details Page"
+        }
+        ListElement {
             settingName: "Hide Android System Tile"
             setting: "Yes,No"
         }
@@ -167,6 +171,10 @@ id: root
         ListElement {
             settingName: "UI Scale"
             setting: "1.0,1.1,1.25,1.4,1.5"
+        }
+        ListElement {
+            settingName: "High Quality Mode"
+            setting: "No,Yes"
         }
     }
 
@@ -194,11 +202,19 @@ id: root
             setting: "Yes,No"
         }
         ListElement {
+            settingName: "Screenshot Fallback"
+            setting: "No,Yes"
+        }
+        ListElement {
             settingName: "Randomize System Tile Fanart"
             setting: "No,Yes"
         }
         ListElement {
             settingName: "Custom Background"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "Dynamic Background"
             setting: "No,Yes"
         }
         ListElement {
@@ -594,6 +610,57 @@ id: root
                  + "Needs Showcase Background Art on \u2014 with it off there "
                  + "is no fanart to choose from, and this row locks.";
         }
+        if (name === "High Quality Mode") {
+            return "Extras for newer, more powerful devices. Leave it off on "
+                 + "older or budget hardware.\n\n"
+                 + "WHEN ON\n"
+                 + "\u2022 Sharper full-screen videos.\n"
+                 + "\u2022 Video previews start sooner, with sound and picture "
+                 + "together.\n"
+                 + "\u2022 Crisper artwork and icons, loaded ahead of time so "
+                 + "nothing pops in.\n"
+                 + "\u2022 Smoother, longer transitions.\n"
+                 + "\u2022 A blurred backdrop behind the app drawer.\n\n"
+                 + "Uses more memory and graphics power, so it's off by "
+                 + "default.\n\n"
+                 + "Theme reload recommended.";
+        }
+        if (name === "Added App Launch") {
+            return "What happens when you pick an app you added yourself from "
+                 + "the Showcase.\n\n"
+                 + "There are two kinds of apps in the theme.\n\n"
+                 + "Apps Pegasus found on its own \u2014 it only knows their "
+                 + "name and icon. These always launch straight away, because "
+                 + "there is nothing to show on a details page.\n\n"
+                 + "Apps you added yourself with a metadata file \u2014 these "
+                 + "can have a description, genre and artwork, just like a "
+                 + "game.\n\n"
+                 + "INSTANT launches apps you added straight away, like the "
+                 + "rest.\n\n"
+                 + "DETAILS PAGE opens their details first, so you can see the "
+                 + "artwork and media before launching.\n\n"
+                 + "Only applies while Omit Applications is off.";
+        }
+        if (name === "Showcase Background Art") {
+            return "Shows the highlighted game's fanart as the Showcase "
+                 + "background, crossfading as you move between games.\n\n"
+                 + "Turn it off for a plain background \u2014 or your own "
+                 + "image, if Custom Background is on.";
+        }
+        if (name === "Screenshot Fallback") {
+            return "If a game has no fanart, shows one of its screenshots as "
+                 + "the background instead.\n\n"
+                 + "Off leaves the background plain for those games \u2014 or "
+                 + "shows your own image, if Custom Background is on.";
+        }
+        if (name === "Dynamic Background") {
+            return "Gives the fanart slow, gentle motion \u2014 a gradual zoom "
+                 + "and drift. Each new image moves the opposite way to the "
+                 + "last.\n\n"
+                 + "Applies to your custom background too, when that's what's "
+                 + "showing.\n\n"
+                 + "Subtle, and works fine on any device.";
+        }
         if (name === "Hide Android System Tile") {
             return "Hides the tile for the collection the App Drawer uses, so "
                  + "the same apps aren't in two places at once. Set this to No "
@@ -648,6 +715,11 @@ id: root
     // result, which is wasteful when all that's needed is whether one exists.
     function hasInfo(name) {
         return name === "Custom Background"
+            || name === "Showcase Background Art"
+            || name === "Screenshot Fallback"
+            || name === "Dynamic Background"
+            || name === "Added App Launch"
+            || name === "High Quality Mode"
             || name === "Randomize System Tile Fanart"
             || name === "Hide Android System Tile"
             || name === "Omit genre: Application from Showcase"
@@ -983,12 +1055,26 @@ id: root
 
                 property bool selected: ListView.isCurrentItem && settingsList.focus
                 property variant settingList: setting.split(',')
-                property int savedIndex: Math.min(api.memory.get(settingName + 'Index') || 0, settingList.length - 1)
+                // Fresh install: no Index key saved yet, so show whichever entry
+                // matches the theme's first-run default for this row. Previously
+                // this fell to 0, which could disagree with what the theme was
+                // actually using until the user touched the row.
+                function defaultIndex() {
+                    var d = settingDefaults[settingName];
+                    if (d === undefined) return 0;
+                    var i = settingList.indexOf(String(d));
+                    return i >= 0 ? i : 0;
+                }
+                property int savedIndex: Math.min(
+                    api.memory.has(settingName + 'Index') ? (api.memory.get(settingName + 'Index') || 0) : defaultIndex(),
+                    settingList.length - 1)
 
                 Connections {
                     target: settingsList
                     onSettingsVersionChanged: {
-                        savedIndex = Math.min(api.memory.get(settingName + 'Index') || 0, settingList.length - 1);
+                        savedIndex = Math.min(
+                            api.memory.has(settingName + 'Index') ? (api.memory.get(settingName + 'Index') || 0) : defaultIndex(),
+                            settingList.length - 1);
                     }
                 }
                 property string itemNote: (typeof note !== 'undefined') ? note : ""
@@ -1004,10 +1090,61 @@ id: root
                 // and fanart still runs on top of it.
                 property bool rowDisabled: {
                     var _v = settingsList.settingsVersion;   // re-evaluate after any save
-                    if (settingName === "Randomize System Tile Fanart") {
+                    // Both depend on the fanart background being shown at all.
+                    if (settingName === "Randomize System Tile Fanart" || settingName === "Screenshot Fallback") {
                         var bgArt  = api.memory.has("Showcase Background Art") ? api.memory.get("Showcase Background Art") : "Yes";
                         return bgArt === "No";
                     }
+                    // Meaningless while apps are omitted from the Showcase entirely.
+                    if (settingName === "Added App Launch") {
+                        var omitApp = api.memory.has("Omit genre: Application from Showcase")
+                                    ? api.memory.get("Omit genre: Application from Showcase") : "No";
+                        return omitApp === "Yes";
+                    }
+
+                    // Small helper: current value of another row, with its default.
+                    function mem(k, d) { return api.memory.has(k) ? api.memory.get(k) : d; }
+
+                    // Dynamic Background moves whichever background is showing — fanart
+                    // or the custom image — so it's only inert when neither is.
+                    if (settingName === "Dynamic Background")
+                        return mem("Showcase Background Art", "Yes") === "No" && mem("Custom Background", "No") === "No";
+                    // Opacity applies to fanart AND the custom image; inert only when neither shows.
+                    if (settingName === "Showcase Background Opacity")
+                        return mem("Showcase Background Art", "Yes") === "No" && mem("Custom Background", "No") === "No";
+
+                    // Sound master: with Menu sounds off, the volume and the chime are silent anyway.
+                    if (settingName === "Menu Volume" || settingName === "Start up chime")
+                        return mem("Menu sounds", "Yes") === "No";
+
+                    // Logo tint only applies to the Xbox logos — not to None,
+                    // and not to the RetroAchievements logo, which keeps its own colours.
+                    if (settingName === "Logo Color Match") {
+                        var xl = mem("Xbox Logo", "Logo1");
+                        return xl === "None" || xl === "RetroAchievements";
+                    }
+
+                    // Showcase thumbnail previews: the logo-hide and audio rows do nothing without them.
+                    if (settingName === "Hide logo when thumbnail video plays" || settingName === "Video thumbnail audio")
+                        return mem("Allow video thumbnails", "Yes") === "No";
+
+                    // Game Details preview video and its audio.
+                    if (settingName === "Game details video preview audio")
+                        return mem("Video preview", "Yes") === "No";
+
+                    // All Games preview video and the rows that only matter while it plays.
+                    if (settingName === "All games menu video audio"
+                        || settingName === "AllGames Hide box art on video"
+                        || settingName === "AllGames Hide logo on video")
+                        return mem("AllGames Video preview", "Yes") === "No";
+
+                    // Featured box off: its content and pin rows are moot.
+                    if (settingName === "Featured Box Content" || settingName === "Pins to collection")
+                        return mem("Featured Box", "Yes") === "No";
+
+                    // A collection set to None has no thumbnail, size or ratio to configure.
+                    var cm = settingName.match(/^(Collection \d) - (Thumbnail|Size|Ratio)$/);
+                    if (cm && mem(cm[1], "") === "None") return true;
                     // A collection's Ratio row is inert when its shape is Square
                     if (settingName.indexOf("Collection ") === 0 && settingName.indexOf(" - Ratio") !== -1) {
                         var coll = settingName.replace(" - Ratio", "");
@@ -1044,7 +1181,13 @@ id: root
                     // image is the base and fanart paints over it, showing
                     // through only for entries that have no art of their own.
                     // Either of these changing can lock/unlock the randomize row
-                    if (settingName === "Showcase Background Art" || settingName === "Custom Background")
+                    // Any row another row depends on refreshes the locks when saved.
+                    var parents = ["Showcase Background Art", "Custom Background",
+                                   "Omit genre: Application from Showcase", "Menu sounds", "Xbox Logo",
+                                   "Allow video thumbnails", "Video preview", "AllGames Video preview",
+                                   "Featured Box", "Grid Thumbnail"];
+                    if (parents.indexOf(settingName) !== -1 || /^Collection \d$/.test(settingName)
+                        || /^Collection \d - Thumbnail$/.test(settingName))
                         settingsList.settingsVersion++;
                     // Wakes any binding that opted into live updates.
                     settingsEpoch++;
