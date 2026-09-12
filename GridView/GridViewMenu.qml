@@ -998,6 +998,14 @@ id: root
             return;
         }
 
+        // LB/RB in "Nav Bar" mode: step along the header icons instead.
+        if ((api.keys.isNextPage(event) || api.keys.isPrevPage(event)) && !event.isAutoRepeat
+            && settings.PlatformShoulderButtons === "Nav Bar") {
+            event.accepted = true;
+            navBarStep(api.keys.isNextPage(event) ? 1 : -1);
+            return;
+        }
+
         // Next collection (RB)
         if (api.keys.isNextPage(event) && !event.isAutoRepeat) {
             event.accepted = true;
@@ -1025,6 +1033,21 @@ id: root
             sortedGames = null;
             return;
         }
+    }
+
+    // Steps focus along the header icons. From the grid, RB lands on the
+    // first icon and LB on the last; among the icons it wraps. Down from any
+    // icon returns to the grid (the icons already handle that).
+    function navBarStep(dir) {
+        var items = [homebutton, discoverbutton, achievementsbutton, settingsbutton];
+        var cur = -1;
+        for (var i = 0; i < items.length; i++) if (items[i].activeFocus) { cur = i; break; }
+        var next;
+        if (cur < 0) next = (dir > 0) ? 0 : items.length - 1;
+        else         next = (cur + dir + items.length) % items.length;
+        playNav();
+        gamegrid.currentIndex = -1;
+        items[next].focus = true;
     }
 
     // ── Helpbar: A View details, X Filters, Y Settings, B Back ────────────
