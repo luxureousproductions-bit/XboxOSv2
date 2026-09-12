@@ -276,6 +276,7 @@ id: root
             OmitApplicationFromShowcase:   api.memory.has("Omit genre: Application from Showcase") ? api.memory.get("Omit genre: Application from Showcase") : "No",
             OmitEmulatorFromShowcase:      api.memory.has("Omit genre: Emulator from Showcase") ? api.memory.get("Omit genre: Emulator from Showcase") : "No",
             HighQualityMode:               api.memory.has("High Quality Mode") ? api.memory.get("High Quality Mode") : "No",
+            PlatformShoulderButtons:       api.memory.has("LB/RB Function") ? api.memory.get("LB/RB Function") : "Cycle Platforms",
             DynamicBackground:             api.memory.has("Dynamic Background") ? api.memory.get("Dynamic Background") : "No",
             ScreenshotFallback:            api.memory.has("Screenshot Fallback") ? api.memory.get("Screenshot Fallback") : "No",
             AddedAppLaunch:                api.memory.has("Added App Launch") ? api.memory.get("Added App Launch") : "Instant",
@@ -388,8 +389,12 @@ id: root
     readonly property int  hqBgFadeMs:      hqMode ? 650  : 400   // custom background fade
     readonly property real hqIconScale:     hqMode ? 2.0  : 1.4   // drawer icon decode multiplier
     readonly property int  hqTileArtPx:     hqMode ? 1024 : 512   // row tile art decode edge
-    readonly property int  hqAppBlurRadius: hqMode ? 64   : 48    // app-tile backdrop blur (cap 64)
-    readonly property int  hqAppBlurSrcPx:  hqMode ? 192  : 128   // app-tile backdrop decode edge
+    // Showcase app-tile backdrop. Kept LIGHT: at the old 48/64 the icon behind
+    // the tile dissolved into a colour wash. A gentler blur keeps its shape
+    // readable while still reading as a backdrop rather than a second icon.
+    readonly property int  hqAppBlurRadius: hqMode ? 30   : 22    // app-tile backdrop blur (cap 64)
+    readonly property int  hqAppBlurSrcPx:  hqMode ? 256  : 192   // app-tile backdrop decode edge
+    readonly property real hqAppTileScrim:  0.30                  // dark wash over it (was 0.42)
 
     // Phase C
     readonly property bool hqDrawerBlur:    hqMode                // blurred screen behind the app drawer
