@@ -15,6 +15,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import QtQuick 2.15
+import QtGraphicalEffects 1.15   // FastBlur, for the HQ drawer backdrop
 import QtQuick.Layouts 1.15
 import SortFilterProxyModel 0.2
 import QtMultimedia 5.15
@@ -133,74 +134,134 @@ id: root
               ? api.memory.get("Omit genre: Emulator from Showcase") : "No") === "Yes";
     }
 
+    // ── First-run defaults ────────────────────────────────────────────────
+    // What a fresh install gets before the user touches anything. Read by the
+    // settings object below (as each key's fallback) AND by SettingsScreen (to
+    // show the right current value on a fresh install) — one table, so the two
+    // can never disagree. Keys absent here keep the fallback written inline.
+    readonly property var settingDefaults: ({
+        "3D Box":                                    "Yes",
+        "All games menu video audio":                "Yes",
+        "Allow video thumbnails":                    "Yes",
+        "Box Art":                                   "3D",
+        "Collection 1":                              "Recommended",
+        "Collection 1 - Ratio":                      "0.66",
+        "Collection 1 - Size":                       "Small",
+        "Collection 1 - Thumbnail":                  "Wide",
+        "Collection 2":                              "Recently Played",
+        "Collection 2 - Ratio":                      "0.55",
+        "Collection 2 - Size":                       "Medium",
+        "Collection 2 - Thumbnail":                  "Tall",
+        "Collection 3":                              "Top by Genre",
+        "Collection 3 - Size":                       "Medium",
+        "Collection 3 - Thumbnail":                  "Square",
+        "Collection 4":                              "Top by Publisher",
+        "Collection 4 - Size":                       "Medium",
+        "Collection 5":                              "Top by Genre 2",
+        "Collection 5 - Ratio":                      "0.55",
+        "Collection 5 - Size":                       "Large",
+        "Collection 6":                              "Top by Developer",
+        "Collection 6 - Size":                       "Large",
+        "Collection 6 - Thumbnail":                  "Square",
+        "Color Background":                          "Black",
+        "Color Layout":                              "Lime",
+        "Custom Background":                         "Yes",
+        "Discover video audio":                      "Yes",
+        "Dynamic Background":                        "No",
+        "Favorited Tile Accent":                     "Yes",
+        "Featured Box Content":                      "Fanart Slideshow",
+        "Game Background":                           "Fanart",
+        "Game details video preview audio":          "Yes",
+        "Grid Thumbnail":                            "Square",
+        "Hide Android System Tile":                  "Yes",
+        "Hide logo when thumbnail video plays":      "Yes",
+        "High Quality Mode":                         "No",
+        "Launch screen delay":                       "2.5",
+        "More by Genre Display":                     "Full",
+        "Number of columns":                         "3",
+        "Number of games showcased":                 "20",
+        "Omit genre: Application from Showcase":     "No",
+        "Omit genre: Emulator from Showcase":        "No",
+        "Pins to collection":                        "2",
+        "Randomize System Tile Fanart":              "No",
+        "Screenshot Fallback":                       "No",
+        "Show scanlines":                            "No",
+        "Showcase Background Art":                   "Yes",
+        "Showcase Background Opacity":               "1.00",
+        "System sort":                               "Release year (oldest)",
+        "UI Scale":                                  "1.0",
+        "Video thumbnail audio":                     "Yes",
+        "Xbox Logo":                                 "Logo1",
+    })
+
     property var settings: {
         return {
             PlatformView:                  api.memory.has("Game View") ? api.memory.get("Game View") : "Grid",
-            GridThumbnail:                 api.memory.has("Grid Thumbnail") ? api.memory.get("Grid Thumbnail") : "Dynamic Wide",
+            GridThumbnail:                 api.memory.has("Grid Thumbnail") ? api.memory.get("Grid Thumbnail") : "Square",
             GridArt:                       api.memory.has("Grid art") ? api.memory.get("Grid art") : "Fanart",
             GridGameLogo:                  api.memory.has("Grid Game Logo") ? api.memory.get("Grid Game Logo") : "Yes",
             GridColumns:                   api.memory.has("Number of columns") ? api.memory.get("Number of columns") : "3",
-            GameBackground:                api.memory.has("Game Background") ? api.memory.get("Game Background") : "Screenshot",
+            GameBackground:                api.memory.has("Game Background") ? api.memory.get("Game Background") : "Fanart",
             GameLogo:                      api.memory.has("Game Logo") ? api.memory.get("Game Logo") : "Show",
             GameRandomBackground:          api.memory.has("Randomize Background") ? api.memory.get("Randomize Background") : "No",
             GameBlurBackground:            api.memory.has("Blur Background") ? api.memory.get("Blur Background") : "No",
             VideoPreview:                  api.memory.has("Video preview") ? api.memory.get("Video preview") : "Yes",
             AllowThumbVideo:               api.memory.has("Allow video thumbnails") ? api.memory.get("Allow video thumbnails") : "Yes",
-            AllowThumbVideoAudio:          api.memory.has("Video thumbnail audio") ? api.memory.get("Video thumbnail audio") : "No",
-            HideLogo:                      api.memory.has("Hide logo when thumbnail video plays") ? api.memory.get("Hide logo when thumbnail video plays") : "No",
+            AllowThumbVideoAudio:          api.memory.has("Video thumbnail audio") ? api.memory.get("Video thumbnail audio") : "Yes",
+            HideLogo:                      api.memory.has("Hide logo when thumbnail video plays") ? api.memory.get("Hide logo when thumbnail video plays") : "Yes",
             HideButtonHelp:                api.memory.has("Hide button help") ? api.memory.get("Hide button help") : "No",
-            ColorLayout:                   api.memory.has("Color Layout") ? api.memory.get("Color Layout") : "Dark Green",
+            ColorLayout:                   api.memory.has("Color Layout") ? api.memory.get("Color Layout") : "Lime",
             MouseHover:                    api.memory.has("Enable mouse hover") ? api.memory.get("Enable mouse hover") : "No",
             AlwaysShowTitles:              api.memory.has("Always show titles") ? api.memory.get("Always show titles") : "No",
             AnimateHighlight:              api.memory.has("Animate highlight") ? api.memory.get("Animate highlight") : "No",
-            AllowVideoPreviewAudio:        api.memory.has("Game details video preview audio") ? api.memory.get("Game details video preview audio") : "No",
-            ShowScanlines:                 api.memory.has("Show scanlines") ? api.memory.get("Show scanlines") : "Yes",
+            AllowVideoPreviewAudio:        api.memory.has("Game details video preview audio") ? api.memory.get("Game details video preview audio") : "Yes",
+            ShowScanlines:                 api.memory.has("Show scanlines") ? api.memory.get("Show scanlines") : "No",
             DetailsDefault:                api.memory.has("Default to full details") ? api.memory.get("Default to full details") : "No",
-            LaunchScreenDelay:             api.memory.has("Launch screen delay") ? api.memory.get("Launch screen delay") : "0.6",
+            LaunchScreenDelay:             api.memory.has("Launch screen delay") ? api.memory.get("Launch screen delay") : "2.5",
             FeaturedBox:                   api.memory.has("Featured Box") ? api.memory.get("Featured Box") : "Yes",
-            FeaturedBoxCollection:         api.memory.has("Pins to collection") ? api.memory.get("Pins to collection") : "1",
+            FeaturedBoxCollection:         api.memory.has("Pins to collection") ? api.memory.get("Pins to collection") : "2",
             UiScale:                       api.memory.has("UI Scale") ? api.memory.get("UI Scale") : "1.0",
             FavoritedTileAccent:           api.memory.has("Favorited Tile Accent") ? api.memory.get("Favorited Tile Accent") : "Yes",
-            FeaturedBoxContent:            api.memory.has("Featured Box Content") ? api.memory.get("Featured Box Content") : "Favorites",
+            FeaturedBoxContent:            api.memory.has("Featured Box Content") ? api.memory.get("Featured Box Content") : "Fanart Slideshow",
             ShowcaseBackgroundArt:          api.memory.has("Showcase Background Art") ? api.memory.get("Showcase Background Art") : "Yes",
             RandomizeSystemTileFanart:      api.memory.has("Randomize System Tile Fanart") ? api.memory.get("Randomize System Tile Fanart") : "No",
-            CustomBackground:               api.memory.has("Custom Background") ? api.memory.get("Custom Background") : "No",
-            ShowcaseBackgroundOpacity:     api.memory.has("Showcase Background Opacity") ? api.memory.get("Showcase Background Opacity") : "0.55",
+            CustomBackground:               api.memory.has("Custom Background") ? api.memory.get("Custom Background") : "Yes",
+            ShowcaseBackgroundOpacity:     api.memory.has("Showcase Background Opacity") ? api.memory.get("Showcase Background Opacity") : "1.00",
             ShowcaseArt:                   api.memory.has("Showcase Collections Art") ? api.memory.get("Showcase Collections Art") : "Fanart",
             HeroBoxArt:                    api.memory.has("Hero box art") ? api.memory.get("Hero box art") : "Fanart",
             TileHalo:                      api.memory.has("Tile Halo") ? api.memory.get("Tile Halo") : "Yes",
-            SystemSort:                    api.memory.has("System sort") ? api.memory.get("System sort") : "Alphabetical (A-Z)",
-            ShowcaseColumns:               api.memory.has("Number of games showcased") ? api.memory.get("Number of games showcased") : "15",
+            SystemSort:                    api.memory.has("System sort") ? api.memory.get("System sort") : "Release year (oldest)",
+            ShowcaseColumns:               api.memory.has("Number of games showcased") ? api.memory.get("Number of games showcased") : "20",
             ShowcaseFeaturedCollection:    api.memory.has("Featured collection") ? api.memory.get("Featured collection") : "Favorites",
-            ShowcaseCollection1:           api.memory.has("Collection 1") ? api.memory.get("Collection 1") : "Recently Played",
+            ShowcaseCollection1:           api.memory.has("Collection 1") ? api.memory.get("Collection 1") : "Recommended",
             ShowcaseCollection1_Thumbnail: api.memory.has("Collection 1 - Thumbnail") ? api.memory.get("Collection 1 - Thumbnail") : "Wide",
             ShowcaseCollection1_Size:      api.memory.has("Collection 1 - Size") ? api.memory.get("Collection 1 - Size") : "Small",
             ShowcaseCollection1_Ratio:     api.memory.has("Collection 1 - Ratio") ? api.memory.get("Collection 1 - Ratio") : "0.66",
-            ShowcaseCollection2:           api.memory.has("Collection 2") ? api.memory.get("Collection 2") : "Most Played",
+            ShowcaseCollection2:           api.memory.has("Collection 2") ? api.memory.get("Collection 2") : "Recently Played",
             ShowcaseCollection2_Thumbnail: api.memory.has("Collection 2 - Thumbnail") ? api.memory.get("Collection 2 - Thumbnail") : "Tall",
-            ShowcaseCollection2_Size:      api.memory.has("Collection 2 - Size") ? api.memory.get("Collection 2 - Size") : "Small",
-            ShowcaseCollection2_Ratio:     api.memory.has("Collection 2 - Ratio") ? api.memory.get("Collection 2 - Ratio") : "0.66",
-            ShowcaseCollection3:           api.memory.has("Collection 3") ? api.memory.get("Collection 3") : "Top by Publisher",
-            ShowcaseCollection3_Thumbnail: api.memory.has("Collection 3 - Thumbnail") ? api.memory.get("Collection 3 - Thumbnail") : "Wide",
-            ShowcaseCollection3_Size:      api.memory.has("Collection 3 - Size") ? api.memory.get("Collection 3 - Size") : "Small",
+            ShowcaseCollection2_Size:      api.memory.has("Collection 2 - Size") ? api.memory.get("Collection 2 - Size") : "Medium",
+            ShowcaseCollection2_Ratio:     api.memory.has("Collection 2 - Ratio") ? api.memory.get("Collection 2 - Ratio") : "0.55",
+            ShowcaseCollection3:           api.memory.has("Collection 3") ? api.memory.get("Collection 3") : "Top by Genre",
+            ShowcaseCollection3_Thumbnail: api.memory.has("Collection 3 - Thumbnail") ? api.memory.get("Collection 3 - Thumbnail") : "Square",
+            ShowcaseCollection3_Size:      api.memory.has("Collection 3 - Size") ? api.memory.get("Collection 3 - Size") : "Medium",
             ShowcaseCollection3_Ratio:     api.memory.has("Collection 3 - Ratio") ? api.memory.get("Collection 3 - Ratio") : "0.66",
-            ShowcaseCollection4:           api.memory.has("Collection 4") ? api.memory.get("Collection 4") : "Top by Genre",
+            ShowcaseCollection4:           api.memory.has("Collection 4") ? api.memory.get("Collection 4") : "Top by Publisher",
             ShowcaseCollection4_Thumbnail: api.memory.has("Collection 4 - Thumbnail") ? api.memory.get("Collection 4 - Thumbnail") : "Tall",
-            ShowcaseCollection4_Size:      api.memory.has("Collection 4 - Size") ? api.memory.get("Collection 4 - Size") : "Small",
+            ShowcaseCollection4_Size:      api.memory.has("Collection 4 - Size") ? api.memory.get("Collection 4 - Size") : "Medium",
             ShowcaseCollection4_Ratio:     api.memory.has("Collection 4 - Ratio") ? api.memory.get("Collection 4 - Ratio") : "0.66",
-            ShowcaseCollection5:           api.memory.has("Collection 5") ? api.memory.get("Collection 5") : "None",
+            ShowcaseCollection5:           api.memory.has("Collection 5") ? api.memory.get("Collection 5") : "Top by Genre 2",
             ShowcaseCollection5_Thumbnail: api.memory.has("Collection 5 - Thumbnail") ? api.memory.get("Collection 5 - Thumbnail") : "Wide",
-            ShowcaseCollection5_Size:      api.memory.has("Collection 5 - Size") ? api.memory.get("Collection 5 - Size") : "Small",
-            ShowcaseCollection5_Ratio:     api.memory.has("Collection 5 - Ratio") ? api.memory.get("Collection 5 - Ratio") : "0.66",
-            ShowcaseCollection6:           api.memory.has("Collection 6") ? api.memory.get("Collection 6") : "None",
-            ShowcaseCollection6_Thumbnail: api.memory.has("Collection 6 - Thumbnail") ? api.memory.get("Collection 6 - Thumbnail") : "Wide",
-            ShowcaseCollection6_Size:      api.memory.has("Collection 6 - Size") ? api.memory.get("Collection 6 - Size") : "Small",
+            ShowcaseCollection5_Size:      api.memory.has("Collection 5 - Size") ? api.memory.get("Collection 5 - Size") : "Large",
+            ShowcaseCollection5_Ratio:     api.memory.has("Collection 5 - Ratio") ? api.memory.get("Collection 5 - Ratio") : "0.55",
+            ShowcaseCollection6:           api.memory.has("Collection 6") ? api.memory.get("Collection 6") : "Top by Developer",
+            ShowcaseCollection6_Thumbnail: api.memory.has("Collection 6 - Thumbnail") ? api.memory.get("Collection 6 - Thumbnail") : "Square",
+            ShowcaseCollection6_Size:      api.memory.has("Collection 6 - Size") ? api.memory.get("Collection 6 - Size") : "Large",
             ShowcaseCollection6_Ratio:     api.memory.has("Collection 6 - Ratio") ? api.memory.get("Collection 6 - Ratio") : "0.66",
             GridRatio:                     api.memory.has("Grid Ratio") ? api.memory.get("Grid Ratio") : "0.66",
             ColorBackground:               api.memory.has("Color Background") ? api.memory.get("Color Background") : "Black",
             XboxLogo:                      api.memory.has("Xbox Logo") ? api.memory.get("Xbox Logo") : "Logo1",
             LogoColorMatch:                api.memory.has("Logo Color Match") ? api.memory.get("Logo Color Match") : "No",
-            BoxArtStyle:                   api.memory.has("Box Art") ? api.memory.get("Box Art") : "2D",
+            BoxArtStyle:                   api.memory.has("Box Art") ? api.memory.get("Box Art") : "3D",
             GameCounter:                   api.memory.has("Game Counter") ? api.memory.get("Game Counter") : "Yes",
             CarouselVideo:                 api.memory.has("Video") ? api.memory.get("Video") : "Yes",
             CarouselScreenshots:           api.memory.has("Screenshots") ? api.memory.get("Screenshots") : "Yes",
@@ -214,9 +275,13 @@ id: root
             CarouselWheel:                 api.memory.has("Logo") ? api.memory.get("Logo") : "Yes",
             OmitApplicationFromShowcase:   api.memory.has("Omit genre: Application from Showcase") ? api.memory.get("Omit genre: Application from Showcase") : "No",
             OmitEmulatorFromShowcase:      api.memory.has("Omit genre: Emulator from Showcase") ? api.memory.get("Omit genre: Emulator from Showcase") : "No",
+            HighQualityMode:               api.memory.has("High Quality Mode") ? api.memory.get("High Quality Mode") : "No",
+            DynamicBackground:             api.memory.has("Dynamic Background") ? api.memory.get("Dynamic Background") : "No",
+            ScreenshotFallback:            api.memory.has("Screenshot Fallback") ? api.memory.get("Screenshot Fallback") : "No",
+            AddedAppLaunch:                api.memory.has("Added App Launch") ? api.memory.get("Added App Launch") : "Instant",
             HideAndroidSystemTile:         api.memory.has("Hide Android System Tile") ? api.memory.get("Hide Android System Tile") : "Yes",
             MoreByGenreDisplay:            api.memory.has("More by Genre Display") ? api.memory.get("More by Genre Display") : "Full",
-            AllowDiscoverVideoAudio:         api.memory.has("Discover video audio") ? api.memory.get("Discover video audio") : "No",
+            AllowDiscoverVideoAudio:         api.memory.has("Discover video audio") ? api.memory.get("Discover video audio") : "Yes",
             MenuSounds:                      api.memory.has("Menu sounds") ? api.memory.get("Menu sounds") : "Yes",
             MenuVolume:                      api.memory.has("Menu Volume") ? api.memory.get("Menu Volume") : "1.0",
             StartupChime:                    api.memory.has("Start up chime") ? api.memory.get("Start up chime") : "Yes",
@@ -225,7 +290,7 @@ id: root
             AllGamesHideLogoOnVideo:         api.memory.has("AllGames Hide logo on video") ? api.memory.get("AllGames Hide logo on video") : "No",
             AllGamesBlurBackground:          api.memory.has("AllGames Blur Background") ? api.memory.get("AllGames Blur Background") : "No",
             AllGamesScanlines:               api.memory.has("AllGames Show scanlines") ? api.memory.get("AllGames Show scanlines") : "No",
-            AllGamesVideoAudio:              api.memory.has("All games menu video audio") ? api.memory.get("All games menu video audio") : "No",
+            AllGamesVideoAudio:              api.memory.has("All games menu video audio") ? api.memory.get("All games menu video audio") : "Yes",
             ShowWifi:                      api.memory.has("Show WiFi Indicator")     ? api.memory.get("Show WiFi Indicator")     : "Yes",
             ShowBattery:                   api.memory.has("Show Battery Percentage") ? api.memory.get("Show Battery Percentage") : "Battery Only",
             ShowClock:                     api.memory.has("Show Clock")              ? api.memory.get("Show Clock")              : "12hr"
@@ -265,6 +330,104 @@ id: root
     // To add a global rule (pause while the keyboard is up, a mute switch),
     // change THIS line. Nothing else needs to know.
     readonly property string playbackOwner: appActive ? state : ""
+
+    // ── High Quality Mode ─────────────────────────────────────────────────
+    // One toggle, off by default, bundling extras that only capable devices
+    // should pay for. Consumers read these knobs rather than the raw setting,
+    // so what the toggle means is defined here and nowhere else. Every knob is
+    // a value that already existed as a literal — this only lifts them out.
+    // Read from the settings snapshot on purpose: this needs a reload, and
+    // switching decoder policy live is exactly what fails in odd ways.
+    readonly property bool hqMode: settings.HighQualityMode === "Yes"
+
+    // Dynamic Background: the fanart drifts (slow zoom + pan). Available in
+    // both modes. In base the fanart decodes a touch larger when it's on, so
+    // the 1.08 zoom doesn't soften a 0.6 decode further; HQ is full-res anyway.
+    readonly property bool dynamicBg:   settings.DynamicBackground === "Yes"
+    readonly property int  dynamicBgMs: 24000
+    readonly property real dynamicBgZoom: 1.12    // 6% headroom each side
+    readonly property real dynamicBgPan:  0.025   // ±2.5% of the frame, inside that headroom
+    // Alternates each time a drift starts, so consecutive images move the
+    // opposite way: one zooms in, the next zooms out.
+    property bool dynamicBgFlip: false
+
+    // ONE definition of "this game's Showcase background". The crossfade, the
+    // system-tile randomiser and the HQ prefetcher all use it, so they can't
+    // disagree about which image a game has — and Screenshot Fallback lands in
+    // all three at once.
+    function fanartFor(game) {
+        if (!game || !game.assets) return "";
+        if (game.assets.background) return game.assets.background;
+        if (settings.ScreenshotFallback === "Yes"
+            && game.assets.screenshots && game.assets.screenshots.length)
+            return game.assets.screenshots[0];
+        return "";
+    }
+    readonly property real hqFanartScale:   hqMode ? 1.0 : (dynamicBg ? 0.7 : 0.6)   // fanart decode vs display size
+    readonly property bool hqDualDecoder:   hqMode                // featured box keeps playing under a row preview
+    // Row/grid preview: how long a tile rests before its video plays, and how
+    // far ahead of that the decoder warms. The lead is always 300ms short of
+    // the delay in HQ: warming from the very first instant put the row's
+    // decoder init in the same frame as the featured box's cold start, and
+    // two cold inits at once can fail one of them on Android.
+    readonly property int  hqPreviewDelay:  hqMode ? 1500 : 2500  // ms rest before the preview plays
+    readonly property int  hqPreviewWarmup: hqMode ? 1200 : 1000  // ms ahead of reveal the decoder warms
+
+    // Phase A extras. All read by consumers; OFF side is today's behaviour.
+    readonly property bool hqFadeIn:        hqMode                // images dissolve in on load
+    // The highlighted tile stays at 1.0: its video lives in ItemHighlight,
+    // which is sized to the cell and does not scale, so growing the tile
+    // opened a gap between the accent frame and the video. HQ instead makes
+    // the neighbours recede further, which reads as the same emphasis.
+    readonly property real hqRestScale:     hqMode ? 0.92 : 0.95  // unhighlighted row tile scale
+    readonly property bool hqResidentRows:  hqMode                // build whole rows up front
+
+    // Phase B
+    readonly property bool hqPrefetch:      hqMode                // decode neighbours' fanart ahead of time
+    readonly property int  hqFanartFadeMs:  hqMode ? 1100 : 700   // fanart crossfade
+    readonly property int  hqBgFadeMs:      hqMode ? 650  : 400   // custom background fade
+    readonly property real hqIconScale:     hqMode ? 2.0  : 1.4   // drawer icon decode multiplier
+    readonly property int  hqTileArtPx:     hqMode ? 1024 : 512   // row tile art decode edge
+    readonly property int  hqAppBlurRadius: hqMode ? 64   : 48    // app-tile backdrop blur (cap 64)
+    readonly property int  hqAppBlurSrcPx:  hqMode ? 192  : 128   // app-tile backdrop decode edge
+
+    // Phase C
+    readonly property bool hqDrawerBlur:    hqMode                // blurred screen behind the app drawer
+    readonly property int  hqDrawerSlideMs: hqMode ? 320  : 220   // drawer slide duration
+    readonly property bool hqAllGamesWarm:  hqMode                // warm the All Games preview during its rest
+    // (No halo size knob: the halo PNG's transparent centre is cut for exactly
+    // 1.1228x the tile, so any other scale puts the glow's inner edge onto the
+    // tile itself. Scaling it broke the halo — leave it at the asset's ratio.)
+
+    // The loader currently on screen — the thing the drawer blur snapshots.
+    // Never the root (that would include the drawer and the blur itself).
+    readonly property Item activeScreenItem: {
+        switch (state) {
+        case "showcasescreen":        return showcaseLoader;
+        case "allgamesscreen":        return allgamesloader;
+        case "softwaregridscreen":    return gridviewloader;
+        case "softwarescreen":        return listviewloader;
+        case "gameviewscreen":        return gameviewloader;
+        case "settingsscreen":        return settingsloader;
+        case "achievementsscreen":    return achievementsloader;
+        case "gameachievementsscreen":return gameachievementsloader;
+        case "raentryscreen":         return raentryloader;
+        case "discoverscreen":        return discoverviewloader;
+        default:                      return null;
+        }
+    }
+
+    // One definition of the fanart decode size, used by the crossfade layers
+    // AND the prefetcher. They must match exactly, or a prefetched image lands
+    // in a different cache entry and the crossfade decodes it all over again.
+    readonly property size fanartDecodeSize: Qt.size(Math.round(width  * hqFanartScale),
+                                                     Math.round(height * hqFanartScale))
+    readonly property int  hqCacheTiles:    hqMode ? 4    : 2     // off-screen row tiles pre-decoded
+
+    // All Games Menu
+    readonly property int  hqAllGamesVideoMs: hqMode ? 800  : 2000 // rest before the preview video plays
+    readonly property int  hqAllGamesArtMs:   hqMode ? 60   : 150  // rest before heavy art swaps in
+    readonly property int  hqAllGamesCacheRows: hqMode ? 4  : 0    // off-screen list rows kept built
 
     // Phase 2 — within the Showcase, the featured box yields to a row preview.
     // Count of row previews currently loaded on the Showcase (0 or 1 in
@@ -1042,12 +1205,27 @@ id: root
     function isAppGame(game) {
         return !!game && appTitleSet[game.title] === true;
     }
+    // Apps Pegasus imported on its own have a file path of "android:<package>"
+    // and no metadata at all. Apps the user wrote a metadata entry for point at
+    // a real file. That prefix is the reliable way to tell the two apart.
+    function isPegasusImport(game) {
+        if (!game || !game.files || game.files.count < 1) return false;
+        return (game.files.get(0).path || "").indexOf("android:") === 0;
+    }
+
     function openGame(game) {
         if (!game) return;
-        if (settings.OmitApplicationFromShowcase !== "Yes" && isAppGame(game))
-            launchGame(game);
-        else
+        if (settings.OmitApplicationFromShowcase !== "Yes" && isAppGame(game)) {
+            // Pegasus imports always launch straight away — there's nothing to
+            // show on a details page. Added apps launch straight away too,
+            // unless the user asked for their details page first.
+            if (isPegasusImport(game) || settings.AddedAppLaunch !== "Details Page")
+                launchGame(game);
+            else
+                gameDetails(game);
+        } else {
             gameDetails(game);
+        }
     }
 
     function gameDetailsFromDiscover(game) {
@@ -1508,6 +1686,49 @@ id: root
     }
 
     // ── App drawer ────────────────────────────────────────────────────────
+    // ── HQ: blurred screen behind the app drawer ─────────────────────────
+    // A one-time SNAPSHOT of the current screen, blurred, faded in with the
+    // drawer's slide. Snapshot rather than live: a live full-screen FastBlur
+    // is a blur pass every frame; this is one pass per open. Fail-safe: if
+    // FastBlur can't render on a GPU the layer is simply transparent and the
+    // drawer looks as it does today. Sits just under the drawer (z 499).
+    Loader {
+        anchors.fill: parent
+        z: 499
+        active: hqDrawerBlur
+        sourceComponent: Item {
+            visible: appDrawer.slide > 0.001
+            opacity: appDrawer.slide
+            ShaderEffectSource {
+            id: drawerSnap
+                anchors.fill: parent
+                sourceItem: activeScreenItem
+                // Live only while the drawer is sliding open, then frozen. A
+                // single capture at the open instant caught the highlighted
+                // tile mid-transition: its art was still faded out under the
+                // preview video, and the video had just been torn down — so
+                // the snapshot held an empty tile for as long as the drawer
+                // stayed open. The slide is longer than the art's 200ms
+                // restore, so by the time this freezes the tile is whole.
+                live: appDrawer.open && appDrawer.slide < 1
+                hideSource: false
+                visible: false
+            }
+            FastBlur {
+                anchors.fill: parent
+                source: drawerSnap
+                radius: 48
+                cached: true
+            }
+            // Capture the instant the drawer starts opening, before it slides
+            // over the screen. live:false means this is the only capture.
+            Connections {
+                target: appDrawer
+                function onOpenChanged() { if (appDrawer.open) drawerSnap.scheduleUpdate(); }
+            }
+        }
+    }
+
     // One instance at the top level so it overlays every screen. z sits above
     // launchgameloader (z: 100) and the help bar so nothing draws over it.
     AppDrawer {
