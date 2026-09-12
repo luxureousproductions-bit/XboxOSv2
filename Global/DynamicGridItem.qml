@@ -295,7 +295,7 @@ id: root
             Rectangle {
                 anchors.fill: parent
                 color: "#000000"
-                opacity: 0.42
+                opacity: hqAppTileScrim
             }
             // Accent tint, matching the launch screen.
             Rectangle {
