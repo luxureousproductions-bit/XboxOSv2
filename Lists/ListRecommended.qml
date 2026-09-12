@@ -20,8 +20,16 @@ import SortFilterProxyModel 0.2
 Item {
 id: root
     
-    readonly property var games: gamesFiltered
-    function currentGame(index) { return api.allGames.get(gamesFiltered.mapToSource(index)) }
+    // The picked games as a plain array, sorted by rating. This used to be a
+    // SortFilterProxyModel over api.allGames with a JS ExpressionFilter — which
+    // meant every refresh walked all 4300 games, evaluated the filter on each,
+    // and sorted the lot, on the UI thread, at the moment the row appeared.
+    // refresh() already knows exactly which games it picked, so it now hands
+    // over those ~15 directly. The library-wide passes never happen.
+    property var games: []
+    function currentGame(index) {
+        return (index >= 0 && index < games.length) ? games[index] : null;
+    }
     property int max: 15
 
     property bool omitApplication: false
@@ -48,6 +56,7 @@ id: root
         var total   = api.allGames.count;
         var picked  = 0;
         var tries   = 0;
+        var out     = [];
         while (picked < max && total > 0 && tries < max * 20) {
             tries++;
             var ri  = Math.floor(Math.random() * total);
@@ -68,8 +77,12 @@ id: root
             }
             if (skip) continue;
             indices[key] = true;
+            out.push(g);
             picked++;
         }
+        // Same order the proxy produced: best-rated first. ~15 items, trivial.
+        out.sort(function(a, b) { return (b.rating || 0) - (a.rating || 0); });
+        games = out;
         randomIndices = indices;
         lastPickedMax = max;
     }
@@ -82,22 +95,11 @@ id: root
     // so they cost nothing at load.
     Component.onCompleted: if (active) refresh()
 
-    SortFilterProxyModel {
-    id: gamesFiltered
-        sourceModel: active ? api.allGames : null
-        sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder; }
-        filters: ExpressionFilter {
-            // Membership test only — omit logic now lives in refresh(), so this
-            // depends solely on randomIndices (which the proxy reliably reacts to).
-            expression: randomIndices[model.index.toString()] === true
-        }
-    }
-
     property var collection: {
         return {
             name:       "Picked For You",
             shortName:  "recommended",
-            games:      gamesFiltered
+            games:      games
         }
     }
 }
