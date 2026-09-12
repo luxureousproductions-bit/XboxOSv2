@@ -128,7 +128,16 @@ id: root
 
     onFavCountChanged: ensureFallbacks()
     onBoxModeChanged: ensureFallbacks()
-    Component.onCompleted: ensureFallbacks()
+    // The video list is built at load regardless of mode. It used to be lazy,
+    // built only when a switch to Discover Videos triggered it — and on a fresh
+    // load that switch resolved to "art" until the list existed, so it relied
+    // on a chain of change signals firing in the right order to build it. On
+    // a first load that chain could miss, and the box stayed on art until the
+    // setting was cycled again. Eager is one scan of the library, a few ms.
+    Component.onCompleted: {
+        if (!videosScanned) buildVideoList();
+        ensureFallbacks();
+    }
 
     function fallbackJump() {
         if (fallbackList.length < 2) return;
@@ -247,8 +256,38 @@ id: root
                 // Phase 2: also yields while a row preview is playing, so the
                 // Showcase runs one video decoder at a time. Pauses (last frame
                 // held) and resumes the moment the row preview goes away.
+                // Yields to a row preview only once it has a frame to hold.
+                // On a cold first start the decoder can take longer than the
+                // row's warm-up lead, and yielding before the first frame paused
+                // a video with nothing showing — the box looked as if the
+                // switch to Discover hadn't happened at all.
+                property bool hasFrame: false
+                onPositionChanged: if (position > 0 && !hasFrame) hasFrame = true
+
+                // Recovery from a failed start. With HQ mode the row preview
+                // warms its decoder at the same instant this one starts cold,
+                // and on Android two cold decoder inits at once can leave this
+                // one errored — with nothing to retry it, the box stayed blank
+                // until the setting was touched again. Reload the source after
+                // a short pause; capped so a genuinely broken file can't loop.
+                property int retries: 0
+                property bool retrying: false
+                Timer {
+                id: retryStart
+                    interval: 700
+                    onTriggered: {
+                        if (!shouldPlay || retries >= 3) return;
+                        retries += 1;
+                        retrying = true;
+                        var src = source;
+                        source = "";
+                        source = src;          // onSourceChanged restarts it
+                        retrying = false;
+                    }
+                }
+                onErrorChanged: if (error !== MediaPlayer.NoError) retryStart.restart()
                 readonly property bool shouldPlay: playbackOwner === "showcasescreen"
-                                                && showcaseRowPreviews === 0
+                                                && (hqDualDecoder || showcaseRowPreviews === 0 || !hasFrame)
                 onShouldPlayChanged: {
                     if (shouldPlay) {
                         // Arriving: if Discover left something to resume, jump
@@ -296,7 +335,11 @@ id: root
                 // Only start if this screen is showing — otherwise a source
                 // change while off-screen (Discover advancing) would restart
                 // playback behind another screen, audio included.
-                onSourceChanged: if (shouldPlay) play(); else pause()
+                onSourceChanged: {
+                    hasFrame = false;
+                    if (source != "" && !retrying) retries = 0;   // real change, not a retry
+                    if (shouldPlay) play(); else pause();
+                }
 
                 // First-load fix. onSourceChanged fires the instant the source is
                 // assigned, before the media has loaded, and a play() at that

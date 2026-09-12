@@ -81,7 +81,14 @@ id: root
     }
 
     property bool selected
-    Behavior on scale { NumberAnimation { duration: 100 } }
+    // HQ: eased pop into the highlight instead of a linear ramp.
+    Behavior on scale {
+        NumberAnimation {
+            duration: hqMode ? 180 : 100
+            easing.type: hqMode ? Easing.OutBack : Easing.Linear
+            easing.overshoot: 1.2
+        }
+    }
     property var gameData
     property int columns: 6
     property string artStyle: "Box Art"
@@ -164,6 +171,9 @@ id: root
             anchors.margins: vpx(2)
 
             asynchronous: true
+            // HQ: dissolve in on load instead of snapping.
+            opacity: hqFadeIn ? (status === Image.Ready ? 1 : 0) : 1
+            Behavior on opacity { enabled: hqFadeIn; NumberAnimation { duration: 180 } }
             source: boxArt(gameData)
             sourceSize { width: root.width; height: root.height }
             smooth: false

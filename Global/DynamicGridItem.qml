@@ -74,8 +74,16 @@ id: root
 
     // In order to use the retropie icons here we need to do a little collection specific hack
     property bool playVideo: gameData ? gameData.assets.videoList.length && (settings.AllowThumbVideo == "Yes") : ""
-    scale: selected ? 1 : 0.95
-    Behavior on scale { NumberAnimation { duration: 100 } }
+    // HQ: neighbours recede further and the pop is eased. The highlighted
+    // tile itself stays at 1.0 so it lines up with the highlight's video.
+    scale: selected ? 1 : hqRestScale
+    Behavior on scale {
+        NumberAnimation {
+            duration: hqMode ? 180 : 100
+            easing.type: hqMode ? Easing.OutBack : Easing.Linear
+            easing.overshoot: 1.2
+        }
+    }
     z: selected ? 10 : 1
 
     // The art fades out under the video preview so the video shows cleanly.
@@ -272,7 +280,7 @@ id: root
                     source: root.appIconArt
                     // Decoded small: it's about to be blurred past any detail,
                     // and the upscale softens it further.
-                    sourceSize { width: 128; height: 128 }
+                    sourceSize { width: hqAppBlurSrcPx; height: hqAppBlurSrcPx }
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                 }
@@ -280,41 +288,62 @@ id: root
             FastBlur {
                 anchors.fill: parent
                 source: appBlurSrc
-                radius: 48          // hard cap is 64
+                radius: hqAppBlurRadius   // hard cap is 64; HQ runs at the cap
                 cached: true
             }
-            // Knocks the backdrop back so the round icon stays legible.
+            // Knocks the backdrop back so the icon stays legible.
             Rectangle {
                 anchors.fill: parent
                 color: "#000000"
                 opacity: 0.42
             }
+            // Accent tint, matching the launch screen.
+            Rectangle {
+                anchors.fill: parent
+                color: theme.accent
+                opacity: 0.16
+            }
 
-            // Round icon, sized off the SHORTER side so it stays circular and
-            // proportionate whether the tile is square, wide or tall.
+            // Shadow plate beneath the icon. Never sources the icon (a shadow
+            // effect of a masked item gets its raw, unmasked texture). Base
+            // shows the plate flat; HQ blurs it soft. Same as the launch screen.
+            Rectangle {
+                anchors { horizontalCenter: appRound.horizontalCenter; horizontalCenterOffset: appRound.width * 0.01
+                          verticalCenter:   appRound.verticalCenter;   verticalCenterOffset: appRound.height * 0.05 }
+                width: appRound.width; height: appRound.height
+                radius: appRound.cornerRadius
+                color: "#000000"; opacity: hqMode ? 0.55 : 0.35
+                layer.enabled: hqMode
+                layer.effect: FastBlur { radius: 24; transparentBorder: true }
+            }
+
+            // Rounded-square icon, sized off the SHORTER side so it stays
+            // proportionate whether the tile is square, wide or tall. Same
+            // crop as the drawer tiles and the launch screen.
             Item {
             id: appRound
 
                 anchors.centerIn: parent
                 width:  Math.min(parent.width, parent.height) * 0.52
                 height: width
+                readonly property real cornerRadius: width * 0.18
                 layer.enabled: true
                 layer.smooth: true
                 layer.effect: OpacityMask {
                     maskSource: Rectangle {
                         width: appRound.width; height: appRound.height
-                        radius: width / 2
+                        radius: appRound.cornerRadius
                     }
                 }
                 Rectangle { anchors.fill: parent; color: "#2E2E2E" }
                 Image {
                     anchors.centerIn: parent
                     // Icons are a circle on a transparent square, so the art is
-                    // blown past the frame to fill the round mask.
+                    // blown past the frame to fill the rounded square.
                     width:  parent.width  * 1.45
                     height: parent.height * 1.45
                     source: root.appIconArt
-                    sourceSize { width: 256; height: 256 }
+                    sourceSize { width: hqMode ? 384 : 256; height: hqMode ? 384 : 256 }
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
                     asynchronous: true
@@ -328,13 +357,20 @@ id: root
             anchors.fill: parent
             anchors.margins: vpx(2)
             visible: !appTile.visible
+            // HQ: dissolve in on load. Starts hidden and lifts on Ready with a
+            // plain assignment, matching how restoreArt/fadeArt already drive
+            // this property — no binding for them to break. OFF starts at 1.
+            // The existing 200ms Behavior below animates the lift, so this
+            // is a dissolve in HQ and (starting at 1) a no-op otherwise.
+            opacity: hqFadeIn ? 0 : 1
+            onStatusChanged: if (status === Image.Ready && hqFadeIn && !root.videoShowing) opacity = 1
             source: modelData ? (
                       artMode === "Screenshot" ? (modelData.assets.screenshots[0] || modelData.assets.background || "")
                     : artMode === "Boxfront"   ? (modelData.assets.boxFront || modelData.assets.background || modelData.assets.screenshots[0] || "")
                     :                            (modelData.assets.background || modelData.assets.screenshots[0] || "")
                   ) : ""
             fillMode: Image.PreserveAspectCrop
-            sourceSize { width: 512; height: 512 }
+            sourceSize { width: hqTileArtPx; height: hqTileArtPx }   // HQ: 1024, crisper on large tiles
             smooth: false
             asynchronous: true
             Behavior on opacity { NumberAnimation { duration: 200 } }

@@ -71,8 +71,8 @@ id: root
     // NOT from t=0: the featured box yields while a preview is loaded, so an
     // early warm-up would freeze it for the whole wait. One second is ample
     // for the decoder to reach ready, and keeps the box's pause short.
-    property int previewDelay:  2500
-    property int previewWarmup: 1000
+    property int previewDelay:  hqPreviewDelay
+    property int previewWarmup: hqPreviewWarmup
     function unloadPreview() {
         armed = false;
         rowPreviewPlaying = false;

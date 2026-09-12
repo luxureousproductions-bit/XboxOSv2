@@ -38,6 +38,27 @@ id: root
     // and behaves exactly as before.
     property var favoritesData: null
     property bool showFavoritesHeader: favoritesData !== null
+
+    // ── HQ: fanart prefetch ─────────────────────────────────────────────
+    // While this row has focus, quietly decode the previous and next games'
+    // backgrounds into Qt's image cache, at exactly the size the Showcase
+    // crossfade layers decode at (theme.fanartDecodeSize). When the cursor
+    // moves, the incoming fanart is already decoded and the fade starts at
+    // once instead of after a decode. Two hidden Images, never displayed.
+    function neighbourBg(offset) {
+        if (!search || !hqPrefetch || !collectionList.focus) return "";
+        var i = collectionList.currentIndex + offset;
+        if (i < 0 || i >= collectionList.count) return "";
+        // Same resolver the crossfade uses, so a screenshot-fallback image is
+        // prefetched too, and never a different file from the one shown.
+        return fanartFor(search.currentGame(i));
+    }
+    Image { visible: false; asynchronous: true; cache: true
+            sourceSize: fanartDecodeSize
+            source: neighbourBg(-1) }
+    Image { visible: false; asynchronous: true; cache: true
+            sourceSize: fanartDecodeSize
+            source: neighbourBg(+1) }
     // Set by the hosting screen ("showcasescreen", "gameviewscreen").
     property string ownScreen: ""
 
@@ -132,7 +153,7 @@ id: root
         highlightMoveDuration: 100
         highlight: highlightcomponent
         displayMarginEnd: itemWidth
-        cacheBuffer: itemWidth * 2
+        cacheBuffer: itemWidth * hqCacheTiles
         keyNavigationWraps: true
         
         property int savedIndex: 0

@@ -462,6 +462,9 @@ id: root
     }
     readonly property int appCount: filteredApps.length
 
+    // Single entry point for tab changes (tab strip click and LB/RB).
+    function switchTab(i) { tabIndex = i; }
+
     readonly property var filteredApps: {
         var out = [];
         var idx = appIndex;
@@ -500,7 +503,9 @@ id: root
     // out of step.
     property real slide: open ? 1 : 0
     Behavior on slide {
-        NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
+        // HQ: a longer, softer settle.
+        NumberAnimation { duration: hqDrawerSlideMs
+                          easing.type: hqMode ? Easing.OutQuint : Easing.OutCubic }
     }
 
     // Dimming scrim. A real blur behind the panel is the expensive part of the
@@ -563,7 +568,10 @@ id: root
                 height: vpx(5)
                 radius: height / 2
                 color: theme.accent
-                Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+                // HQ: quicker slide. The rows already swap in the first frame of
+                // a switch; a 150ms underline glide after that read as the switch
+                // still "finishing". 80ms keeps it visible without the lag feel.
+                Behavior on x { NumberAnimation { duration: hqMode ? 80 : 150; easing.type: Easing.OutCubic } }
             }
         }
 
@@ -686,7 +694,7 @@ id: root
                     }
                     MouseArea {
                         anchors.fill: parent
-                        onClicked: { root.zone = root.zoneTabs; root.tabIndex = index; }
+                        onClicked: { root.zone = root.zoneTabs; root.switchTab(index); }
                     }
                 }
             }
@@ -802,7 +810,40 @@ id: root
             lineHeight: 1.3
         }
 
-        ListView {
+                // HQ: pre-decode every app icon once, on first open, into Qt's image
+        // cache. Tab switches swap the model and rebuild the delegates, and
+        // even a cached pixmap loaded asynchronously arrives a frame late —
+        // that frame is the pop. With the cache warm, the real icons below
+        // load synchronously and are simply there. Same source and sourceSize
+        // as the real icons, or they would not share a cache entry.
+        Repeater {
+            // At load, not on open: warming on open could be outrun by a quick
+            // tab switch, and a cache miss decodes from disk on the UI thread —
+            // a dozen of those at once is a visible hitch on a big section.
+            // Both modes. It decodes at whatever hqIconScale is for the mode —
+            // 1.4x in base, 2x in HQ — so the keys match the rows either way.
+            // Cost in base: ~36 icons at ~130px, about 2.5MB, decoded once at
+            // load off the UI thread. Cheap enough for any device.
+            model: root.appIndex.length
+            delegate: Image {
+                visible: false
+                source: root.appIndex[index].art
+                sourceSize {
+                    width:  Math.round(root.iconSize * root.iconZoom * hqIconScale)
+                    height: Math.round(root.iconSize * root.iconZoom * hqIconScale)
+                }
+                // MUST match the row icon. With sourceSize set, Qt folds the
+                // fill mode into the pixmap cache key (PreserveAspectCrop is a
+                // provider option). The warmer defaulted to Stretch, so every
+                // decode landed in a different entry from the one the rows
+                // read — the cache was warm and useless, and icons still popped.
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                cache: true
+            }
+        }
+
+ListView {
         id: list
 
             anchors {
@@ -907,8 +948,8 @@ id: root
                                     // Decoded at the zoomed size so scaling up
                                     // doesn't soften the icon.
                                     sourceSize {
-                                        width: Math.round(root.iconSize * root.iconZoom * 1.4)
-                                        height: Math.round(root.iconSize * root.iconZoom * 1.4)
+                                        width: Math.round(root.iconSize * root.iconZoom * hqIconScale)
+                                        height: Math.round(root.iconSize * root.iconZoom * hqIconScale)
                                     }
                                     fillMode: Image.PreserveAspectCrop
                                     // Scales about the centre; the surrounding
@@ -919,8 +960,22 @@ id: root
                                     // status, and that's keyed to hasArt now.
                                     // Sync decode blocked the UI thread once
                                     // per row created.
+                                    // Always async. A synchronous load in HQ was measured
+                                    // stalling the UI thread ~50ms on big tabs — the decode
+                                    // was not consistently hitting the warm cache, and a
+                                    // sync miss decodes from disk on the UI thread. Async
+                                    // can never stall; with the cache warm it completes in
+                                    // the same or next frame, which is not a visible pop.
                                     asynchronous: true
                                     smooth: true
+                                    // No load fade here. In HQ the icons are pre-decoded and
+                                    // loaded synchronously, so they're simply present the frame
+                                    // their row is — there's no pop to hide. A fade on this
+                                    // property actively hurt: a reused row's status passes
+                                    // through Loading on every tab switch even on a cache hit,
+                                    // so every row blinked out and in on every switch, which is
+                                    // what read as sluggish tabbing.
+                                    opacity: 1
                                 }
                             }
 
@@ -1405,7 +1460,7 @@ id: root
     // the cursor up to it first.
     function cycleTab(step) {
         var n = tabs.length;
-        tabIndex = (tabIndex + step + n) % n;
+        switchTab((tabIndex + step + n) % n);
         playNav();
     }
 
