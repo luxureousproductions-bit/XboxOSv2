@@ -154,19 +154,21 @@ id: root
 
     property string randoPub:    Utils.returnRandom(Utils.uniqueValuesArray('publisher', poolOmitApp, poolOmitEmu)) || ''
     property string randoDev:    Utils.returnRandom(Utils.uniqueValuesArray('developer', poolOmitApp, poolOmitEmu)) || ''
-    property string randoGenre:  Utils.returnRandom(Utils.uniqueGenreValues(poolOmitEmu)) || ''
-    property string randoGenre2: Utils.returnRandom(Utils.uniqueGenreValues(poolOmitEmu)) || ''
+    // Weighted by kind (parent 40% / sub 40% / full 20%), and the second row
+    // never draws the first row's genre — previously these were two independent
+    // flat draws, so on a fresh load both rows could land on the same genre.
+    readonly property var genrePools: Utils.genrePools(poolOmitEmu)
+    property string randoGenre:  Utils.pickGenre(genrePools, "") || ''
+    property string randoGenre2: Utils.pickGenre(genrePools, randoGenre) || ''
 
     function refreshLists() {
         var omitEmu = settings.OmitEmulatorFromShowcase === "Yes";
         var omitApp = settings.OmitApplicationFromShowcase === "Yes";
         var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher', omitApp, omitEmu)) || '';
         var dev = Utils.returnRandom(Utils.uniqueValuesArray('developer', omitApp, omitEmu)) || '';
-        var genres = Utils.uniqueGenreValues(omitEmu);
-        var genre = Utils.returnRandom(genres) || '';
-        var filtered = genres.filter(function(g) { return g !== genre; });
-        var pick = filtered.length > 0 ? filtered : genres;
-        var genre2 = Utils.returnRandom(pick) || '';
+        var pools  = Utils.genrePools(omitEmu);
+        var genre  = Utils.pickGenre(pools, "") || '';
+        var genre2 = Utils.pickGenre(pools, genre) || '';
         randoPub = pub;
         randoDev = dev;
         randoGenre = genre;
