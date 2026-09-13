@@ -597,6 +597,54 @@ function returnRandom(array) {
   return array[Math.floor(Math.random() * array.length)];
 }
 
+// Genre candidates split by KIND — the full "genre / sub" strings, the parent
+// halves, and the sub halves — each deduplicated. Same splitting rules as
+// uniqueGenreValues below (either separator, any surrounding whitespace).
+//
+// Kept separate so the pick can be weighted by kind. In one flat pool the full
+// strings outnumber the parts on a typical library (every compound tag adds a
+// full entry, but shared parents like "Action" collapse to one), which made
+// "Top Action / Platformer Games" rows far more common than "Top Action Games".
+function genrePools(omitEmulator) {
+  const full = new Set(), parent = new Set(), sub = new Set();
+  const allGames = api.allGames.toVarArray();
+  const ok = (v) => {
+    const l = v.toLowerCase();
+    return v && l !== "application" && !(omitEmulator && l === "emulator");
+  };
+  for (let i = 0; i < allGames.length; i++) {
+    const genres = allGames[i]['genreList'];
+    if (!genres) continue;
+    for (let j = 0; j < genres.length; j++) {
+      const g = genres[j];
+      if (!g || !ok(g)) continue;
+      const m = g.match(/\s*[/,]\s*/);
+      if (!m) { parent.add(g.trim()); continue; }     // a plain genre is a parent
+      full.add(g);
+      const p = g.substring(0, m.index).trim();
+      const q = g.substring(m.index + m[0].length).trim();
+      if (ok(p)) parent.add(p);
+      if (ok(q)) sub.add(q);
+    }
+  }
+  return { full: [...full], parent: [...parent], sub: [...sub] };
+}
+
+// Weighted pick: 40% a parent genre, 40% a sub-genre, 20% a full compound.
+// `exclude` keeps a second row from landing on the first row's genre. If the
+// chosen kind has nothing left, falls through to whichever kinds do.
+function pickGenre(pools, exclude) {
+  const kinds = [["parent", 0.40], ["sub", 0.40], ["full", 0.20]];
+  const avail = (k) => pools[k].filter(g => g !== exclude);
+  let r = Math.random(), chosen = null;
+  for (const [k, w] of kinds) { if (r < w) { chosen = k; break; } r -= w; }
+  let list = avail(chosen);
+  if (list.length === 0)
+    for (const [k] of kinds) { list = avail(k); if (list.length) break; }
+  if (list.length === 0 && exclude) list = pools.parent.concat(pools.sub, pools.full);
+  return list.length ? returnRandom(list) : "";
+}
+
 // Returns a flat, deduplicated, sorted array of all genre strings found across
 // all games.  For compound entries separated by "/" or "," (with any surrounding
 // whitespace) the full string is kept AND each individual part is also added as
