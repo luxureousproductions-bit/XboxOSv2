@@ -290,7 +290,7 @@ id: root
                 bottom: parent.bottom; bottomMargin: vpx(9)
             }
             z: 40
-            width: vpx(20)
+            width: Math.min(root.width * 0.075, vpx(20))
             height: width
             // 2D boxes carry the pin inside their title bar; this one is for 3D
             // renders only, and like the bar it shows only when the title does.
@@ -358,7 +358,12 @@ id: root
                 Image {
                 id: barPin
                     anchors { right: parent.right; rightMargin: vpx(8); bottom: parent.bottom; bottomMargin: vpx(8) }
-                    width: Math.min(parent.height * 0.55, vpx(26)); height: width
+                    // Sized against the BOX's width, not the bar's height. Every
+                    // tile hit the same 26px cap, but a box is narrower than a
+                    // wide/square tile, so the identical pin covered more of it
+                    // and read as oversized. 0.075 matches the proportion the
+                    // dynamic tile's pin has to its own width.
+                    width: Math.min(parent.width * 0.075, vpx(26)); height: width
                     source: "../assets/images/favicon.svg"
                     sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
                     visible: gameData && gameData.favorite
