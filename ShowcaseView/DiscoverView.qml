@@ -297,6 +297,21 @@ id: root
     Keys.onLeftPressed:  discoverJump()
     Keys.onRightPressed: discoverJump()
 
+    // Mouse back button: the same exit B performs — hand the game and
+    // position back so the featured box resumes here, and clear the prompt.
+    function mouseBack() {
+        event.accepted = true;
+        // Clear on the way out, or leaving with the UI hidden would keep
+        // the Apps prompt suppressed on every other screen.
+        hideAppsPrompt = false;
+        // Hand our game and position back so the featured box resumes here.
+        if (currentGame) {
+            handoffGame = currentGame;
+            handoffPosition = videoPlayer.position;
+        }
+        previousScreen();
+            }
+
     Keys.onPressed: {
         // Accept – launch the game directly
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {

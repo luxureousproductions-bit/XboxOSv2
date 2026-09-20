@@ -39,6 +39,8 @@ id: root
     ListLastPlayed  { id: listLastPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
     ListMostPlayed  { id: listMostPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
     ListRecommended { id: listRecommended; active: true; max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
+    // "Play Something New For <System>": one random system, a few of its games.
+    ListRandomSystem { id: listRandomSystem; active: true; max: settings.ShowcaseColumns }
     ListPublisher   { id: listPublisher;   max: settings.ShowcaseColumns; publisher: randoPub;   omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
     ListDeveloper   { id: listDeveloper;   max: settings.ShowcaseColumns; developer: randoDev;   omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
     ListGenre       { id: listGenre;       max: settings.ShowcaseColumns; genre: randoGenre;     omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
@@ -93,6 +95,15 @@ id: root
                 collection.itemWidth = (width / tDiv);
                 collection.itemHeight = collection.itemWidth / ratio;
                 break;
+            case "Box Art":
+            case "3D Box":
+                // Same scheme as the grids: a typical box proportion scaled by
+                // the ratio, 0.66 being neutral. Uses the Tall widths.
+                collection.itemWidth = (width / tDiv);
+                collection.itemHeight = collection.itemWidth * 1.4 * (ratio / 0.66);
+                collection.boxArt = true;
+                collection.boxStyle = collectionThumbnail;    // "Box Art" or "3D Box"
+                break;
             case "Wide":
             default:
                 collection.itemWidth = (width / wDiv);
@@ -128,6 +139,9 @@ id: root
             case "Top by Genre 2":
                 collection.search = listGenre2;
                 break;
+            case "System":
+                collection.search = listRandomSystem;
+                break;
             case "None":
                 collection.enabled = false;
                 collection.height = 0;
@@ -154,21 +168,19 @@ id: root
 
     property string randoPub:    Utils.returnRandom(Utils.uniqueValuesArray('publisher', poolOmitApp, poolOmitEmu)) || ''
     property string randoDev:    Utils.returnRandom(Utils.uniqueValuesArray('developer', poolOmitApp, poolOmitEmu)) || ''
-    // Weighted by kind (parent 40% / sub 40% / full 20%), and the second row
-    // never draws the first row's genre — previously these were two independent
-    // flat draws, so on a fresh load both rows could land on the same genre.
-    readonly property var genrePools: Utils.genrePools(poolOmitEmu)
-    property string randoGenre:  Utils.pickGenre(genrePools, "") || ''
-    property string randoGenre2: Utils.pickGenre(genrePools, randoGenre) || ''
+    property string randoGenre:  Utils.returnRandom(Utils.uniqueGenreValues(poolOmitEmu)) || ''
+    property string randoGenre2: Utils.returnRandom(Utils.uniqueGenreValues(poolOmitEmu)) || ''
 
     function refreshLists() {
         var omitEmu = settings.OmitEmulatorFromShowcase === "Yes";
         var omitApp = settings.OmitApplicationFromShowcase === "Yes";
         var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher', omitApp, omitEmu)) || '';
         var dev = Utils.returnRandom(Utils.uniqueValuesArray('developer', omitApp, omitEmu)) || '';
-        var pools  = Utils.genrePools(omitEmu);
-        var genre  = Utils.pickGenre(pools, "") || '';
-        var genre2 = Utils.pickGenre(pools, genre) || '';
+        var genres = Utils.uniqueGenreValues(omitEmu);
+        var genre = Utils.returnRandom(genres) || '';
+        var filtered = genres.filter(function(g) { return g !== genre; });
+        var pick = filtered.length > 0 ? filtered : genres;
+        var genre2 = Utils.returnRandom(pick) || '';
         randoPub = pub;
         randoDev = dev;
         randoGenre = genre;
@@ -178,6 +190,7 @@ id: root
         api.memory.set("Showcase randoGenre", genre);
         api.memory.set("Showcase randoGenre2", genre2);
         listRecommended.refresh();
+        listRandomSystem.refresh();
         currentHelpbarModel = gridviewHelpModel;
     }
 
@@ -1252,7 +1265,7 @@ id: root
                         // match tile.radius automatically.
                         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                         height: Math.max(vpx(36), topRow.tileSz * 0.16, heroBarText.contentHeight + vpx(16)); color: "#99000000"
-                        opacity: (selected || settings.AlwaysShowTitles === "Yes") ? 1 : 0
+                        opacity: gameTitleMode === "Never" ? 0 : ((selected || gameTitleMode === "Always") ? 1 : 0)
                         visible: opacity > 0
                         Behavior on opacity { NumberAnimation { duration: 120 } }
                         Text {
@@ -1367,7 +1380,9 @@ id: root
                         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                         height: Math.max(vpx(36), topRow.tileSz * 0.16, sysBarText.contentHeight + vpx(16))   // grows for 2-line names
                         color: "#99000000"
-                        opacity: (!isHero && (selected || settings.AlwaysShowTitles === "Yes")) ? 1 : 0
+                        // System tile titles: its own setting, separate from game tiles.
+                        opacity: (isHero || systemTitleMode === "Never") ? 0
+                               : ((selected || systemTitleMode === "Always") ? 1 : 0)
                         Behavior on opacity { NumberAnimation { duration: 120 } }
 
                     Text {
@@ -1482,6 +1497,8 @@ id: root
 
             itemWidth: collection.itemWidth
             itemHeight: collection.itemHeight
+            boxArt: collection.boxArt === true
+            boxStyle: collection.boxStyle || "Box Art"
 
             title: collection.title
             search: collection.search
@@ -1515,6 +1532,8 @@ id: root
 
             itemWidth: collection.itemWidth
             itemHeight: collection.itemHeight
+            boxArt: collection.boxArt === true
+            boxStyle: collection.boxStyle || "Box Art"
 
             title: collection.title
             search: collection.search
@@ -1548,6 +1567,8 @@ id: root
 
             itemWidth: collection.itemWidth
             itemHeight: collection.itemHeight
+            boxArt: collection.boxArt === true
+            boxStyle: collection.boxStyle || "Box Art"
 
             title: collection.title
             search: collection.search
@@ -1581,6 +1602,8 @@ id: root
 
             itemWidth: collection.itemWidth
             itemHeight: collection.itemHeight
+            boxArt: collection.boxArt === true
+            boxStyle: collection.boxStyle || "Box Art"
 
             title: collection.title
             search: collection.search
@@ -1614,6 +1637,8 @@ id: root
 
             itemWidth: collection.itemWidth
             itemHeight: collection.itemHeight
+            boxArt: collection.boxArt === true
+            boxStyle: collection.boxStyle || "Box Art"
 
             title: collection.title
             search: collection.search
@@ -1647,6 +1672,8 @@ id: root
 
             itemWidth: collection.itemWidth
             itemHeight: collection.itemHeight
+            boxArt: collection.boxArt === true
+            boxStyle: collection.boxStyle || "Box Art"
 
             title: collection.title
             search: collection.search
@@ -1842,7 +1869,32 @@ id: root
         }
     }
 
+    // Wheel moves the selected ROW. Only while the rows themselves are
+    // focused — with a header button focused the wheel would otherwise move
+    // a list the user isn't in. navJump/savedRow are left alone: this is an
+    // ordinary row change, not a jump to the nav bar.
+    WheelNav {
+        anchors.fill: mainList
+        view: mainList
+        columns: 1
+        active: mainList.activeFocus
+        onStepped: function() { playNav(); }
+    }
+
     // Global input handling for the screen
+    // Mouse back button: mirrors B exactly. On the Showcase that means
+    // Discover from the rows — and, from a header button, returning to the
+    // rows (restoring the saved row so a navJump doesn't glide to the top),
+    // which is what those buttons' own B handlers do.
+    function mouseBack() {
+        if (!mainList.activeFocus) {
+            if (mainList.navJump) { mainList.navJump = false; mainList.currentIndex = mainList.savedRow; }
+            mainList.focus = true;
+            return;
+        }
+        discoverScreen();
+    }
+
     Keys.onPressed: {
         // Settings
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {

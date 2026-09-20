@@ -26,6 +26,89 @@ id: root
     }
 
     property real itemheight: vpx(50)
+
+    // ── Grid layout ───────────────────────────────────────────────────────
+    // The same menu, laid out as tiles. Both views bind to displayModel and
+    // share currentGameIndex, so currentGame — and everything derived from it
+    // (audio, video preview, imported-app handling, the helpbar) — is
+    // unchanged. Only the layout differs; there is no second screen.
+    readonly property bool gridMode: settings.AllGamesView === "Grid"
+    // The header buttons hand focus back to "the games". That used to be
+    // gamelist unconditionally — in grid mode that focused the hidden list,
+    // so the grid never received input.
+    // Mouse back button: mirrors B, in the same priority order.
+    function mouseBack() {
+        if (searchActive)    { searchActive = false; filterPanel.forceActiveFocus(); return; }
+        if (genrePickerOpen) { genrePickerOpen = false; filterPanel.forceActiveFocus(); return; }
+        if (filterOpen)      { playBack(); filterOpen = false; focusGames(); return; }
+        if (!gamesFocused)   { focusGames(); return; }     // header -> games
+        previousScreen();
+    }
+
+    function focusGames() {
+        if (gridMode) gamegrid.focus = true; else gamelist.focus = true;
+        refreshHelpbar();   // the bar for the games, not the header buttons
+    }
+    // "Are the games focused?" — whichever view is showing. Every button
+    // handler tests this, so none can be left checking the hidden list.
+    readonly property bool gamesFocused: gridMode ? gamegrid.focus : gamelist.focus
+    // A on a grid tile. openGame() honours "Added App Launch": imports and
+    // apps set to Instant launch straight away, everything else opens details.
+    function activateCurrent() {
+        if (filterOpen || !currentGame) return;
+        activateGame(currentGame, true);       // grid: games open details
+    }
+    // ── Fast-scroll detection ─────────────────────────────────────────────
+    // Two cursor moves inside 180ms means the user is racing, not browsing.
+    // While that holds, the grid skips work the user scrolls straight past:
+    // tile animations, the highlight's slide, and look-ahead rows. It
+    // releases 200ms after the last move, so single presses never trigger it
+    // and nothing at rest is affected, in either mode.
+    property bool fastScrolling: false
+    property double lastNavMs: 0
+    Timer {
+    id: fastScrollRelease
+        interval: 200
+        onTriggered: root.fastScrolling = false
+    }
+    function noteGridNav() {
+        var now = Date.now();
+        if (now - lastNavMs < 180) fastScrolling = true;
+        lastNavMs = now;
+        fastScrollRelease.restart();
+    }
+
+    // The view currently showing the games; the letter jumps drive this.
+    readonly property var gamesView: gridMode ? gamegrid : gamelist
+
+    // "Match Platform Page": read the Platform page's grid values instead of
+    // this page's own. The All Games values are left untouched, so turning it
+    // back off restores whatever was set here before.
+    readonly property bool gridMatch: settings.AllGamesMatchPlatform === "Yes"
+    readonly property string tileStyle:   gridMatch ? settings.GridThumbnail : settings.AllGamesTileStyle
+    readonly property string tileRatioStr:gridMatch ? settings.GridRatio     : settings.AllGamesTileRatio
+    readonly property string tileArt:     gridMatch ? settings.GridArt       : settings.AllGamesTileArt
+    readonly property string tileLogo:    gridMatch ? settings.GridGameLogo  : settings.AllGamesTileLogo
+    readonly property string tileColumns: gridMatch ? settings.GridColumns   : settings.AllGamesColumns
+
+    readonly property int  gridColumns: parseInt(tileColumns) || 5
+    readonly property bool gridBoxArt: tileStyle === "Box Art" || tileStyle === "3D Box"
+    // Like the Platform grid: when titles are Always, each cell grows so the
+    // box-art title beneath the art has somewhere to sit.
+    readonly property real gridTitleMargin: gameTitleMode === "Always" ? vpx(30) : 0
+    readonly property real gridCellW: gamegrid.width / gridColumns
+    readonly property real gridCellH: {
+        var r = parseFloat(tileRatioStr) || 0.66;
+        var w = gridCellW;
+        var h;
+        if      (tileStyle === "Tall")    h = w / r;
+        else if (tileStyle === "Square")  h = w;
+        // Box Art: a typical box proportion (1.4 tall) scaled by the ratio, the
+        // same scheme the Platform grid uses — 0.66 is the neutral value.
+        else if (gridBoxArt)              h = w * 1.4 * (r / 0.66);   // Box Art and 3D Box
+        else                              h = w * r;    // Wide
+        return h + gridTitleMargin;
+    }
     property int  skipnum: 10
 
     // ── Data ──────────────────────────────────────────────────────────────
@@ -59,7 +142,7 @@ id: root
         var idx = storedAllGamesIndex;
         if (idx < 0) idx = 0;
         if (idx > displayModel.count - 1) idx = displayModel.count - 1;
-        gamelist.currentIndex = idx;
+        gamesView.currentIndex = idx;      // whichever view is showing
         currentGameIndex = idx;
         currentGame = getCurrentGame(idx);
         restoreViewTimer.restart();   // scroll the view to center on it (deferred)
@@ -69,14 +152,14 @@ id: root
     // (positionViewAtIndex is unreliable right after a reload — the view geometry
     //  isn't ready yet, so it clamps to the top until the user scrolls.)
     function centerListOnCurrent() {
-        var n = gamelist.count;
+        var n = gamesView.count;
         if (n <= 0 || gamelist.height <= 0) { restoreViewTimer.restart(); return; }
-        var i = gamelist.currentIndex < 0 ? 0 : gamelist.currentIndex;
+        var i = gamesView.currentIndex < 0 ? 0 : gamesView.currentIndex;
         // Re-assert the current index so the highlight realizes on the visible row
         // (a delegate scrolled into view via contentY won't refresh isCurrentItem
         //  until the current item changes again).
-        gamelist.currentIndex = -1;
-        gamelist.currentIndex = i;
+        gamesView.currentIndex = -1;
+        gamesView.currentIndex = i;
         // Center the view on the current row
         var target = i * itemheight - (gamelist.height - itemheight) / 2;
         var maxY = Math.max(0, n * itemheight - gamelist.height);
@@ -160,13 +243,29 @@ id: root
     }
     // SNES & N64 3D box scans are stored landscape — rotate them upright (tall) so
     // they match their miximages. Detected the same way the old scale-down was.
-    property bool boxRotated: {
-        if (!settledGame || settledGame.collections.count === 0) return false;
-        var c = settledGame.collections.get(0);
-        var s = ((c.shortName ? c.shortName : "") + " " + (c.name ? c.name : "")).toLowerCase();
-        return (s.indexOf("snes") >= 0 || s.indexOf("super nintendo") >= 0
-                || s.indexOf("n64") >= 0 || s.indexOf("nintendo 64") >= 0);
+    // A 3D box render wider than it is tall is stood on its side — decided
+    // from the image's own proportions, the same rule the box tile uses, so
+    // it covers every wide system rather than a named list (this used to
+    // match "snes" / "n64" in the collection name). 2D art is never rotated.
+    function is3dPath(path) {
+        if (!path) return false;
+        var p = path.toLowerCase();
+        return p.includes("box3d") || p.includes("box_3d") || p.includes("3dbox");
     }
+    // Decided from a tiny hidden probe of the same file, NOT from artBoxImg:
+    // that image decodes at its own width/height, which swap with this flag,
+    // so reading its proportions fed a reload loop (flip -> resize -> reload
+    // -> status drops -> flip back). The probe's size never changes.
+    Image {
+    id: boxProbe
+        visible: false
+        asynchronous: true
+        source: artBoxSource
+        sourceSize: Qt.size(64, 64)
+    }
+    property bool boxRotated: is3dPath(artBoxSource.toString())
+                              && boxProbe.status === Image.Ready
+                              && boxProbe.implicitWidth > boxProbe.implicitHeight
     property real boxScale: 1.0   // full size (the old SNES/N64 0.88 shrink removed)
 
     // ── Video preview (plays inside the screenshot frame after a brief rest) ──
@@ -217,7 +316,7 @@ id: root
             sortDir = (field === "lastPlayed" || field === "rating" || field === "favorite")
                       ? Qt.DescendingOrder : Qt.AscendingOrder;
         }
-        gamelist.currentIndex = 0;
+        gamesView.currentIndex = 0;
     }
 
     // Turn a selected genre into a regex matching it as a whole comma-token
@@ -273,13 +372,13 @@ id: root
     }
 
     function toggleGenre(g) {
-        if (g === "All") { genreSelected = []; gamelist.currentIndex = 0; return; }
+        if (g === "All") { genreSelected = []; gamesView.currentIndex = 0; return; }
         var arr = genreSelected.slice();
         var idx = arr.indexOf(g);
         if (idx >= 0) arr.splice(idx, 1);
         else           arr.push(g);
         genreSelected = arr;            // reassign so bindings re-evaluate
-        gamelist.currentIndex = 0;
+        gamesView.currentIndex = 0;
     }
 
     // ── System picker ─────────────────────────────────────────────────
@@ -306,7 +405,7 @@ id: root
     function selectSystem(opt) {
         systemFilter = (opt.index < 0) ? "" : opt.name;
         systemIndex  = opt.index;
-        gamelist.currentIndex = 0;
+        gamesView.currentIndex = 0;
         systemPickerOpen = false;
     }
     // Alphabetical letter-jump through the system picker
@@ -358,7 +457,7 @@ id: root
         systemIndex  = -1;
         sortField   = "sortBy";
         sortDir     = Qt.AscendingOrder;
-        gamelist.currentIndex = 0;
+        gamesView.currentIndex = 0;
     }
 
     // ── Display model ─────────────────────────────────────────────────────
@@ -407,28 +506,34 @@ id: root
     }
 
     // Jump to the first game of the next / previous letter group
+    // Lands on an index and, in grid mode, flashes its letter.
+    function jumpLand(i) {
+        gamesView.currentIndex = i;
+        var e = displayModel.get(i);
+        if (e) showJumpLetter(e.title);
+    }
     function jumpToNextLetter() {
-        if (gamelist.count === 0) return;
-        var cur = gamelist.currentIndex;
+        if (gamesView.count === 0) return;
+        var cur = gamesView.currentIndex;
         var curE = cur >= 0 ? displayModel.get(cur) : null;
         var curLtr = curE ? letterGroup(curE.title) : "";
-        for (var i = cur + 1; i < gamelist.count; i++) {
+        for (var i = cur + 1; i < gamesView.count; i++) {
             var e = displayModel.get(i);
-            if (e && letterGroup(e.title) !== curLtr) { gamelist.currentIndex = i; return; }
+            if (e && letterGroup(e.title) !== curLtr) { jumpLand(i); return; }
         }
-        gamelist.currentIndex = 0;
+        jumpLand(0);
     }
     function jumpToPrevLetter() {
-        if (gamelist.count === 0) return;
-        var cur = gamelist.currentIndex;
-        if (cur <= 0) { gamelist.currentIndex = gamelist.count - 1; return; }
+        if (gamesView.count === 0) return;
+        var cur = gamesView.currentIndex;
+        if (cur <= 0) { jumpLand(gamesView.count - 1); return; }
         var prevE = displayModel.get(cur - 1);
         var prevLtr = prevE ? letterGroup(prevE.title) : "";
         for (var i = cur - 2; i >= 0; i--) {
             var e = displayModel.get(i);
-            if (e && letterGroup(e.title) !== prevLtr) { gamelist.currentIndex = i + 1; return; }
+            if (e && letterGroup(e.title) !== prevLtr) { jumpLand(i + 1); return; }
         }
-        gamelist.currentIndex = 0;
+        jumpLand(0);
     }
 
     Component.onCompleted: {
@@ -441,6 +546,7 @@ id: root
     // Vertical accent line dividing the text list from the game details
     Rectangle {
     id: vDivider
+        visible: !gridMode
         anchors {
             left: gamelist.right; leftMargin: globalMargin / 2
             top: header.bottom; topMargin: globalMargin
@@ -455,6 +561,7 @@ id: root
     //    the logo straddling its top edge. Border hugs just the screenshot.
     Item {
     id: boxArt
+        visible: !gridMode
         anchors {
             top: header.bottom; topMargin: globalMargin
             left: gamelist.right; leftMargin: globalMargin
@@ -532,6 +639,18 @@ id: root
             // result, so the rounded edge scales up too and the icon spills
             // past the frame. Oversizing within a masked wrapper keeps the clip
             // at the frame's real bounds.
+            // Imported app: the icon fills the whole panel (rounded) on a shadow
+            // plate — the same shadow the tile and launch screen use, flat in
+            // base and blurred in HQ. No blur backdrop (the list already has
+            // one behind the page) and no accent frame for imports.
+            Rectangle {
+                visible: appIconWrap.visible
+                anchors { fill: appIconWrap; leftMargin: vpx(3); topMargin: vpx(10) }
+                radius: vpx(10)
+                color: "#000000"; opacity: hqMode ? 0.55 : 0.35
+                layer.enabled: hqMode
+                layer.effect: FastBlur { radius: 32; transparentBorder: true }
+            }
             Item {
             id: appIconWrap
 
@@ -542,29 +661,24 @@ id: root
                 layer.effect: OpacityMask {
                     maskSource: Rectangle { width: appIconWrap.width; height: appIconWrap.height; radius: vpx(10) }
                 }
-
-                // Backs the icon's transparent corners so the square reads solid.
-                Rectangle { anchors.fill: parent; color: "#2E2E2E" }
-
+                Rectangle { anchors.fill: parent; color: "#2E2E2E" }   // backs transparent corners
                 Image {
                 id: appIconImg
-
                     anchors.centerIn: parent
-                    // Icons arrive as a circle on a transparent square, so the
-                    // visible art must be blown past the frame to fill it. A
-                    // circle needs ~1.41x to cover its square.
+                    // Icons are a circle on a transparent square; blown past the
+                    // frame so the visible art fills the rounded panel.
                     width:  parent.width  * 1.45
                     height: parent.height * 1.45
                     source: appIconMode ? artScreenshot : ""
-                    sourceSize: Qt.size(Math.round(width), Math.round(height))
+                    sourceSize { width: hqMode ? 768 : 512; height: hqMode ? 768 : 512 }
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
                     asynchronous: true
                 }
             }
-            Rectangle {   // fallback fill when no screenshot
+            Rectangle {   // fallback fill when no screenshot (games only — apps have the icon treatment)
                 anchors.fill: parent
-                visible: !artScreenshotImg.visible
+                visible: !artScreenshotImg.visible && !appIconMode
                 radius: vpx(10)
                 color: Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.14)
             }
@@ -585,7 +699,7 @@ id: root
                 // would open and close a decoder per row.
                 readonly property bool warm: hqAllGamesWarm && settledGame === currentGame
                 source: (settings.AllGamesVideoPreview !== "No" && (videoArmed || warm)
-                         && videoSource !== "" && playbackOwner === "allgamesscreen")
+                         && videoSource !== "" && playbackOwner === "allgamesscreen" && !gridMode)
                         ? videoSource : ""
                 fillMode: VideoOutput.PreserveAspectCrop
                 muted: settings.AllGamesVideoAudio !== "Yes"
@@ -618,7 +732,9 @@ id: root
                     maskSource: Rectangle { width: scanlinesOverlay.width; height: scanlinesOverlay.height; radius: vpx(10) }
                 }
             }
-            Rectangle {   // border around JUST the screenshot
+            Rectangle {   // border around JUST the screenshot — games only.
+                // Imported apps show as the tile does: backdrop + icon, no frame.
+                visible: !appIconMode
                 anchors.fill: parent
                 color: "transparent"
                 radius: vpx(10)
@@ -689,7 +805,8 @@ id: root
             bottom: parent.bottom; bottomMargin: globalMargin + helpMargin
         }
         height: vpx(170)
-        visible: currentGame ? true : false
+        // Hidden in grid mode (no preview panel) and when nothing is selected.
+        visible: !gridMode && currentGame ? true : false
 
         // Accent line above the metadata
         Rectangle {
@@ -817,8 +934,13 @@ id: root
     id: header
         anchors { top: parent.top; left: parent.left; right: parent.right }
         height: vpx(75)
+        // Above the grid: the grid is unclipped so its halo can bleed, which
+        // also lets rows scrolling up paint over this bar unless it sits higher.
+        z: 5
 
-        Rectangle { anchors.fill: parent; color: theme.main }
+        // Extends down to the accent line, which hangs below this bar's box.
+        // Otherwise grid rows scrolling up showed in the gap between the two.
+        Rectangle { anchors { fill: parent; bottomMargin: -(globalMargin - vpx(14)) } color: theme.main }
 
         // Accent line above the preview — pushed down so it sits the same
         // distance from the fanart (vpx(14)) as the bottom accent line does.
@@ -882,11 +1004,11 @@ id: root
             width: vpx(36); height: vpx(36); radius: height/2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(81) }
             color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
-            Keys.onDownPressed:  { playNav(); gamelist.focus = true; }
+            Keys.onDownPressed:  { playNav(); focusGames(); }
             Keys.onRightPressed: { playNav(); discoverbutton.focus = true; }
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; showcaseScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamelist.focus = true; }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); focusGames(); }
                 if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); discoverbutton.focus = true; }
                 if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); settingsbutton.focus = true; }
             }
@@ -908,12 +1030,12 @@ id: root
             width: vpx(36); height: vpx(36); radius: height/2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(27) }
             color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
-            Keys.onDownPressed:  { playNav(); gamelist.focus = true; }
+            Keys.onDownPressed:  { playNav(); focusGames(); }
             Keys.onLeftPressed:  { playNav(); homebutton.focus = true; }
             Keys.onRightPressed: { playNav(); achievementsbutton.focus = true; }
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; discoverScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamelist.focus = true; }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); focusGames(); }
                 if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); achievementsbutton.focus = true; }
                 if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); homebutton.focus = true; }
             }
@@ -935,12 +1057,12 @@ id: root
             width: vpx(36); height: vpx(36); radius: height/2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(27) }
             color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
-            Keys.onDownPressed:  { playNav(); gamelist.focus = true; }
+            Keys.onDownPressed:  { playNav(); focusGames(); }
             Keys.onLeftPressed:  { playNav(); discoverbutton.focus = true; }
             Keys.onRightPressed: { playNav(); settingsbutton.focus = true; }
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamelist.focus = true; }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); focusGames(); }
                 if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); settingsbutton.focus = true; }
                 if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); discoverbutton.focus = true; }
             }
@@ -962,11 +1084,11 @@ id: root
             width: vpx(36); height: vpx(36); radius: height/2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(81) }
             color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
-            Keys.onDownPressed: { playNav(); gamelist.focus = true; }
+            Keys.onDownPressed: { playNav(); focusGames(); }
             Keys.onLeftPressed: { playNav(); achievementsbutton.focus = true; }
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
-                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); gamelist.focus = true; }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; playBack(); focusGames(); }
                 if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); homebutton.focus = true; }
                 if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); achievementsbutton.focus = true; }
             }
@@ -1020,7 +1142,8 @@ id: root
     // ── Game list ─────────────────────────────────────────────────────────
     ListView {
     id: gamelist
-        focus: true
+        visible: !gridMode
+        focus: !gridMode
         currentIndex: currentGameIndex
         // HQ: keep a few rows built past each edge so fast scrolling doesn't
         // build delegates on the fly. 0 (the default) leaves the list as it
@@ -1171,6 +1294,212 @@ id: root
         }
     }
 
+    // Wheel moves the selection in list mode too.
+    WheelNav {
+        anchors.fill: gamelist
+        view: gamelist
+        columns: 1
+        active: !gridMode && !filterOpen
+        onStepped: function() { playNav(); }
+    }
+
+    // ── Letter jump overlay ───────────────────────────────────────────────
+    // The platform grid's: the target letter, large, over a theme-coloured
+    // wash that holds half a second then fades. Grid mode only — the list has
+    // its preview panel and never showed one.
+    Rectangle {
+    id: navigationOverlay
+        anchors.fill: parent
+        color: theme.main
+        opacity: 0
+        z: 20
+        Text {
+        id: navigationLetter
+            antialiasing: true
+            renderType: Text.NativeRendering
+            font.hintingPreference: Font.PreferNoHinting
+            font.family: titleFont.name
+            font.capitalization: Font.AllUppercase
+            font.pixelSize: fpx(200)
+            color: "white"
+            anchors.centerIn: parent
+        }
+        SequentialAnimation {
+        id: navigationLetterOpacityAnimator
+            PauseAnimation { duration: 500 }
+            OpacityAnimator { target: navigationOverlay; from: navigationOverlay.opacity; to: 0; duration: hqMode ? 400 : 500 }
+        }
+    }
+    function showJumpLetter(title) {
+        if (!gridMode) return;
+        var ch = letterGroup(title);
+        navigationLetterOpacityAnimator.running = false;
+        navigationLetter.text = (ch === "#" ? "#" : ch.toUpperCase());
+        navigationOverlay.opacity = 0.8;
+        navigationLetterOpacityAnimator.running = true;
+    }
+
+    // ── Grid view ─────────────────────────────────────────────────────────
+    // Full page: no preview panel. Same model and index as the list above.
+    GridView {
+    id: gamegrid
+
+        visible: gridMode
+        focus: gridMode
+        anchors {
+            top: header.bottom; topMargin: globalMargin
+            left: parent.left; leftMargin: globalMargin
+            right: parent.right; rightMargin: globalMargin
+            bottom: parent.bottom; bottomMargin: globalMargin + helpMargin
+        }
+        model: gridMode ? displayModel : 0
+        currentIndex: currentGameIndex
+        cellWidth:  gridCellW
+        cellHeight: gridCellH
+        // Tiles fade in when the page opens, as on the Platform grid. HQ a
+        // little longer and eased; base matches the Platform grid exactly.
+        populate: Transition {
+            NumberAnimation { property: "opacity"; from: 0; to: 1.0
+                              duration: hqMode ? 260 : 200
+                              easing.type: hqMode ? Easing.OutQuad : Easing.Linear }
+        }
+        // No clip: the focus halo bleeds past the cell by design, and clipping
+        // cut it off at the grid's edges. The platform grid does the same and
+        // uses display margins so rows scrolling out are still painted.
+        // Paint margin only needs to cover the halo bleed (~10% of a cell),
+        // not a whole row; and keep half a row built ahead (a full row in HQ).
+        // A full row painted AND two rows built past each edge was ~30 tiles
+        // of decode and GPU buffers for nothing on screen.
+        displayMarginBeginning: gridCellH * 0.15
+        displayMarginEnd: gridCellH * 0.15
+        cacheBuffer: root.fastScrolling ? 0 : gridCellH * (hqMode ? 1.0 : 0.5)   // no look-ahead while racing
+
+        // Video previews live in the highlight, exactly as on the platform
+        // grid. Follows the All Games video setting and the coordinator.
+        highlight: allGamesHighlight
+        Component {
+        id: allGamesHighlight
+            ItemHighlight {
+                ownScreen: "allgamesscreen"
+                width: gamegrid.cellWidth
+                height: gamegrid.cellHeight
+                game: currentGame
+                selected: gamegrid.focus
+                boxArt: gridBoxArt
+                playVideo: settings.AllGamesVideoPreview !== "No" && !boxArt
+                allowAudio: settings.AllGamesVideoAudio === "Yes"   // this page's audio row
+            }
+        }
+        highlightMoveDuration: root.fastScrolling ? 0 : 200   // snap while racing; matches the Platform grid at rest
+        preferredHighlightBegin: 0
+        preferredHighlightEnd: height
+        highlightRangeMode: GridView.ApplyRange
+
+        // Everything the list does on an index change. currentGame is NOT
+        // derived from the index — the list assigns it here — so the grid must
+        // too, or the highlight video, the system logo and the audio all stay
+        // frozen on whatever game the list last set.
+        onCurrentIndexChanged: {
+            if (currentIndex !== -1) {
+                currentGameIndex = currentIndex;
+                currentGame = getCurrentGame(currentIndex);
+                storedAllGamesIndex = currentIndex;
+                root.videoArmed = false;
+                videoDebounce.restart();
+                artDebounce.restart();
+            }
+        }
+
+        // Two whole components, swapped by tile style — the same structure the
+        // Platform grid uses. The tile IS the delegate root, so
+        // GridView.isCurrentItem resolves (it's an attached property that only
+        // exists on the root) and GridView.view supplies the cell size.
+        // Wrapping them in a Loader broke both: nothing highlighted, and the
+        // tiles never learned they were selected.
+        delegate: gridBoxArt ? boxTileDelegate : dynamicTileDelegate
+
+        Component {
+        id: boxTileDelegate
+            BoxArtGridItem {
+                selected: GridView.isCurrentItem && gamegrid.focus
+                gameData: modelData
+                reduceMotion: root.fastScrolling
+                deferArt: root.fastScrolling
+                columns: gridColumns
+                artStyle: tileStyle
+                width:  GridView.view.cellWidth
+                height: GridView.view.cellHeight - gridTitleMargin
+                // The view gives focus to the current tile, and the tile's own
+                // Keys handler consumes A and emits this. Unconnected, the
+                // press simply died here. Same wiring as the platform grid.
+                onActivate: {
+                    if (selected) activateCurrent();
+                    else          gamegrid.currentIndex = index;   // mouse/touch on another tile
+                }
+            }
+        }
+        Component {
+        id: dynamicTileDelegate
+            DynamicGridItem {
+                selected: GridView.isCurrentItem && gamegrid.focus
+                gameData: modelData
+                artMode: tileArt
+                showLogo: tileLogo === "Yes"
+                playVideo: gameData ? (gameData.assets.videoList.length
+                           && settings.AllGamesVideoPreview !== "No") : false
+                ownScreen: "allgamesscreen"
+                reduceMotion: root.fastScrolling
+                deferArt: root.fastScrolling
+                width:  GridView.view.cellWidth
+                height: GridView.view.cellHeight - gridTitleMargin
+                onActivated: {
+                    if (selected) activateCurrent();
+                    else          gamegrid.currentIndex = index;
+                }
+            }
+        }
+
+        // Up/Down move a row; Left/Right a tile. Left at the row start and
+        // right at its end wrap, matching the list's behaviour.
+        // Up: a row up, or into the header from the top row. Down from the
+        // last row wraps to the same column on the first row. Left/Right wrap
+        // end-to-end. All mirror the platform grid's feel.
+        Keys.onUpPressed: {
+            playNav(); noteGridNav();
+            if (currentIndex - gridColumns >= 0) currentIndex -= gridColumns;
+            else homebutton.focus = true;
+        }
+        Keys.onDownPressed: {
+            if (count === 0) return;
+            playNav(); noteGridNav();
+            // Same rule as the Platform grid: "last row" is anything with no
+            // full row beneath it (the last row is often partial). From there
+            // wrap to the first row in the same column; otherwise step down.
+            var lastRowStart = Math.floor((count - 1) / gridColumns) * gridColumns;
+            if (currentIndex >= lastRowStart) currentIndex = currentIndex % gridColumns;
+            else moveCurrentIndexDown();
+        }
+        Keys.onLeftPressed: {
+            if (count === 0) return;
+            playNav(); noteGridNav();
+            currentIndex = (currentIndex > 0) ? currentIndex - 1 : count - 1;
+        }
+        Keys.onRightPressed: {
+            if (count === 0) return;
+            playNav(); noteGridNav();
+            currentIndex = (currentIndex < count - 1) ? currentIndex + 1 : 0;
+        }
+    }
+
+    // Wheel moves the selection (see WheelNav) — a sibling of the grid.
+    WheelNav {
+        anchors.fill: gamegrid
+        view: gamegrid
+        columns: gridColumns
+        active: gridMode && !filterOpen
+        onStepped: function() { playNav(); noteGridNav(); }
+    }
+
     // ── Sorting & Filters overlay ─────────────────────────────────────────
     Rectangle {
     id: filterPanel
@@ -1178,7 +1507,7 @@ id: root
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, 0.78)
 
-        MouseArea { anchors.fill: parent; onClicked: { searchActive = false; filterOpen = false; gamelist.focus = true; } }
+        MouseArea { anchors.fill: parent; onClicked: { searchActive = false; filterOpen = false; focusGames(); } }
 
         // Shared on-screen keyboard — same presentation as the RA search:
         // title and text field up top, keys below, its own help prompts.
@@ -1194,7 +1523,7 @@ id: root
 
             onTextEdited: {
                 nameFilter = newText;
-                gamelist.currentIndex = 0;
+                gamesView.currentIndex = 0;
             }
             // Focus MUST go back to the panel here — leaving it on a hidden
             // keyboard is what froze input on the way out.
@@ -1516,10 +1845,10 @@ id: root
                 else if (filterRow === 1) openGenrePicker();
                 else if (filterRow === 2) openSystemPicker();
                 else if (filterRow <= sortFields.length + 2) selectSort(sortFields[filterRow - 3].key);
-                else if (filterRow === sortFields.length + 3) { favsOnly = !favsOnly; gamelist.currentIndex = 0; }
+                else if (filterRow === sortFields.length + 3) { favsOnly = !favsOnly; gamesView.currentIndex = 0; }
             }
             if (api.keys.isCancel(event) && !event.isAutoRepeat) {
-                event.accepted = true; playBack(); filterOpen = false; gamelist.focus = true;
+                event.accepted = true; playBack(); filterOpen = false; focusGames();
             }
             if (api.keys.isDetails(event) && !event.isAutoRepeat) {
                 event.accepted = true; playToggle(); clearAllFilters();
@@ -1535,17 +1864,26 @@ id: root
         // A — launch the game directly
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus && currentGame) { launchGame(currentGame); }
+            if (filterOpen || !currentGame) return;
+            // Grid: openGame() honours "Added App Launch" — imports and apps
+            // set to Instant launch straight away, everything else opens
+            // Game Details. List mode keeps launching directly, as before.
+            // Grid mode: the focused tile consumes A itself (see the delegates),
+            // so this only runs when a tile didn't — treat it the same way.
+            if (gridMode) { activateCurrent(); return; }
+            // List: games still launch directly (Y is More Details); imports
+            // and added apps follow the same rule as every other screen.
+            if (gamesFocused) activateGame(currentGame, false);
         }
         // B — back
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus) { previousScreen(); }
+            if (!filterOpen && gamesFocused) { previousScreen(); }
         }
         // X — open Sorting & Filters
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus) {
+            if (!filterOpen && gamesFocused) {
                 playAccept();
                 var fi = sortFields.map(function(f){ return f.key; }).indexOf(sortField);
                 filterRow = fi >= 0 ? fi + 2 : 0;
@@ -1560,23 +1898,25 @@ id: root
         // empty. The helpbar drops the prompt to match.
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus && !currentIsImportedApp)
-                gameDetailsFull(currentGame);
+            if (filterOpen) return;
+            if (!gamesFocused) return;
+            if (gridMode)                    settingsScreen();
+            else if (!currentIsImportedApp)  gameDetailsFull(currentGame);
         }
         // LT — previous letter group
         if (api.keys.isPageUp(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus) { playToggle(); jumpToPrevLetter(); }
+            if (!filterOpen && gamesFocused) { playToggle(); jumpToPrevLetter(); }
         }
         // RT — next letter group
         if (api.keys.isPageDown(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus) { playToggle(); jumpToNextLetter(); }
+            if (!filterOpen && gamesFocused) { playToggle(); jumpToNextLetter(); }
         }
         // LB / RB — jump straight up to the nav bar from anywhere in the list
         if ((api.keys.isPrevPage(event) || api.keys.isNextPage(event)) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamelist.focus) { playNav(); homebutton.focus = true; }
+            if (!filterOpen && gamesFocused) { playNav(); homebutton.focus = true; }
         }
     }
 
@@ -1587,6 +1927,23 @@ id: root
         ListElement { name: "More Details"; button: "filters" }
         ListElement { name: "Filters";      button: "details" }
         ListElement { name: "Launch";       button: "accept"  }
+    }
+    // Grid mode: no preview panel, so no More Details; Y opens Settings.
+    // A reads "Launch" on an imported app (it launches straight away) and
+    // "Select" on a game (it opens details), mirroring the list's two bars.
+    ListModel {
+        id: allGamesGridHelpModel
+        ListElement { name: "Back";     button: "cancel"  }
+        ListElement { name: "Settings"; button: "filters" }
+        ListElement { name: "Filters";  button: "details" }
+        ListElement { name: "Select";   button: "accept"  }
+    }
+    ListModel {
+        id: allGamesGridAppHelpModel
+        ListElement { name: "Back";     button: "cancel"  }
+        ListElement { name: "Settings"; button: "filters" }
+        ListElement { name: "Filters";  button: "details" }
+        ListElement { name: "Launch";   button: "accept"  }
     }
     // Same bar without More Details, for imported apps. Two static models
     // swapped on demand rather than one model rebuilt as the cursor moves.
@@ -1607,16 +1964,21 @@ id: root
     // moved. Reading currentIndex and count makes this re-evaluate the moment
     // the model populates, whatever the ordering.
     readonly property bool currentIsImportedApp: {
-        var idx = gamelist.currentIndex;
-        var cnt = gamelist.count;
+        var idx = gamesView.currentIndex;
+        var cnt = gamesView.count;
         if (cnt <= 0 || idx < 0) return false;
         var g = getCurrentGame(idx);
         if (!g || !g.files || g.files.count < 1) return false;
         return (g.files.get(0).path || "").indexOf("android:") === 0;
     }
+    // The mode can change while this screen is open (the user comes back from
+    // Settings), so the bar follows it.
+    onGridModeChanged: refreshHelpbar()
+
     function refreshHelpbar() {
         if (!focus) return;
-        currentHelpbarModel = currentIsImportedApp ? allGamesAppHelpModel
+        currentHelpbarModel = gridMode ? (currentIsImportedApp ? allGamesGridAppHelpModel : allGamesGridHelpModel)
+                            : currentIsImportedApp ? allGamesAppHelpModel
                                                    : allGamesHelpModel;
     }
     // Only fires when crossing between an app and a normal entry, not on every
@@ -1625,6 +1987,10 @@ id: root
 
     onFocusChanged: {
         if (focus) {
+            // Put focus on whichever view is showing. The two views' focus
+            // bindings decide this at load, but an imperative hand-back from
+            // a header button can leave the other one holding it.
+            focusGames();
             // Covers focus arriving before the model has populated; once it
             // does, currentIsImportedApp changes and refreshes this again.
             refreshHelpbar();
