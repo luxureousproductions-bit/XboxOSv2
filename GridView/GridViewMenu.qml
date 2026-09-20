@@ -39,7 +39,9 @@ id: root
     }
     function gameActivated() {
         storedCollectionGameIndex = gamegrid.currentIndex
-        gameDetails(list.currentGame(gamegrid.currentIndex));
+        // Same rule as everywhere: imports launch, added apps follow the
+        // setting, games open details.
+        activateGame(list.currentGame(gamegrid.currentIndex), true);
     }
 
     property var sortedGames;
@@ -274,16 +276,59 @@ id: root
     ListCollectionGames { id: list; }
 
     // Load settings
-    property bool showBoxes: settings.GridThumbnail === "Box Art"
-    property int numColumns: settings.GridColumns ? settings.GridColumns : 6
-    property int titleMargin: settings.AlwaysShowTitles === "Yes" ? vpx(30) : 0
-
-    GridSpacer {
-    id: fakebox
-
-        width: vpx(100); height: vpx(100)
-        games: list.games
+    // ── Per-system tile settings ─────────────────────────────────────────
+    // With the master switch on, a system can carry its own five values,
+    // stored as "<shortName> - <row>". A system with "Use theme settings"
+    // (the default) reads the global Platform page values. Everything below
+    // reads through these resolvers, never the settings directly.
+    readonly property string sysKey: list.collection ? (list.collection.shortName || "") : ""
+    property int sysEpoch: 0                     // bump to re-read after an overlay change
+    readonly property bool perSystemOn: settings.PerSystemTiles === "Yes"
+    function sysOverride() {
+        var e = sysEpoch;                        // dependency for re-evaluation
+        return perSystemOn && sysKey !== "" && api.memory.has(sysKey + " - Use theme settings")
+               && api.memory.get(sysKey + " - Use theme settings") === "No";
     }
+    function sysPref(row, globalValue) {
+        var e = sysEpoch;
+        if (!sysOverride()) return globalValue;
+        var k = sysKey + " - " + row;
+        return api.memory.has(k) ? api.memory.get(k) : globalValue;
+    }
+    readonly property string tileShape:   sysPref("Tile shape",        settings.GridThumbnail)
+    readonly property string tileRatio:   sysPref("Tile ratio",        settings.GridRatio)
+    readonly property string tileArt:     sysPref("Tile art",          settings.GridArt)
+    readonly property string tileLogo:    sysPref("Show logo on tile", settings.GridGameLogo)
+    readonly property string tileColumns: sysPref("Tiles per row",     settings.GridColumns)
+    readonly property string tileTitles:  sysPref("Game tile titles",  gameTitleMode)
+
+    property bool showBoxes: tileShape === "Box Art" || tileShape === "3D Box"   // both are box tiles
+
+    // Mouse back button: mirrors B, in the same priority order.
+    function mouseBack() {
+        if (sysPanelOpen)     { playBack(); sysPanelOpen = false; gamegrid.focus = true; return; }
+        if (searchActive)     { searchActive = false; filterPanel.forceActiveFocus(); return; }
+        if (genrePickerOpen)  { genrePickerOpen = false; filterPanel.forceActiveFocus(); return; }
+        if (filterOpen)       { playBack(); filterOpen = false; gamegrid.focus = true; return; }
+        if (!gamegrid.focus)  { gamegrid.focus = true; return; }   // header -> grid
+        previousScreen();
+    }
+
+    // ── Fast-scroll detection (same rule as the All Games grid) ────────────
+    // Two moves inside 180ms = racing. While it holds: tile animations off,
+    // the highlight snaps, no look-ahead rows, and (per the Fast scroll art
+    // setting) new tiles hold their art until the scroll stops.
+    property bool fastScrolling: false
+    property double lastNavMs: 0
+    Timer { id: fastScrollRelease; interval: 200; onTriggered: fastScrolling = false }
+    function noteGridNav() {
+        var now = Date.now();
+        if (now - lastNavMs < 180) fastScrolling = true;
+        lastNavMs = now;
+        fastScrollRelease.restart();
+    }
+    property int numColumns: parseInt(tileColumns) || 6
+    property int titleMargin: tileTitles === "Always" ? vpx(30) : 0
 
     Rectangle {
     id: navigationOverlay
@@ -503,12 +548,11 @@ id: root
         GridView {
         id: gamegrid
 
-            property real cellHeightRatio: fakebox.paintedHeight / fakebox.paintedWidth
             property real savedCellHeight: {
-                var gridRatio = parseFloat(settings.GridRatio) || 0.66;
-                if (settings.GridThumbnail == "Tall") {
+                var gridRatio = parseFloat(tileRatio) || 0.66;
+                if (tileShape == "Tall") {
                     return cellWidth / gridRatio;
-                } else if (settings.GridThumbnail == "Square") {
+                } else if (tileShape == "Square") {
                     return cellWidth;
                 } else {
                     return cellWidth * gridRatio;
@@ -530,15 +574,30 @@ id: root
                 bottom: parent.bottom; bottomMargin: helpMargin + vpx(40)
             }
             cellWidth: width / numColumns
-            cellHeight: ((showBoxes) ? cellWidth * cellHeightRatio : savedCellHeight) + titleMargin
+            // Box Art: the box's own proportions, scaled by the ratio row so it
+            // is adjustable — at the default 0.66 this is exactly the height it
+            // has always been; other values scale from there.
+            // Box Art: a FIXED box proportion (1.4 tall) scaled by the ratio row,
+            // the same scheme the All Games grid uses. It used to MEASURE a real
+            // box from the collection (cellHeightRatio, from fakebox) — but that
+            // image reloads asynchronously on every platform change, so the grid
+            // laid out with the previous system's proportion and then jumped
+            // when the new one landed: misaligned rows, half-scrolled pages,
+            // wrong restore position. A constant can't do that. Boxes of other
+            // shapes are aspect-fit inside the cell, never distorted.
+            cellHeight: ((showBoxes) ? cellWidth * 1.4 * ((parseFloat(tileRatio) || 0.66) / 0.66)
+                                     : savedCellHeight) + titleMargin
             preferredHighlightBegin: vpx(0)
             preferredHighlightEnd: gamegrid.height - helpMargin - vpx(40)
             highlightRangeMode: GridView.ApplyRange
-            highlightMoveDuration: 200
+            highlightMoveDuration: fastScrolling ? 0 : 200   // snap while racing
             highlight: highlightcomponent
             keyNavigationWraps: false
-            displayMarginBeginning: cellHeight * 2
-            displayMarginEnd: cellHeight * 2
+            // Paint margin covers the halo bleed only; two whole rows painted
+            // off-screen was wasted work on every scroll step.
+            displayMarginBeginning: cellHeight * 0.15
+            displayMarginEnd: cellHeight * 0.15
+            cacheBuffer: fastScrolling ? 0 : cellHeight * (hqMode ? 1.0 : 0.5)   // no look-ahead while racing
 
             model: list.games
             delegate: (showBoxes) ? boxartdelegate : dynamicDelegate
@@ -549,7 +608,10 @@ id: root
                 BoxArtGridItem {
                     selected: GridView.isCurrentItem && gamegrid.focus
                     gameData: modelData
-                    artStyle: settings.GridThumbnail
+                    reduceMotion: fastScrolling
+                    deferArt: fastScrolling
+                    titleMode: tileTitles
+                    artStyle: tileShape
 
                     width:      GridView.view.cellWidth
                     height:     GridView.view.cellHeight - titleMargin
@@ -558,10 +620,10 @@ id: root
                         if (selected)
                             gameActivated();
                         else
-                            gamegrid.currentIndex = index;
+                            gamegrid.currentIndex = index; gamegrid.focus = true; gamegrid.focus = true;
                     }
                     onHighlighted: {
-                        gamegrid.currentIndex = index;
+                        gamegrid.currentIndex = index; gamegrid.focus = true;
                     }
                 }
             }
@@ -572,10 +634,13 @@ id: root
                 DynamicGridItem {
                 ownScreen: "softwaregridscreen"
                 id: dynamicdelegatecontainer
+                reduceMotion: fastScrolling
+                deferArt: fastScrolling
 
                     selected: GridView.isCurrentItem && gamegrid.focus
-                    artMode: settings.GridArt
-                    showLogo: settings.GridGameLogo === "Yes"
+                    artMode: tileArt
+                titleMode: tileTitles
+                    showLogo: tileLogo === "Yes"
 
                     width:      GridView.view.cellWidth
                     height:     GridView.view.cellHeight - titleMargin
@@ -584,10 +649,10 @@ id: root
                         if (selected)
                             gameActivated();
                         else
-                            gamegrid.currentIndex = index;
+                            gamegrid.currentIndex = index; gamegrid.focus = true; gamegrid.focus = true;
                     }
                     onHighlighted: {
-                        gamegrid.currentIndex = index;
+                        gamegrid.currentIndex = index; gamegrid.focus = true;
                     }
                 }
             }
@@ -607,7 +672,7 @@ id: root
             }
 
             Keys.onUpPressed: {
-                playNav();
+                playNav(); noteGridNav();
                 if (currentIndex < numColumns) {
                     homebutton.focus = true;
                     gamegrid.currentIndex = -1;
@@ -616,7 +681,7 @@ id: root
                 }
             }
             Keys.onDownPressed: {
-                playNav();
+                playNav(); noteGridNav();
                 // From the last row, wrap to the FIRST row in the same column
                 // rather than dead-ending. The last row is often partial, so
                 // "last row" means anything with no full row beneath it.
@@ -628,23 +693,170 @@ id: root
                 }
             }
             Keys.onLeftPressed: {
-                playNav();
+                playNav(); noteGridNav();
                 // Wrap to the last tile when on the very first one (Up still
                 // reaches the nav buttons).
                 if (currentIndex === 0) currentIndex = count - 1;
                 else moveCurrentIndexLeft();
             }
             Keys.onRightPressed: {
-                playNav();
+                playNav(); noteGridNav();
                 // Wrap to the first tile from the very last one.
                 if (currentIndex === count - 1) currentIndex = 0;
                 else moveCurrentIndexRight();
             }
         }
 
+        // Mouse wheel moves the SELECTION, not just the view — the grid drives
+        // its highlight from currentIndex, so scrolling content alone made the
+        // view drift and snap back on the next key press. A sibling of the
+        // grid, never a child: a MouseArea inside a Flickable is reparented
+        // into its contentItem and scrolls away with it.
+        WheelNav {
+            anchors.fill: gamegrid
+            view: gamegrid
+            columns: numColumns
+            active: !filterOpen && !sysPanelOpen
+            onStepped: function() { playNav(); noteGridNav(); }
+        }
+
     }
 
     // ── Sorting & Filters overlay (same keyboard filters as All Games) ────
+    // ── Per-system tile settings overlay ─────────────────────────────────
+    // Y opens this (when the master switch is on). Six rows: "Use theme
+    // settings", then the same five the Platform page has. Changes apply as
+    // you make them and only touch this system. B closes; Y from here goes
+    // on to the full theme settings.
+    property bool sysPanelOpen: false
+    property int  sysRow: 0
+    readonly property var sysRows: [
+        { key: "Use theme settings", label: "Use theme settings", opts: ["Yes", "No"],                       dflt: "Yes" },
+        { key: "Tile shape",         label: "Tile shape",         opts: ["Wide","Tall","Square","Box Art","3D Box"], dflt: settings.GridThumbnail },
+        { key: "Tile ratio",         label: "Tile ratio",         opts: ratioOpts,                          dflt: settings.GridRatio },
+        { key: "Tile art",           label: "Tile art",           opts: ["Fanart","Screenshot","Boxfront"], dflt: settings.GridArt },
+        { key: "Show logo on tile",  label: "Show logo on tile",  opts: ["Yes","No"],                       dflt: settings.GridGameLogo },
+        { key: "Tiles per row",      label: "Tiles per row",      opts: ["3","4","5","6","7","8"],          dflt: settings.GridColumns },
+        { key: "Game tile titles",   label: "Game tile titles",   opts: ["On focus","Always","Never"],      dflt: gameTitleMode }
+    ]
+    readonly property var ratioOpts: {
+        var a = [];
+        for (var i = 66; i <= 99; i++) a.push("0." + i);
+        for (var j = 25; j <= 65; j++) a.push("0." + j);
+        return a;
+    }
+    function sysValue(row) {
+        var r = sysRows[row], k = sysKey + " - " + r.key;
+        return api.memory.has(k) ? api.memory.get(k) : String(r.dflt);
+    }
+    function sysRowDisabled(row) {
+        if (row === 0) return false;
+        if (sysValue(0) === "Yes") return true;                        // following the theme
+        var shape = sysValue(1);
+        if ((row === 3 || row === 4) && (shape === "Box Art" || shape === "3D Box")) return true;
+        if (row === 2 && shape === "Square") return true;
+        return false;
+    }
+    function sysCycle(row, dir) {
+        if (sysRowDisabled(row)) return;
+        var r = sysRows[row], opts = r.opts, cur = sysValue(row);
+        var i = opts.indexOf(cur); if (i < 0) i = 0;
+        var v = opts[(i + dir + opts.length) % opts.length];
+        api.memory.set(sysKey + " - " + r.key, v);
+        // Same rule as the Settings page: box-front art turns the logo off.
+        if (r.key === "Tile art" && v === "Boxfront") api.memory.set(sysKey + " - Show logo on tile", "No");
+        sysEpoch++;
+        playNav();
+    }
+    function sysStep(dir) {
+        var n = sysRows.length, i = sysRow, tries = 0;
+        do { i = (i + dir + n) % n; tries++; } while (sysRowDisabled(i) && i !== 0 && tries < n);
+        sysRow = i; playNav();
+    }
+
+    Rectangle {
+    id: sysPanel
+        visible: sysPanelOpen; z: 31
+        anchors.fill: parent
+        color: Qt.rgba(0, 0, 0, 0.78)
+        focus: sysPanelOpen
+        MouseArea { anchors.fill: parent; onClicked: { sysPanelOpen = false; gamegrid.focus = true; } }
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: vpx(720); height: vpx(616)
+            radius: vpx(14)
+            color: "#1E1E20"; border.color: theme.accent; border.width: vpx(2)
+            MouseArea { anchors.fill: parent; }   // swallow clicks inside
+
+            Text {
+                anchors { left: parent.left; leftMargin: vpx(36); top: parent.top; topMargin: vpx(28) }
+                text: list.collection ? list.collection.name : ""
+                color: "white"; font.family: titleFont.name; font.pixelSize: vpx(28); font.bold: true
+            }
+            Text {
+                anchors { left: parent.left; leftMargin: vpx(36); top: parent.top; topMargin: vpx(68) }
+                text: "Tile settings for this system"
+                color: "#A0A0A0"; font.family: subtitleFont.name; font.pixelSize: vpx(15)
+            }
+            Rectangle { anchors { left: parent.left; right: parent.right; top: parent.top; topMargin: vpx(104); leftMargin: vpx(36); rightMargin: vpx(36) } height: vpx(2); color: "#3C3C40" }
+
+            Column {
+                anchors { left: parent.left; right: parent.right; top: parent.top; topMargin: vpx(124); leftMargin: vpx(24); rightMargin: vpx(24) }
+                spacing: vpx(6)
+                Repeater {
+                    model: sysRows.length
+                    delegate: Rectangle {
+                        width: parent.width; height: vpx(52)
+                        radius: vpx(8)
+                        readonly property bool cur: index === sysRow
+                        readonly property bool dis: { var e = sysEpoch; return sysRowDisabled(index); }
+                        color: cur ? "#2A2A2E" : "transparent"
+                        border.color: cur ? theme.accent : "transparent"; border.width: vpx(3)
+                        Text {
+                            anchors { left: parent.left; leftMargin: vpx(12); verticalCenter: parent.verticalCenter }
+                            text: sysRows[index].label
+                            color: dis ? "#6E6E6E" : "white"; font.family: subtitleFont.name; font.pixelSize: vpx(20)
+                        }
+                        Text {
+                            anchors { right: parent.right; rightMargin: vpx(12); verticalCenter: parent.verticalCenter }
+                            text: { var e = sysEpoch; return "<  " + sysValue(index) + "  >"; }
+                            color: dis ? "#646464" : "#D7D7D7"; font.family: subtitleFont.name; font.pixelSize: vpx(20)
+                        }
+                        // a divider under the first row
+                        Rectangle { visible: index === 0; anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: -vpx(4) } height: vpx(1); color: "#3C3C40" }
+                    }
+                }
+            }
+
+            Text {
+                anchors { left: parent.left; leftMargin: vpx(36); bottom: parent.bottom; bottomMargin: vpx(52) }
+                text: "Changes apply as you make them. Only this system is affected."
+                color: "#8C8C8C"; font.family: subtitleFont.name; font.pixelSize: vpx(14)
+            }
+            Row {
+                anchors { right: parent.right; rightMargin: vpx(36); bottom: parent.bottom; bottomMargin: vpx(18) }
+                spacing: vpx(22)
+                Row { spacing: vpx(6)
+                    Image { anchors.verticalCenter: parent.verticalCenter; width: vpx(20); height: vpx(20); source: "../assets/images/controller/" + Utils.processButtonArt("filters") + ".png"; sourceSize { width: 40; height: 40 } }
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: "Theme settings"; color: "#D2D2D2"; font.family: subtitleFont.name; font.pixelSize: vpx(16) } }
+                Row { spacing: vpx(6)
+                    Image { anchors.verticalCenter: parent.verticalCenter; width: vpx(20); height: vpx(20); source: "../assets/images/controller/" + Utils.processButtonArt("cancel") + ".png"; sourceSize { width: 40; height: 40 } }
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: "Back"; color: "#D2D2D2"; font.family: subtitleFont.name; font.pixelSize: vpx(16) } }
+            }
+        }
+
+        Keys.onPressed: {
+            if (api.keys.isCancel(event) && !event.isAutoRepeat)  { event.accepted = true; playBack(); sysPanelOpen = false; gamegrid.focus = true; return; }
+            if (api.keys.isFilters(event) && !event.isAutoRepeat) { event.accepted = true; sysPanelOpen = false; settingsScreen(); return; }
+            if (api.keys.isAccept(event) && !event.isAutoRepeat)  { event.accepted = true; sysCycle(sysRow, 1); return; }
+        }
+        Keys.onUpPressed:    sysStep(-1)
+        Keys.onDownPressed:  sysStep(1)
+        Keys.onLeftPressed:  sysCycle(sysRow, -1)
+        Keys.onRightPressed: sysCycle(sysRow, 1)
+    }
+
     Rectangle {
     id: filterPanel
         visible: filterOpen; z: 30
@@ -922,7 +1134,7 @@ id: root
     }
 
     Keys.onReleased: {
-        if (filterOpen) return;
+        if (filterOpen || sysPanelOpen) return;
         // Scroll Down
         if (api.keys.isPageDown(event) && !event.isAutoRepeat) {
             event.accepted = true;
@@ -938,7 +1150,7 @@ id: root
     }
 
     Keys.onPressed: {
-        if (filterOpen) return;
+        if (filterOpen || sysPanelOpen) return;
 
         // Accept
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
@@ -980,7 +1192,8 @@ id: root
         // Settings (Y)
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            settingsScreen();
+            if (perSystemOn && sysKey !== "") { playAccept(); sysRow = 0; sysPanelOpen = true; sysPanel.forceActiveFocus(); }
+            else settingsScreen();
             return;
         }
 
