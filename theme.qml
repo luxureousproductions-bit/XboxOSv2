@@ -134,6 +134,17 @@ id: root
               ? api.memory.get("Omit genre: Emulator from Showcase") : "No") === "Yes";
     }
 
+    // ── Tile titles ───────────────────────────────────────────────────────
+    // "Game tile titles" reuses the old "Always show titles" key. Saved values
+    // from before are Yes/No; the row now stores On focus/Always/Never. Both
+    // forms resolve here, so nobody's install changes on update:
+    //   No -> On focus (today's behaviour)   Yes -> Always
+    readonly property string gameTitleMode: {
+        var v = settings.AlwaysShowTitles;
+        return v === "Yes" ? "Always" : (v === "No" ? "On focus" : v);
+    }
+    readonly property string systemTitleMode: settings.SystemTileTitles
+
     // ── First-run defaults ────────────────────────────────────────────────
     // What a fresh install gets before the user touches anything. Read by the
     // settings object below (as each key's fallback) AND by SettingsScreen (to
@@ -203,7 +214,6 @@ id: root
             GridColumns:                   api.memory.has("Number of columns") ? api.memory.get("Number of columns") : "3",
             GameBackground:                api.memory.has("Game Background") ? api.memory.get("Game Background") : "Fanart",
             GameLogo:                      api.memory.has("Game Logo") ? api.memory.get("Game Logo") : "Show",
-            GameRandomBackground:          api.memory.has("Randomize Background") ? api.memory.get("Randomize Background") : "No",
             GameBlurBackground:            api.memory.has("Blur Background") ? api.memory.get("Blur Background") : "No",
             VideoPreview:                  api.memory.has("Video preview") ? api.memory.get("Video preview") : "Yes",
             AllowThumbVideo:               api.memory.has("Allow video thumbnails") ? api.memory.get("Allow video thumbnails") : "Yes",
@@ -287,6 +297,15 @@ id: root
             MenuVolume:                      api.memory.has("Menu Volume") ? api.memory.get("Menu Volume") : "1.0",
             StartupChime:                    api.memory.has("Start up chime") ? api.memory.get("Start up chime") : "Yes",
             AllGamesVideoPreview:            api.memory.has("AllGames Video preview") ? api.memory.get("AllGames Video preview") : "Yes",
+            AllGamesView:                  api.memory.has("All Games View") ? api.memory.get("All Games View") : "List",
+            AllGamesTileStyle:             api.memory.has("AllGames Tile Style") ? api.memory.get("AllGames Tile Style") : "Wide",
+            AllGamesTileRatio:             api.memory.has("AllGames Tile Ratio") ? api.memory.get("AllGames Tile Ratio") : "0.66",
+            AllGamesTileArt:               api.memory.has("AllGames Tile Art") ? api.memory.get("AllGames Tile Art") : "Fanart",
+            AllGamesTileLogo:              api.memory.has("AllGames Tile Logo") ? api.memory.get("AllGames Tile Logo") : "Yes",
+            AllGamesColumns:               api.memory.has("AllGames Items per row") ? api.memory.get("AllGames Items per row") : "5",
+            AllGamesMatchPlatform:         api.memory.has("AllGames Match Platform") ? api.memory.get("AllGames Match Platform") : "No",
+            SystemTileTitles:              api.memory.has("System tile titles") ? api.memory.get("System tile titles") : "On focus",
+            PerSystemTiles:                api.memory.has("Per-system tile settings") ? api.memory.get("Per-system tile settings") : "No",
             AllGamesHideBoxOnVideo:          api.memory.has("AllGames Hide box art on video") ? api.memory.get("AllGames Hide box art on video") : "No",
             AllGamesHideLogoOnVideo:         api.memory.has("AllGames Hide logo on video") ? api.memory.get("AllGames Hide logo on video") : "No",
             AllGamesBlurBackground:          api.memory.has("AllGames Blur Background") ? api.memory.get("AllGames Blur Background") : "No",
@@ -347,7 +366,7 @@ id: root
     readonly property bool dynamicBg:   settings.DynamicBackground === "Yes"
     readonly property int  dynamicBgMs: 24000
     readonly property real dynamicBgZoom: 1.12    // 6% headroom each side
-    readonly property real dynamicBgPan:  0.025   // ±2.5% of the frame, inside that headroom
+    readonly property real dynamicBgPan:  0.03    // ±3% of the frame (was 2.5%): a slight bump, inside that headroom
     // Alternates each time a drift starts, so consecutive images move the
     // opposite way: one zooms in, the next zooms out.
     property bool dynamicBgFlip: false
@@ -388,7 +407,13 @@ id: root
     readonly property int  hqFanartFadeMs:  hqMode ? 1100 : 700   // fanart crossfade
     readonly property int  hqBgFadeMs:      hqMode ? 650  : 400   // custom background fade
     readonly property real hqIconScale:     hqMode ? 2.0  : 1.4   // drawer icon decode multiplier
-    readonly property int  hqTileArtPx:     hqMode ? 1024 : 512   // row tile art decode edge
+    // Tile art decodes at the TILE's size (times this), capped at hqTileArtPx.
+    // It used to be a fixed 512/1024 regardless of tile size — far more than a
+    // small grid tile can show (an 8-column tile is ~240px), and slightly
+    // less than a big Showcase row tile wants. Nothing on screen changes;
+    // only the wasted pixels go. Extra room covers the focus pop.
+    readonly property real hqTileDecodeScale: hqMode ? 1.5 : 1.25
+    readonly property int  hqTileArtPx:     hqMode ? 1024 : 512   // hard cap on that decode
     // Showcase app-tile backdrop. Kept LIGHT: at the old 48/64 the icon behind
     // the tile dissolved into a colour wash. A gentler blur keeps its shape
     // readable while still reading as a backdrop rather than a second icon.
@@ -1218,20 +1243,24 @@ id: root
         return (game.files.get(0).path || "").indexOf("android:") === 0;
     }
 
-    function openGame(game) {
+    // ── The launch rule, used by every screen ─────────────────────────────
+    //   Pegasus import (android:<package>)  -> launch straight away, always
+    //   App you added (in an app collection) -> "Added App Launch" decides
+    //   Game                                 -> details, or launch if the
+    //                                           screen says so (All Games list)
+    // Showcase, Platform page, All Games grid and list all call this, so the
+    // behaviour cannot drift between screens.
+    function activateGame(game, gamesOpenDetails) {
         if (!game) return;
-        if (settings.OmitApplicationFromShowcase !== "Yes" && isAppGame(game)) {
-            // Pegasus imports always launch straight away — there's nothing to
-            // show on a details page. Added apps launch straight away too,
-            // unless the user asked for their details page first.
-            if (isPegasusImport(game) || settings.AddedAppLaunch !== "Details Page")
-                launchGame(game);
-            else
-                gameDetails(game);
-        } else {
-            gameDetails(game);
+        if (isPegasusImport(game)) { launchGame(game); return; }
+        if (isAppGame(game)) {
+            if (settings.AddedAppLaunch === "Details Page") gameDetails(game);
+            else                                           launchGame(game);
+            return;
         }
+        if (gamesOpenDetails) gameDetails(game); else launchGame(game);
     }
+    function openGame(game) { activateGame(game, true); }
 
     function gameDetailsFromDiscover(game) {
         playAccept();
