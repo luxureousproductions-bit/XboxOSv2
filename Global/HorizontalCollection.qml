@@ -25,6 +25,9 @@ id: root
     property var collectionData
     property int itemWidth: vpx(150)
     property int itemHeight: itemWidth*1.5
+    // Box Art / 3D Box rows use the box-art tile instead of the dynamic one.
+    property bool boxArt: false
+    property string boxStyle: "Box Art"
     property alias currentIndex: collectionList.currentIndex
     property alias savedIndex: collectionList.savedIndex
     property alias title: collectiontitle.text
@@ -194,30 +197,63 @@ id: root
         }
 
         model: search.games ? search.games : api.allGames
-        delegate: DynamicGridItem {
-            selected: ListView.isCurrentItem && collectionList.focus && !collectionList.onFavoritesHeader
-            width: itemWidth
-            height: itemHeight
-            // Same relay the highlight gets, so the tile knows when its
-            // preview has actually been torn down and restores its art.
-            ownScreen: root.ownScreen
-            
-            onHighlighted: {
-                collectionList.onFavoritesHeader = false;
-                collectionList.savedIndex = index;
-                collectionList.currentIndex = index;
-                listHighlighted();
-            }
+        // Same pairing the grids use: the box-art tile for Box Art rows, the
+        // dynamic tile otherwise. Both wire the same highlight/activate logic.
+        delegate: root.boxArt ? boxArtDelegate : dynamicDelegate
 
-            onActivated: {
-                if (selected) {
-                    activateSelected();
-                    // Apps launch straight from the row; everything else opens
-                    // its details page. See openGame() in theme.qml.
-                    openGame(search.currentGame(currentIndex));
-                } else {
-                    activate(index);
+        Component {
+        id: dynamicDelegate
+            DynamicGridItem {
+                selected: ListView.isCurrentItem && collectionList.focus && !collectionList.onFavoritesHeader
+                width: itemWidth
+                height: itemHeight
+                // Same relay the highlight gets, so the tile knows when its
+                // preview has actually been torn down and restores its art.
+                ownScreen: root.ownScreen
+
+                onHighlighted: {
+                    collectionList.onFavoritesHeader = false;
+                    collectionList.savedIndex = index;
                     collectionList.currentIndex = index;
+                    listHighlighted();
+                }
+                onActivated: {
+                    if (selected) {
+                        activateSelected();
+                        openGame(search.currentGame(currentIndex));
+                    } else {
+                        activate(index);
+                        collectionList.currentIndex = index;
+                    }
+                }
+            }
+        }
+        Component {
+        id: boxArtDelegate
+            BoxArtGridItem {
+                selected: ListView.isCurrentItem && collectionList.focus && !collectionList.onFavoritesHeader
+                // Unlike the dynamic tile, this one has no default for gameData —
+                // without it the art has no game to draw (the title still showed,
+                // as it reads modelData directly).
+                gameData: modelData
+                width: itemWidth
+                height: itemHeight
+                artStyle: root.boxStyle
+
+                onHighlighted: {
+                    collectionList.onFavoritesHeader = false;
+                    collectionList.savedIndex = index;
+                    collectionList.currentIndex = index;
+                    listHighlighted();
+                }
+                onActivate: {
+                    if (selected) {
+                        activateSelected();
+                        openGame(search.currentGame(currentIndex));
+                    } else {
+                        activate(index);
+                        collectionList.currentIndex = index;
+                    }
                 }
             }
         }
@@ -230,6 +266,7 @@ id: root
                 height: collectionList.cellHeight
                 game: search ? search.currentGame(collectionList.currentIndex) : ""
                 selected: collectionList.focus && !collectionList.onFavoritesHeader
+                boxArt: root.boxArt          // no video preview on box-art rows
                 // Relayed from whichever screen owns this row, so a preview
                 // stops when THAT screen is left — the Showcase and GameView
                 // both use this component and must not keep each other alive.

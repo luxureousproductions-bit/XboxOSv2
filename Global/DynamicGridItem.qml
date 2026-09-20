@@ -77,7 +77,7 @@ id: root
     // HQ: neighbours recede further and the pop is eased. The highlighted
     // tile itself stays at 1.0 so it lines up with the highlight's video.
     scale: selected ? 1 : hqRestScale
-    Behavior on scale {
+    Behavior on scale { enabled: !reduceMotion;
         NumberAnimation {
             duration: hqMode ? 180 : 100
             easing.type: hqMode ? Easing.OutBack : Easing.Linear
@@ -94,6 +94,21 @@ id: root
     // Which screen hosts this tile, relayed by the row. Empty means unknown,
     // which falls back to the old behaviour (covering whenever selected).
     property string ownScreen: ""
+    // Fast scrolling: the host sets this while the cursor is racing, and every
+    // animation on the tile is skipped — a pop, fade or slide the user has
+    // already scrolled past is pure cost. Nothing changes at rest.
+    // Title mode: the global "Game tile titles" unless the host says otherwise
+    // (the Platform page can set it per system).
+    property string titleMode: gameTitleMode
+    property bool reduceMotion: false
+    // Fast-scroll art deferral: a tile CREATED while the host says deferArt
+    // holds off loading its art until deferArt clears (the scroll stopped).
+    // A tile that already has its art is never affected — the latch only
+    // starts false when the tile is born mid-race.
+    property bool deferArt: false
+    property bool artArmed: true
+    Component.onCompleted: if (deferArt) artArmed = false
+    onDeferArtChanged: if (!deferArt) artArmed = true
     readonly property bool previewCovering: selected && playVideo
                                           && (ownScreen === "" || playbackOwner === ownScreen)
     function restoreArt() {
@@ -155,28 +170,48 @@ id: root
         mipmap: false
         visible: false
     }
-    ColorOverlay {
-        id: tileGlow
+    // On demand: the effect (a shader plus its own offscreen texture) exists
+    // only while it could be seen. It used to be instantiated on EVERY tile —
+    // two effects per tile doing nothing on every screen full of tiles.
+    Loader {
+        active: selected
         anchors.fill: tileHaloSrc
-        source: tileHaloSrc
-        color: theme.accent
         z: -1
-        opacity: (selected && settings.TileHalo === "Yes") ? 0.95 : 0
-        visible: opacity > 0
-        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+        sourceComponent: Component {
+        ColorOverlay {
+            id: tileGlow
+            anchors.fill: tileHaloSrc
+            source: tileHaloSrc
+            color: theme.accent
+            z: -1
+            opacity: (selected && settings.TileHalo === "Yes") ? 0.95 : 0
+            visible: opacity > 0
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+        }
+        }
     }
     // Subtle persistent glow for favorited tiles (not selected — the bright
     // tileGlow above already covers that case). Same halo asset/accent tint,
     // much dimmer, so favorites read as "special" while browsing past them.
-    ColorOverlay {
-        id: favGlow
+    // On demand: the effect (a shader plus its own offscreen texture) exists
+    // only while it could be seen. It used to be instantiated on EVERY tile —
+    // two effects per tile doing nothing on every screen full of tiles.
+    Loader {
+        active: gameData && gameData.favorite && !selected
         anchors.fill: tileHaloSrc
-        source: tileHaloSrc
-        color: theme.accent
         z: -1
-        opacity: (gameData && gameData.favorite && !selected && settings.FavoritedTileAccent !== "No") ? 0.35 : 0
-        visible: opacity > 0
-        Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+        sourceComponent: Component {
+        ColorOverlay {
+            id: favGlow
+            anchors.fill: tileHaloSrc
+            source: tileHaloSrc
+            color: theme.accent
+            z: -1
+            opacity: (gameData && gameData.favorite && !selected && settings.FavoritedTileAccent !== "No") ? 0.35 : 0
+            visible: opacity > 0
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+        }
+        }
     }
 
     Item 
@@ -184,7 +219,7 @@ id: root
     id: container
 
         anchors.fill: parent
-        Behavior on opacity { NumberAnimation { duration: 200 } }
+        Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 200 } }
 
         // Round the tile art to match the rounded selection frame (vpx(6)),
         // so the crop-filled screenshot doesn't poke past the frame's corners.
@@ -206,9 +241,10 @@ id: root
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
             height: Math.max(vpx(44), container.height * 0.16, container.width * 0.16, nameBarText.contentHeight + vpx(16))   // scales with tile size; wide tiles use width factor
             color: "#99000000"            // ~60% black; text stays full-opacity
-            opacity: (selected || settings.AlwaysShowTitles === "Yes") ? 1 : 0
+            // Game tile titles: Never hides it even on focus; Always keeps it up.
+            opacity: titleMode === "Never" ? 0 : ((selected || titleMode === "Always") ? 1 : 0)
             visible: opacity > 0
-            Behavior on opacity { NumberAnimation { duration: 120 } }
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 120 } }
             Text {
                 anchors {
                     left: parent.left; leftMargin: vpx(8)
@@ -364,16 +400,19 @@ id: root
             // is a dissolve in HQ and (starting at 1) a no-op otherwise.
             opacity: hqFadeIn ? 0 : 1
             onStatusChanged: if (status === Image.Ready && hqFadeIn && !root.videoShowing) opacity = 1
-            source: modelData ? (
+            source: (modelData && artArmed) ? (
                       artMode === "Screenshot" ? (modelData.assets.screenshots[0] || modelData.assets.background || "")
                     : artMode === "Boxfront"   ? (modelData.assets.boxFront || modelData.assets.background || modelData.assets.screenshots[0] || "")
                     :                            (modelData.assets.background || modelData.assets.screenshots[0] || "")
                   ) : ""
             fillMode: Image.PreserveAspectCrop
-            sourceSize { width: hqTileArtPx; height: hqTileArtPx }   // HQ: 1024, crisper on large tiles
+            // Decode at the tile's own size (plus room for the focus pop), never
+            // above the cap. A 240px grid tile no longer decodes 512/1024px.
+            readonly property int decodePx: Math.max(96, Math.min(hqTileArtPx, Math.round(Math.max(root.width, root.height) * hqTileDecodeScale)))
+            sourceSize { width: decodePx; height: decodePx }
             smooth: false
             asynchronous: true
-            Behavior on opacity { NumberAnimation { duration: 200 } }
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 200 } }
         }
 
         Image {
@@ -384,13 +423,15 @@ id: root
             anchors.centerIn: parent
             anchors.margins: root.width/10
             property var logoImage: (gameData && gameData.collections.get(0).shortName === "retropie") ? gameData.assets.boxFront : (gameData.collections.get(0).shortName === "steam") ? logo(gameData) : gameData.assets.logo
-            source: modelData ? logoImage || "" : ""
+            // No decode at all when the logo isn't shown — an invisible Image
+            // still loads its source, which was a wasted decode per tile.
+            source: (showLogo && modelData && artArmed) ? (logoImage || "") : ""
             sourceSize { width: 200; height: 150 }
             fillMode: Image.PreserveAspectFit
             asynchronous: true
             smooth: true
             scale: selected ? 1.1 : 1
-            Behavior on scale { NumberAnimation { duration: 100 } }
+            Behavior on scale { enabled: !reduceMotion; NumberAnimation { duration: 100 } }
             z: 10
         }
 
@@ -473,7 +514,7 @@ id: root
         anchors { fill: parent; margins: vpx(10) }
         color: "white"
         scale: selected ? 1.1 : 1
-        Behavior on opacity { NumberAnimation { duration: 100 } }
+        Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 100 } }
         font.pixelSize: fpx(18)
         font.family: subtitleFont.name
         font.bold: true

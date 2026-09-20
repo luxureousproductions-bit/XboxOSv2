@@ -46,6 +46,9 @@ id: root
     // Defaults to empty, which keeps playing — a host that forgets to set it
     // loses the gating but nothing breaks or fails to load.
     property string ownScreen: ""
+    // Which audio setting governs this preview. Defaults to the Showcase's
+    // thumbnail-audio row; a host with its own row (All Games) overrides it.
+    property bool allowAudio: settings.AllowThumbVideoAudio !== "No"
 
     // Reports to the coordinator whenever this preview is actually loaded.
     // Derived from the Loader's own state rather than the six places that set
@@ -145,7 +148,7 @@ id: root
                                       // the VideoOutput (which renders black on weak GPUs).
             source: game.assets.videoList.length ? game.assets.videoList[0] : ""
             fillMode: VideoOutput.PreserveAspectCrop
-            muted: settings.AllowThumbVideoAudio === "No" || !root.playbackActive
+            muted: !root.allowAudio || !root.playbackActive
             loops: MediaPlayer.Infinite
 
             // Preload: created at the START of the reveal delay with autoPlay

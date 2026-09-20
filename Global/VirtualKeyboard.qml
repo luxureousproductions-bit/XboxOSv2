@@ -67,8 +67,16 @@ id: root
     readonly property real gridW: (keyW * 10) + (keyGap * 9)
     readonly property real panelW: gridW + (keyGap * 2) + (sideW * 2)
 
-    implicitWidth: panelW
-    implicitHeight: layout.height
+    // Backing panel behind the keyboard. Hosts can override or switch it off
+    // with panelOpacity: 0.
+    property real  panelPad:     vpx(18)
+    property color panelColor:   "#0D0D0D"
+    property real  panelOpacity: 0.94
+
+    // Include the backing panel's padding, so a host that sizes or anchors to
+    // this item doesn't clip the panel's edges.
+    implicitWidth: panelW + (panelOpacity > 0 ? panelPad * 2 : 0)
+    implicitHeight: layout.height + (panelOpacity > 0 ? panelPad * 2 : 0)
 
     // ── Caret ─────────────────────────────────────────────────────────────
     // Insertion point within `text`. LB / RB (and the < > keys) move it, so
@@ -226,6 +234,24 @@ id: root
     // U+232B is missing outright, which is why backspace showed as a blank),
     // while Canvas items were not rendering here at all. Image + SVG renders
     // reliably and scales cleanly with UI Scale.
+
+    // ── Backing panel ─────────────────────────────────────────────────────
+    // Sits behind everything below, sized to the layout with a margin, so the
+    // keyboard reads against a flat surface instead of whatever is on screen.
+    // Drawn first, so it is underneath without needing z-order.
+    Rectangle {
+    id: kbPanel
+
+        anchors.centerIn: layout
+        width:  layout.width  + root.panelPad * 2
+        height: layout.height + root.panelPad * 2
+        radius: vpx(8)
+        color: root.panelColor
+        opacity: root.panelOpacity
+        visible: root.panelOpacity > 0
+        border.width: vpx(1)
+        border.color: Qt.rgba(1, 1, 1, 0.08)
+    }
 
     Column {
     id: layout
@@ -742,6 +768,39 @@ id: root
     }
 
     Keys.onPressed: {
+        // ── Physical keyboard, handled FIRST ─────────────────────────────
+        // Pegasus maps some letters to controller actions, so a typed "f"
+        // arrived as Filters, "i" as Details, Q/E as page changes and
+        // Backspace as Cancel — typing inserted spaces, deleted characters
+        // and closed the keyboard. A real key press carries text (or is
+        // Backspace); a gamepad button never does, so handling these before
+        // anything else leaves controller behaviour untouched.
+        //
+        // Deliberately before the auto-repeat guard, so held keys repeat.
+        if (event.key === Qt.Key_Backspace) {
+            event.accepted = true;
+            backspace();
+            return;
+        }
+        if (event.text && event.text.length === 1 && event.text.charCodeAt(0) >= 0x20
+            && !(event.modifiers & Qt.ControlModifier) && !(event.modifiers & Qt.AltModifier)) {
+            event.accepted = true;
+            insert(event.text);
+            return;
+        }
+        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+            event.accepted = true;
+            playAccept();
+            accepted();
+            return;
+        }
+        if (event.key === Qt.Key_Escape) {
+            event.accepted = true;
+            playBack();
+            cancelled();
+            return;
+        }
+
         if (event.isAutoRepeat) return;
 
         // Raw-code buttons are checked FIRST so the event is marked accepted
