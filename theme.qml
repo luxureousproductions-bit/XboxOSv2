@@ -15,6 +15,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import QtQuick 2.15
+import QtQuick.Window 2.15   // Window.active — second signal for app-switch detection
 import QtGraphicalEffects 1.15   // FastBlur, for the HQ drawer backdrop
 import QtQuick.Layouts 1.15
 import SortFilterProxyModel 0.2
@@ -337,7 +338,23 @@ id: root
     // Also false while the app drawer is open: every video player already
     // pauses on this flag, so folding the drawer in here silences and pauses
     // all of them at once with no per-player changes. They resume on close.
+    // Qt.application.state alone has proved unreliable on Android: swapping
+    // apps doesn't always move it off ApplicationActive, so players kept
+    // running in the background. Window.active is a second, independent
+    // signal for the same thing.
+    //
+    // It is only trusted once it has been true at least once. If a platform
+    // never reports it, windowSeenActive stays false and the expression falls
+    // back to the old behaviour instead of silencing everything forever.
+    property bool windowSeenActive: false
+    onActiveFocusChanged: if (Window.active) windowSeenActive = true
+    Connections {
+        target: root.Window.window
+        function onActiveChanged() { if (root.Window.active) root.windowSeenActive = true; }
+    }
+
     readonly property bool appActive: Qt.application.state === Qt.ApplicationActive
+                                      && (!windowSeenActive || Window.active)
                                       && !appDrawer.open
 
     // ── Playback coordinator ──────────────────────────────────────────────
@@ -1720,6 +1737,33 @@ id: root
     }
 
     // ── App drawer ────────────────────────────────────────────────────────
+    // ── Mouse back / right button ────────────────────────────────────────
+    // Every screen's full-screen blocker MouseArea takes Qt.AllButtons and
+    // discards what it doesn't use, so a mouse Back button was swallowed
+    // before it reached anything. This sits above them all and accepts ONLY
+    // the back and right buttons — left clicks, touch, hover and wheel pass
+    // straight through, so nothing else changes.
+    //
+    // Remove Qt.RightButton below to make it thumb-button only.
+    readonly property int mouseBackButtons: Qt.BackButton | Qt.RightButton
+
+    function mouseBack() {
+        if (appDrawer.open) { appDrawer.closeDrawer(); return; }
+        if (state === "launchgamescreen") { previousScreen(); return; }
+        // Otherwise hand it to the screen showing, if it knows what B means.
+        var scr = activeScreenItem ? activeScreenItem.item : null;
+        if (scr && typeof scr.mouseBack === "function") scr.mouseBack();
+    }
+
+    MouseArea {
+        anchors.fill: parent
+        z: 1000
+        acceptedButtons: root.mouseBackButtons
+        propagateComposedEvents: true
+        onPressed:  mouse.accepted = true
+        onReleased: { mouse.accepted = true; root.mouseBack(); }
+    }
+
     // ── HQ: blurred screen behind the app drawer ─────────────────────────
     // A one-time SNAPSHOT of the current screen, blurred, faded in with the
     // drawer's slide. Snapshot rather than live: a live full-screen FastBlur
