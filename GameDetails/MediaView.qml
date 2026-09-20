@@ -132,6 +132,17 @@ id: root
         Keys.onRightPressed: { sfxNav.play(); incrementCurrentIndex() }
     }
 
+    // Wheel moves the selection (see Global/WheelNav.qml) — a sibling of the
+    // view, never a child: a MouseArea inside a Flickable is reparented into
+    // its contentItem and scrolls away with it.
+    WheelNav {
+        anchors.fill: medialist
+        view: medialist
+        columns: 1
+        active: true
+        onStepped: function() { playNav(); }
+    }
+
     Row {
     id: blips
 
@@ -197,6 +208,9 @@ id: root
     }
 
     // Input handling
+    // Mouse back button: same as B — close the fullscreen media.
+    function mouseBack() { close(); }
+
     Keys.onPressed: {
         // Swallow the drawer key while fullscreen media is up. A global panel
         // sliding over a modal fullscreen overlay is an odd state that left

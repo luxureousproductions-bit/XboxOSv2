@@ -1114,6 +1114,15 @@ id: root
     }
 
     // Input handling
+    // Mouse back button: mirrors B in the same order — fullscreen media
+    // closes first, then a focused header button returns to the content,
+    // then the screen itself.
+    function mouseBack() {
+        if (mediaScreen.visible)  { closeMedia(); return; }
+        if (!content.activeFocus) { content.focus = true; return; }
+        previousScreen();
+    }
+
     Keys.onPressed: {
         // Back
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
