@@ -379,6 +379,9 @@ id: root
             buttonRow.selectedIndex++;
         }
     }
+    // Mouse back button: same as B.
+    function mouseBack() { previousScreen(); }
+
     Keys.onPressed: {
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;

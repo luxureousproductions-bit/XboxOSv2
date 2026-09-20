@@ -434,6 +434,17 @@ id: root
         }
     }
 
+    // Wheel moves the selection (see Global/WheelNav.qml) — a sibling of the
+    // view, never a child: a MouseArea inside a Flickable is reparented into
+    // its contentItem and scrolls away with it.
+    WheelNav {
+        anchors.fill: gameList
+        view: gameList
+        columns: 1
+        active: !searchOverlay.open
+        onStepped: function() { playNav(); }
+    }
+
     // ── Page counter ─────────────────────────────────────────────────────
     // Top right, above the list. It used to sit bottom-right, which left the
     // bottom row crowded once the shared Apps prompt appeared bottom-left on
@@ -515,6 +526,12 @@ id: root
         if (gameList.currentIndex < cheevosData.raRecentGames.count - 1)
             gameList.currentIndex++;
     }
+    // Mouse back button: mirrors B — the search overlay takes it first.
+    function mouseBack() {
+        if (searchOverlay.open) { playBack(); searchOverlay.resetSearch(); return; }
+        previousScreen();
+    }
+
     Keys.onPressed: {
         // X — open the library search
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {

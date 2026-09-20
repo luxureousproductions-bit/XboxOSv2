@@ -627,6 +627,17 @@ id: root
         }
     }
 
+    // Wheel moves the selection (see Global/WheelNav.qml) — a sibling of the
+    // view, never a child: a MouseArea inside a Flickable is reparented into
+    // its contentItem and scrolls away with it.
+    WheelNav {
+        anchors.fill: achievementList
+        view: achievementList
+        columns: 1
+        active: true
+        onStepped: function() { playNav(); }
+    }
+
     // ── Page counter ─────────────────────────────────────────────────────
     // Top right, directly above the game icon. It used to sit bottom-right,
     // which left the bottom row crowded once the shared Apps prompt appeared
@@ -739,6 +750,9 @@ id: root
         cycleFilterForward();
         currentIndex = 0;
     }
+
+    // Mouse back button: same as B.
+    function mouseBack() { achievementsScreenFromGame(); }
 
     Keys.onPressed: {
         // B — back to the RA overview. A second B there exits RA entirely.
