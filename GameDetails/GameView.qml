@@ -646,9 +646,11 @@ id: root
         height: vpx(75)
 
         // Platform-page band: fades in once the list leaves the Play row.
+        // Never over the fullscreen media viewer (it sits under the header).
         Rectangle {
             anchors.fill: parent
             color: theme.main
+            visible: !mediaScreen.visible
             opacity: scrolledPast ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: chromeFadeMs; easing.type: chromeEasing } }
         }
@@ -1111,6 +1113,7 @@ id: root
         anchors { top: header.bottom; left: parent.left; right: parent.right }
         height: vpx(14)
         z: 9
+        visible: !mediaScreen.visible
         opacity: (scrolledPast && gridDimOpacity > 0) ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: chromeFadeMs; easing.type: chromeEasing } }
         gradient: Gradient {
@@ -1125,6 +1128,7 @@ id: root
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
         height: helpMargin + vpx(120)
         z: 6
+        visible: !mediaScreen.visible   // z:6 would otherwise paint over the fullscreen viewer
         opacity: scrolledPast ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: chromeFadeMs; easing.type: chromeEasing } }
         gradient: Gradient {
