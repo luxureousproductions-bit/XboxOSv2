@@ -87,7 +87,9 @@ id: root
             font.family: subtitleFont.name
             font.pixelSize: fpx(18)
             font.bold: true
-            color: theme.text
+            // Always light: the button face is the accent colour (or a white
+            // outline on transparent), never the page background.
+            color: "#ebebeb"
             //opacity: selected ? 1 : 0.2
             visible: text !== ""
             

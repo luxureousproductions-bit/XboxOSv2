@@ -415,7 +415,9 @@ id: root
     id: title
 
         text: modelData ? modelData.title : ''
-        color: theme.text
+        // Always light: the pill behind it (#B3000000) is dark whatever the
+        // page background colour is, so theme.text's White-mode flip is wrong here.
+        color: "#ebebeb"
         font {
             family: subtitleFont.name
             pixelSize: Math.max(fpx(14), root.width * 0.075)   // scales with the tile; was a fixed 12

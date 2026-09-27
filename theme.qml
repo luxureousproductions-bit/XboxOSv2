@@ -135,6 +135,20 @@ id: root
               ? api.memory.get("Omit genre: Emulator from Showcase") : "No") === "Yes";
     }
 
+    // ── Grid background dimming ───────────────────────────────────────────
+    // A translucent black layer between the background and the tiles on the
+    // Platform page and the All Games grid, so the grid reads as a surface
+    // sitting on the art rather than mixed into it. One flat rectangle:
+    // no texture, no shader, no per-tile cost.
+    readonly property real gridDimOpacity: {
+        switch (settings.GridDimming) {
+        case "Light":  return 0.18;
+        case "Medium": return 0.30;
+        case "Strong": return 0.45;
+        default:       return 0.0;     // Off
+        }
+    }
+
     // ── Tile titles ───────────────────────────────────────────────────────
     // "Game tile titles" reuses the old "Always show titles" key. Saved values
     // from before are Yes/No; the row now stores On focus/Always/Never. Both
@@ -307,6 +321,7 @@ id: root
             AllGamesMatchPlatform:         api.memory.has("AllGames Match Platform") ? api.memory.get("AllGames Match Platform") : "No",
             SystemTileTitles:              api.memory.has("System tile titles") ? api.memory.get("System tile titles") : "On focus",
             PerSystemTiles:                api.memory.has("Per-system tile settings") ? api.memory.get("Per-system tile settings") : "No",
+            GridDimming:                   api.memory.has("Grid background dimming") ? api.memory.get("Grid background dimming") : "Light",
             AllGamesHideBoxOnVideo:          api.memory.has("AllGames Hide box art on video") ? api.memory.get("AllGames Hide box art on video") : "No",
             AllGamesHideLogoOnVideo:         api.memory.has("AllGames Hide logo on video") ? api.memory.get("AllGames Hide logo on video") : "No",
             AllGamesBlurBackground:          api.memory.has("AllGames Blur Background") ? api.memory.get("AllGames Blur Background") : "No",
@@ -1060,6 +1075,16 @@ id: root
     property bool showcaseWhiteBackground: whiteBackground
                                            && settings.ShowcaseBackgroundArt === "No"
                                            && settings.CustomBackground === "No"
+    // Help-bar prompt colour. theme.text goes dark for the White background,
+    // but the bar does not always sit on theme.main: Settings draws its own
+    // hard-coded dark chrome, and Showcase is covered by fanart / a custom
+    // image unless both are off. Passed into the bar from here (like
+    // leftPromptNudge) because `root.state` inside ButtonHelpBar.qml is the
+    // bar's own root, whose state is always "".
+    readonly property color helpPromptColor:
+        (state === "settingsscreen")                              ? "#ebebeb"
+      : (state === "showcasescreen" && !showcaseWhiteBackground) ? "#ebebeb"
+      : theme.text
 
     property real globalMargin: vpx(30)
 
@@ -1734,6 +1759,11 @@ id: root
         // it resolves against that component's folder. Same "../" the delegate
         // beside it uses.
         leftPromptIcon: "../assets/images/icon_select.svg"
+        // The three RetroAchievements pages draw their prompts lower; Apps follows.
+        leftPromptNudge: (root.state === "achievementsscreen"
+                          || root.state === "gameachievementsscreen"
+                          || root.state === "raentryscreen") ? vpx(12) : 0
+        promptColor: helpPromptColor
     }
 
     // ── App drawer ────────────────────────────────────────────────────────

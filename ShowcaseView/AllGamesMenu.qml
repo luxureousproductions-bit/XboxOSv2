@@ -32,12 +32,13 @@ id: root
     // share currentGameIndex, so currentGame — and everything derived from it
     // (audio, video preview, imported-app handling, the helpbar) — is
     // unchanged. Only the layout differs; there is no second screen.
-    readonly property bool gridMode: settings.AllGamesView === "Grid"
+    readonly property bool gridMode: lvView === "Grid"
     // The header buttons hand focus back to "the games". That used to be
     // gamelist unconditionally — in grid mode that focused the hidden list,
     // so the grid never received input.
     // Mouse back button: mirrors B, in the same priority order.
     function mouseBack() {
+        if (listPanelOpen)   { playBack(); listPanelOpen = false; focusGames(); return; }
         if (searchActive)    { searchActive = false; filterPanel.forceActiveFocus(); return; }
         if (genrePickerOpen) { genrePickerOpen = false; filterPanel.forceActiveFocus(); return; }
         if (filterOpen)      { playBack(); filterOpen = false; focusGames(); return; }
@@ -84,12 +85,14 @@ id: root
     // "Match Platform Page": read the Platform page's grid values instead of
     // this page's own. The All Games values are left untouched, so turning it
     // back off restores whatever was set here before.
-    readonly property bool gridMatch: settings.AllGamesMatchPlatform === "Yes"
-    readonly property string tileStyle:   gridMatch ? settings.GridThumbnail : settings.AllGamesTileStyle
-    readonly property string tileRatioStr:gridMatch ? settings.GridRatio     : settings.AllGamesTileRatio
-    readonly property string tileArt:     gridMatch ? settings.GridArt       : settings.AllGamesTileArt
-    readonly property string tileLogo:    gridMatch ? settings.GridGameLogo  : settings.AllGamesTileLogo
-    readonly property string tileColumns: gridMatch ? settings.GridColumns   : settings.AllGamesColumns
+    // Own values go through lv() so the Y panel's writes apply live; the
+    // Platform values are only changed from Settings, so plain reads are fine.
+    readonly property bool gridMatch: lv("AllGames Match Platform", settings.AllGamesMatchPlatform) === "Yes"
+    readonly property string tileStyle:   gridMatch ? settings.GridThumbnail : lv("AllGames Tile Style",    settings.AllGamesTileStyle)
+    readonly property string tileRatioStr:gridMatch ? settings.GridRatio     : lv("AllGames Tile Ratio",    settings.AllGamesTileRatio)
+    readonly property string tileArt:     gridMatch ? settings.GridArt       : lv("AllGames Tile Art",      settings.AllGamesTileArt)
+    readonly property string tileLogo:    gridMatch ? settings.GridGameLogo  : lv("AllGames Tile Logo",     settings.AllGamesTileLogo)
+    readonly property string tileColumns: gridMatch ? settings.GridColumns   : lv("AllGames Items per row", settings.AllGamesColumns)
 
     readonly property int  gridColumns: parseInt(tileColumns) || 5
     readonly property bool gridBoxArt: tileStyle === "Box Art" || tileStyle === "3D Box"
@@ -173,6 +176,18 @@ id: root
     }
 
     // ── Sort / filter state ───────────────────────────────────────────────
+    // ── Live list-view settings ──────────────────────────────────────────
+    // The Y panel writes these keys directly; the theme's settings object
+    // only re-reads on reload, so the list reads them here with an epoch.
+    property int listEpoch: 0
+    function lv(key, fallback) { var e = listEpoch; return api.memory.has(key) ? api.memory.get(key) : fallback; }
+    readonly property string lvView:      lv("All Games View",                settings.AllGamesView)
+    readonly property string lvVideo:     lv("AllGames Video preview",        settings.AllGamesVideoPreview)
+    readonly property string lvHideBox:   lv("AllGames Hide box art on video", settings.AllGamesHideBoxOnVideo)
+    readonly property string lvHideLogo:  lv("AllGames Hide logo on video",    settings.AllGamesHideLogoOnVideo)
+    readonly property string lvBlur:      lv("AllGames Blur Background",       settings.AllGamesBlurBackground)
+    readonly property string lvScanlines: lv("AllGames Show scanlines",        settings.AllGamesScanlines)
+
     property string sortField:   "sortBy"        // sortBy|lastPlayed|rating|releaseYear|favorite
     property int    sortDir:     Qt.AscendingOrder
     property bool   filterOpen:  false
@@ -272,8 +287,8 @@ id: root
     property string videoSource: (currentGame && currentGame.assets && currentGame.assets.videos && currentGame.assets.videos.length > 0) ? currentGame.assets.videos[0] : ""
     property bool   videoArmed:      false
     property bool   videoPlaying:    previewVideo.playbackState === MediaPlayer.PlayingState
-    property bool   hideBoxForVideo:  videoPlaying && settings.AllGamesHideBoxOnVideo === "Yes"
-    property bool   hideLogoForVideo: videoPlaying && settings.AllGamesHideLogoOnVideo === "Yes"
+    property bool   hideBoxForVideo:  videoPlaying && lvHideBox === "Yes"
+    property bool   hideLogoForVideo: videoPlaying && lvHideLogo === "Yes"
     Timer {
     id: videoDebounce
         interval: hqAllGamesVideoMs; repeat: false   // HQ: preview starts sooner
@@ -303,8 +318,7 @@ id: root
         { key: "sortBy",      label: "Title" },
         { key: "lastPlayed",  label: "Last Played" },
         { key: "rating",      label: "Rating" },
-        { key: "releaseYear", label: "Release Date" },
-        { key: "favorite",    label: "Favorites" }
+        { key: "releaseYear", label: "Release Date" }
     ]
 
     function selectSort(field) {
@@ -544,28 +558,27 @@ id: root
     }
 
     // Vertical accent line dividing the text list from the game details
-    Rectangle {
-    id: vDivider
-        visible: !gridMode
-        anchors {
-            left: gamelist.right; leftMargin: globalMargin / 2
-            top: header.bottom; topMargin: globalMargin
-            bottom: parent.bottom; bottomMargin: globalMargin + helpMargin
-        }
-        width: vpx(3)
-        color: theme.accent
-    }
 
     // ── Game preview (miximage-style): darkened fanart backdrop + framed
     //    square screenshot, with the 3D box overlapping its bottom-left and
     //    the logo straddling its top edge. Border hugs just the screenshot.
+    // Preview panel plate, under the fanart. No outline: the panel's edges are
+    // the header band, the list column and the page edge.
+    Rectangle {
+        visible: !gridMode
+        anchors.fill: boxArt
+        color: "#000000"; opacity: 0.22
+        z: -1
+    }
+
     Item {
     id: boxArt
         visible: !gridMode
         anchors {
-            top: header.bottom; topMargin: globalMargin
-            left: gamelist.right; leftMargin: globalMargin
-            right: parent.right; rightMargin: globalMargin
+            // Flush: the list column's edge, the header band, and the page edge.
+            top: header.bottom
+            left: listSurface.right
+            right: parent.right
             bottom: metaPanel.top; bottomMargin: vpx(14)
         }
         clip: true
@@ -582,14 +595,14 @@ id: root
             source: artBackdrop
             fillMode: Image.PreserveAspectCrop
             smooth: true
-            visible: status === Image.Ready && settings.AllGamesBlurBackground !== "Yes"
+            visible: status === Image.Ready && lvBlur !== "Yes"
             opacity: 0.55
         }
         // Blurred backdrop variant (only built when the setting is on)
         Loader {
         id: bgBlurLoader
             anchors.fill: parent
-            active: settings.AllGamesBlurBackground === "Yes" && artBackdrop !== ""
+            active: lvBlur === "Yes" && artBackdrop !== ""
             readonly property Item blurSrc: bgArtImg
             sourceComponent: Component {
                 FastBlur {
@@ -646,7 +659,7 @@ id: root
             Rectangle {
                 visible: appIconWrap.visible
                 anchors { fill: appIconWrap; leftMargin: vpx(3); topMargin: vpx(10) }
-                radius: vpx(10)
+                radius: appIconWrap.cornerRadius
                 color: "#000000"; opacity: hqMode ? 0.55 : 0.35
                 layer.enabled: hqMode
                 layer.effect: FastBlur { radius: 32; transparentBorder: true }
@@ -656,10 +669,14 @@ id: root
 
                 anchors.fill: parent
                 visible: appIconMode && appIconImg.status === Image.Ready
+                // Same proportion as the grid tile's appRound (18% of the
+                // shorter side), so the two icon styles match instead of the
+                // panel looking squarer at its larger size.
+                readonly property real cornerRadius: Math.min(width, height) * 0.18
                 layer.enabled: visible
                 layer.smooth: true
                 layer.effect: OpacityMask {
-                    maskSource: Rectangle { width: appIconWrap.width; height: appIconWrap.height; radius: vpx(10) }
+                    maskSource: Rectangle { width: appIconWrap.width; height: appIconWrap.height; radius: appIconWrap.cornerRadius }
                 }
                 Rectangle { anchors.fill: parent; color: "#2E2E2E" }   // backs transparent corners
                 Image {
@@ -698,11 +715,11 @@ id: root
                 // THIS game), not on every move — otherwise fast scrolling
                 // would open and close a decoder per row.
                 readonly property bool warm: hqAllGamesWarm && settledGame === currentGame
-                source: (settings.AllGamesVideoPreview !== "No" && (videoArmed || warm)
+                source: (lvVideo !== "No" && (videoArmed || warm)
                          && videoSource !== "" && playbackOwner === "allgamesscreen" && !gridMode)
                         ? videoSource : ""
                 fillMode: VideoOutput.PreserveAspectCrop
-                muted: settings.AllGamesVideoAudio !== "Yes"
+                muted: lv("All games menu video audio", settings.AllGamesVideoAudio) !== "Yes"
                 loops: MediaPlayer.Infinite
                 autoPlay: !hqAllGamesWarm
                 readonly property bool ready: status === MediaPlayer.Loaded
@@ -722,10 +739,10 @@ id: root
             Image {
             id: scanlinesOverlay
                 anchors.fill: parent
-                source: settings.AllGamesScanlines === "Yes" ? "../assets/images/scanlines_v3.png" : ""
+                source: lvScanlines === "Yes" ? "../assets/images/scanlines_v3.png" : ""
                 asynchronous: true
                 opacity: 0.2
-                visible: settings.AllGamesScanlines === "Yes"
+                visible: lvScanlines === "Yes"
                 layer.enabled: true
                 layer.smooth: true
                 layer.effect: OpacityMask {
@@ -804,126 +821,54 @@ id: root
             right: parent.right; rightMargin: globalMargin
             bottom: parent.bottom; bottomMargin: globalMargin + helpMargin
         }
-        height: vpx(170)
+        height: vpx(64)    // one row now; the preview takes the rest
         // Hidden in grid mode (no preview panel) and when nothing is selected.
         visible: !gridMode && currentGame ? true : false
 
-        // Accent line above the metadata
-        Rectangle {
-            anchors { top: parent.top; left: parent.left; right: parent.right }
-            height: vpx(3); color: theme.accent
-        }
-
-        Column {
-            anchors { top: parent.top; topMargin: vpx(14); left: parent.left; right: parent.right }
-            spacing: 0
-
-            // Row 1: Publisher | Developer | Players
-            RowLayout {
-                width: parent.width; height: vpx(42); spacing: vpx(18)
-                Item {
-                    Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
-                    Text { id: agPubLabel
-                        anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                        text: "Publisher: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
-                    }
-                    ScrollingText {
-                        anchors { left: agPubLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
-                        text: currentGame && currentGame.publisher ? currentGame.publisher : "—"
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
-                    }
+        // One line: Genre | Last Played | Rating. The preview above grows into
+        // the space the other two rows used to take. Genre is the only one
+        // that can run long, so it takes whatever is left; Last Played
+        // ("mm/dd/yyyy" or "Never") and Rating (at most "10.0") sit in fixed
+        // compact columns on the right.
+        RowLayout {
+            anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter }
+            height: vpx(42); spacing: vpx(18)
+            Item {
+                Layout.fillWidth: true; Layout.fillHeight: true
+                Text { id: agGenreLabel
+                    anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                    text: "Genre: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                 }
-                Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
-                Item {
-                    Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
-                    Text { id: agDevLabel
-                        anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                        text: "Developer: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
-                    }
-                    ScrollingText {
-                        anchors { left: agDevLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
-                        text: currentGame && currentGame.developer ? currentGame.developer : "—"
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
-                    }
-                }
-                Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
-                Item {
-                    Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
-                    Text { id: agPlayersLabel
-                        anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                        text: "Players: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
-                    }
-                    ScrollingText {
-                        anchors { left: agPlayersLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
-                        text: currentGame && currentGame.players > 0 ? currentGame.players : "—"
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
-                    }
+                ScrollingText {
+                    anchors { left: agGenreLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                    text: currentGame && currentGame.genre ? currentGame.genre : "\u2014"
+                    font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
                 }
             }
-
-            // extra gap before Row 2 ("down 1")
-            Item { width: 1; height: vpx(10) }
-
-            // Row 2: Genre | Released | Rating
-            RowLayout {
-                width: parent.width; height: vpx(42); spacing: vpx(18)
-                Item {
-                    Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
-                    Text { id: agGenreLabel
-                        anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                        text: "Genre: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
-                    }
-                    ScrollingText {
-                        anchors { left: agGenreLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
-                        text: currentGame && currentGame.genre ? currentGame.genre : "—"
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
-                    }
+            Rectangle { width: vpx(2); height: vpx(26); color: Qt.rgba(1,1,1,0.18); Layout.alignment: Qt.AlignVCenter }
+            Item {
+                Layout.preferredWidth: vpx(236); Layout.fillHeight: true
+                Text { id: agLastLabel
+                    anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                    text: "Last Played: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
                 }
-                Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
-                Item {
-                    Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
-                    Text { id: agRelLabel
-                        anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                        text: "Released: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
-                    }
-                    ScrollingText {
-                        anchors { left: agRelLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
-                        text: fmtReleaseDate(currentGame)
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
-                    }
-                }
-                Rectangle { width: vpx(2); height: vpx(26); Layout.alignment: Qt.AlignVCenter; opacity: 0.2 }
-                Item {
-                    Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
-                    Text { id: agRatingLabel
-                        anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                        text: "Rating: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
-                    }
-                    ScrollingText {
-                        anchors { left: agRatingLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
-                        text: currentGame && currentGame.rating > 0 ? (currentGame.rating * 10).toFixed(1) : "—"
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
-                    }
+                ScrollingText {
+                    anchors { left: agLastLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                    text: fmtLastPlayed(currentGame)
+                    font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
                 }
             }
-
-            // extra gap before Row 3 ("down 2")
-            Item { width: 1; height: vpx(16) }
-
-            // Row 3: Last Played (single field, left-aligned)
-            RowLayout {
-                width: parent.width; height: vpx(42); spacing: vpx(18)
-                Item {
-                    Layout.fillWidth: true; Layout.preferredWidth: vpx(100); Layout.fillHeight: true
-                    Text { id: agLastLabel
-                        anchors { left: parent.left; verticalCenter: parent.verticalCenter }
-                        text: "Last Played: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
-                    }
-                    ScrollingText {
-                        anchors { left: agLastLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
-                        text: fmtLastPlayed(currentGame)
-                        font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
-                    }
+            Rectangle { width: vpx(2); height: vpx(26); color: Qt.rgba(1,1,1,0.18); Layout.alignment: Qt.AlignVCenter }
+            Item {
+                Layout.preferredWidth: vpx(126); Layout.fillHeight: true
+                Text { id: agRatingLabel
+                    anchors { left: parent.left; verticalCenter: parent.verticalCenter }
+                    text: "Rating: "; font.pixelSize: fpx(17); font.family: subtitleFont.name; font.bold: true; color: theme.accent
+                }
+                ScrollingText {
+                    anchors { left: agRatingLabel.right; right: parent.right; verticalCenter: parent.verticalCenter }
+                    text: currentGame && currentGame.rating > 0 ? (currentGame.rating * 10).toFixed(1) : "\u2014"
+                    font.pixelSize: fpx(17); font.family: subtitleFont.name; color: theme.text
                 }
             }
         }
@@ -933,69 +878,55 @@ id: root
     Item {
     id: header
         anchors { top: parent.top; left: parent.left; right: parent.right }
-        height: vpx(75)
+        height: vpx(120)   // the band: tall enough that the counter sits inside it
         // Above the grid: the grid is unclipped so its halo can bleed, which
         // also lets rows scrolling up paint over this bar unless it sits higher.
         z: 5
 
         // Extends down to the accent line, which hangs below this bar's box.
         // Otherwise grid rows scrolling up showed in the gap between the two.
-        Rectangle { anchors { fill: parent; bottomMargin: -(globalMargin - vpx(14)) } color: theme.main }
-
-        // Accent line above the preview — pushed down so it sits the same
-        // distance from the fanart (vpx(14)) as the bottom accent line does.
-        Rectangle {
-            anchors {
-                bottom: parent.bottom; bottomMargin: -(globalMargin - vpx(14))
-                left: parent.left; right: parent.right
-            }
-            height: vpx(3); color: theme.accent
-        }
+        Rectangle { anchors.fill: parent; color: theme.main }
 
         // Icon + title (top row) — matches the platform page's clean header rhythm
-        Item {
-        id: libIcon
-            anchors { top: parent.top; topMargin: vpx(10); left: parent.left; leftMargin: globalMargin }
-            // Box stays vpx(40): the title and the game counter anchor to this,
-            // so shrinking it would shift the whole header. The artwork is inset
-            // instead — the old PNG's canvas was ~half padding, so filling this
-            // box with the SVG would render it ~1.6x larger than before.
-            height: vpx(40); width: vpx(40)
-
-            Image {
-                anchors.centerIn: parent
-                width: vpx(25); height: vpx(25)
-                source: "../assets/images/icon_gamesandapps.svg"
-                sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
-                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
-                // White-lettering logo flips to black on a white background
-                layer.enabled: whiteBackground
-                layer.effect: ColorOverlay { color: "black" }
-            }
-        }
-        Text {
-            anchors { left: libIcon.right; leftMargin: vpx(12); verticalCenter: libIcon.verticalCenter }
-            text: "My Games & Apps"
-            color: theme.text; font.family: titleFont.name; font.pixelSize: fpx(24); font.bold: true
-        }
-        // Game counter sits directly below the title row (no longer crowding it)
-        Text {
-            anchors { left: parent.left; leftMargin: globalMargin; top: libIcon.bottom; topMargin: vpx(2) }
-            text: displayModel.count + " games"
-            color: theme.text; opacity: 0.7; font.family: subtitleFont.name; font.pixelSize: fpx(15)
-        }
-
-        // Current game's system logo (top-right), updates while scrolling the list
+        // System logo of the highlighted game, top-left, at the Platform page's
+        // size and position — the two headers now match. Falls back to the
+        // system's name as text when there's no logo image.
         Image {
         id: sysLogo
-            anchors { top: parent.top; topMargin: vpx(14); right: parent.right; rightMargin: globalMargin }
-            height: vpx(40)
+            anchors { top: parent.top; topMargin: vpx(8); left: parent.left; leftMargin: globalMargin }
+            height: vpx(50)
             fillMode: Image.PreserveAspectFit
             source: (currentGame && currentGame.collections.count > 0)
                     ? "../assets/images/logospng/" + Utils.processPlatformName(currentGame.collections.get(0).shortName) + ".png"
                     : ""
             visible: status === Image.Ready
             smooth: true; asynchronous: true; cache: true
+        }
+        Text {
+            anchors { left: parent.left; leftMargin: globalMargin; top: parent.top; topMargin: vpx(14) }
+            // Only once the image has actually FAILED (or there is no image to
+            // load). `!sysLogo.visible` also covered the Loading state, so the
+            // name flashed for a frame and the logo popped in over it.
+            visible: sysLogo.status === Image.Error || sysLogo.source == ""
+            text: (currentGame && currentGame.collections.count > 0) ? currentGame.collections.get(0).name : "My Games & Apps"
+            color: theme.text; font.family: titleFont.name; font.pixelSize: fpx(24); font.bold: true
+        }
+        // Game counter: low in the band but clear of its edge, so it survives
+        // the UI Scale setting.
+        Text {
+            anchors { left: parent.left; leftMargin: globalMargin; bottom: parent.bottom; bottomMargin: vpx(14) }
+            text: {
+                var group = function(n) { var t = String(n), o = ""; while (t.length > 3) { o = "," + t.slice(-3) + o; t = t.slice(0, -3); } return t + o; };
+                var n = displayModel.count;
+                var filtered = (nameFilter !== "") || favsOnly || (genreSelected && genreSelected.length > 0) || (systemFilter !== "");
+                var asc = (sortDir === Qt.AscendingOrder);
+                var dir;
+                switch (sortField) { case "favorite": dir = ""; break; default: dir = asc ? "Ascending" : "Descending"; }
+                var sortName = "Title";
+                for (var i = 0; i < sortFields.length; i++) if (sortFields[i].key === sortField) sortName = sortFields[i].label;
+                return group(n) + " games \u00B7 " + (filtered ? "Filtered" : (sortName + (dir ? " " + dir : "")));
+            }
+            color: theme.text; opacity: 0.7; font.family: subtitleFont.name; font.pixelSize: fpx(15)
         }
 
         // Nav buttons (home / discover / achievements / settings)
@@ -1139,6 +1070,69 @@ id: root
         }
     }
 
+    // ── 1. The last row dissolves under the help bar ──────────────────────
+    // A fade in the page colour over the bottom of the grid, beneath the
+    // prompts, so the cut-off row melts away instead of being chopped by
+    // "Apps" and "Launch" sitting on tile art.
+    Rectangle {
+        anchors { left: parent.left; bottom: parent.bottom }
+        width: parent.width   // full width in both modes
+        height: helpMargin + vpx(120)
+        z: 6
+        visible: true
+        gradient: Gradient {
+            // Eased: several stops so the fade starts imperceptibly and only
+            // becomes solid under the prompts themselves.
+            GradientStop { position: 0.0;  color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.0)  }
+            GradientStop { position: 0.25; color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.12) }
+            GradientStop { position: 0.5;  color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.45) }
+            GradientStop { position: 0.75; color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.85) }
+            GradientStop { position: 1.0;  color: theme.main }
+        }
+    }
+
+    // ── 2. Depth under the header band ────────────────────────────────────
+    // A few pixels of soft darkening on the surface just below the band, so
+    // the band reads as sitting ON the content rather than beside it. Not an
+    // accent line — a shadow. Goes away with dimming Off.
+    Rectangle {
+        anchors { top: header.bottom; left: parent.left; right: parent.right }
+        height: vpx(14)
+        z: 4
+        visible: gridDimOpacity > 0
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.35) }
+            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.0) }
+        }
+    }
+
+    // ── Content surface ───────────────────────────────────────────────────
+    // Everything below the header band sits on the dimmed surface; the band/
+    // surface contrast is the separator (no accent lines). The list column
+    // gets a slightly deeper surface of its own so the two regions read as
+    // two things. Flat rectangles: no texture, no shader.
+    Rectangle {
+        anchors { top: header.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
+        // z: -1 is REQUIRED here: the preview block is declared before the
+        // header, so by order alone this surface would paint over it (the
+        // dimmed preview you saw). This file has no root-level fill, so
+        // sending the surface to the bottom is safe. (The RA pages differ —
+        // they have a root fill, so there order is used instead.)
+        color: "#000000"; opacity: gridDimOpacity; visible: opacity > 0; z: -1
+    }
+    Rectangle {
+    id: listSurface
+        visible: !gridMode
+        anchors { top: header.bottom; left: parent.left; bottom: parent.bottom }
+        // Ends in the gap before the preview card (which reaches vpx(10) left
+        // of the preview), so the two surfaces never overlap.
+        // Fixed, NOT derived from the list: the list now takes ITS width from
+        // this surface (so the highlight spans the column), and deriving this
+        // from the list made a loop that collapsed both to zero.
+        width: vpx(400) + globalMargin - vpx(16)
+        color: "#000000"; opacity: 0.16; z: -1
+    }
+
     // ── Game list ─────────────────────────────────────────────────────────
     ListView {
     id: gamelist
@@ -1204,12 +1198,16 @@ id: root
             currentIndex = Math.min(count - 1, currentIndex + skipnum);
         }
 
+        // Column bounds: the top edge is the header band, the bottom sits just
+        // above the help bar, so no row is ever half-visible under either.
+        // (It used to run to the page bottom, beneath the prompts. The list's
+        // existing clip: true, below, does the clipping.)
         anchors {
-            top: header.bottom; topMargin: globalMargin
-            bottom: parent.bottom; bottomMargin: globalMargin
+            top: header.bottom
+            bottom: parent.bottom; bottomMargin: helpMargin + vpx(6)
             left: parent.left
         }
-        width: vpx(400)
+        width: listSurface.width
         spacing: vpx(0); orientation: ListView.Vertical
         preferredHighlightBegin: gamelist.height / 2 - itemheight
         preferredHighlightEnd:   gamelist.height / 2
@@ -1225,10 +1223,12 @@ id: root
                 height: itemheight
                 property bool selected: ListView.isCurrentItem && gamelist.activeFocus
 
+                // Runs the full column width so it meets the preview art
+                // (anchored to listSurface.right), rounded on both ends.
                 Rectangle {
                     anchors {
                         left: parent.left
-                        right: parent.right; rightMargin: vpx(20)
+                        right: parent.right
                         top: parent.top; topMargin: vpx(4)
                         bottom: parent.bottom; bottomMargin: vpx(4)
                     }
@@ -1386,8 +1386,8 @@ id: root
                 game: currentGame
                 selected: gamegrid.focus
                 boxArt: gridBoxArt
-                playVideo: settings.AllGamesVideoPreview !== "No" && !boxArt
-                allowAudio: settings.AllGamesVideoAudio === "Yes"   // this page's audio row
+                playVideo: lvVideo !== "No" && !boxArt
+                allowAudio: lv("All games menu video audio", settings.AllGamesVideoAudio) === "Yes"   // this page's audio row, live from the Y panel
             }
         }
         highlightMoveDuration: root.fastScrolling ? 0 : 200   // snap while racing; matches the Platform grid at rest
@@ -1446,7 +1446,7 @@ id: root
                 artMode: tileArt
                 showLogo: tileLogo === "Yes"
                 playVideo: gameData ? (gameData.assets.videoList.length
-                           && settings.AllGamesVideoPreview !== "No") : false
+                           && lvVideo !== "No") : false
                 ownScreen: "allgamesscreen"
                 reduceMotion: root.fastScrolling
                 deferArt: root.fastScrolling
@@ -1501,6 +1501,174 @@ id: root
     }
 
     // ── Sorting & Filters overlay ─────────────────────────────────────────
+    // ── Quick settings panel (Y in list or grid mode) ────────────────────
+    // The same idea as the Platform page's per-system panel: this page's rows
+    // from Settings, changed on the fly. One panel, two row sets — the list
+    // rows or the grid rows, whichever mode is showing. Y again goes on to the
+    // full theme settings; B closes.
+    //
+    // `order` is the row's option string EXACTLY as the Settings page declares
+    // it. The Settings page draws a row from "<key>Index" (not from the
+    // value), so the index has to be written in ITS order, not the panel's —
+    // that was the "panel says Yes, Settings says No" bug: the four "No,Yes"
+    // rows were being indexed as "Yes,No".
+    property bool listPanelOpen: false
+    property int  listRow: 0
+    readonly property var listRows: [
+        { key: "All Games View",                label: "View",                          opts: ["List","Grid"], order: "List,Grid", dflt: settings.AllGamesView },
+        { key: "AllGames Video preview",        label: "Video previews",                opts: ["Yes","No"], order: "Yes,No", dflt: settings.AllGamesVideoPreview },
+        { key: "All games menu video audio",    label: "Video audio",                   opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesVideoAudio },
+        { key: "AllGames Hide box art on video", label: "Hide box art when preview plays", opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesHideBoxOnVideo },
+        { key: "AllGames Hide logo on video",    label: "Hide logo when preview plays",  opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesHideLogoOnVideo },
+        { key: "AllGames Blur Background",       label: "Blur background",               opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesBlurBackground },
+        { key: "AllGames Show scanlines",        label: "Show scanlines",                opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesScanlines }
+    ]
+    // Settings stores the ratio list in a jumbled order (0.66–0.99 first,
+    // then 0.25–0.65); the panel steps through it in numeric order and the
+    // index lookup below maps back into Settings' order.
+    readonly property string ratioOrder: "0.66,0.67,0.68,0.69,0.70,0.71,0.72,0.73,0.74,0.75,0.76,0.77,0.78,0.79,0.80,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88,0.89,0.90,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,0.25,0.26,0.27,0.28,0.29,0.30,0.31,0.32,0.33,0.34,0.35,0.36,0.37,0.38,0.39,0.40,0.41,0.42,0.43,0.44,0.45,0.46,0.47,0.48,0.49,0.50,0.51,0.52,0.53,0.54,0.55,0.56,0.57,0.58,0.59,0.60,0.61,0.62,0.63,0.64,0.65"
+    readonly property var ratioOpts: { var a = []; for (var i = 25; i <= 99; i++) a.push("0." + i); return a; }
+    readonly property var gridRows: [
+        { key: "All Games View",          label: "View",                opts: ["List","Grid"], order: "List,Grid", dflt: settings.AllGamesView },
+        { key: "AllGames Video preview",  label: "Video previews",      opts: ["Yes","No"], order: "Yes,No", dflt: settings.AllGamesVideoPreview },
+        { key: "All games menu video audio", label: "Video audio",       opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesVideoAudio },
+        { key: "AllGames Match Platform", label: "Match Platform page", opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesMatchPlatform },
+        { key: "AllGames Tile Style",     label: "Tile shape",          opts: ["Wide","Tall","Square","Box Art","3D Box"], order: "Wide,Tall,Square,Box Art,3D Box", dflt: settings.AllGamesTileStyle },
+        { key: "AllGames Tile Ratio",     label: "Tile ratio",          opts: ratioOpts, order: ratioOrder, dflt: settings.AllGamesTileRatio },
+        { key: "AllGames Tile Art",       label: "Tile art",            opts: ["Fanart","Screenshot","Boxfront"], order: "Fanart,Screenshot,Boxfront", dflt: settings.AllGamesTileArt },
+        { key: "AllGames Tile Logo",      label: "Show logo on tile",   opts: ["Yes","No"], order: "Yes,No", dflt: settings.AllGamesTileLogo },
+        { key: "AllGames Items per row",  label: "Tiles per row",       opts: ["3","4","5","6","7","8"], order: "3,4,5,6,7,8", dflt: settings.AllGamesColumns }
+    ]
+    readonly property var panelRows: gridMode ? gridRows : listRows
+    function listValue(row) { var e = listEpoch; var k = panelRows[row].key; return api.memory.has(k) ? api.memory.get(k) : String(panelRows[row].dflt); }
+    function panelKeyValue(key, dflt) { var e = listEpoch; return api.memory.has(key) ? api.memory.get(key) : String(dflt); }
+    // Mirrors the Settings page's greying so the two never disagree about
+    // what is in play.
+    function listRowDisabled(row) {
+        var k = panelRows[row].key;
+        if (k === "AllGames Hide box art on video" || k === "AllGames Hide logo on video" || k === "All games menu video audio")
+            return panelKeyValue("AllGames Video preview", settings.AllGamesVideoPreview) === "No";
+        if (k.indexOf("AllGames Tile") === 0 || k === "AllGames Items per row") {
+            if (panelKeyValue("AllGames Match Platform", settings.AllGamesMatchPlatform) === "Yes") return true;
+            var shape = panelKeyValue("AllGames Tile Style", settings.AllGamesTileStyle);
+            if (k === "AllGames Tile Art" || k === "AllGames Tile Logo") return shape === "Box Art" || shape === "3D Box";
+            if (k === "AllGames Tile Ratio") return shape === "Square";
+        }
+        return false;
+    }
+    // Writes the value AND the index the Settings page draws its row from.
+    function panelWrite(key, v, order) {
+        api.memory.set(key, v);
+        var oi = order.split(",").indexOf(String(v));
+        if (oi >= 0) api.memory.set(key + "Index", oi);
+    }
+    function listCycle(row, dir) {
+        if (listRowDisabled(row)) return;
+        var r = panelRows[row], opts = r.opts, i = opts.indexOf(listValue(row)); if (i < 0) i = 0;
+        var ni = (i + dir + opts.length) % opts.length, v = opts[ni];
+        panelWrite(r.key, v, r.order);
+        // Same rule as Settings: box-front art already carries the name, so
+        // choosing it turns the tile logo off.
+        if (r.key === "AllGames Tile Art" && v === "Boxfront") panelWrite("AllGames Tile Logo", "No", "Yes,No");
+        listEpoch++; settingsEpoch++; playNav();
+        // Flipping the view swaps the panel's row set in place; the highlight
+        // stays on the View row, which is row 0 in both sets. The incoming
+        // view's `focus: gridMode` binding grabs focus as it appears, so take
+        // it back — otherwise the panel is showing but the grid/list is live.
+        if (r.key === "All Games View") { listRow = 0; listPanel.forceActiveFocus(); }
+    }
+    function listStep(dir) {
+        var n = panelRows.length, i = listRow, tries = 0;
+        do { i = (i + dir + n) % n; tries++; } while (listRowDisabled(i) && tries < n);
+        listRow = i; playNav();
+    }
+
+    Rectangle {
+    id: listPanel
+        visible: listPanelOpen; z: 31
+        anchors.fill: parent
+        color: Qt.rgba(0, 0, 0, 0.78)
+        focus: listPanelOpen
+        MouseArea { anchors.fill: parent; onClicked: { listPanelOpen = false; focusGames(); } }
+        Rectangle {
+            anchors.centerIn: parent
+            width: vpx(720); height: vpx(576)
+            radius: vpx(14)
+            color: "#1E1E20"; border.color: theme.accent; border.width: vpx(2)
+            MouseArea { anchors.fill: parent }
+            Text {
+                anchors { left: parent.left; leftMargin: vpx(36); top: parent.top; topMargin: vpx(28) }
+                text: "All Games"; color: "white"; font.family: titleFont.name; font.pixelSize: vpx(28); font.bold: true
+            }
+            Text {
+                anchors { left: parent.left; leftMargin: vpx(36); top: parent.top; topMargin: vpx(68) }
+                text: gridMode ? "Grid view settings" : "List view settings"; color: "#A0A0A0"; font.family: subtitleFont.name; font.pixelSize: vpx(15)
+            }
+            Rectangle { anchors { left: parent.left; right: parent.right; top: parent.top; topMargin: vpx(104); leftMargin: vpx(36); rightMargin: vpx(36) } height: vpx(2); color: "#3C3C40" }
+            // Fixed-height panel; the rows scroll behind a clip so a longer
+            // set (the grid's) doesn't grow the panel down over the help bar.
+            // contentY follows listRow so the highlight is always in view.
+            Flickable {
+            id: rowFlick
+                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom
+                          topMargin: vpx(124); bottomMargin: vpx(80); leftMargin: vpx(24); rightMargin: vpx(24) }
+                clip: true; interactive: false
+                contentHeight: rowCol.height
+                Behavior on contentY { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
+                function keepRowVisible() {
+                    var rowH = vpx(52) + vpx(6), y = listRow * rowH, maxY = Math.max(0, contentHeight - height);
+                    if (y < contentY) contentY = Math.min(y, maxY);
+                    else if (y + vpx(52) > contentY + height) contentY = Math.min(y + vpx(52) - height, maxY);
+                }
+                Connections { target: root; function onListRowChanged() { rowFlick.keepRowVisible(); } }
+                onContentHeightChanged: { contentY = 0; keepRowVisible(); }   // row set swapped (view flip)
+            Column {
+            id: rowCol
+                width: parent.width
+                spacing: vpx(6)
+                Repeater {
+                    model: panelRows.length
+                    delegate: Rectangle {
+                        width: parent.width; height: vpx(52); radius: vpx(8)
+                        readonly property bool cur: index === listRow
+                        readonly property bool dis: { var e = listEpoch; return listRowDisabled(index); }
+                        color: cur ? "#2A2A2E" : "transparent"
+                        border.color: cur ? theme.accent : "transparent"; border.width: vpx(3)
+                        Text { anchors { left: parent.left; leftMargin: vpx(12); verticalCenter: parent.verticalCenter }
+                               text: panelRows[index].label; color: dis ? "#6E6E6E" : "white"; font.family: subtitleFont.name; font.pixelSize: vpx(20) }
+                        Text { anchors { right: parent.right; rightMargin: vpx(12); verticalCenter: parent.verticalCenter }
+                               text: { var e = listEpoch; return "<  " + listValue(index) + "  >"; }
+                               color: dis ? "#646464" : "#D7D7D7"; font.family: subtitleFont.name; font.pixelSize: vpx(20) }
+                    }
+                }
+            }
+            }
+            Text {
+                anchors { left: parent.left; leftMargin: vpx(36); bottom: parent.bottom; bottomMargin: vpx(52) }
+                text: "Changes apply as you make them."; color: "#8C8C8C"; font.family: subtitleFont.name; font.pixelSize: vpx(14)
+            }
+            Row {
+                anchors { right: parent.right; rightMargin: vpx(36); bottom: parent.bottom; bottomMargin: vpx(18) }
+                spacing: vpx(22)
+                Row { spacing: vpx(6)
+                    Image { anchors.verticalCenter: parent.verticalCenter; width: vpx(20); height: vpx(20); source: "../assets/images/controller/" + Utils.processButtonArt("filters") + ".png"; sourceSize { width: 40; height: 40 } }
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: "Theme settings"; color: "#D2D2D2"; font.family: subtitleFont.name; font.pixelSize: vpx(16) } }
+                Row { spacing: vpx(6)
+                    Image { anchors.verticalCenter: parent.verticalCenter; width: vpx(20); height: vpx(20); source: "../assets/images/controller/" + Utils.processButtonArt("cancel") + ".png"; sourceSize { width: 40; height: 40 } }
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: "Back"; color: "#D2D2D2"; font.family: subtitleFont.name; font.pixelSize: vpx(16) } }
+            }
+        }
+        Keys.onPressed: {
+            if (api.keys.isCancel(event) && !event.isAutoRepeat)  { event.accepted = true; playBack(); listPanelOpen = false; focusGames(); return; }
+            if (api.keys.isFilters(event) && !event.isAutoRepeat) { event.accepted = true; listPanelOpen = false; settingsScreen(); return; }
+            if (api.keys.isAccept(event) && !event.isAutoRepeat)  { event.accepted = true; listCycle(listRow, 1); return; }
+        }
+        Keys.onUpPressed:    listStep(-1)
+        Keys.onDownPressed:  listStep(1)
+        Keys.onLeftPressed:  listCycle(listRow, -1)
+        Keys.onRightPressed: listCycle(listRow, 1)
+    }
+
     Rectangle {
     id: filterPanel
         visible: filterOpen; z: 30
@@ -1896,12 +2064,18 @@ id: root
         // Y — game details page, opened with the full details pane expanded.
         // Inert for imported apps: they carry no metadata, so the page would be
         // empty. The helpbar drops the prompt to match.
+        // Start — More Details (list mode, games only). Raw code checked first
+        // so the event is accepted before Pegasus's own menu reacts to Start.
+        if (event.key === 1048587 && !event.isAutoRepeat && !gridMode && !filterOpen && gamesFocused && !listPanelOpen) {
+            event.accepted = true;
+            if (currentGame && !currentIsImportedApp) gameDetailsFull(currentGame);
+            return;
+        }
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (filterOpen) return;
+            if (filterOpen || listPanelOpen) return;
             if (!gamesFocused) return;
-            if (gridMode)                    settingsScreen();
-            else if (!currentIsImportedApp)  gameDetailsFull(currentGame);
+            playAccept(); listRow = 0; listPanelOpen = true; listPanel.forceActiveFocus();
         }
         // LT — previous letter group
         if (api.keys.isPageUp(event) && !event.isAutoRepeat) {
@@ -1924,7 +2098,7 @@ id: root
     ListModel {
         id: allGamesHelpModel
         ListElement { name: "Back";         button: "cancel"  }
-        ListElement { name: "More Details"; button: "filters" }
+        ListElement { name: "Settings";     button: "filters" }
         ListElement { name: "Filters";      button: "details" }
         ListElement { name: "Launch";       button: "accept"  }
     }
@@ -1949,9 +2123,10 @@ id: root
     // swapped on demand rather than one model rebuilt as the cursor moves.
     ListModel {
         id: allGamesAppHelpModel
-        ListElement { name: "Back";    button: "cancel"  }
-        ListElement { name: "Filters"; button: "details" }
-        ListElement { name: "Launch";  button: "accept"  }
+        ListElement { name: "Back";     button: "cancel"  }
+        ListElement { name: "Settings"; button: "filters" }
+        ListElement { name: "Filters";  button: "details" }
+        ListElement { name: "Launch";   button: "accept"  }
     }
 
     // True when the highlighted entry is an app Pegasus imported.
@@ -1998,5 +2173,32 @@ id: root
             // Returning from game details: re-center the list on the current game
             restoreViewTimer.restart();
         }
+    }
+
+    // Status cluster (clock / battery / wifi) — the same component and the
+    // same ShowClock/ShowBattery/ShowWifi settings as the Platform page.
+    StatusCluster {
+        anchors.fill: parent
+        z: 50
+        dark: whiteBackground
+    }
+
+    // Start prompt beside "Apps" in the help bar: More Details, list mode,
+    // games only (imported apps have no details page).
+    Row {
+        visible: !gridMode && currentGame && !currentIsImportedApp && !hideAppsPrompt && !filterOpen && !listPanelOpen
+        // Same geometry as the help bar's own Apps row (ButtonHelpBar): 30px
+        // icon, spacing 10, fpx(16) text, anchored to the bar's top with the
+        // same nudge — so the two sit on one line.
+        anchors { left: parent.left; leftMargin: vpx(150); bottom: parent.bottom; bottomMargin: helpMargin - height }
+        spacing: 10; z: 60
+        // The white badge has no padding, so at the glyphs' 30px box it reads
+        // larger than their visible circle. 24px, centred in a 30px slot,
+        // matches what you see.
+        Item { width: vpx(30); height: vpx(30)
+            Image { anchors.centerIn: parent; width: vpx(24); height: vpx(24); fillMode: Image.PreserveAspectFit
+                    source: "../assets/images/kb_badge_start_white.svg"; sourceSize { width: Math.round(vpx(24) * 2); height: Math.round(vpx(24) * 2) } smooth: true } }
+        Text  { height: parent.height; verticalAlignment: Text.AlignVCenter; text: "More Details"; color: theme.text
+                font.family: subtitleFont.name; font.pixelSize: fpx(16) }
     }
 }

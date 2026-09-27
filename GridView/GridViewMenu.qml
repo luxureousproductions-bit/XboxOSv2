@@ -363,10 +363,20 @@ id: root
     }
 
     // ── Custom header (collection name + centered nav buttons) ────────────
+    // Background dimming: between the page background and the tiles. Declared
+    // before the header and grid so it sits under both; the header paints its
+    // own solid bar over it, and the help bar lives above in theme.qml.
+    Rectangle {
+        anchors.fill: parent
+        color: "#000000"
+        opacity: gridDimOpacity
+        visible: opacity > 0
+    }
+
     Item {
     id: header
         anchors { top: parent.top; left: parent.left; right: parent.right }
-        height: vpx(75)
+        height: vpx(120)   // the band: tall enough that the counter sits inside it
         z: 5
 
         Rectangle { anchors.fill: parent; color: theme.main }
@@ -396,8 +406,20 @@ id: root
             MouseArea { anchors.fill: parent; onClicked: previousScreen(); }
         }
         Text {
-            anchors { left: parent.left; leftMargin: globalMargin; top: platformlogo.bottom; topMargin: vpx(2) }
-            text: list.games.count + " games"
+            // Low in the band but clear of its edge, so it survives UI Scale.
+            anchors { left: parent.left; leftMargin: globalMargin; bottom: parent.bottom; bottomMargin: vpx(14) }
+            // "4,421 games · Title A–Z", or "· Filtered" when a filter is on —
+            // says what's shown and why it's in that order.
+            text: {
+                var group = function(n) { var t = String(n), o = ""; while (t.length > 3) { o = "," + t.slice(-3) + o; t = t.slice(0, -3); } return t + o; };
+                var n = list.games.count;
+                var filtered = (searchTerm !== "") || showFavs || (genreSelected && genreSelected.length > 0);
+                var asc = (orderBy === Qt.AscendingOrder);
+                var dir;
+                switch (sortByIndex) { default: dir = asc ? "Ascending" : "Descending"; }
+                var sortName = sortFields[sortByIndex] ? sortFields[sortByIndex].label : "Title";
+                return group(n) + " games \u00B7 " + (filtered ? "Filtered" : (sortName + " " + dir));
+            }
             color: theme.text; opacity: 0.7; font.family: subtitleFont.name; font.pixelSize: fpx(17)
             visible: settings.GameCounter !== "No"
         }
@@ -532,6 +554,41 @@ id: root
             font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: settingsbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+    }
+
+    // ── 1. The last row dissolves under the help bar ──────────────────────
+    // A fade in the page colour over the bottom of the grid, beneath the
+    // prompts, so the cut-off row melts away instead of being chopped by
+    // "Apps" and "Launch" sitting on tile art.
+    Rectangle {
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+        height: helpMargin + vpx(120)
+        z: 6
+        visible: true
+        gradient: Gradient {
+            // Eased: several stops so the fade starts imperceptibly and only
+            // becomes solid under the prompts themselves.
+            GradientStop { position: 0.0;  color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.0)  }
+            GradientStop { position: 0.25; color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.12) }
+            GradientStop { position: 0.5;  color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.45) }
+            GradientStop { position: 0.75; color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.85) }
+            GradientStop { position: 1.0;  color: theme.main }
+        }
+    }
+
+    // ── 2. Depth under the header band ────────────────────────────────────
+    // A few pixels of soft darkening on the surface just below the band, so
+    // the band reads as sitting ON the content rather than beside it. Not an
+    // accent line — a shadow. Goes away with dimming Off.
+    Rectangle {
+        anchors { top: header.bottom; left: parent.left; right: parent.right }
+        height: vpx(14)
+        z: 4
+        visible: gridDimOpacity > 0
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.35) }
+            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.0) }
         }
     }
 
@@ -762,7 +819,7 @@ id: root
         var r = sysRows[row], opts = r.opts, cur = sysValue(row);
         var i = opts.indexOf(cur); if (i < 0) i = 0;
         var v = opts[(i + dir + opts.length) % opts.length];
-        api.memory.set(sysKey + " - " + r.key, v);
+        api.memory.set(sysKey + " - " + r.key, v);   // (per-system keys have no Settings row; no Index needed)
         // Same rule as the Settings page: box-front art turns the logo off.
         if (r.key === "Tile art" && v === "Boxfront") api.memory.set(sysKey + " - Show logo on tile", "No");
         sysEpoch++;

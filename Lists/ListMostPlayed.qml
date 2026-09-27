@@ -37,12 +37,19 @@ id: root
         // Primary: total time played (seconds), most first.
         // Tie-break: number of launches, most first (covers games with equal or
         // zero playTime so they still order sensibly).
+        // "Most played" means most OFTEN: launches first, hours only to break
+        // ties. It used to be the other way round, so one long session beat a
+        // game you kept coming back to — and play time is fragile anyway (an
+        // emulator left open counts as play).
         sorters: [
-            RoleSorter { roleName: "playTime";  sortOrder: Qt.DescendingOrder },
-            RoleSorter { roleName: "playCount"; sortOrder: Qt.DescendingOrder }
+            RoleSorter { roleName: "playCount"; sortOrder: Qt.DescendingOrder },
+            RoleSorter { roleName: "playTime";  sortOrder: Qt.DescendingOrder }
         ]
         filters: ExpressionFilter {
             expression: {
+                // Only games actually played. Without this every unplayed game
+                // passed too and padded the row with titles sorted by nothing.
+                if (!(model.playCount > 0)) return false;
                 if (root.omitApplication && root.appTitles[model.title] === true) return false;
                 var genres = model.genreList;
                 for (var i = 0; i < genres.length; i++) {

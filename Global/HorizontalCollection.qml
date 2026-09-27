@@ -121,7 +121,9 @@ id: root
         font.family: subtitleFont.name
         font.pixelSize: fpx(18)
         font.bold: true
-        color: theme.text
+        // Over fanart / a custom image the text stays light; only when the
+        // White colour itself is showing does it follow theme.text.
+        color: showcaseWhiteBackground ? theme.text : "#ebebeb"
         opacity: root.focus ? 1 : 0.2
         anchors { left: parent.left; leftMargin: vpx(10) }
 

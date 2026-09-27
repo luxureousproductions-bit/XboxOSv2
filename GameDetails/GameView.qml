@@ -405,6 +405,17 @@ id: root
         }
     }
 
+    // HQ: the art fades away in place (Showcase crossfade pace) under this
+    // cover, in the same colour the sliding overlay ends on, so HQ and base
+    // arrive at the identical resting page. Base never draws it.
+    Rectangle {
+        anchors.fill: parent
+        color: theme.gradientend
+        opacity: (hqMode && artAway) ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: hqFanartFadeMs; easing.type: Easing.InOutQuad } }
+    }
+
     // Scanlines
     Image {
     id: scanlines
@@ -503,9 +514,25 @@ id: root
             GradientStop { position: 0.0; color: theme.gradientstart }
             GradientStop { position: 0.7; color: theme.gradientend }
         }
-        y: (content.currentIndex == 0) ? height : -height
+        y: (artAway && !hqMode) ? -height : height
         Behavior on y { NumberAnimation { duration: 200 } }
     }
+
+    // Below the Play row the page dresses like the Platform page: a solid
+    // band behind the header, a soft shadow under it, and the last row
+    // dissolving into theme.main above the prompts.
+    // In both modes the band and bottom fade come up as the Media carousel
+    // does (row 1), and the art stays behind the carousel until the list
+    // moves past it (row 2+). The modes differ in HOW:
+    //   Base: band/bottom fade in at 350 ms; the art slides away behind the
+    //         gradient in 200 ms, as it always has.
+    //   HQ:   band, bottom fade AND the art all ease at the Showcase
+    //         crossfade's pace (hqFanartFadeMs, InOutQuad); the art fades
+    //         in place under a cover rather than sliding.
+    readonly property bool scrolledPast: content.currentIndex !== 0
+    readonly property bool artAway:      content.currentIndex > 1
+    readonly property int  chromeFadeMs: hqMode ? hqFanartFadeMs : 350
+    readonly property int  chromeEasing: hqMode ? Easing.InOutQuad : Easing.Linear
 
     Rectangle {
     id: overlay
@@ -515,6 +542,19 @@ id: root
             left: parent.left; right: parent.right
             top: bggradient.bottom; bottom: parent.bottom
         }
+    }
+
+    // Background dimming - same "Grid background dimming" level as the
+    // Platform page. Declared HERE, above the art, the HQ cover, the gradient
+    // and the overlay (all of which are the page's backdrop in one state or
+    // another) and below the details panel, header and content. Rides on the
+    // backdrop's opacity so it lifts with it when the video plays, and hands
+    // off to the details panel's own dim layer while that is showing.
+    Rectangle {
+        anchors.fill: parent
+        color: "#000000"
+        opacity: gridDimOpacity * screenshot.opacity * (1 - detailsScreen.opacity)
+        visible: opacity > 0
     }
 
     
@@ -548,6 +588,15 @@ id: root
                         anchors.fill: parent
                         color: theme.main
                         opacity: 0.7
+                    }
+                    // Background dimming sits ABOVE the wash and below the
+                    // text: the wash is 70% page colour, so the page-level dim
+                    // under it is all but invisible while details are up.
+                    Rectangle {
+                        anchors.fill: parent
+                        color: "#000000"
+                        opacity: gridDimOpacity
+                        visible: opacity > 0
                     }
 
                     Item {
@@ -595,6 +644,14 @@ id: root
             right: parent.right
         }
         height: vpx(75)
+
+        // Platform-page band: fades in once the list leaves the Play row.
+        Rectangle {
+            anchors.fill: parent
+            color: theme.main
+            opacity: scrolledPast ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: chromeFadeMs; easing.type: chromeEasing } }
+        }
 
         // Platform logo
         Image {
@@ -1045,6 +1102,38 @@ id: root
         }
         // --- END: More by Genre (Option B: genre token controlled by setting) ---
         
+    }
+
+    // Depth under the header band (Platform page has the same): a few
+    // pixels of soft darkening so the band sits ON the content. Only with
+    // the band up, and only when dimming is on, as on the Platform page.
+    Rectangle {
+        anchors { top: header.bottom; left: parent.left; right: parent.right }
+        height: vpx(14)
+        z: 9
+        opacity: (scrolledPast && gridDimOpacity > 0) ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: chromeFadeMs; easing.type: chromeEasing } }
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.35) }
+            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.0) }
+        }
+    }
+
+    // The last row dissolves under the help bar, as on the Platform page.
+    // Only once scrolled: at the top the Media row is meant to peek in.
+    Rectangle {
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+        height: helpMargin + vpx(120)
+        z: 6
+        opacity: scrolledPast ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: chromeFadeMs; easing.type: chromeEasing } }
+        gradient: Gradient {
+            GradientStop { position: 0.0;  color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.0)  }
+            GradientStop { position: 0.25; color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.12) }
+            GradientStop { position: 0.5;  color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.45) }
+            GradientStop { position: 0.75; color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.85) }
+            GradientStop { position: 1.0;  color: theme.main }
+        }
     }
 
     ListView {

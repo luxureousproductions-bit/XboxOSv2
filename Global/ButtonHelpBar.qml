@@ -43,7 +43,7 @@ id: root
                 text: name
                 font.family: subtitleFont.name
                 font.pixelSize: fpx(16)
-                color: (root.state === "settingsscreen") ? "#ebebeb" : theme.text
+                color: promptColor
                 height: parent.height
                 verticalAlignment: Text.AlignVCenter
             }
@@ -63,6 +63,9 @@ id: root
     // group above. Set leftPromptText to show it; empty hides it entirely.
     property string leftPromptText: ""
     property string leftPromptIcon: ""
+    property real   leftPromptNudge: 0
+    // Prompt text colour, set by theme.qml (see helpPromptColor there).
+    property color  promptColor: theme.text
 
     // Mirrors buttonhelpDelegate exactly: same spacing, same sizes, and the
     // same vertical treatment. The ListView above anchors.fill and lays its
@@ -72,6 +75,12 @@ id: root
         anchors {
             left: parent.left
             top: parent.top
+            // Level with the right-hand prompts everywhere except the three
+            // RetroAchievements pages, where those prompts sit lower and the
+            // Apps prompt has to follow them.
+            // Set by theme.qml per screen (this file's own id is `root`, so
+            // the theme's state isn't reachable from here).
+            topMargin: leftPromptNudge
         }
         spacing: 10
         visible: leftPromptText !== ""
@@ -89,7 +98,7 @@ id: root
             text: leftPromptText
             font.family: subtitleFont.name
             font.pixelSize: fpx(16)
-            color: (root.state === "settingsscreen") ? "#ebebeb" : theme.text
+            color: promptColor
             height: parent.height
             verticalAlignment: Text.AlignVCenter
         }

@@ -75,7 +75,11 @@ id: root
     id: achievementsHeader
 
         anchors { top: parent.top; left: parent.left; right: parent.right }
-        height: vpx(110)
+        height: vpx(120)   // the header band, same as every other screen
+
+        // Header band: the theme colour; the content surface below is dimmed,
+        // and that contrast is the separator — no accent lines.
+        Rectangle { anchors.fill: parent; color: theme.main; z: -1 }
 
         // RA logo
         Image {
@@ -176,6 +180,27 @@ id: root
             color: theme.text
             opacity: 0.1
         }
+    }
+
+    // ── 2. Depth under the header band ────────────────────────────────────
+    // A few pixels of soft darkening on the surface just below the band, so
+    // the band reads as sitting ON the content rather than beside it. Not an
+    // accent line — a shadow. Goes away with dimming Off.
+    Rectangle {
+        anchors { top: achievementsHeader.bottom; left: parent.left; right: parent.right }
+        height: vpx(14)
+        z: 4
+        visible: gridDimOpacity > 0
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.35) }
+            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.0) }
+        }
+    }
+
+    // Content surface: everything below the band sits on the dimmed layer.
+    Rectangle {
+        anchors { top: achievementsHeader.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
+        color: "#000000"; opacity: gridDimOpacity; visible: opacity > 0   // no z: order places it above the page fill, below the lists
     }
 
     // ── No-credentials placeholder ───────────────────────────────────────
@@ -467,6 +492,7 @@ id: root
     // Right-aligned: the shared button bar puts the Apps prompt bottom-left on
     // every screen, and these used to start there too and overlap it.
     Row {
+        z: 5   // above the bottom fade
         anchors {
             right: parent.right; rightMargin: globalMargin
             bottom: parent.bottom; bottomMargin: vpx(10)
@@ -1007,6 +1033,22 @@ id: root
                 searchOverlay.resetSearch();
                 return;
             }
+        }
+    }
+
+    // The last row dissolves under the help bar (same fade as the grids).
+    Rectangle {
+        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+        height: helpMargin + vpx(120)
+        // Below this page's own prompt row (it draws the right-hand prompts
+        // itself; only "Apps" comes from the theme's bar above the page).
+        z: 1
+        gradient: Gradient {
+            GradientStop { position: 0.0;  color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.0)  }
+            GradientStop { position: 0.25; color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.12) }
+            GradientStop { position: 0.5;  color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.45) }
+            GradientStop { position: 0.75; color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.85) }
+            GradientStop { position: 1.0;  color: theme.main }
         }
     }
 }

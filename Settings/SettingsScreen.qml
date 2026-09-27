@@ -61,11 +61,16 @@ id: root
         }
         ListElement {
             settingName: "Color Background"
-            setting: "Black,Charcoal,Dark Gray,Mid Gray,Navy Blue,Dark Blue,Dark Teal,Dark Green,Forest Green,Dark Red,Burgundy,Dark Purple,Indigo,Dark Brown,Dark Orange,Slate,Midnight Blue,Deep Purple,Dark Steel,Gray,Cool Gray,Steel Blue,Teal,Forest,Wine,Plum,Light Gray,Silver,Light Blue,Sage,Tan,Rose,White,Gradient"
+            setting: "White,Light Gray,Silver,Cool Gray,Gray,Mid Gray,Dark Gray,Charcoal,Black,Light Blue,Steel Blue,Slate,Dark Steel,Dark Blue,Navy Blue,Midnight Blue,Teal,Dark Teal,Sage,Forest,Forest Green,Dark Green,Rose,Dark Red,Wine,Burgundy,Plum,Dark Purple,Deep Purple,Indigo,Tan,Dark Orange,Dark Brown,Gradient"
         }
         ListElement {
             settingName: "Color Layout"
-            setting: "Dark Green,Light Green,Turquoise,Dark Red,Light Red,Dark Pink,Light Pink,Dark Blue,Light Blue,Navy Blue,Royal Blue,Sky Blue,Ice Blue,Cobalt,Orange,Dark Orange,Amber,Yellow,Gold,Dark Gold,Bronze,Magenta,Hot Pink,Rose,Coral,Salmon,Purple,Dark Purple,Violet,Lavender,Indigo,Maroon,Crimson,Burgundy,Brick Red,Lime,Mint,Sage,Forest Green,Olive,Dark Gray,Mid Gray,Light Gray,Silver,Steel,Slate,Stone,Charcoal,Gunmetal,Tan,Dark Brown,Light Brown,Copper,Rust,Sienna,Cyan,Teal,Dark Teal,Arctic,Seafoam,Ruby,Sapphire,Emerald,Jade,Onyx,White,Gradient"
+            setting: "White,Silver,Light Gray,Stone,Mid Gray,Steel,Slate,Dark Gray,Gunmetal,Charcoal,Onyx,Ice Blue,Arctic,Sky Blue,Light Blue,Cyan,Royal Blue,Cobalt,Sapphire,Dark Blue,Navy Blue,Seafoam,Turquoise,Teal,Dark Teal,Mint,Lime,Light Green,Jade,Emerald,Sage,Olive,Dark Green,Forest Green,Yellow,Gold,Amber,Dark Gold,Orange,Dark Orange,Coral,Salmon,Copper,Bronze,Rust,Sienna,Light Pink,Hot Pink,Rose,Dark Pink,Magenta,Light Red,Ruby,Crimson,Dark Red,Brick Red,Maroon,Burgundy,Lavender,Violet,Purple,Dark Purple,Indigo,Tan,Light Brown,Dark Brown,Gradient"
+        }
+        ListElement {
+            settingName: "Grid background dimming"
+            label: "Background dimming"
+            setting: "Off,Light,Medium,Strong"
         }
     }
 
@@ -430,6 +435,7 @@ id: root
             label: "Show game count"
             setting: "Yes,No"
         }
+
         ListElement { settingName: "Video"; setting: ""; header: true }
         ListElement {
             settingName: "Allow video thumbnails"
@@ -963,6 +969,13 @@ id: root
                  + "shape, ratio, art, logo, tiles per row and titles. Systems you "
                  + "don't change keep following this page.";
         }
+        if (name === "Grid background dimming") {
+            return "Slightly darkens the area below the header on the Platform "
+                 + "page, All Games, Game Details and the Achievements pages, so "
+                 + "tiles, text and lists stand out.\n\n"
+                 + "OFF leaves it as is. Turn it up if things blend into the "
+                 + "background.";
+        }
         if (name === "Hide Android System Tile") {
             return "Hides the tile for the collection the App Drawer uses, so the same apps aren't in two places at once. Set this to No to keep the tile as well\n"
                  + "\n"
@@ -1012,7 +1025,8 @@ id: root
     }
 
     function hasInfo(name) {
-        return name === "UI Scale"
+        return name === "Grid background dimming"
+            || name === "UI Scale"
             || name === "High Quality Mode"
             || name === "Launch screen delay"
             || name === "Hide button help"

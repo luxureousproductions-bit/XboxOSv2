@@ -154,7 +154,7 @@ id: root
             Rectangle {
                 width: vpx(10)
                 height: width
-                color: (medialist.currentIndex == index) ? theme.accent : theme.text
+                color: (medialist.currentIndex == index) ? theme.accent : "#ebebeb"   // the viewer is always black
                 radius: width/2
                 opacity: (medialist.currentIndex == index) ? 1 : 0.5
             }

@@ -93,7 +93,9 @@ id: root
                     if (mediaItem.includes("wheel")) return "Logo";
                     return "Screenshot";
                 }
-                color: theme.text
+                // Always light: the pill is theme.secondary (fixed dark grey),
+                // not the page background, so it never goes white.
+                color: "#ebebeb"
                 font {
                     family: subtitleFont.name
                     pixelSize: vpx(14)

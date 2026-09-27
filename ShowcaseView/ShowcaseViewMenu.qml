@@ -27,6 +27,10 @@ import "../utils.js" as Utils
 
 FocusScope {
 id: root
+    // Text over the page backdrop. theme.text goes dark for the White colour,
+    // but fanart / a custom image covers that colour, so the text stays light
+    // unless the White backdrop is actually the thing showing.
+    readonly property color showcaseText: showcaseWhiteBackground ? theme.text : "#ebebeb"
 
     // Pull in our custom lists and define
     ListAllGames    { id: listNone;        max: 0 }
@@ -255,10 +259,11 @@ id: root
         // Follows Showcase Background Opacity, same as the fanart layers, so one
         // setting governs how strong the background reads whichever source is
         // showing. Same parseFloat fallback startBgFade() uses.
-        opacity: (settings.CustomBackground === "Yes" && bgShownImg === null)
-                 ? (parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55)
-                 : 0
-        Behavior on opacity { PropertyAnimation { duration: hqBgFadeMs; easing.type: hqMode ? Easing.InOutQuad : Easing.Linear } }
+        // Shown whenever no art is up OR a fade is in progress (the art fades in
+        // on top of it), and hidden the instant it's fully covered. No fade of
+        // its own: fading it against the art is what let the colour through.
+        // When art goes away, the art layers fade out over it instead.
+        opacity: (settings.CustomBackground === "Yes" && (bgShownImg === null || bgFadeRunning)) ? 1.0 : 0
 
         // ── Dynamic Background on the custom image ────────────────────────
         // Same drift as the fanart layers. One difference: this image has no
@@ -448,6 +453,18 @@ id: root
         }
     }
 
+    // Background opacity, applied as BLACK over full-strength art instead of
+    // drawing the art translucent over the theme colour. Same numbers, but
+    // the theme colour no longer bleeds through and tints the fanart — on a
+    // black theme the result is identical; on a coloured one the tint is gone.
+    Rectangle {
+        anchors.fill: parent
+        color: "#000000"
+        opacity: 1.0 - (parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55)
+        visible: opacity > 0.005
+        z: 2   // above both art layers (the incoming one is lifted to z: 1 while fading)
+    }
+
     // ── System-tile page background (Randomize System Tile Fanart = "No") ──
     // When a system tile is highlighted, the page background shows that
     // system's own background art (the same image the tile uses) instead of a
@@ -582,21 +599,46 @@ id: root
     //    defeated by url-vs-string comparison (resolver passes a QUrl).
     //  • The on-screen layer is tracked explicitly (bgShownImg) and is never
     //    written to; it stays untouched until the incoming file is ready.
+    // Two guards that stop the page colour showing through while scrolling:
+    //
+    //  1. SETTLE. Every cursor step used to start a crossfade at once. The
+    //     flush now waits for the cursor to rest (bgSettle), so a run of
+    //     steps produces ONE fade to the final game instead of a chain of
+    //     half-finished ones.
+    //  2. FADE LOCK. A target arriving mid-fade used to be written to the
+    //     "hidden" layer — which was the OUTGOING layer, still on screen and
+    //     fading out. It got snapped to zero and handed a new file to load,
+    //     leaving only a half-faded-in layer: the flash to the page colour.
+    //     While a fade runs, new targets wait (bgFadeDone re-flushes).
+    property bool bgFadeRunning: false
+    property var  bgOutgoing: null
+    Timer { id: bgSettle;   interval: 180;              onTriggered: flushBg() }
+    Timer {
+    id: bgFadeDone
+        interval: hqFanartFadeMs + 30
+        onTriggered: {
+            // The old layer is fully covered by now: hide it without a fade.
+            if (bgOutgoing) { bgOutgoing.animate = false; bgOutgoing.opacity = 0; bgOutgoing.animate = true; bgOutgoing = null; }
+            bgFadeRunning = false;
+            if (pendingBg !== lastBgShown) flushBg();
+        }
+    }
+
     function crossfadeTo(src) {
-        pendingBg = "" + src;          // normalize url → string
-        if (bgFlushQueued) return;     // a flush is already scheduled
-        bgFlushQueued = true;
-        Qt.callLater(flushBg);
+        pendingBg = "" + src;          // normalize url → string; last target wins
+        bgSettle.restart();
     }
 
     function flushBg() {
         bgFlushQueued = false;
+        if (bgFadeRunning) return;              // bgFadeDone will call us back
         var src = pendingBg;
         if (src === lastBgShown) return;        // already showing / loading it
         lastBgShown = src;
         if (src === "") {
             bgImage1.pendingFade = false; bgImage2.pendingFade = false;
-            bgImage1.opacity = 0; bgImage2.opacity = 0;
+            bgImage1.opacity = 0; bgImage2.opacity = 0;   // fade out over the custom bg / page
+            bgOutgoing = null;
             bgShownImg = null;
             return;
         }
@@ -614,12 +656,21 @@ id: root
     }
 
     function startBgFade(img) {
+        bgFadeRunning = true;
+        bgFadeDone.restart();
         if (!img.pendingFade) return;
         img.pendingFade = false;
         var other = (img === bgImage1) ? bgImage2 : bgImage1;
         other.pendingFade = false;
-        img.opacity = parseFloat(settings.ShowcaseBackgroundOpacity) || 0.55;
-        other.opacity = 0;
+        // Incoming-only fade. Two layers fading in opposite directions are
+        // each half-transparent at the midpoint, so the page colour showed
+        // through the PAIR (~25% mid-fade): the tint you could see on every
+        // transition. Instead the new layer is lifted on top and fades in
+        // over the old one, which stays fully opaque until it is covered.
+        // bgFadeDone then drops the old layer (already hidden, so no fade).
+        img.z = 1; other.z = 0;
+        img.opacity = 1.0;
+        bgOutgoing = other;
         bgShownImg = img;
         // Dynamic Background: the new image starts its drift fresh. The one
         // fading out is left alone — it keeps drifting through the crossfade
@@ -726,14 +777,14 @@ id: root
 
                     Text {
                         text: cheevosData.raUserName
-                        color: theme.text
+                        color: showcaseText
                         font.family: subtitleFont.name
                         font.pixelSize: fpx(17); font.bold: true
                         elide: Text.ElideRight
                     }
                     Text {
                         text: cheevosData.pointsText
-                        color: theme.text
+                        color: showcaseText
                         font.family: subtitleFont.name
                         font.pixelSize: fpx(12)
                         opacity: 0.7
@@ -741,7 +792,7 @@ id: root
                     }
                     Text {
                         text: cheevosData.memberText
-                        color: theme.text
+                        color: showcaseText
                         font.family: subtitleFont.name
                         font.pixelSize: fpx(10)
                         opacity: 0.5
@@ -754,7 +805,7 @@ id: root
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: "Sign in to RetroAchievements"
-                color: theme.text
+                color: showcaseText
                 opacity: 0.4
                 font.family: subtitleFont.name
                 font.pixelSize: fpx(13)
@@ -1338,7 +1389,7 @@ id: root
                     visible: !isHero && collectionlogo.status == Image.Error
                     text: coll ? coll.name : ""
                     anchors { fill: parent; margins: vpx(10) }
-                    color: theme.text
+                    color: showcaseText
                     opacity: selected ? 1 : 0.2
                     font.pixelSize: fpx(18)
                     font.family: subtitleFont.name
