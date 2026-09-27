@@ -19,9 +19,10 @@
 - Crossfade background art, or use your own custom background:
     - Place Background.png to assests/images/backgrounds
   
-<img width="1920" height="1080" alt="1000769052" src="https://github.com/user-attachments/assets/670b3345-50e9-4312-93a3-7cbeca3d304a" />
+<img width="1920" height="1080" alt="1000774695" src="https://github.com/user-attachments/assets/cb16cc0e-4c3e-4b65-a2b7-08297a9e93a3" />
 
-<img width="1920" height="1080" alt="1000769053" src="https://github.com/user-attachments/assets/a8dab62b-bc7b-41a0-acb2-f708d1bfdd75" />
+<img width="1920" height="1080" alt="1000774696" src="https://github.com/user-attachments/assets/e52d92ee-18ea-443b-95a5-a4ce44cef1af" />
+
 
 - New Full Library section with advance filters
   
