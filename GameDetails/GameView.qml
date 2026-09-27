@@ -199,7 +199,14 @@ id: root
     function toggleVideo(toggle) {
       if (!toggle)
       {
-        // Turn off video
+        // Turn off video. Cancel the two start-up timers NOW, not when
+        // stopvideo fires a second later: if the list left row 0 while the
+        // video was still spinning up, videoDelay / fadescreenshot would
+        // otherwise still fire and put screenshot.opacity back to 0 - which is
+        // why the art went missing on the Media row when scrolling right as
+        // the preview began.
+        videoDelay.stop();
+        fadescreenshot.stop();
         screenshot.opacity = 1;
         stopvideo.restart();
       } else {
@@ -229,9 +236,10 @@ id: root
 
         interval: 1000
         onTriggered: {
+            // The blur layer's opacity is bound to screenshot.opacity, so this
+            // one write fades both. (The old bgBlur write referenced an id that
+            // no longer exists.)
             screenshot.opacity = 0;
-            if (blurBG)
-                bgBlur.opacity = 0;
         }
     }
 
