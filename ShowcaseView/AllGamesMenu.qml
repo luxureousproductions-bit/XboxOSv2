@@ -927,6 +927,7 @@ id: root
                 return group(n) + " games \u00B7 " + (filtered ? "Filtered" : (sortName + (dir ? " " + dir : "")));
             }
             color: theme.text; opacity: 0.7; font.family: subtitleFont.name; font.pixelSize: fpx(15)
+            visible: settings.GameCounter !== "No"   // "Show game count", as on the Platform page
         }
 
         // Nav buttons (home / discover / achievements / settings)
