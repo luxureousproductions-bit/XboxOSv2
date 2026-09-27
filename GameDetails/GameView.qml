@@ -533,6 +533,13 @@ id: root
     readonly property bool artAway:      content.currentIndex > 1
     readonly property int  chromeFadeMs: hqMode ? hqFanartFadeMs : 350
     readonly property int  chromeEasing: hqMode ? Easing.InOutQuad : Easing.Linear
+    // Gate for the band / depth / bottom fade while the fullscreen media
+    // viewer is up (they sit above it in z). Drops in step with the viewer's
+    // own 100 ms fade-in; comes back over the chrome fade so it eases in under
+    // the logo and nav instead of popping. The duration is read when the
+    // Behavior starts, i.e. after mediaScreen.visible has already flipped.
+    property real viewerGate: mediaScreen.visible ? 0 : 1
+    Behavior on viewerGate { NumberAnimation { duration: mediaScreen.visible ? 100 : chromeFadeMs; easing.type: chromeEasing } }
 
     Rectangle {
     id: overlay
@@ -650,8 +657,7 @@ id: root
         Rectangle {
             anchors.fill: parent
             color: theme.main
-            visible: !mediaScreen.visible
-            opacity: scrolledPast ? 1 : 0
+            opacity: (scrolledPast ? 1 : 0) * viewerGate
             Behavior on opacity { NumberAnimation { duration: chromeFadeMs; easing.type: chromeEasing } }
         }
 
@@ -1113,8 +1119,7 @@ id: root
         anchors { top: header.bottom; left: parent.left; right: parent.right }
         height: vpx(14)
         z: 9
-        visible: !mediaScreen.visible
-        opacity: (scrolledPast && gridDimOpacity > 0) ? 1 : 0
+        opacity: ((scrolledPast && gridDimOpacity > 0) ? 1 : 0) * viewerGate
         Behavior on opacity { NumberAnimation { duration: chromeFadeMs; easing.type: chromeEasing } }
         gradient: Gradient {
             GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.35) }
@@ -1128,8 +1133,7 @@ id: root
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
         height: helpMargin + vpx(120)
         z: 6
-        visible: !mediaScreen.visible   // z:6 would otherwise paint over the fullscreen viewer
-        opacity: scrolledPast ? 1 : 0
+        opacity: (scrolledPast ? 1 : 0) * viewerGate   // z:6 would otherwise paint over the viewer
         Behavior on opacity { NumberAnimation { duration: chromeFadeMs; easing.type: chromeEasing } }
         gradient: Gradient {
             GradientStop { position: 0.0;  color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.0)  }
