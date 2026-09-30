@@ -333,13 +333,6 @@ id: root
                 color: "#000000"
                 opacity: hqAppTileScrim
             }
-            // Accent tint, matching the launch screen.
-            Rectangle {
-                anchors.fill: parent
-                color: theme.accent
-                opacity: 0.16
-            }
-
             // Shadow plate beneath the icon. Never sources the icon (a shadow
             // effect of a masked item gets its raw, unmasked texture). Base
             // shows the plate flat; HQ blurs it soft. Same as the launch screen.
