@@ -126,14 +126,6 @@ id: root
             color: "#000000"
             opacity: 0.5
         }
-        // Accent tint over the blur, so every launch carries the theme colour
-        // rather than reading as a generic blur. A tinted rectangle: free.
-        Rectangle {
-            anchors.fill: parent
-            color: theme.accent
-            opacity: 0.16
-        }
-
         // ── Entrance ─────────────────────────────────────────────────────
         // The icon scales in and the title follows a beat later. Transforms
         // and opacity only, so both modes get it; HQ overshoots slightly.
