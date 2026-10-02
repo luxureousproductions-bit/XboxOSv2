@@ -841,6 +841,8 @@ id: root
         // Below this page's own prompt row (it draws the right-hand prompts
         // itself; only "Apps" comes from the theme's bar above the page).
         z: 1
+        opacity: gridFadeOpacity    // part of "Background dimming": Off = no fade
+        visible: opacity > 0
         gradient: Gradient {
             GradientStop { position: 0.0;  color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.0)  }
             GradientStop { position: 0.25; color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.12) }
