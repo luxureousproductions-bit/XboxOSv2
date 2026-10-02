@@ -1080,7 +1080,8 @@ id: root
         width: parent.width   // full width in both modes
         height: helpMargin + vpx(120)
         z: 6
-        visible: true
+        opacity: gridFadeOpacity    // part of "Background dimming": Off = no fade
+        visible: opacity > 0
         gradient: Gradient {
             // Eased: several stops so the fade starts imperceptibly and only
             // becomes solid under the prompts themselves.
