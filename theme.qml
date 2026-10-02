@@ -149,6 +149,19 @@ id: root
         }
     }
 
+    // The bottom fade (last row dissolving under the button prompts) has its
+    // own setting, "Bottom fade", with the same four levels: Off removes it,
+    // Strong is the full fade, Light and Medium sit in between. Multiplied
+    // into each page's fade rectangle.
+    readonly property real gridFadeOpacity: {
+        switch (settings.GridFade) {
+        case "Light":  return 0.5;
+        case "Medium": return 0.75;
+        case "Strong": return 1.0;
+        default:       return 0.0;     // Off
+        }
+    }
+
     // ── Tile titles ───────────────────────────────────────────────────────
     // "Game tile titles" reuses the old "Always show titles" key. Saved values
     // from before are Yes/No; the row now stores On focus/Always/Never. Both
@@ -169,6 +182,7 @@ id: root
         "3D Box":                                    "Yes",
         "All games menu video audio":                "Yes",
         "Allow video thumbnails":                    "Yes",
+        "Bottom fade":                               "Strong",
         "Box Art":                                   "3D",
         "Collection 1":                              "Recommended",
         "Collection 1 - Ratio":                      "0.66",
@@ -322,6 +336,7 @@ id: root
             SystemTileTitles:              api.memory.has("System tile titles") ? api.memory.get("System tile titles") : "On focus",
             PerSystemTiles:                api.memory.has("Per-system tile settings") ? api.memory.get("Per-system tile settings") : "No",
             GridDimming:                   api.memory.has("Grid background dimming") ? api.memory.get("Grid background dimming") : "Light",
+            GridFade:                      api.memory.has("Bottom fade") ? api.memory.get("Bottom fade") : "Strong",
             AllGamesHideBoxOnVideo:          api.memory.has("AllGames Hide box art on video") ? api.memory.get("AllGames Hide box art on video") : "No",
             AllGamesHideLogoOnVideo:         api.memory.has("AllGames Hide logo on video") ? api.memory.get("AllGames Hide logo on video") : "No",
             AllGamesBlurBackground:          api.memory.has("AllGames Blur Background") ? api.memory.get("AllGames Blur Background") : "No",
