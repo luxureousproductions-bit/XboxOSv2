@@ -72,6 +72,11 @@ id: root
             label: "Background dimming"
             setting: "Off,Light,Medium,Strong"
         }
+        ListElement {
+            settingName: "Bottom fade"
+            label: "Bottom fade"
+            setting: "Off,Light,Medium,Strong"
+        }
     }
 
     property var generalPage: {
@@ -976,6 +981,13 @@ id: root
                  + "OFF leaves it as is. Turn it up if things blend into the "
                  + "background.";
         }
+        if (name === "Bottom fade") {
+            return "How strongly the last row fades out above the button "
+                 + "prompts at the bottom of the Platform page, All Games, "
+                 + "Game Details and the Achievements pages.\n\n"
+                 + "OFF removes the fade. STRONG is the full fade, so the "
+                 + "prompts always sit on a clean background.";
+        }
         if (name === "Hide Android System Tile") {
             return "Hides the tile for the collection the App Drawer uses, so the same apps aren't in two places at once. Set this to No to keep the tile as well\n"
                  + "\n"
@@ -1026,6 +1038,7 @@ id: root
 
     function hasInfo(name) {
         return name === "Grid background dimming"
+            || name === "Bottom fade"
             || name === "UI Scale"
             || name === "High Quality Mode"
             || name === "Launch screen delay"
