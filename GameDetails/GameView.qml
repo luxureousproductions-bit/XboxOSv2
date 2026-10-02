@@ -1141,7 +1141,7 @@ id: root
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
         height: helpMargin + vpx(120)
         z: 6
-        opacity: (scrolledPast ? 1 : 0) * viewerGate   // z:6 would otherwise paint over the viewer
+        opacity: (scrolledPast ? 1 : 0) * viewerGate * gridFadeOpacity   // z:6 would otherwise paint over the viewer; scaled by Background dimming
         Behavior on opacity { NumberAnimation { duration: chromeFadeMs; easing.type: chromeEasing } }
         gradient: Gradient {
             GradientStop { position: 0.0;  color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.0)  }
