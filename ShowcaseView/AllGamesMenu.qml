@@ -1077,7 +1077,9 @@ id: root
     // "Apps" and "Launch" sitting on tile art.
     Rectangle {
         anchors { left: parent.left; bottom: parent.bottom }
-        width: parent.width   // full width in both modes
+        // Grid: the whole width, under the tiles. List: just the list column,
+        // so the fade doesn't wash over the preview card and info line.
+        width: gridMode ? parent.width : listSurface.width
         height: helpMargin + vpx(120)
         z: 6
         opacity: gridFadeOpacity    // part of "Background dimming": Off = no fade
