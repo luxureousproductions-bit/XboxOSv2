@@ -34,9 +34,14 @@ id: root
 
     property bool omitApplication: false
     property bool omitEmulator: false
-    // Titles of installed apps, supplied by the theme — see the genre note in
-    // refresh(). Apps whose store lookup failed carry no genre at all.
-    property var appTitles: ({})
+    // Titles Home should hide, already combined by the theme for the
+    // current Hide apps / Hide emulators options (theme.qml homeHideTitles).
+    // One property, so a change re-filters the row once; it only changes
+    // when its contents do. Genre tags are still checked below.
+    property var hideTitles: ({})
+    // api.allGames rows to skip outright (theme.qml libraryHideRows):
+    // duplicate Pegasus imports, plus anything hidden from the library.
+    property var hideRows: ({})
 
     // Lazy: the proxy does NO work (no full-library rating sort / per-row filter)
     // until armed. GameView sets this true only when the Recommended fallback is
@@ -67,7 +72,8 @@ id: root
             if (g) {
                 // Apps first: many carry no genre, so the genre loop below
                 // would let them through.
-                if (omitApplication && appTitles[g.title] === true) skip = true;
+                if (hideRows[ri] === true) skip = true;
+                if (hideTitles[g.title] === true) skip = true;
                 var genres = g.genreList;
                 for (var j = 0; !skip && j < genres.length; j++) {
                     var gg = genres[j].toLowerCase();

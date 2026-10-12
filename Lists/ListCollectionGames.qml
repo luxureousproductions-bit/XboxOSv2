@@ -24,6 +24,12 @@ id: root
     property var collection: api.collections.get(currentCollectionIndex)
     function currentGame(index) { return collection.games.get(gamesFiltered.mapToSource(index)) }
     property int max
+    // On an Android platform page, leave out duplicate Pegasus imports and
+    // anything hidden from the library (theme.qml androidHideRows, numbered in
+    // that collection's own list — this proxy's source). Off for every other
+    // system, so they run no per-row JS for it.
+    readonly property var  hideRowsHere: hideRowsForCollection(currentCollectionIndex)
+    readonly property bool hideAndroidDupes: Object.keys(hideRowsHere).length > 0
 
     SortFilterProxyModel {
     id: gamesFiltered
@@ -34,6 +40,7 @@ id: root
             RegExpFilter { roleName: "title"; pattern: searchTerm; caseSensitivity: Qt.CaseInsensitive; enabled: searchTerm != "" && searchMode === "Title" },
             RegExpFilter { roleName: "genre"; pattern: searchTerm; caseSensitivity: Qt.CaseInsensitive; enabled: searchTerm != "" && searchMode === "Genre" },
             RegExpFilter { roleName: "genre"; pattern: genresToPattern(genreSelected); caseSensitivity: Qt.CaseInsensitive; enabled: genreSelected.length > 0 },
+            ExpressionFilter { enabled: root.hideAndroidDupes; expression: root.hideRowsHere[index] !== true },
             IndexFilter { maximumIndex: max - 1; enabled: max }
         ]
         sorters: [

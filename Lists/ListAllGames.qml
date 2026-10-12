@@ -21,13 +21,35 @@ Item {
 id: root
     
     readonly property alias games: gamesFiltered
-    function currentGame(index) { return api.allGames.get(gamesFiltered.mapToSource(index)) }
+    // Two models deep now, so map back through both to reach api.allGames.
+    function currentGame(index) {
+        return api.allGames.get(dedupedGames.mapToSource(gamesFiltered.mapToSource(index)));
+    }
     property int max: gamesFiltered.count
+
+    // api.allGames rows to leave out (theme.qml libraryHideRows): duplicate
+    // Pegasus imports, plus anything hidden from the library. Filtered in their own
+    // model BEFORE the length limit below — IndexFilter counts against its
+    // source, so filtering in the same model would leave a short row a game
+    // or two short.
+    property var hideRows: ({})
+    readonly property bool hasHideRows: Object.keys(hideRows).length > 0
+
+    SortFilterProxyModel {
+    id: dedupedGames
+
+        sourceModel: api.allGames
+        // Off (no per-row JS at all) when there's nothing to hide.
+        filters: ExpressionFilter {
+            enabled: root.hasHideRows
+            expression: root.hideRows[index] !== true
+        }
+    }
 
     SortFilterProxyModel {
     id: gamesFiltered
 
-        sourceModel: api.allGames
+        sourceModel: dedupedGames
         filters: IndexFilter { maximumIndex: max - 1 }
     }
 

@@ -26,9 +26,14 @@ id: root
 
     property bool omitApplication: true
     property bool omitEmulator: true
-    // Titles of installed apps, supplied by the theme. Apps whose store lookup
-    // failed carry no genre, so the genre test below can't catch them.
-    property var appTitles: ({})
+    // Titles Home should hide, already combined by the theme for the
+    // current Hide apps / Hide emulators options (theme.qml homeHideTitles).
+    // One property, so a change re-filters the row once; it only changes
+    // when its contents do. Genre tags are still checked below.
+    property var hideTitles: ({})
+    // api.allGames rows to skip outright (theme.qml libraryHideRows):
+    // duplicate Pegasus imports, plus anything hidden from the library.
+    property var hideRows: ({})
 
     SortFilterProxyModel {
     id: mostPlayedGames
@@ -50,7 +55,8 @@ id: root
                 // Only games actually played. Without this every unplayed game
                 // passed too and padded the row with titles sorted by nothing.
                 if (!(model.playCount > 0)) return false;
-                if (root.omitApplication && root.appTitles[model.title] === true) return false;
+                if (root.hideRows[index] === true) return false;
+                if (root.hideTitles[model.title] === true) return false;
                 var genres = model.genreList;
                 for (var i = 0; i < genres.length; i++) {
                     var g = genres[i].toLowerCase();
