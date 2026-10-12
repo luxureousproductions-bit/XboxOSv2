@@ -24,7 +24,11 @@ FocusScope {
 id: root
 
     property bool searchActive
+    // Minus what an Android platform page leaves out (duplicate imports and
+    // library-hidden entries, theme.qml androidHideRows), so the count
+    // matches the grid.
     property int filteredCount: currentCollection.games.count
+        - Object.keys(hideRowsForCollection(currentCollectionIndex)).length
     function focusNavButtons() {
         // Nav buttons are items 4-7 in headermodel (home is index 7, rightmost in model = leftmost visually)
         buttonbar.currentIndex = 7;

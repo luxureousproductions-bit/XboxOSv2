@@ -49,8 +49,10 @@ id: root
     property real panelMargin: vpx(20)          // top and bottom
     property real panelMarginLeft: vpx(36)
     property real panelRadius: vpx(14)
-    property real iconSize: vpx(64)
-    property real iconRadius: vpx(12)
+    // Icon and corner follow the row height at the original 64/90 and 12/64
+    // proportions, so the rows that now fill the list grow as one piece.
+    property real iconSize: Math.round(rowHeight * 64 / 90)
+    property real iconRadius: Math.round(iconSize * 12 / 64)
     // Pegasus renders Android adaptive icons as circles with transparent
     // corners, so a circular source sits inside the square tile still looking
     // round. A circle needs ~1.41x to cover the square it's inscribed in;
@@ -96,12 +98,14 @@ id: root
           on: root.showHiddenTab },
         { act: "discover",     icon: "../assets/images/icon_discover.svg", scale: 0.80 },
         { act: "achievements", icon: "../assets/images/trophy.svg",       scale: 0.92 },
+        { act: "search",       icon: "../assets/images/icon_search.svg",   scale: 0.84 },
         { act: "settings",     icon: "../assets/images/settingsicon.svg",  scale: 0.92 }
     ]
 
     // The host owns navigation; the drawer just says which tile was pressed.
     signal navDiscover()
     signal navAchievements()
+    signal navSearch()
     signal navSettings()
 
     function runAction(i) {
@@ -116,6 +120,7 @@ id: root
         closeDrawer(false);
         if (a.act === "discover")          navDiscover();
         else if (a.act === "achievements") navAchievements();
+        else if (a.act === "search")       navSearch();
         else if (a.act === "settings")     navSettings();
     }
 
@@ -171,23 +176,46 @@ id: root
     // assets), which is far too costly to call from delegate bindings or from
     // a filter that re-runs on every favourite/hide/tab change — that work is
     // cached here instead.
+    //
+    // Several sources now (the host passes "Android" plus your android /
+    // androidapps / androidgames collections), so:
+    //   - one entry per title: an entry of yours replaces a Pegasus import of
+    //     the same title (yours has your metadata and art); otherwise first wins
+    //   - each entry carries a category hint from its genre / collection,
+    //     used by categoryFor() below
+    //   - an entry with no file gets its title as its key, so two of them
+    //     can't share one favourite/hidden/category slot
     readonly property var appIndex: {
         var out = [];
+        var at = {};                         // title -> position in out
         var cols = activeCollections;
         if (!cols) return out;
         for (var ci = 0; ci < cols.length; ci++) {
             var gl = cols[ci].games;
             if (!gl) continue;
+            var gamesCol = ((cols[ci].shortName || "").toLowerCase() === "androidgames");
             for (var i = 0; i < gl.count; i++) {
                 var g = gl.get(i);
                 var t = g.title || "";
-                out.push({
+                var pkg = packageOf(g);
+                var imported = (g.files && g.files.count > 0
+                                && (g.files.get(0).path || "").indexOf("android:") === 0);
+                var e = {
                     g: g,
-                    pkg: packageOf(g),
+                    pkg: pkg !== "" ? pkg : "title:" + t,
                     art: artFor(g),
                     title: t,
-                    initial: t.length > 0 ? t.charAt(0).toUpperCase() : "?"
-                });
+                    initial: t.length > 0 ? t.charAt(0).toUpperCase() : "?",
+                    imported: imported,
+                    hint: categoryHint(g, gamesCol, imported)
+                };
+                var prev = (t !== "") ? at[t] : undefined;
+                if (prev === undefined) {
+                    if (t !== "") at[t] = out.length;
+                    out.push(e);
+                } else if (out[prev].imported && !imported) {
+                    out[prev] = e;           // yours beats the import
+                }
             }
         }
         return out;
@@ -200,7 +228,7 @@ id: root
         var m = {};
         var idx = appIndex;
         for (var i = 0; i < idx.length; i++)
-            m[idx[i].pkg] = categoryFor(idx[i].pkg, idx[i].title);
+            m[idx[i].pkg] = categoryFor(idx[i].pkg, idx[i].title, idx[i].hint);
         return m;
     }
 
@@ -226,7 +254,11 @@ id: root
         if (i === 0) navHome();
         else         navLibrary();
     }
-    property real rowHeight: vpx(90)
+    // Exactly four rows fill the app list, so it never shows a partial row.
+    // The highlight range (25%-75%) is then one row in from each edge, so
+    // scrolling moves in whole rows and stays aligned. vpx(90) only applies
+    // before the list has been laid out.
+    property real rowHeight: list.height > 0 ? Math.floor(list.height / 4) : vpx(90)
 
     // If `collection` is left null, the apps collection is looked up by name
     // instead. Pegasus doesn't guarantee what it calls that collection, so the
@@ -345,10 +377,18 @@ id: root
     property var favoritePkgs: ({})
     property var hiddenPkgs: ({})
     property var savedCategories: ({})
+    // Two independent kinds of hidden, chosen from the Hide panel:
+    //   hiddenPkgs        - hidden in THIS drawer (and its Hidden tab shows it)
+    //   libraryHiddenPkgs - hidden from the library: Home, the platform pages
+    //                       and All Games (theme.qml builds its rows-to-hide
+    //                       lists from this). Still listed in the drawer.
+    // Hide panel: App drawer only / Library only / Both / Unhide.
+    property var libraryHiddenPkgs: ({})
 
     readonly property string memFavorites: "appdrawer.favorites"
     readonly property string memHidden: "appdrawer.hidden"
     readonly property string memCategories: "appdrawer.categories"
+    readonly property string memLibraryHidden: "appdrawer.libraryhidden"
 
     function parseObj(raw) {
         if (!raw) return ({});
@@ -362,6 +402,7 @@ id: root
     function loadState() {
         favoritePkgs    = parseObj(api.memory.get(memFavorites));
         hiddenPkgs      = parseObj(api.memory.get(memHidden));
+        libraryHiddenPkgs = parseObj(api.memory.get(memLibraryHidden));
         savedCategories = parseObj(api.memory.get(memCategories));
     }
     // Reassigns a fresh object rather than mutating in place: QML only
@@ -377,17 +418,32 @@ id: root
 
     function isFavorite(pkg) { return pkg !== "" && favoritePkgs[pkg] === true; }
     function isHidden(pkg)   { return pkg !== "" && hiddenPkgs[pkg] === true; }
+    function isLibraryHidden(pkg) { return pkg !== "" && libraryHiddenPkgs[pkg] === true; }
+    // "none" | "drawer" | "library" | "both" — the Hide panel's current choice.
+    function hideMode(pkg) {
+        var d = isHidden(pkg), l = isLibraryHidden(pkg);
+        return (d && l) ? "both" : d ? "drawer" : l ? "library" : "none";
+    }
+    function setHideMode(pkg, mode) {
+        if (pkg === "") return;
+        var d = (mode === "drawer"  || mode === "both");
+        var l = (mode === "library" || mode === "both");
+        if (d !== isHidden(pkg)) {
+            hiddenPkgs = withKey(hiddenPkgs, pkg, d ? true : undefined);
+            api.memory.set(memHidden, JSON.stringify(hiddenPkgs));
+        }
+        if (l !== isLibraryHidden(pkg)) {
+            libraryHiddenPkgs = withKey(libraryHiddenPkgs, pkg, l ? true : undefined);
+            api.memory.set(memLibraryHidden, JSON.stringify(libraryHiddenPkgs));
+        }
+    }
 
     function toggleFavorite(pkg) {
         if (pkg === "") return;
         favoritePkgs = withKey(favoritePkgs, pkg, isFavorite(pkg) ? undefined : true);
         api.memory.set(memFavorites, JSON.stringify(favoritePkgs));
     }
-    function toggleHidden(pkg) {
-        if (pkg === "") return;
-        hiddenPkgs = withKey(hiddenPkgs, pkg, isHidden(pkg) ? undefined : true);
-        api.memory.set(memHidden, JSON.stringify(hiddenPkgs));
-    }
+
     function setCategory(pkg, cat) {
         if (pkg === "") return;
         savedCategories = withKey(savedCategories, pkg, cat);
@@ -435,12 +491,31 @@ id: root
         return colon >= 0 ? p.substring(colon + 1) : p;
     }
 
-    function categoryFor(pkg, title) {
-        // Saved reclassification beats the shipped seed, which beats the rules.
+    // Section from what your metadata says, for entries you added yourself.
+    // Pegasus imports have no genre, so they get no hint and fall through to
+    // the keyword rules as before.
+    //   genre "Emulator"                          -> emulator
+    //   in an androidgames collection, not tagged
+    //   "Application"                             -> game
+    function categoryHint(g, gamesCol, imported) {
+        if (imported || !g) return "";
+        var gl = g.genreList, isApp = false;
+        for (var i = 0; gl && i < gl.length; i++) {
+            var gg = (gl[i] || "").toLowerCase();
+            if (gg === "emulator") return "emulator";
+            if (gg === "application") isApp = true;
+        }
+        return (gamesCol && !isApp) ? "game" : "";
+    }
+
+    function categoryFor(pkg, title, hint) {
+        // Saved reclassification beats the shipped seed, which beats your
+        // metadata's hint, which beats the rules.
         if (pkg !== "" && savedCategories[pkg] !== undefined)
             return savedCategories[pkg];
         if (pkg !== "" && categoryOverrides[pkg] !== undefined)
             return categoryOverrides[pkg];
+        if (hint) return hint;
 
         var p = pkg.toLowerCase();
         var t = (title || "").toLowerCase();
@@ -729,6 +804,7 @@ id: root
                         color: parent.current ? root.colRowSel : "transparent"
                         border.width: parent.current ? vpx(2) : 0
                         border.color: theme.accent
+                        AccentHalo { active: parent.parent.current; targetRadius: parent.radius }   // Tile Halo
                     }
 
                     Row {
@@ -864,6 +940,8 @@ ListView {
             preferredHighlightEnd: height * 0.75
             highlightRangeMode: ListView.ApplyRange
             highlightMoveDuration: 160
+            // Touch flicks settle on a row boundary too, keeping four whole rows.
+            snapMode: ListView.SnapToItem
             cacheBuffer: vpx(400)
 
             delegate: Item {
@@ -885,6 +963,10 @@ ListView {
                     color: parent.current ? root.colRowSel : "transparent"
                     border.color: theme.accent
                     border.width: parent.current ? vpx(2) : 0
+
+                    // Tile Halo (Global/AccentHalo.qml): follows this row's
+                    // rounded outline at an even thickness.
+                    AccentHalo { active: parent.parent.current; targetRadius: parent.radius }
 
                     Row {
                         anchors {
@@ -1066,6 +1148,10 @@ ListView {
                     border.width: current ? vpx(2) : 0
                     border.color: theme.accent
 
+                    // Tile Halo (Global/AccentHalo.qml), matched to this
+                    // tile's corner radius.
+                    AccentHalo { active: parent.current; targetRadius: parent.radius }
+
                     Image {
                         anchors.centerIn: parent
                         width: actionBar.tileSize * 0.5
@@ -1199,8 +1285,11 @@ ListView {
         return [
             { label: root.isFavorite(pkg) ? "Remove from Favorites" : "Add to Favorites",
               act: "fav",  icon: "../assets/images/icon_heart.svg",     scale: 0.90 },
-            { label: root.isHidden(pkg)   ? "Unhide app" : "Hide app",
-              act: "hide", icon: "../assets/images/icon_hidden.svg",    scale: 0.95 },
+            // Opens the Hide panel beside the menu; detail shows where it's
+            // hidden right now.
+            { label: "Hide", act: "hidemenu", sub: true,
+              detail: root.hideModeLabel(root.hideMode(pkg)),
+              icon: "../assets/images/icon_hidden.svg",    scale: 0.95 },
             { label: "Move to Games",      act: "cat", cat: "game",
               icon: "../assets/images/icon_games.svg",    scale: 1.15 },
             { label: "Move to Emulators",  act: "cat", cat: "emulator",
@@ -1213,6 +1302,44 @@ ListView {
               icon: "../assets/images/icon_reset.svg",    scale: 1.05 }
         ];
     }
+    function hideModeLabel(m) {
+        if (m === "drawer")  return "Drawer";
+        if (m === "library") return "Library";
+        if (m === "both")    return "Both";
+        return "";
+    }
+
+    // ── Hide panel (slides out beside the menu) ──────────────────────────
+    property bool hideOpen: false
+    property int  hideIndex: 0
+    readonly property var hideOptions: {
+        var pkg = root.quickApp ? root.quickApp.pkg : "";
+        var opts = [
+            { label: "App drawer only", mode: "drawer"  },
+            { label: "Library only",    mode: "library" },
+            { label: "Both",            mode: "both"    }
+        ];
+        if (root.hideMode(pkg) !== "none") opts.push({ label: "Unhide", mode: "none" });
+        return opts;
+    }
+    function openHidePanel() {
+        var cur = hideMode(quickApp ? quickApp.pkg : "");
+        hideIndex = 0;
+        for (var i = 0; i < hideOptions.length; i++)
+            if (hideOptions[i].mode === cur) { hideIndex = i; break; }
+        hideOpen = true;
+    }
+    function closeHidePanel() { hideOpen = false; }
+    function runHideOption() {
+        var o = hideOptions[hideIndex];
+        var pkg = quickApp ? quickApp.pkg : "";
+        if (o && pkg !== "") setHideMode(pkg, o.mode);
+        hideOpen = false;
+        closeQuickMenu();
+        // Hiding from the drawer can remove the row under the cursor.
+        if (list.currentIndex >= filteredApps.length)
+            list.currentIndex = Math.max(0, filteredApps.length - 1);
+    }
 
     function openQuickMenu() {
         if (zone !== zoneApps) return;
@@ -1222,6 +1349,7 @@ ListView {
         quickOpen = true;
     }
     function closeQuickMenu() {
+        hideOpen = false;
         quickOpen = false;
         quickApp = null;
     }
@@ -1229,8 +1357,8 @@ ListView {
         var a = quickActions[quickIndex];
         var pkg = quickApp ? quickApp.pkg : "";
         if (!a || pkg === "") { closeQuickMenu(); return; }
+        if (a.act === "hidemenu") { openHidePanel(); return; }   // menu stays up
         if (a.act === "fav")       toggleFavorite(pkg);
-        else if (a.act === "hide") toggleHidden(pkg);
         else if (a.act === "cat")  setCategory(pkg, a.cat);
         else if (a.act === "reset") clearCategory(pkg);
         closeQuickMenu();
@@ -1330,6 +1458,7 @@ ListView {
                         color: parent.current ? root.colMenuSel : "transparent"
                         border.width: parent.current ? vpx(2) : 0
                         border.color: theme.accent
+                        AccentHalo { active: parent.parent.current; targetRadius: parent.radius }   // Tile Halo
                     }
                     Row {
                         anchors {
@@ -1363,9 +1492,102 @@ ListView {
                             elide: Text.ElideRight
                         }
                     }
+                    // Hide row: where it's hidden now, and a chevron for the panel.
+                    Text {
+                        anchors { right: parent.right; rightMargin: vpx(24)
+                                  verticalCenter: parent.verticalCenter }
+                        visible: modelData.sub === true
+                        text: (modelData.detail ? modelData.detail + "   " : "") + "\u203A"
+                        color: theme.accent
+                        font.family: subtitleFont.name
+                        font.pixelSize: fpx(16)
+                        font.bold: true
+                    }
                     MouseArea {
                         anchors.fill: parent
                         onClicked: { root.quickIndex = index; root.runQuickAction(); }
+                    }
+                }
+            }
+        }
+    }
+
+    // Hide panel: slides out to the right of the menu. A picks, B/Left goes
+    // back to the menu; the current choice carries a check mark.
+    Rectangle {
+    id: hidePanel
+
+        anchors { left: quickMenu.right; leftMargin: vpx(10)
+                  verticalCenter: quickMenu.verticalCenter }
+        width: vpx(270)
+        height: hideCol.height + vpx(24)
+        radius: vpx(10)
+        color: root.colMenu
+        border.width: vpx(1)
+        border.color: Qt.rgba(1, 1, 1, 0.10)
+        visible: opacity > 0.001
+        opacity: root.hideOpen ? 1 : 0
+        Behavior on opacity { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
+        transform: Translate {
+            x: root.hideOpen ? 0 : -vpx(24)
+            Behavior on x { NumberAnimation { duration: 170; easing.type: Easing.OutCubic } }
+        }
+
+        Column {
+        id: hideCol
+
+            anchors { top: parent.top; topMargin: vpx(12); left: parent.left; right: parent.right }
+            spacing: vpx(2)
+
+            Text {
+                x: vpx(20)
+                height: vpx(30)
+                verticalAlignment: Text.AlignVCenter
+                text: "Hide"
+                color: theme.accent
+                font.family: subtitleFont.name
+                font.pixelSize: fpx(15)
+                font.bold: true
+            }
+
+            Repeater {
+                model: root.hideOptions
+                delegate: Item {
+                    width: hideCol.width
+                    height: vpx(44)
+                    readonly property bool current: root.hideIndex === index
+                    readonly property bool chosen:
+                        root.quickApp && root.hideMode(root.quickApp.pkg) === modelData.mode
+
+                    Rectangle {
+                        anchors { fill: parent; leftMargin: vpx(10); rightMargin: vpx(10)
+                                  topMargin: vpx(1); bottomMargin: vpx(1) }
+                        radius: vpx(5)
+                        color: parent.current ? root.colMenuSel : "transparent"
+                        border.width: parent.current ? vpx(2) : 0
+                        border.color: theme.accent
+                        AccentHalo { active: parent.parent.current; targetRadius: parent.radius }   // Tile Halo
+                    }
+                    Text {
+                        anchors { left: parent.left; leftMargin: vpx(22)
+                                  verticalCenter: parent.verticalCenter }
+                        text: modelData.label
+                        color: "white"
+                        font.family: subtitleFont.name
+                        font.pixelSize: fpx(16)
+                    }
+                    Text {
+                        anchors { right: parent.right; rightMargin: vpx(24)
+                                  verticalCenter: parent.verticalCenter }
+                        visible: parent.chosen
+                        text: "\u2713"
+                        color: theme.accent
+                        font.pixelSize: fpx(17)
+                        font.bold: true
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        onClicked: { root.hideIndex = index; root.runHideOption(); }
                     }
                 }
             }
@@ -1379,6 +1601,7 @@ ListView {
     Keys.onUpPressed: {
         event.accepted = true;
         if (quickOpen) {
+            if (hideOpen) { if (hideIndex > 0) { hideIndex--; playNav(); } return; }
             if (quickIndex > 0) { quickIndex--; playNav(); }
             return;
         }
@@ -1405,6 +1628,7 @@ ListView {
     Keys.onDownPressed: {
         event.accepted = true;
         if (quickOpen) {
+            if (hideOpen) { if (hideIndex < hideOptions.length - 1) { hideIndex++; playNav(); } return; }
             if (quickIndex < quickActions.length - 1) { quickIndex++; playNav(); }
             return;
         }
@@ -1428,7 +1652,10 @@ ListView {
     // move the tab strip; that's on LB/RB now, matching the nav bar elsewhere.
     Keys.onLeftPressed: {
         event.accepted = true;
-        if (quickOpen) return;
+        if (quickOpen) {
+            if (hideOpen) { playBack(); closeHidePanel(); }      // back to the menu
+            return;
+        }
         if (zone === zoneTabs) { cycleTab(-1); return; }
         if (zone === zoneActions) {
             if (actionIndex > 0) { actionIndex--; playNav(); }
@@ -1442,7 +1669,11 @@ ListView {
     }
     Keys.onRightPressed: {
         event.accepted = true;
-        if (quickOpen) return;
+        if (quickOpen) {
+            var qa = quickActions[quickIndex];
+            if (!hideOpen && qa && qa.sub === true) { playNav(); openHidePanel(); }
+            return;
+        }
         if (zone === zoneTabs) { cycleTab(1); return; }
         if (zone === zoneActions) {
             if (actionIndex < actions.length - 1) { actionIndex++; playNav(); }
@@ -1470,6 +1701,12 @@ ListView {
         // Modal: the quick menu takes everything while it's up.
         if (quickOpen) {
             event.accepted = true;
+            if (hideOpen) {
+                if (api.keys.isAccept(event))        { playAccept(); runHideOption(); }
+                else if (api.keys.isCancel(event))   { playBack(); closeHidePanel(); }
+                else if (event.key === quickMenuKey) { playBack(); closeQuickMenu(); }
+                return;
+            }
             if (api.keys.isAccept(event))      { playAccept(); runQuickAction(); }
             else if (api.keys.isCancel(event)) { playBack(); closeQuickMenu(); }
             else if (event.key === quickMenuKey) { playBack(); closeQuickMenu(); }

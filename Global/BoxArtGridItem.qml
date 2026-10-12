@@ -152,7 +152,7 @@ id: root
         sourceComponent: Component {
         ColorOverlay {
             id: tileGlow
-            anchors.fill: tileHaloSrc
+            anchors.fill: parent   // the Loader, which already fills tileHaloSrc
             source: tileHaloSrc
             color: theme.accent
             z: -1
@@ -174,7 +174,7 @@ id: root
         sourceComponent: Component {
         ColorOverlay {
             id: favGlow
-            anchors.fill: tileHaloSrc
+            anchors.fill: parent   // the Loader, which already fills tileHaloSrc
             source: tileHaloSrc
             color: theme.accent
             z: -1
