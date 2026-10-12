@@ -65,8 +65,11 @@ id: root
     ListRecommended {
         id: recommendedCollection
         max: 20
-        omitApplication: settings.OmitApplicationFromShowcase === "Yes"
-        omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"
+        omitApplication: omitAppsLive
+        omitEmulator: omitEmulatorsLive
+        // Same app/emulator sets as the Home rows, so Pegasus imports are
+        // hidden here too (genre tags alone can't see them).
+        hideTitles: homeHideTitles
     }
     // --- END: More section – Recommended Games fallback ---
 
@@ -529,15 +532,16 @@ id: root
     // Below the Play row the page dresses like the Platform page: a solid
     // band behind the header, a soft shadow under it, and the last row
     // dissolving into theme.main above the prompts.
-    // In both modes the band and bottom fade come up as the Media carousel
-    // does (row 1), and the art stays behind the carousel until the list
-    // moves past it (row 2+). The modes differ in HOW:
+    // In both modes the band, its depth shadow and the bottom fade come up
+    // when the first "More" list (list1) is reached, not on the Media
+    // carousel, and the art stays behind the carousel until the list moves
+    // past it (row 2+). The modes differ in HOW:
     //   Base: band/bottom fade in at 350 ms; the art slides away behind the
     //         gradient in 200 ms, as it always has.
     //   HQ:   band, bottom fade AND the art all ease at the Showcase
     //         crossfade's pace (hqFanartFadeMs, InOutQuad); the art fades
     //         in place under a cover rather than sliding.
-    readonly property bool scrolledPast: content.currentIndex !== 0
+    readonly property bool scrolledPast: content.currentIndex >= list1.ObjectModel.index
     readonly property bool artAway:      content.currentIndex > 1
     readonly property int  chromeFadeMs: hqMode ? hqFanartFadeMs : 350
     readonly property int  chromeEasing: hqMode ? Easing.InOutQuad : Easing.Linear

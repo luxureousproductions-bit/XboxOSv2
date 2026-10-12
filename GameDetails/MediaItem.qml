@@ -27,6 +27,12 @@ id: root
     property string mediaItem: ""
     property bool selected
     property bool isVideo: mediaItem.includes(".mp4") || mediaItem.includes(".webm")
+    // True once the highlighted video tile's player is playing. The film
+    // placeholder stays up until then, so there's never a frame where the tile
+    // is empty (the player is created asynchronously on highlight).
+    readonly property bool videoShowing: selected && isVideo
+                                         && videoPreviewLoader.item !== null
+                                         && videoPreviewLoader.item.started === true
     function mapLayoutImage(layoutName) {
         if (layoutName === "Cyan") return "Turquoise";
         if (layoutName === "Crimson") return "Dark Red";
@@ -51,6 +57,15 @@ id: root
             muted: true
             loops: MediaPlayer.Infinite
             autoPlay: true
+
+            // Hidden while the player spins up (a loaded-but-idle VideoOutput
+            // paints black), shown the moment it reports PlayingState.
+            // Deliberately NOT gated on position > 0: Android only reports
+            // position about once a second, which held the video back ~1s.
+            // Snaps rather than fades: a crossfade over the film glyph read as
+            // a milky blue haze on the video.
+            readonly property bool started: playbackState === MediaPlayer.PlayingState
+            opacity: started ? 1 : 0
         }
     }
 
@@ -149,19 +164,12 @@ id: root
         Behavior on opacity { enabled: hqFadeIn; NumberAnimation { duration: 180 } }
 
         // Only the selected tile is traced; unselected ones render plainly so
-        // there is no per-tile effect cost across the whole row.
-        layer.enabled: selected
+        // there is no per-tile effect cost across the whole row. A video tile
+        // waits for its video: the trace follows the tile's alpha, and around
+        // the thin film glyph it swelled into a solid blob. Once the video is
+        // up the trace is a clean border on its rectangle, as before.
+        layer.enabled: selected && (!isVideo || videoShowing)
         layer.effect: accentTraceEffect
-
-        Rectangle {
-        id: videopreview
-
-            anchors.fill: parent
-            // The theme's own background colour, so the video tile sits as a
-            // hole in the page rather than a charcoal card on it.
-            color: theme.main
-            visible: isVideo && !selected
-        }
 
         Image {
         id: iconFill
@@ -191,7 +199,10 @@ id: root
             anchors.margins: vpx(30)
             source: iconFill
             maskSource: mask
-            visible: isVideo && !selected
+            // No backing square: just the film glyph on a transparent tile.
+            // Held (crisp, untraced) through the highlight until the video
+            // starts, then swapped out in the same frame the video appears.
+            visible: isVideo && !videoShowing
         }
 
         Loader {
