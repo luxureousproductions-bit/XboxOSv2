@@ -17,7 +17,7 @@
 
 • New options to hide apps/games from app drawer only, full library only, or both
 
-• Emulator / Appliction omit settings apply to imports in the emulator tab as well as user imports with genre tag “Emulator” and “Appliction” respectively
+• Emulator / Application omit settings apply to imports in the emulator tab as well as user imports with genre tag “Emulator” and “Application” respectively
 
 • Game apps in the game tab do not follow this rule
 <img width="1920" height="1080" alt="1000769048" src="https://github.com/user-attachments/assets/9969e245-9211-47fb-9569-0219d07547e2" />
