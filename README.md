@@ -12,9 +12,13 @@
 • For manual Apps it’s recommended to us shortname : Android and collection name : Android to see you apps in the app drawer
 
 • For Android games it’s recommended to use shortname : androidgames 
+
 • Duplicates from Pegasus imports and manual imports will only display the user manual import (Must be the same game name as Pegasus import)
-• New options to hide apps/games from app drawer only, full library only, or both.
-• Emulator / Appliction omit settings apply to imports in the emulator tab as well as user imports with genre tag “Emulato” and “Appliction” respectively.
+
+• New options to hide apps/games from app drawer only, full library only, or both
+
+• Emulator / Appliction omit settings apply to imports in the emulator tab as well as user imports with genre tag “Emulato” and “Appliction” respectively
+
 • Game apps in the game tab do not follow this rule
 <img width="1920" height="1080" alt="1000769048" src="https://github.com/user-attachments/assets/9969e245-9211-47fb-9569-0219d07547e2" />
 <img width="1920" height="1080" alt="1000769049" src="https://github.com/user-attachments/assets/d90b8805-cd6a-4995-b659-a34b083c0d2b" />
