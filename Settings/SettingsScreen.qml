@@ -146,6 +146,10 @@ id: root
             setting: "Yes,No"
         }
         ListElement {
+            settingName: "Hide Android Games System Tile"
+            setting: "No,Yes"
+        }
+        ListElement {
             settingName: "Added App Launch"
             setting: "Instant,Details Page"
         }
@@ -957,16 +961,12 @@ id: root
         if (name === "Omit genre: Application from Showcase") {
             return "Keeps apps off the Home page\n"
                  + "\n"
-                 + "Apps Pegasus found on its own are recognized automatically. For ones you added yourself, give them the genre tag \u201cApplication\u201d in their metadata and they'll be hidden too\n"
-                 + "\n"
-                 + "May need a theme reload";
+                 + "Apps Pegasus found on its own are recognized automatically. For ones you added yourself, give them the genre tag \u201cApplication\u201d in their metadata and they'll be hidden too. Apps in the App Drawer's Games or Emulators sections aren't counted as apps here";
         }
         if (name === "Omit genre: Emulator from Showcase") {
             return "Keeps emulators off the Home page\n"
                  + "\n"
-                 + "Emulators Pegasus found on its own are recognized as applications and are affected by the \u201cHide Apps From Home\u201d option. For ones you added yourself, give them the genre tag \u201cEmulator\u201d in their metadata and they'll be hidden too\n"
-                 + "\n"
-                 + "May need a theme reload";
+                 + "Apps Pegasus found on its own follow the App Drawer: anything in its Emulators section is hidden, including apps you moved there yourself. For ones you added yourself, give them the genre tag \u201cEmulator\u201d in their metadata and they'll be hidden too";
         }
         if (name === "Per-system tile settings") {
             return "Give each system its own tile look on the Platform page.\n\n"
@@ -989,31 +989,37 @@ id: root
                  + "prompts always sit on a clean background.";
         }
         if (name === "Hide Android System Tile") {
-            return "Hides the tile for the collection the App Drawer uses, so the same apps aren't in two places at once. Set this to No to keep the tile as well\n"
+            return "Hides the Android app tiles from the system row, since the App Drawer already has these apps. Set this to No to keep the tiles as well\n"
                  + "\n"
-                 + "The drawer uses the collection named exactly \"Android\" \u2014 the one Pegasus creates when you enable app importing in its own settings\n"
+                 + "COVERS\n"
+                 + "\u2022 The collection named \"Android\" \u2014 the one Pegasus creates when you turn on app importing, plus any collection of yours also named \"Android\" (Pegasus merges them)\n"
+                 + "\u2022 Collections with the shortname android \u2014 apps you list yourself\n"
                  + "\n"
-                 + "SHORTNAME GUIDE\n"
-                 + "\u2022 androidgames \u2014 for a collection of games you list yourself\n"
-                 + "\u2022 android or androidapps \u2014 for apps you list yourself\n"
+                 + "Android games (shortname androidgames) have their own option below\n"
                  + "\n"
-                 + "IMPORTANT\n"
-                 + "The match is on the collection NAME, not the shortname. A collection using shortname \"android\" but named something else \u2014 \"Android Apps\", say \u2014 is NOT the one the drawer picks up while Pegasus app importing is on, because the imported \"Android\" collection wins\n"
+                 + "Theme reload recommended";
+        }
+        if (name === "Hide Android Games System Tile") {
+            return "Hides the tile for your Android games collection \u2014 the one with the shortname androidgames \u2014 from the system row\n"
                  + "\n"
-                 + "Turn Pegasus app importing off and your own collection is used instead";
+                 + "Off by default\n"
+                 + "\n"
+                 + "Theme reload recommended";
         }
         if (name === "Added App Launch") {
-            return "What happens when you pick an app you added yourself from the Showcase\n"
-                 + "\n"
-                 + "There are two kinds of apps in the theme:\n"
+            return "What happens when you pick an app or Android game you added yourself, anywhere outside the App Drawer\n"
                  + "\n"
                  + "Apps Pegasus found on its own \u2014 it only knows their name and icon. These always launch straight away, because there is nothing to show on a details page\n"
                  + "\n"
-                 + "Apps you added yourself with a metadata file \u2014 these can have a description, genre and artwork, just like a game\n"
+                 + "Entries you added yourself with a metadata file \u2014 these can have a description, genre and artwork, just like a game. This option covers:\n"
+                 + "\u2022 Anything in a collection named \"Android\", or with the shortname android or androidgames\n"
+                 + "\u2022 Anything tagged with the genre \u201cApplication\u201d or \u201cEmulator\u201d, in any collection\n"
                  + "\n"
-                 + "INSTANT launches apps you added straight away, like the rest\n"
+                 + "INSTANT launches them straight away, like the rest\n"
                  + "\n"
-                 + "DETAILS PAGE opens their details first, so you can see the artwork and media before launching";
+                 + "DETAILS PAGE opens their details first, so you can see the artwork and media before launching\n"
+                 + "\n"
+                 + "The App Drawer always launches straight away";
         }
         if (name === "Show WiFi Indicator") {
             return "Shows a Wi-Fi symbol in the top corner";
@@ -1099,6 +1105,7 @@ id: root
             || name === "Omit genre: Application from Showcase"
             || name === "Omit genre: Emulator from Showcase"
             || name === "Hide Android System Tile"
+            || name === "Hide Android Games System Tile"
             || name === "Added App Launch"
             || name === "Show WiFi Indicator"
             || name === "Show Battery Percentage"
