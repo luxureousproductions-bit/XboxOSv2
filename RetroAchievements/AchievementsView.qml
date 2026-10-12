@@ -147,13 +147,12 @@ id: root
                     font.pixelSize: fpx(24)
                     font.bold: true
                 }
-                Text {
-                    text: cheevosData.pointsText
+                // Points, alternating with Rank # when RA has one.
+                RAStatLine {
                     color: theme.text
-                    font.family: bodyFont.name
-                    font.pixelSize: fpx(15)
+                    fontFamily: bodyFont.name
+                    pixelSize: fpx(15)
                     opacity: 0.65
-                    visible: cheevosData.raUserName !== ""
                 }
                 Text {
                     text: cheevosData.memberText
@@ -466,7 +465,7 @@ id: root
         anchors.fill: gameList
         view: gameList
         columns: 1
-        active: !searchOverlay.open
+        active: !librarySearch.open
         onStepped: function() { playNav(); }
     }
 
@@ -543,27 +542,27 @@ id: root
     // these only ever run for the recently-played list underneath.
     Keys.onUpPressed: {
         event.accepted = true;
-        if (searchOverlay.open) return;
+        if (librarySearch.open) return;
         if (gameList.currentIndex > 0) gameList.currentIndex--;
     }
     Keys.onDownPressed: {
         event.accepted = true;
-        if (searchOverlay.open) return;
+        if (librarySearch.open) return;
         if (gameList.currentIndex < cheevosData.raRecentGames.count - 1)
             gameList.currentIndex++;
     }
-    // Mouse back button: mirrors B — the search overlay takes it first.
+    // Mouse back button: mirrors B. An open search never gets here —
+    // theme.qml's mouseBack() handles it first.
     function mouseBack() {
-        if (searchOverlay.open) { playBack(); searchOverlay.resetSearch(); return; }
         previousScreen();
     }
 
     Keys.onPressed: {
-        // X — open the library search
+        // X — open the library search (theme instance, RA mode; it plays
+        // the accept sound itself)
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            playAccept();
-            searchOverlay.openSearch();
+            openLibrarySearch("ra");
             return;
         }
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
@@ -584,457 +583,13 @@ id: root
         }
     }
 
-    // ── Library search overlay ────────────────────────────────────────────
-    // Searches the LOCAL Pegasus library, then hands the chosen game to the
-    // existing RA pipeline: set currentGame -> raEntryScreen(). RAGameEntryView
-    // already resolves the RA game ID (console map + cached GetGameList +
-    // normalized title match) and navigates on to the achievements page, so
-    // nothing about that lookup is duplicated here.
-    FocusScope {
-    id: searchOverlay
-
-        property bool open: false
-        anchors.fill: parent
-        visible: open
-        focus: open
-        z: 200
-
-        property string query: ""
-        property var results: []
-
-        // Clears the query and results and returns to the keyboard.
-        function resetSearch() {
-            showingResults = false;
-            query = "";
-            results = [];
-            totalMatches = 0;
-            resultList.currentIndex = 0;
-            kb.page = 0;        // back to the letters page
-            kb.row = 1;         // home on 'q', as the Xbox keyboard does
-            kb.col = 0;
-            kb.caret = 0;
-            kb.shifted = false;
-        }
-
-        function openSearch() {
-            buildSearchIndex();
-            open = true;
-            resetSearch();
-            forceActiveFocus();
-        }
-        function closeSearch() {
-            open = false;
-            root.forceActiveFocus();
-        }
-
-        // Matching runs on CheevosData's normalized form (drops articles,
-        // bracketed regions, punctuation), so "zelda 3" finds
-        // "The Legend of Zelda III (USA)" and "mario bros" ignores hyphens.
-        // Exact-prefix hits sort above mid-string hits.
-        property int totalMatches: 0
-
-        // Normalizing every title costs several regex passes each, so on a
-        // multi-thousand game library doing it per keystroke is far too slow.
-        // Build the normalized index once per session instead.
-        property var searchIndex: []
-        function buildSearchIndex() {
-            if (searchIndex.length > 0) return;
-            var idx = [];
-            for (var i = 0; i < api.allGames.count; i++) {
-                var g = api.allGames.get(i);
-                idx.push({ game: g, norm: cheevosData.normalizeTitle(g.title || "") });
-            }
-            searchIndex = idx;
-        }
-
-        // Type a query, press Search (Y or the on-screen key), then browse the
-        // committed results list.
-        property bool showingResults: false      // on the results list, not the keyboard
-
-        // Real RA progress for a local game, when it's in the recently-played
-        // cache. Costs nothing — anything not there simply shows no bar, since
-        // fetching per result would mean an API call per row.
-        function raProgressFor(g) {
-            if (!g) return null;
-            var n = cheevosData.normalizeTitle(g.title || "");
-            for (var i = 0; i < cheevosData.raRecentGames.count; i++) {
-                var e = cheevosData.raRecentGames.get(i);
-                if (cheevosData.normalizeTitle(e.Title) === n) return e;
-            }
-            return null;
-        }
-
-        function commitSearch() {
-            playAccept();
-            runSearch();
-            if (results.length > 0) {
-                showingResults = true;
-                resultList.currentIndex = 0;
-            }
-        }
-
-        function runSearch() {
-            var raw = query.toLowerCase().trim();
-            if (raw === "") { results = []; totalMatches = 0; return; }
-            var q = cheevosData.normalizeTitle(raw);
-            if (q === "") q = raw;
-
-            var starts = [];
-            var contains = [];
-            for (var i = 0; i < searchIndex.length; i++) {
-                var at = searchIndex[i].norm.indexOf(q);
-                if (at === 0)      starts.push(searchIndex[i].game);
-                else if (at > 0)   contains.push(searchIndex[i].game);
-            }
-            var out = starts.concat(contains);
-            totalMatches = out.length;
-            results = out.slice(0, 80);
-            resultList.currentIndex = 0;
-        }
-        onQueryChanged: showingResults = false
-
-        // Chosen game -> existing RA lookup pipeline.
-        function chooseResult() {
-            if (results.length === 0) return;
-            var g = results[resultList.currentIndex];
-            if (!g) return;
-            playAccept();
-            currentGame = g;
-            closeSearch();
-            raEntryScreenFromSearch();
-        }
-
-        // Full-bleed blocker so touches never reach the list underneath.
-        MouseArea {
-            anchors.fill: parent
-            acceptedButtons: Qt.AllButtons
-            onPressed:  mouse.accepted = true
-            onClicked:  mouse.accepted = true
-            onReleased: mouse.accepted = true
-        }
-        Rectangle {
-            anchors.fill: parent
-            color: Qt.rgba(0, 0, 0, 0.92)
-        }
-
-        Text {
-            id: searchTitle
-            anchors { top: parent.top; topMargin: vpx(28); horizontalCenter: parent.horizontalCenter }
-            text: "SEARCH LIBRARY"
-            color: "white"
-            font.family: titleFont.name
-            font.pixelSize: fpx(26)
-            font.bold: true
-        }
-
-        // Query box
-        Rectangle {
-            id: queryBox
-            anchors { top: searchTitle.bottom; topMargin: vpx(14); horizontalCenter: parent.horizontalCenter }
-            width: parent.width * 0.6
-            height: vpx(44)
-            color: Qt.rgba(1, 1, 1, 0.10)
-            border.width: vpx(2)
-            border.color: theme.accent
-            Text {
-                anchors { left: parent.left; leftMargin: vpx(10); verticalCenter: parent.verticalCenter }
-                text: searchOverlay.query === "" ? "Type to search..." : searchOverlay.query
-                color: searchOverlay.query === "" ? Qt.rgba(1, 1, 1, 0.4) : "white"
-                font.family: subtitleFont.name
-                font.pixelSize: fpx(20)
-            }
-            // Caret — the keyboard owns the insertion point, so LB/RB movement
-            // shows up here. TextMetrics is not an Item, hence the id refs.
-            TextMetrics {
-                id: queryCaretMetrics
-                font.family: subtitleFont.name
-                font.pixelSize: fpx(20)
-                // TextMetrics ignores TRAILING whitespace, so "Mario " and
-                // "Mario" measured the same width and the caret appeared not to
-                // move when space was pressed. Substitute a glyph of comparable
-                // width for measurement only; the box still shows the real text.
-                text: {
-                    var upto = searchOverlay.query.slice(0, kb.caret);
-                    var trimmed = upto.replace(/ +$/, "");
-                    var spaces = upto.length - trimmed.length;
-                    return trimmed + "n".repeat(spaces);
-                }
-            }
-            Rectangle {
-                width: vpx(2)
-                height: queryBox.height * 0.55
-                color: theme.accent
-                anchors.verticalCenter: parent.verticalCenter
-                x: vpx(10) + Math.min(queryBox.width - vpx(20), queryCaretMetrics.width)
-                visible: searchOverlay.query !== "" && !searchOverlay.showingResults
-            }
-        }
-
-        // Results
-        ListView {
-            id: resultList
-            // One hook covers d-pad steps, Left/Right page jumps and the
-            // LT/RT letter jumps, the same way the games list does it above.
-            onCurrentIndexChanged: if (searchOverlay.showingResults) playNav()
-            anchors {
-                top: queryBox.bottom; topMargin: vpx(14)
-                left: parent.left; leftMargin: vpx(60)
-                right: parent.right; rightMargin: vpx(60)
-            }
-            // Results Page devotes the screen to the list once committed;
-            // Instant keeps it compact above the keyboard.
-            visible: searchOverlay.showingResults
-            height: searchOverlay.showingResults
-                    ? parent.height - y - vpx(60)
-                    : 0
-            clip: true
-            model: searchOverlay.results
-            currentIndex: 0
-            delegate: Rectangle {
-                width: resultList.width
-                height: searchOverlay.showingResults ? vpx(76) : vpx(58)
-                color: ListView.isCurrentItem ? theme.accent : Qt.rgba(1, 1, 1, 0.04)
-
-                // Box art thumbnail — falls back through the same asset order
-                // the tiles use, so a game without boxFront still shows art.
-                property var raProg: searchOverlay.showingResults
-                                     ? searchOverlay.raProgressFor(modelData) : null
-
-                Rectangle {
-                    id: thumbFrame
-                    anchors { left: parent.left; leftMargin: vpx(8); verticalCenter: parent.verticalCenter }
-                    width:  searchOverlay.showingResults ? vpx(60) : vpx(44)
-                    height: width
-                    color: Qt.rgba(0, 0, 0, 0.35)
-                    Image {
-                        anchors.fill: parent
-                        anchors.margins: vpx(2)
-                        fillMode: Image.PreserveAspectFit
-                        asynchronous: true; smooth: true
-                        source: {
-                            if (!modelData) return "";
-                            var a = modelData.assets;
-                            return a.boxFront || a.background
-                                || ((a.screenshots && a.screenshots.length) ? a.screenshots[0] : "") || "";
-                        }
-                    }
-                }
-
-                Column {
-                    anchors {
-                        left: thumbFrame.right; leftMargin: vpx(10)
-                        right: sysBadge.left;   rightMargin: vpx(8)
-                        verticalCenter: parent.verticalCenter
-                    }
-                    spacing: vpx(3)
-
-                    Text {
-                        width: parent.width
-                        text: modelData ? modelData.title : ""
-                        color: "white"
-                        font.family: subtitleFont.name
-                        font.pixelSize: fpx(19)
-                        elide: Text.ElideRight
-                    }
-                    // Achievement progress, but only for games already in the
-                    // RA history cache — everything else stays blank rather
-                    // than triggering a lookup per row.
-                    Text {
-                        width: parent.width
-                        visible: searchOverlay.showingResults
-                        text: {
-                            var p = parent.parent.raProg;
-                            if (!p) return "";
-                            if (p.NumPossibleAchievements > 0)
-                                return p.NumAchieved + " of " + p.NumPossibleAchievements + " achievements  ("
-                                       + Math.floor(p.NumAchieved * 100 / p.NumPossibleAchievements) + "%)";
-                            return "";
-                        }
-                        color: theme.accent
-                        font.family: subtitleFont.name
-                        font.pixelSize: fpx(15)
-                        elide: Text.ElideRight
-                    }
-                }
-
-                // System badge — the platform logo, which also disambiguates
-                // the same title appearing on multiple systems.
-                Image {
-                    id: sysBadge
-                    anchors { right: parent.right; rightMargin: vpx(10); verticalCenter: parent.verticalCenter }
-                    height: vpx(46)
-                    width: vpx(116)
-                    fillMode: Image.PreserveAspectFit
-                    horizontalAlignment: Image.AlignRight
-                    asynchronous: true; smooth: true
-                    opacity: 0.85
-                    source: (modelData && modelData.collections.count > 0)
-                            ? "../assets/images/logospng/"
-                              + Utils.processPlatformName(modelData.collections.get(0).shortName) + ".png"
-                            : ""
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: { resultList.currentIndex = index; searchOverlay.chooseResult(); }
-                }
-            }
-        }
-
-        Text {
-            anchors { left: queryBox.right; leftMargin: vpx(12); verticalCenter: queryBox.verticalCenter }
-            visible: searchOverlay.showingResults && searchOverlay.totalMatches > 0
-            text: searchOverlay.totalMatches
-                  + (searchOverlay.totalMatches === 1 ? " game" : " games")
-                  + (searchOverlay.totalMatches > searchOverlay.results.length ? " (showing 80)" : "")
-            color: Qt.rgba(1, 1, 1, 0.6)
-            font.family: subtitleFont.name
-            font.pixelSize: fpx(17)
-        }
-
-        Text {
-            anchors { top: resultList.top; horizontalCenter: parent.horizontalCenter }
-            visible: searchOverlay.showingResults && searchOverlay.results.length === 0
-            text: "No games found"
-            color: Qt.rgba(1, 1, 1, 0.5)
-            font.family: subtitleFont.name
-            font.pixelSize: fpx(19)
-        }
-
-        // On-screen keyboard — controller-first, same idea as the All Games
-        // filter panel: a grid of keys navigated with the d-pad.
-        // ── Keyboard: shared component ───────────────────────────────────
-        // Replaces the old inline key grid. The overlay still owns `query`;
-        // the keyboard edits a copy and reports back via onTextEdited.
-        VirtualKeyboard {
-        id: kb
-
-            // Component sizes itself; anchor it bottom-centre like the Xbox
-            // keyboard rather than filling the overlay.
-            anchors {
-                horizontalCenter: parent.horizontalCenter
-                bottom: parent.bottom
-                bottomMargin: vpx(70)
-            }
-            visible: !searchOverlay.showingResults
-            focus: !searchOverlay.showingResults
-            // The overlay already draws SEARCH LIBRARY + the query box above,
-            // so the keyboard must not draw its own or they appear twice.
-            title: ""
-            showTextField: false
-            text: searchOverlay.query
-
-            // textEdited carries the new string — the overlay owns `query`.
-            onTextEdited:  searchOverlay.query = newText
-            onAccepted:    searchOverlay.commitSearch()
-            onCancelled:   searchOverlay.closeSearch()
-        }
-
-        // Results-page help prompts. The keyboard draws its own while typing.
-        Row {
-            visible: searchOverlay.showingResults
-            anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: vpx(12) }
-            spacing: vpx(20)
-            Repeater {
-                model: [ { n: "Open", b: "accept" },
-                         { n: "Back", b: "cancel" } ]
-                delegate: Row {
-                    spacing: vpx(8)
-                    Image {
-                        source: "../assets/images/controller/" + buttonbar.processButtonArt(modelData.b) + ".png"
-                        width: vpx(30); height: vpx(30)
-                        asynchronous: true
-                        sourceSize { width: 48; height: 48 }
-                    }
-                    Text {
-                        text: modelData.n
-                        font.family: subtitleFont.name
-                        font.pixelSize: fpx(18)
-                        color: "white"
-                        height: vpx(30)
-                        verticalAlignment: Text.AlignVCenter
-                    }
-                }
-            }
-        }
-
-        // Results list navigation. While typing, the keyboard has focus and
-        // handles its own input, so these only run on the results page.
-        Keys.onUpPressed: {
-            event.accepted = true;
-            if (showingResults && resultList.currentIndex > 0) resultList.currentIndex--;
-        }
-        Keys.onDownPressed: {
-            event.accepted = true;
-            if (showingResults && resultList.currentIndex < results.length - 1) resultList.currentIndex++;
-        }
-        // ── Fast travel through a long result list ───────────────────────
-        // Left/Right page by 10; RT/LT jump to the next/previous letter group.
-        // Non-alphabetic titles all collapse into one "#" bucket so a run of
-        // numbered games is a single stop rather than one per digit.
-        function letterGroup(title) {
-            var c = (title || "").charAt(0).toUpperCase();
-            return (c >= "A" && c <= "Z") ? c : "#";
-        }
-        function jumpLetter(dir) {
-            var n = results.length;
-            if (n === 0) return;
-            var cur = resultList.currentIndex;
-            var curLtr = letterGroup(results[cur] ? results[cur].title : "");
-            if (dir > 0) {
-                for (var i = cur + 1; i < n; i++) {
-                    if (letterGroup(results[i].title) !== curLtr) { resultList.currentIndex = i; return; }
-                }
-                resultList.currentIndex = 0;                 // wrap to the top
-            } else {
-                if (cur <= 0) { resultList.currentIndex = n - 1; return; }
-                var prevLtr = letterGroup(results[cur - 1].title);
-                for (var j = cur - 2; j >= 0; j--) {
-                    if (letterGroup(results[j].title) !== prevLtr) { resultList.currentIndex = j + 1; return; }
-                }
-                resultList.currentIndex = 0;
-            }
-        }
-
-        Keys.onLeftPressed: {
-            event.accepted = true;
-            if (!showingResults) return;
-            resultList.currentIndex = Math.max(0, resultList.currentIndex - 10);
-        }
-        Keys.onRightPressed: {
-            event.accepted = true;
-            if (!showingResults) return;
-            resultList.currentIndex = Math.min(results.length - 1, resultList.currentIndex + 10);
-        }
-
-        Keys.onPressed: {
-            if (event.isAutoRepeat) return;
-            if (!showingResults) return;
-            if (api.keys.isAccept(event)) {            // open highlighted game
-                event.accepted = true;
-                searchOverlay.chooseResult();
-                return;
-            }
-            if (api.keys.isNextPage(event)) {          // RT — next letter
-                event.accepted = true;
-                playToggle();
-                searchOverlay.jumpLetter(1);
-                return;
-            }
-            if (api.keys.isPrevPage(event)) {          // LT — previous letter
-                event.accepted = true;
-                playToggle();
-                searchOverlay.jumpLetter(-1);
-                return;
-            }
-            if (api.keys.isCancel(event)) {            // back to a blank keyboard
-                event.accepted = true;
-                playBack();
-                searchOverlay.resetSearch();
-                return;
-            }
-        }
-    }
+    // ── Library search ────────────────────────────────────────────────────
+    // X opens the theme-level search (librarySearch in theme.qml) in RA mode.
+    // It used to be a LibrarySearch instance on this page, but this page's
+    // Loader unloads once you navigate to a result — the search went with it,
+    // so B came back to a fresh page with no results. The theme instance
+    // persists, keeps the results, and reopens them on the way back.
+    // RAGameEntryView still does the RA game-ID lookup for the chosen game.
 
     // The last row dissolves under the help bar (same fade as the grids).
     Rectangle {

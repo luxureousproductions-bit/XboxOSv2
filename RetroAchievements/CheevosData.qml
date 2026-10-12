@@ -182,6 +182,18 @@ id: root
         return parts.join("  ·  ");
     }
 
+    // Split form of pointsText for the alternating header line
+    // (Global/RAStatLine.qml): points on one face, rank on the other.
+    property string scoreText: {
+        if (raUserName === "") return "";
+        var parts = [ raFmt(hardcorePoints) + " HC" ];
+        if (softcorePoints  > 0) parts.push(raFmt(softcorePoints)  + " SC");
+        if (totalTruePoints > 0) parts.push(raFmt(totalTruePoints) + " true");
+        return parts.join("  ·  ");
+    }
+    property string rankText: (raUserName !== "" && userRank > 0)
+                              ? "Rank #" + raFmt(userRank) : ""
+
     property string memberText: {
         if (memberSince === "") return "";
         // memberSince arrives as "YYYY-MM-DD HH:MM:SS" — just show the date part
