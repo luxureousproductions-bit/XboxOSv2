@@ -214,7 +214,12 @@ id: root
         else {
             // NOTE: We should be using the scroll proxy here, but this is significantly faster.
             if (sortedGames == null) {
-                sortedGames = list.collection.games.toVarArray().map(g => g.title.toLowerCase()).sort((a, b) => a.localeCompare(b));
+                // Skip the rows the grid hides as duplicates (Android page only),
+                // so this list lines up with what's actually on screen.
+                var dupes = list.hideRowsHere;
+                sortedGames = list.collection.games.toVarArray()
+                    .filter((g, i) => dupes[i] !== true)
+                    .map(g => g.title.toLowerCase()).sort((a, b) => a.localeCompare(b));
             }
 
             var currentGameTitle = sortedGames[currentIndex];
