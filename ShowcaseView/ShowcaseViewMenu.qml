@@ -34,21 +34,21 @@ id: root
 
     // Pull in our custom lists and define
     ListAllGames    { id: listNone;        max: 0 }
-    ListAllGames    { id: listAllGames;    max: settings.ShowcaseColumns }
+    ListAllGames    { id: listAllGames;    max: settings.ShowcaseColumns; hideRows: libraryHideRows }
     ListFavorites   { id: listFavorites;   max: settings.ShowcaseColumns }
     // Uncapped — feeds the favorites carousel header, which pages through
     // every favorited game (unlike the "Favorites" collection category above,
     // which is deliberately capped to a normal row's worth of tiles).
     ListFavorites   { id: listFavoritesAll }
-    ListLastPlayed  { id: listLastPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
-    ListMostPlayed  { id: listMostPlayed;  max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
-    ListRecommended { id: listRecommended; active: true; max: settings.ShowcaseColumns; omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
+    ListLastPlayed  { id: listLastPlayed;  max: settings.ShowcaseColumns; omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
+    ListMostPlayed  { id: listMostPlayed;  max: settings.ShowcaseColumns; omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
+    ListRecommended { id: listRecommended; active: true; max: settings.ShowcaseColumns; omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
     // "Play Something New For <System>": one random system, a few of its games.
     ListRandomSystem { id: listRandomSystem; active: true; max: settings.ShowcaseColumns }
-    ListPublisher   { id: listPublisher;   max: settings.ShowcaseColumns; publisher: randoPub;   omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
-    ListDeveloper   { id: listDeveloper;   max: settings.ShowcaseColumns; developer: randoDev;   omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
-    ListGenre       { id: listGenre;       max: settings.ShowcaseColumns; genre: randoGenre;     omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
-    ListGenre       { id: listGenre2;      max: settings.ShowcaseColumns; genre: randoGenre2;    omitApplication: settings.OmitApplicationFromShowcase === "Yes"; omitEmulator: settings.OmitEmulatorFromShowcase === "Yes"; appTitles: appTitleSet }
+    ListPublisher   { id: listPublisher;   max: settings.ShowcaseColumns; publisher: randoPub;   omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
+    ListDeveloper   { id: listDeveloper;   max: settings.ShowcaseColumns; developer: randoDev;   omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
+    ListGenre       { id: listGenre;       max: settings.ShowcaseColumns; genre: randoGenre;     omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
+    ListGenre       { id: listGenre2;      max: settings.ShowcaseColumns; genre: randoGenre2;    omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
 
     property var highlightedGame: null
 
@@ -167,8 +167,9 @@ id: root
     // Candidate pools exclude games the rows filter out anyway, so a value whose
     // every game would be filtered away can't be picked — that produced rows
     // like "Top Games by Sony" with nothing under them.
-    readonly property bool poolOmitApp: settings.OmitApplicationFromShowcase === "Yes"
-    readonly property bool poolOmitEmu: settings.OmitEmulatorFromShowcase === "Yes"
+    // Live, like the rows themselves (omitAppsLive / omitEmulatorsLive).
+    readonly property bool poolOmitApp: omitAppsLive
+    readonly property bool poolOmitEmu: omitEmulatorsLive
 
     property string randoPub:    Utils.returnRandom(Utils.uniqueValuesArray('publisher', poolOmitApp, poolOmitEmu)) || ''
     property string randoDev:    Utils.returnRandom(Utils.uniqueValuesArray('developer', poolOmitApp, poolOmitEmu)) || ''
@@ -176,8 +177,8 @@ id: root
     property string randoGenre2: Utils.returnRandom(Utils.uniqueGenreValues(poolOmitEmu)) || ''
 
     function refreshLists() {
-        var omitEmu = settings.OmitEmulatorFromShowcase === "Yes";
-        var omitApp = settings.OmitApplicationFromShowcase === "Yes";
+        var omitEmu = omitEmulatorsLive;
+        var omitApp = omitAppsLive;
         var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher', omitApp, omitEmu)) || '';
         var dev = Utils.returnRandom(Utils.uniqueValuesArray('developer', omitApp, omitEmu)) || '';
         var genres = Utils.uniqueGenreValues(omitEmu);
@@ -782,13 +783,12 @@ id: root
                         font.pixelSize: fpx(17); font.bold: true
                         elide: Text.ElideRight
                     }
-                    Text {
-                        text: cheevosData.pointsText
+                    // Points, alternating with Rank # when RA has one.
+                    RAStatLine {
                         color: showcaseText
-                        font.family: subtitleFont.name
-                        font.pixelSize: fpx(12)
+                        fontFamily: subtitleFont.name
+                        pixelSize: fpx(12)
                         opacity: 0.7
-                        visible: cheevosData.pointsText !== ""
                     }
                     Text {
                         text: cheevosData.memberText
@@ -816,7 +816,7 @@ id: root
         id: homebutton
 
             width:  vpx(36); height: vpx(36); radius: height / 2
-            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(81) }
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(108) }
             color:   focus ? theme.accent : "transparent"
             opacity: focus ? 1 : 0.6
             layer.enabled: true
@@ -865,7 +865,7 @@ id: root
         id: discoverbutton
 
             width:  vpx(36); height: vpx(36); radius: height / 2
-            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(27) }
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(54) }
             color:   focus ? theme.accent : "transparent"
             opacity: focus ? 1 : 0.6
             layer.enabled: true
@@ -912,7 +912,7 @@ id: root
         id: achievementsbutton
 
             width:  vpx(36); height: vpx(36); radius: height / 2
-            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(27) }
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: 0 }
             color:   focus ? theme.accent : "transparent"
             opacity: focus ? 1 : 0.6
             layer.enabled: true
@@ -931,11 +931,11 @@ id: root
             }
             Keys.onDownPressed:  { playNav(); var r = mainList.navJump ? mainList.savedRow : 1; mainList.navJump = false; mainList.forceActiveFocus(); mainList.currentIndex = r; }
             Keys.onLeftPressed:  discoverbutton.focus = true;
-            Keys.onRightPressed: settingsbutton.focus = true;
+            Keys.onRightPressed: searchbutton.focus = true;
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; achievementsScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; if (mainList.navJump) { mainList.navJump = false; mainList.currentIndex = mainList.savedRow; } mainList.focus = true; }
-                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); settingsbutton.focus = true; }
+                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); searchbutton.focus = true; }
                 if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); discoverbutton.focus = true; }
             }
             MouseArea {
@@ -957,11 +957,13 @@ id: root
             opacity: achievementsbutton.focus ? 1 : 0.7
         }
 
+        // Global library search — opens the shared overlay in theme.qml.
+        // Same box and inset as Discover so the five icons line up.
         Rectangle {
-        id: settingsbutton
+        id: searchbutton
 
             width:  vpx(36); height: vpx(36); radius: height / 2
-            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(81) }
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(54) }
             color:   focus ? theme.accent : "transparent"
             opacity: focus ? 1 : 0.6
             layer.enabled: true
@@ -980,11 +982,57 @@ id: root
             }
             Keys.onDownPressed:  { playNav(); var r = mainList.navJump ? mainList.savedRow : 1; mainList.navJump = false; mainList.forceActiveFocus(); mainList.currentIndex = r; }
             Keys.onLeftPressed:  achievementsbutton.focus = true;
+            Keys.onRightPressed: settingsbutton.focus = true;
+            Keys.onPressed: {
+                if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; openLibrarySearch(); }
+                if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; if (mainList.navJump) { mainList.navJump = false; mainList.currentIndex = mainList.savedRow; } mainList.focus = true; }
+                if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); settingsbutton.focus = true; }
+                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); achievementsbutton.focus = true; }
+            }
+            MouseArea {
+                anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
+                onEntered: searchbutton.focus = true; onExited: searchbutton.focus = false;
+                onClicked: openLibrarySearch();
+            }
+            Image {
+                anchors { fill: parent; margins: vpx(6) }
+                source: "../assets/images/icon_search.svg"
+                sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
+                layer.enabled: showcaseWhiteBackground
+                layer.effect: ColorOverlay { color: "black" }
+                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+                opacity: searchbutton.focus ? 1.0 : 0.85
+            }
+        }
+
+        Rectangle {
+        id: settingsbutton
+
+            width:  vpx(36); height: vpx(36); radius: height / 2
+            anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(108) }
+            color:   focus ? theme.accent : "transparent"
+            opacity: focus ? 1 : 0.6
+            layer.enabled: true
+            layer.effect: DropShadow {
+                transparentBorder: true
+                horizontalOffset: 0
+                verticalOffset: 0
+                radius: 8
+                samples: 17
+                color: "#cc000000"
+            }
+
+            onFocusChanged: {
+                if (focus) playNav();
+                if (focus) mainList.currentIndex = -1;
+            }
+            Keys.onDownPressed:  { playNav(); var r = mainList.navJump ? mainList.savedRow : 1; mainList.navJump = false; mainList.forceActiveFocus(); mainList.currentIndex = r; }
+            Keys.onLeftPressed:  searchbutton.focus = true;
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; settingsScreen(); }
                 if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; if (mainList.navJump) { mainList.navJump = false; mainList.currentIndex = mainList.savedRow; } mainList.focus = true; }
                 if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); homebutton.focus = true; }
-                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); achievementsbutton.focus = true; }
+                if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); searchbutton.focus = true; }
             }
             MouseArea {
                 anchors.fill: parent; hoverEnabled: settings.MouseHover == "Yes"
@@ -1027,6 +1075,14 @@ id: root
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: achievementsbutton.focus ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+        }
+        Text {
+            text: "Search"
+            anchors { top: searchbutton.bottom; topMargin: vpx(3); horizontalCenter: searchbutton.horizontalCenter }
+            color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
+            font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
+            opacity: searchbutton.focus ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
         }
         Text {
@@ -1133,7 +1189,37 @@ id: root
             cacheBuffer: hqResidentRows ? width * 3 : width
 
             focus: topRow.focus
-            property var resumeGame: listLastPlayed.games.count > 0 ? listLastPlayed.currentGame(0) : null
+            // The hero = the first game in Last Played. It used to be a binding
+            // on listLastPlayed.currentGame(0): a function call, so it only
+            // re-ran when the list's COUNT changed, and hooking the list's row
+            // signals didn't reliably reach it either (the list is two filter
+            // models deep). Hiding the app in the hero swaps the first game
+            // for another at the same count, so the hero stayed until reload.
+            //
+            // Now it's re-read explicitly — always one step later
+            // (Qt.callLater), once the filters have finished — whenever:
+            //   - anything that decides what Home hides changes (resumeDeps)
+            //   - the Last Played list's rows change
+            //   - Home regains focus (back from Settings: see onActiveFocusChanged)
+            property var resumeGame: null
+            function refreshResume() {
+                var g = listLastPlayed.games.count > 0 ? listLastPlayed.currentGame(0) : null;
+                if (g === resumeGame) return;
+                resumeGame = g;
+                // Hero highlighted right now: the page background follows it.
+                if (topRow.selected && currentIndex === 0) updateTopRowBackground(0, g);
+            }
+            readonly property var resumeDeps: [homeHideTitles, omitAppsLive, omitEmulatorsLive, libraryHideRows]
+            onResumeDepsChanged: Qt.callLater(platformlist.refreshResume)
+            Connections {
+                target: listLastPlayed.games
+                onRowsInserted:  Qt.callLater(platformlist.refreshResume)
+                onRowsRemoved:   Qt.callLater(platformlist.refreshResume)
+                onRowsMoved:     Qt.callLater(platformlist.refreshResume)
+                onModelReset:    Qt.callLater(platformlist.refreshResume)
+                onLayoutChanged: Qt.callLater(platformlist.refreshResume)
+                onCountChanged:  Qt.callLater(platformlist.refreshResume)
+            }
             height: topRow.tileSz + globalMargin * 2
             clip: false
             anchors {
@@ -1185,7 +1271,10 @@ id: root
                 }
             }
 
-            Component.onCompleted: alignToIndex(savedIndex)
+            Component.onCompleted: {
+                refreshResume();            // first fill of the hero
+                alignToIndex(savedIndex);
+            }
 
             // Driven by sortedColl, NOT api.collections.count — the two differ
             // now that the apps collection is filtered out of the system row.
@@ -2012,6 +2101,9 @@ id: root
             // changed "Featured Box Content" without depending on the settings
             // screen having bumped the counter itself.
             settingsEpoch++;
+            // ...and re-read the hero once that settles: a hide option changed
+            // in Settings must not leave the hero on an app it now hides.
+            Qt.callLater(platformlist.refreshResume);
         }
     }
 

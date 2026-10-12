@@ -118,6 +118,7 @@ id: root
     ListAllGames {
     id: listAllGames
         max: api.allGames.count
+        hideRows: libraryHideRows       // Pegasus copies of your own entries
     }
 
     // Restores the stored list selection once after a (re)load
@@ -500,9 +501,18 @@ id: root
                 roleName: "favorite"
                 value: true
                 enabled: favsOnly
+            },
+            // An Android system chosen: leave out duplicate Pegasus imports
+            // and anything hidden from the library (theme.qml androidHideRows
+            // — rows in that collection's own list, which is the source here).
+            // All systems is handled inside listAllGames instead.
+            ExpressionFilter {
+                enabled: Object.keys(systemHideRows).length > 0
+                expression: systemHideRows[index] !== true
             }
         ]
     }
+    readonly property var systemHideRows: hideRowsForCollection(systemIndex)
 
     function getCurrentGame(idx) {
         var srcIdx = displayModel.mapToSource(idx);
