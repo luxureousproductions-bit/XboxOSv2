@@ -61,78 +61,208 @@ id: root
              ? api.memory.get("Featured Box Content") : "Favorites";
     }
 
-    // Titles of emulators among the imported apps.
+    // ── Home "hide" sets: apps and emulators kept SEPARATE ────────────────
+    // The Home rows (Lists/*.qml) hide by title:
+    //   Hide apps from Home      -> homeAppTitleSet + genre "Application"
+    //   Hide emulators from Home -> emulatorTitleSet + genre "Emulator"
     //
-    // The genre rule can never catch these: Pegasus imports carry NO genre at
-    // all, so an emulator like Citra or DraStic has nothing to match on. This
-    // is the emulator equivalent of appTitleSet, identified by package name
-    // using the same keywords the App Drawer categorises with.
-    readonly property var emulatorKeywords: [
-        "citra", "dolphin", "drastic", "duckstation", "aethersx2", "ppsspp", "retroarch",
-        "vita3k", "yuzu", "ryujinx", "eden", "sudachi", "redream", "mupen", "melonds",
-        "flycast", "pcsx", "epsxe", "mame", "xemu", "winlator", "lime3ds", "azahar",
-        "panda3ds", "skyline", "nethersx2", "snes9x", "mgba", "fpse", "dsemu", "mm.jr",
-        "emu", "emulator", "gamenative"
-    ]
+    // Before, the rows' app set was every title in the "Android" collection,
+    // emulators included, so Hide apps took the emulators with it and Hide
+    // emulators only ever saw genre tags. (An omitTitleSet / omitEmulatorLive
+    // pair here looked like the fix but nothing ever read them — removed.)
+    //
+    // What counts as an emulator, per drawer entry (Pegasus imports AND your
+    // entries in the "Android" collection):
+    //   genre tag "Emulator"     -> emulator
+    //   genre tag "Application"  -> app, wherever the drawer files it
+    //   no tag                   -> the drawer's Emulators section decides:
+    //                               the keyword rules or wherever you moved it
+    //                               (saved moves update categoryMap, so this
+    //                               follows them live)
+    function hasGenre(g, want) {
+        var gl = g ? g.genreList : null;
+        if (!gl) return false;
+        for (var i = 0; i < gl.length; i++)
+            if ((gl[i] || "").toLowerCase() === want) return true;
+        return false;
+    }
     readonly property var emulatorTitleSet: {
         var set = {};
-        if (!omitEmulatorLive) return set;      // nothing reads it when off
+        var idx = appDrawer.appIndex;
+        var cat = appDrawer.categoryMap;
+        for (var i = 0; i < idx.length; i++) {
+            var e = idx[i];
+            if (!e.title) continue;
+            if (hasGenre(e.g, "emulator")
+                || (cat[e.pkg] === "emulator" && !hasGenre(e.g, "application")))
+                set[e.title] = true;
+        }
+        return set;
+    }
+    // Same rule for the drawer's Games section: an untagged entry you (or
+    // the shipped list) filed under Games is a game, so "Hide apps" leaves it
+    // on Home. A genre tag of "Application" still makes it an app.
+    readonly property var drawerGameTitleSet: {
+        var set = {};
+        var idx = appDrawer.appIndex;
+        var cat = appDrawer.categoryMap;
+        for (var i = 0; i < idx.length; i++) {
+            var e = idx[i];
+            if (!e.title) continue;
+            if (cat[e.pkg] === "game" && !hasGenre(e.g, "application")
+                && !hasGenre(e.g, "emulator"))
+                set[e.title] = true;
+        }
+        return set;
+    }
+    // appTitleSet minus emulators and games. appTitleSet itself stays as it
+    // was — the launch rule (isAppGame) still reads it until the launch stage.
+    readonly property var homeAppTitleSet: {
+        var set = {};
+        var a = appTitleSet;
+        var emu = emulatorTitleSet;
+        var gm = drawerGameTitleSet;
+        for (var t in a)
+            if (emu[t] !== true && gm[t] !== true) set[t] = true;
+        return set;
+    }
+
+    // Titles of YOUR entries in the Android sources (anything that isn't a
+    // Pegasus import). A Pegasus import with one of these exact titles is a
+    // duplicate: the drawer shows only your copy, and so do these pages.
+    // Exact titles only: your entries don't expose a package name, so a
+    // differently-named copy can't be matched.
+    readonly property var myAndroidTitles: {
+        var mine = {};
         var cols = drawerCollections;
         for (var i = 0; i < cols.length; i++) {
             var gl = cols[i].games;
             for (var j = 0; j < gl.count; j++) {
                 var g = gl.get(j);
-                if (!g.files || g.files.count < 1) continue;
-                var path = (g.files.get(0).path || "").toLowerCase();
-                var title = (g.title || "");
-                var t = title.toLowerCase();
-                for (var k = 0; k < emulatorKeywords.length; k++) {
-                    var kw = emulatorKeywords[k];
-                    if (path.indexOf(kw) >= 0 || t.indexOf(kw) >= 0) { set[title] = true; break; }
-                }
+                if (g.title && !isPegasusImport(g)) mine[g.title] = true;
             }
         }
-        return set;
+        return mine;
     }
-
-    // One pass over the library, replacing the per-row genre work.
-    //
-    // Each Showcase row used to walk every game itself, lowercasing each genre
-    // string to compare it — 7 rows x 4300 games on every change, twice over.
-    // The answer is the same for every row, so it's computed once here and the
-    // rows do a single hash lookup each.
-    readonly property var omitTitleSet: {
-        var set = {};
-        var oApp = (settings.OmitApplicationFromShowcase === "Yes");
-        var oEmu = omitEmulatorLive;
-        if (!oApp && !oEmu) return set;         // nothing to do
-
-        // Imported apps and emulators, by collection/package.
-        if (oApp) { var a = appTitleSet;      for (var k in a) set[k] = true; }
-        if (oEmu) { var e = emulatorTitleSet; for (var k2 in e) set[k2] = true; }
-
-        // Genre-tagged entries. Lowercased once per game, not once per row.
+    // Rows the library leaves out, by ROW and never by title (a duplicate
+    // shares its title with your copy, so a title filter would hide yours too):
+    //   - Pegasus imports that duplicate one of your entries (exact title)
+    //   - anything you set to "Library only" or "Both" in the drawer's Hide
+    //     panel (libraryHiddenLive — the published copy, see rebuildHomeHide()),
+    //     matched by the same key the drawer uses
+    // Two numberings:
+    //   libraryHideRows  - rows in api.allGames (Home rows, All Games with all
+    //                      systems shown)
+    //   androidHideRows  - { collection index: rows in THAT collection's own
+    //                      list } for every Android collection (platform page,
+    //                      All Games with one system chosen)
+    function drawerKeyOf(g) {
+        var p = appDrawer.packageOf(g);
+        return p !== "" ? p : "title:" + (g.title || "");
+    }
+    function libraryHides(g, mine, lib, libOn) {
+        if (isPegasusImport(g) && g.title && mine[g.title] === true) return true;
+        return libOn && lib[drawerKeyOf(g)] === true;
+    }
+    readonly property var libraryHideRows: {
+        var mine = myAndroidTitles;
+        var lib = libraryHiddenLive;
+        var libOn = Object.keys(lib).length > 0;
+        var rows = {};
         var all = api.allGames;
-        for (var i = 0; i < all.count; i++) {
-            var g = all.get(i);
-            var t = g.title;
-            if (!t || set[t] === true) continue;
-            var gl = g.genreList;
-            for (var j = 0; j < gl.length; j++) {
-                var gg = (gl[j] || "").toLowerCase();
-                if (oApp && gg === "application") { set[t] = true; break; }
-                if (oEmu && gg === "emulator")    { set[t] = true; break; }
-            }
+        for (var k = 0; k < all.count; k++)
+            if (libraryHides(all.get(k), mine, lib, libOn)) rows[k] = true;
+        return rows;
+    }
+    readonly property var androidHideRows: {
+        var mine = myAndroidTitles;
+        var lib = libraryHiddenLive;
+        var libOn = Object.keys(lib).length > 0;
+        var out = {};
+        var n = api.collections.count;
+        for (var i = 0; i < n; i++) {
+            var c = api.collections.get(i);
+            if (!isAndroidSourceCollection(c)) continue;
+            var rows = {}, any = false;
+            var gl = c.games;
+            for (var j = 0; j < gl.count; j++)
+                if (libraryHides(gl.get(j), mine, lib, libOn)) { rows[j] = true; any = true; }
+            if (any) out[i] = rows;
         }
-        return set;
+        return out;
+    }
+    readonly property var noHideRows: ({})
+    function hideRowsForCollection(i) {
+        var m = androidHideRows;            // dependency, so callers re-run with it
+        return (i >= 0 && m[i] !== undefined) ? m[i] : noHideRows;
     }
 
-    // Live copy of the Emulator omit setting. Read by the Showcase rows, so
-    // toggling it applies without a reload.
-    readonly property bool omitEmulatorLive: {
+    // Live copies of the two Home hide options. `settings` is read once at
+    // load, so rows bound to it only changed after a reload. These re-read on
+    // settingsEpoch, which Settings bumps on every save (the same pattern as
+    // featuredBoxContent above).
+    readonly property bool omitAppsLive: {
+        var e = settingsEpoch;
+        return (api.memory.has("Omit genre: Application from Showcase")
+              ? api.memory.get("Omit genre: Application from Showcase") : "No") === "Yes";
+    }
+    readonly property bool omitEmulatorsLive: {
         var e = settingsEpoch;
         return (api.memory.has("Omit genre: Emulator from Showcase")
               ? api.memory.get("Omit genre: Emulator from Showcase") : "No") === "Yes";
+    }
+
+    // ── What the Home rows hide, as ONE list ──────────────────────────────
+    // The rows re-filter the whole library (~4.4k games each, 7 rows) every
+    // time an input they read changes. They used to read homeAppTitleSet and
+    // emulatorTitleSet directly — and those rebuild as NEW objects whenever
+    // the drawer's categoryMap does, i.e. on every "Move to …", even when
+    // nothing in them changed. That was several full re-filters per move
+    // (~10s frozen). Now:
+    //   - the two sets + both options are combined into one list here
+    //   - it's only republished when its CONTENTS change (signature check),
+    //     so System <-> Other moves cost the rows nothing
+    //   - while the drawer is open (Home isn't visible) it waits, and runs
+    //     once after the drawer closes
+    property var    homeHideTitles: ({})
+    property string homeHideSig: ""
+    property bool   homeHidePending: false
+    // Published copy of the drawer's "Hide from library" list. The row lists
+    // above read THIS, so a hide/show in the drawer reaches Home, the Android
+    // page and All Games on the same terms: after the drawer closes, and only
+    // if it actually changed.
+    property var    libraryHiddenLive: ({})
+    property string libraryHiddenSig: ""
+    function rebuildHomeHide() {
+        if (appDrawer.open) { homeHidePending = true; return; }
+        homeHidePending = false;
+        var libSig = Object.keys(appDrawer.libraryHiddenPkgs).sort().join("\n");
+        if (libSig !== libraryHiddenSig) {
+            libraryHiddenSig = libSig;
+            libraryHiddenLive = appDrawer.libraryHiddenPkgs;
+        }
+        var set = {};
+        if (omitAppsLive)      { var a = homeAppTitleSet;  for (var t in a) set[t] = true; }
+        if (omitEmulatorsLive) { var e = emulatorTitleSet; for (var u in e) set[u] = true; }
+        var sig = Object.keys(set).sort().join("\n");
+        if (sig === homeHideSig) return;
+        homeHideSig = sig;
+        homeHideTitles = set;
+    }
+    onHomeAppTitleSetChanged:   Qt.callLater(rebuildHomeHide)
+    onEmulatorTitleSetChanged:  Qt.callLater(rebuildHomeHide)
+    onOmitAppsLiveChanged:      Qt.callLater(rebuildHomeHide)
+    onOmitEmulatorsLiveChanged: Qt.callLater(rebuildHomeHide)
+    Connections {
+        target: appDrawer
+        onLibraryHiddenPkgsChanged: Qt.callLater(rebuildHomeHide)
+    }
+    // After the drawer's slide-out, so the one re-filter doesn't land on it.
+    Timer {
+    id: homeHideAfterDrawer
+        interval: hqDrawerSlideMs + 100
+        repeat: false
+        onTriggered: rebuildHomeHide()
     }
 
     // ── Grid background dimming ───────────────────────────────────────────
@@ -214,6 +344,7 @@ id: root
         "Game details video preview audio":          "Yes",
         "Grid Thumbnail":                            "Square",
         "Hide Android System Tile":                  "Yes",
+        "Hide Android Games System Tile":            "No",
         "Hide logo when thumbnail video plays":      "Yes",
         "High Quality Mode":                         "No",
         "Launch screen delay":                       "2.5",
@@ -320,6 +451,7 @@ id: root
             ScreenshotFallback:            api.memory.has("Screenshot Fallback") ? api.memory.get("Screenshot Fallback") : "No",
             AddedAppLaunch:                api.memory.has("Added App Launch") ? api.memory.get("Added App Launch") : "Instant",
             HideAndroidSystemTile:         api.memory.has("Hide Android System Tile") ? api.memory.get("Hide Android System Tile") : "Yes",
+            HideAndroidGamesSystemTile:    api.memory.has("Hide Android Games System Tile") ? api.memory.get("Hide Android Games System Tile") : "No",
             MoreByGenreDisplay:            api.memory.has("More by Genre Display") ? api.memory.get("More by Genre Display") : "Full",
             AllowDiscoverVideoAudio:         api.memory.has("Discover video audio") ? api.memory.get("Discover video audio") : "Yes",
             MenuSounds:                      api.memory.has("Menu sounds") ? api.memory.get("Menu sounds") : "Yes",
@@ -553,6 +685,64 @@ id: root
         return !!c && (c.name || "").toLowerCase() === appsCollectionName.toLowerCase();
     }
 
+    // ── Android sources: ONE answer to "what is an app" ───────────────────
+    // Every Android-side collection, in the order the system row pins them:
+    //   "Android" by NAME   - Pegasus's import, plus any collection of yours
+    //                         also named "Android" (Pegasus merges them)
+    //   shortName android / androidapps (/ apps)  - your app collections
+    //   shortName androidgames                    - your game collections
+    // Used by the system row (pins + hide options), the launch rule
+    // (androidKindOf) and the App Drawer's sources (drawerCollections).
+    readonly property var androidAppShortNames:  ["android", "androidapps", "apps"]
+    readonly property var androidGameShortNames: ["androidgames"]
+    function isAndroidGamesCollection(c) {
+        return !!c && !isDrawerCollection(c)
+            && androidGameShortNames.indexOf((c.shortName || "").toLowerCase()) >= 0;
+    }
+    function isAndroidAppsCollection(c) {
+        return !!c && !isDrawerCollection(c)
+            && androidAppShortNames.indexOf((c.shortName || "").toLowerCase()) >= 0;
+    }
+    function isAndroidSourceCollection(c) {
+        return isDrawerCollection(c) || isAndroidAppsCollection(c) || isAndroidGamesCollection(c);
+    }
+    readonly property var drawerCollections: {
+        var out = [];
+        var n = api.collections.count;          // referenced so this re-runs if collections reload
+        for (var i = 0; i < n; i++) {
+            var c = api.collections.get(i);
+            if (isAndroidSourceCollection(c)) out.push(c);
+        }
+        return out;
+    }
+
+    // What an entry is, judged by the collections it's actually IN (not its
+    // title, so a ROM that shares a name with an Android game is unaffected):
+    //   android:<package> path (Pegasus import)   -> "import"
+    //   genre "Application"                        -> "app"
+    //   genre "Emulator"                           -> "emulator"
+    //   untagged, in an androidgames collection    -> "game"
+    //   untagged, in "Android" / android / androidapps -> "app"
+    //   anything else                              -> "" (an ordinary game)
+    // Genre tags count anywhere in the library, as the Home hide options do.
+    function androidKindOf(game) {
+        if (!game) return "";
+        if (isPegasusImport(game)) return "import";
+        if (hasGenre(game, "application")) return "app";
+        if (hasGenre(game, "emulator"))    return "emulator";
+        var cl = game.collections;
+        if (!cl) return "";
+        var inGames = false, inApps = false;
+        for (var i = 0; i < cl.count; i++) {
+            var c = cl.get(i);
+            if (isAndroidGamesCollection(c)) inGames = true;
+            else if (isDrawerCollection(c) || isAndroidAppsCollection(c)) inApps = true;
+        }
+        if (inGames) return "game";
+        if (inApps)  return "app";
+        return "";
+    }
+
     // Titles of everything in the drawer's collection, used to keep installed
     // apps out of the Showcase rows when "Omit genre: Application" is on.
     //
@@ -587,9 +777,14 @@ id: root
         var items = [];
         for (var i = 0; i < n; i++) {
             var c = api.collections.get(i);
-            // The drawer covers this collection, so its tile is redundant by
-            // default — but only skip it while the setting says so.
-            if (settings.HideAndroidSystemTile !== "No" && isDrawerCollection(c)) continue;
+            // The drawer covers these collections, so their tiles are redundant
+            // by default — but only skip them while the settings say so.
+            //   Hide Android System Tile       -> "Android" + android/androidapps
+            //   Hide Android Games System Tile -> androidgames
+            if (settings.HideAndroidSystemTile !== "No"
+                && (isDrawerCollection(c) || isAndroidAppsCollection(c))) continue;
+            if (settings.HideAndroidGamesSystemTile === "Yes"
+                && isAndroidGamesCollection(c)) continue;
             items.push({
                 idx:   i,
                 name:  (c.name || "").toLowerCase(),
@@ -601,7 +796,7 @@ id: root
         }
         var mode = settings.SystemSort;
         items.sort(function(a, b) {
-            // Pinned systems (Android, then Android games) always lead.
+            // Pinned systems (Android, Android apps, Android games) always lead.
             if (a.pin !== b.pin) {
                 if (a.pin === -1) return 1;
                 if (b.pin === -1) return -1;
@@ -651,11 +846,18 @@ id: root
         for (var k = 0; k < items.length; k++) arr.push(items[k].idx);
         return arr;
     }
+    // Android tiles lead the system row, always in this order:
+    //   0  "Android"               (Pegasus import, plus yours named "Android")
+    //   1  android / androidapps   (your app collections; "apps" kept as an alias)
+    //   2  androidgames            (your game collections)
+    // Name is checked before shortName: the import's shortName is "android"
+    // too, and it must stay first.
     function systemPinRank(sn, nm) {
         var s = (sn || "").toLowerCase();
         var nmm = (nm || "").toLowerCase();
-        if (s === "android" || nmm === "android") return 0;
-        if (s === "apps" || s === "androidgames" || nmm === "apps" || nmm === "android games" || nmm === "androidgames") return 1;
+        if (nmm === appsCollectionName.toLowerCase()) return 0;
+        if (androidGameShortNames.indexOf(s) >= 0 || nmm === "android games") return 2;
+        if (androidAppShortNames.indexOf(s) >= 0 || nmm === "android apps" || nmm === "apps") return 1;
         return -1;
     }
     property var currentGame
@@ -764,6 +966,8 @@ id: root
         launchingGame = (game !== null) ? game : currentGame;
         launchGameScreen();             // pushes the RA screen onto lastState
         lastState = ["showcasescreen"];  // ...replaced: return to the Showcase
+        searchReturnDepth = -1;          // stack rewritten: no search to return to
+        raSearchReturn = false;
         saveCurrentState(launchingGame);
         launchDelay.restart();
     }
@@ -1224,6 +1428,12 @@ id: root
     function achievementsScreenFromGame() {
         playAccept();
         root.state = "achievementsscreen";
+        // Back on the overview after opening an RA search result: show the
+        // results again (B from the game's achievements lands here).
+        if (raSearchReturn) {
+            raSearchReturn = false;
+            reopenLibrarySearch();
+        }
     }
 
     function gameAchievementsScreen() {
@@ -1283,14 +1493,22 @@ id: root
         gameDetails(game);
     }
 
-    // Installed apps carry almost no metadata, so a details page for them is an
-    // empty screen and an extra button press. When they're allowed into the
-    // rows, open them straight away instead.
+    // True for everything "Added App Launch" governs: your own apps, tagged
+    // apps/emulators, and your Android games (androidgames). Pegasus imports
+    // are handled before this and always launch straight away.
     //
-    // Gated on the Omit setting deliberately: with omit ON, apps aren't in the
-    // rows at all, so this must not change how anything else behaves.
+    // Used to be "title is in the collection named Android", so only your
+    // entries merged into "Android" followed the setting — androidgames and
+    // android/androidapps collections always opened Details.
     function isAppGame(game) {
-        return !!game && appTitleSet[game.title] === true;
+        var k = androidKindOf(game);
+        return k === "app" || k === "emulator" || k === "game";
+    }
+    // Live copy of "Added App Launch", like the Home hide options: re-read on
+    // every Settings save, so changing it no longer needs a reload.
+    readonly property string addedAppLaunchLive: {
+        var e = settingsEpoch;
+        return api.memory.has("Added App Launch") ? api.memory.get("Added App Launch") : "Instant";
     }
     // Apps Pegasus imported on its own have a file path of "android:<package>"
     // and no metadata at all. Apps the user wrote a metadata entry for point at
@@ -1302,7 +1520,8 @@ id: root
 
     // ── The launch rule, used by every screen ─────────────────────────────
     //   Pegasus import (android:<package>)  -> launch straight away, always
-    //   App you added (in an app collection) -> "Added App Launch" decides
+    //   Your apps, tagged apps/emulators and
+    //   Android games (see androidKindOf)    -> "Added App Launch" decides
     //   Game                                 -> details, or launch if the
     //                                           screen says so (All Games list)
     // Showcase, Platform page, All Games grid and list all call this, so the
@@ -1311,13 +1530,46 @@ id: root
         if (!game) return;
         if (isPegasusImport(game)) { launchGame(game); return; }
         if (isAppGame(game)) {
-            if (settings.AddedAppLaunch === "Details Page") gameDetails(game);
+            if (addedAppLaunchLive === "Details Page") gameDetails(game);
             else                                           launchGame(game);
             return;
         }
         if (gamesOpenDetails) gameDetails(game); else launchGame(game);
     }
     function openGame(game) { activateGame(game, true); }
+
+    // ── Global library search (Home nav + App Drawer) ─────────────────────
+    // One shared LibrarySearch instance (librarySearch, beside the drawer).
+    // Choosing a result goes through openGame(): Game Details for games, the
+    // usual app rule for apps. B back out of that lands on the results again:
+    // searchReturnDepth records the back-stack depth the search was opened
+    // at, and previousScreen() reopens the results once the stack unwinds to
+    // exactly that depth. -1 = not armed. The two places that rewrite the
+    // stack wholesale (drawer Home, RA launch) disarm it.
+    property int searchReturnDepth: -1
+    property var searchPrevFocus: null
+    // Index build waits until a few seconds after startup so it never
+    // competes with the first Showcase load; opening sooner builds on demand.
+    property bool searchWarmupGo: false
+    Timer { interval: 5000; running: true; repeat: false; onTriggered: searchWarmupGo = true }
+
+    // mode "ra": opened from the RA overview (X). Results go to the RA
+    // lookup instead of Game Details, and coming back to the overview
+    // reopens them (raSearchReturn, see achievementsScreenFromGame()).
+    property string librarySearchMode: "global"
+    property bool raSearchReturn: false
+    function openLibrarySearch(mode) {
+        playAccept();
+        librarySearchMode = (mode === "ra") ? "ra" : "global";
+        searchReturnDepth = -1;
+        raSearchReturn = false;
+        searchPrevFocus = Window.activeFocusItem;
+        librarySearch.openSearch();
+    }
+    function reopenLibrarySearch() {
+        searchPrevFocus = Window.activeFocusItem;
+        librarySearch.reopenResults();
+    }
 
     function gameDetailsFromDiscover(game) {
         playAccept();
@@ -1376,9 +1628,21 @@ id: root
         if (api.memory.has('From App Drawer'))
             api.memory.unset('From App Drawer');
 
+        // B on the RA lookup page after an RA search pick. That entry doesn't
+        // push onto lastState (see raEntryScreenFromSearch), so popping here
+        // would leave RA altogether — go back to the overview's results.
+        if (raSearchReturn && state === "raentryscreen") {
+            raSearchReturn = false;
+            root.state = "achievementsscreen";
+            reopenLibrarySearch();
+            return;
+        }
+        raSearchReturn = false;     // any other Back leaves the search behind
+
         // Guard against an empty stack. Reading past the end sets state to
         // undefined, which leaves the screen stuck exactly where it was.
         if (lastState.length === 0) {
+            searchReturnDepth = -1;
             state = "showcasescreen";
             return;
         }
@@ -1388,6 +1652,14 @@ id: root
 
         state = lastState[lastState.length - 1];
         lastState.pop();
+
+        // Back at the screen the global search was opened from: show its
+        // results again. Anything shallower means the stack was cut past it.
+        if (searchReturnDepth >= 0 && lastState.length <= searchReturnDepth) {
+            var reopen = (lastState.length === searchReturnDepth);
+            searchReturnDepth = -1;
+            if (reopen) reopenLibrarySearch();
+        }
     }
 
     function popLastGame() {
@@ -1399,6 +1671,7 @@ id: root
 
     // Set default state to the platform screen
     Component.onCompleted: { 
+        rebuildHomeHide();      // first fill, before the Home rows filter
         root.state = "showcasescreen";
 
         if (fromGame)
@@ -1577,7 +1850,7 @@ id: root
     // for devices where this app-state signal doesn't fire.
     Connections {
         target: Qt.application
-        onStateChanged: {
+        function onStateChanged() {
             if (root.state !== "launchgamescreen") return;
             if (Qt.application.state !== Qt.ApplicationActive)
                 root.launchSuspended = true;
@@ -1793,6 +2066,13 @@ id: root
     readonly property int mouseBackButtons: Qt.BackButton | Qt.RightButton
 
     function mouseBack() {
+        // Global search mirrors B: results -> back to the keyboard, keyboard -> close.
+        if (librarySearch.open) {
+            playBack();
+            if (librarySearch.showingResults) librarySearch.resetSearch();
+            else                              librarySearch.closeSearch();
+            return;
+        }
         if (appDrawer.open) { appDrawer.closeDrawer(); return; }
         if (state === "launchgamescreen") { previousScreen(); return; }
         // Otherwise hand it to the screen showing, if it knows what B means.
@@ -1862,6 +2142,10 @@ id: root
         // drawer shows is exactly the one hidden from the row — they can't
         // drift apart.
         collectionMatch: root.appsCollectionName
+        // Every Android source: "Android" plus your android / androidapps /
+        // androidgames collections. An explicit list wins over collectionMatch,
+        // which stays only as the fallback when none of them exist.
+        collections: drawerCollections
         title: "My games & apps"
 
         // Reuses the Discover launch path, which deliberately does NOT push
@@ -1873,7 +2157,11 @@ id: root
         // (Home, Library, Discover, RA, Settings): the destination plays its
         // own accept, so only the slide is added here — a back sound as well
         // was landing on top of that accept.
-        onClosed: { if (byUser) playBack(); drawerCloseChime.restart(); }
+        onClosed: {
+            if (byUser) playBack();
+            drawerCloseChime.restart();
+            if (homeHidePending) homeHideAfterDrawer.restart();
+        }
 
         // Home resets the back stack rather than pushing onto it — otherwise
         // backing out of the Showcase would return to whatever screen you were
@@ -1884,6 +2172,8 @@ id: root
             if (root.state === "showcasescreen") return;
             playAccept();
             lastState = ["showcasescreen"];
+            searchReturnDepth = -1;     // stack rewritten: no search to return to
+            raSearchReturn = false;
             root.state = "showcasescreen";
         }
         // Library pushes normally, so Back returns where you came from.
@@ -1901,6 +2191,10 @@ id: root
             if (root.state === "achievementsscreen") return;
             achievementsScreen();
         }
+        // Search opens the shared overlay on top of whatever screen is
+        // showing; the drawer has already handed focus back by this point,
+        // so the search captures the right item to return to.
+        onNavSearch: openLibrarySearch()
         onNavSettings: {
             if (root.state === "settingsscreen") return;
             settingsScreen();
@@ -1912,6 +2206,43 @@ id: root
             var s = root.state;
             root.state = "";
             root.state = s;
+        }
+    }
+
+    // Global library search. Above the drawer (500) and its blur (499) so it
+    // can be opened from a drawer tile; below the mouse-back catcher (1000).
+    // Focus goes back to whatever had it, the same way the drawer does it,
+    // with the same state re-apply as the fallback.
+    LibrarySearch {
+    id: librarySearch
+
+        z: 600
+        title: librarySearchMode === "ra" ? "SEARCH LIBRARY" : "SEARCH"
+        warmup: searchWarmupGo
+        onClosed: {
+            if (searchPrevFocus) {
+                searchPrevFocus.forceActiveFocus();
+            } else {
+                var s = root.state;
+                root.state = "";
+                root.state = s;
+            }
+            searchPrevFocus = null;
+        }
+        onChosen: {
+            // RA mode: hand the game to the RA lookup, same as the old
+            // page-level search; the way back is raSearchReturn.
+            if (librarySearchMode === "ra") {
+                currentGame = game;
+                raSearchReturn = true;
+                raEntryScreenFromSearch();
+                return;
+            }
+            // From Game Details itself the page just swaps games (gameDetails
+            // doesn't push), so there's no separate screen to come back to.
+            if (root.state !== "gameviewscreen")
+                searchReturnDepth = lastState.length;
+            openGame(game);
         }
     }
 
@@ -1937,6 +2268,7 @@ id: root
 
         if (appDrawerKeys.indexOf(event.key) === -1) return;
         event.accepted = true;
+        if (librarySearch.open) return;   // no drawer over an open search
         if (appDrawer.open) {
             appDrawer.closeDrawer();
         } else {
