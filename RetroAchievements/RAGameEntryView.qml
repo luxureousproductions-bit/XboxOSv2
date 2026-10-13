@@ -167,13 +167,12 @@ id: root
                     font.pixelSize: fpx(24)
                     font.bold: true
                 }
-                Text {
-                    text: cheevosData.pointsText
+                // Points, alternating with Rank # when RA has one.
+                RAStatLine {
                     color: theme.text
-                    font.family: bodyFont.name
-                    font.pixelSize: fpx(15)
+                    fontFamily: bodyFont.name
+                    pixelSize: fpx(15)
                     opacity: 0.65
-                    visible: cheevosData.raUserName !== ""
                 }
                 Text {
                     text: cheevosData.memberText
