@@ -2217,7 +2217,7 @@ id: root
     id: librarySearch
 
         z: 600
-        title: librarySearchMode === "ra" ? "SEARCH LIBRARY" : "SEARCH"
+        title: librarySearchMode === "ra" ? "RA SEARCH" : "SEARCH LIBRARY"
         warmup: searchWarmupGo
         onClosed: {
             if (searchPrevFocus) {
