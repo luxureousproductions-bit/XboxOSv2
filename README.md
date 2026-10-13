@@ -25,7 +25,7 @@
 
 
 - Crossfade background art, or use your own custom background:
-    - Place Background.png to assests/images/backgrounds
+    - Place background.png to assests/images/backgrounds
   
 <img width="1920" height="1080" alt="1000774695" src="https://github.com/user-attachments/assets/cb16cc0e-4c3e-4b65-a2b7-08297a9e93a3" />
 
