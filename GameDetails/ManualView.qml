@@ -10,9 +10,12 @@
 // Modes (see the mockups): full page (default), zoom (A) where the page fills
 // the width and up/down pans, two pages (Y) paired like the printed booklet
 // (cover alone, then 2-3, 4-5, ...), and a page overview grid (X).
+// Y bookmarks the current page, LB/RB jump between bookmarks, the triggers
+// (LT/RT) toggle two pages. Bookmarks are kept per manual in api.memory.
+// Opening plays a short animation: the box art grows and fades into page 1.
 // Manuals scanned as two-page spreads (wide pages) are detected and shown
 // edge to edge, with the two-page mode turned off.
-// Left/right turn pages, LB/RB jump 10, B closes. Always opens on page 1.
+// Left/right turn pages, B closes. Always opens on page 1.
 
 import QtQuick 2.15
 
@@ -28,6 +31,10 @@ id: root
     property bool zoomed: false
     property bool spread: false
     property bool overview: false
+    property bool overviewBookmarks: false      // overview shows bookmarks only
+    property var bookmarks: []                  // sorted page indices
+    property string coverArt: ""
+    property string toastText: ""
 
     // Layout: header on top, progress bar + the theme's help bar at the bottom
     readonly property real headerH: vpx(72)
@@ -62,9 +69,70 @@ id: root
         if (!spread) return page - 1;
         return page <= 1 ? 0 : page - 2;
     }
-    function jump(delta) {
-        var target = Math.max(0, Math.min(pageCount - 1, page + delta));
+    // --- Bookmarks ---
+    function bookmarkKey() { return "Manual bookmarks - " + pdfPath; }
+
+    function loadBookmarks() {
+        var list = [];
+        if (api.memory.has(bookmarkKey())) {
+            try { list = JSON.parse(api.memory.get(bookmarkKey())); } catch (err) { list = []; }
+        }
+        bookmarks = Array.isArray(list) ? list.filter(function(i) { return i >= 0 && i < pageCount; }) : [];
+    }
+
+    function isBookmarked(index) { return bookmarks.indexOf(index) >= 0; }
+
+    function toggleBookmark() {
+        if (pageCount <= 0) return;
+        var list = bookmarks.slice();
+        var at = list.indexOf(page);
+        if (at >= 0) {
+            list.splice(at, 1);
+            playBack();
+            showToast("Bookmark removed");
+        } else {
+            list.push(page);
+            list.sort(function(a, b) { return a - b; });
+            playToggle();
+            showToast("Bookmarked page " + (page + 1));
+        }
+        bookmarks = list;
+        api.memory.set(bookmarkKey(), JSON.stringify(list));
+    }
+
+    // In two-page mode the right-hand page counts as part of the current view
+    function jumpToBookmark(forward) {
+        if (bookmarks.length === 0) { showToast("No bookmarks yet"); return; }
+        var last = hasRightPage ? page + 1 : page;
+        var target = -1;
+        for (var i = 0; i < bookmarks.length; i++) {
+            if (forward && bookmarks[i] > last) { target = bookmarks[i]; break; }
+            if (!forward && bookmarks[i] < page) target = bookmarks[i];
+        }
+        if (target < 0) { showToast(forward ? "No more bookmarks ahead" : "No bookmarks before this page"); return; }
         goTo(spread ? spreadStart(target) : target);
+    }
+
+    function showToast(text) {
+        toastText = text;
+        toastTimer.restart();
+    }
+
+    // Pages listed in the overview: all of them, or bookmarks only
+    readonly property var overviewPages: {
+        if (!overview) return [];
+        if (overviewBookmarks) return bookmarks.slice();
+        var all = [];
+        for (var i = 0; i < pageCount; i++) all.push(i);
+        return all;
+    }
+
+    function overviewIndexOf(index) {
+        var list = overviewPages;
+        for (var i = 0; i < list.length; i++) {
+            if (list[i] >= index) return i;
+        }
+        return Math.max(0, list.length - 1);
     }
 
     function pageUrl(index) {
@@ -74,17 +142,63 @@ id: root
     }
 
     // Called by GameView before showing the view
-    function open(path, title) {
+    function open(path, title, art) {
         pdfPath = path;
         gameTitle = title;
+        coverArt = art || "";
         pageCount = api.pdfPageCount(path);
         zoomed = false;
         spread = false;
         overview = false;
+        overviewBookmarks = false;
+        toastText = "";
         page = 0;
         zoomFlick.contentY = 0;
+        loadBookmarks();
         updateHelp();
+        startIntro();
     }
+
+    // --- Opening animation: box art grows in, then fades into page 1 ---
+    property bool introRunning: false
+    property bool introGrown: false
+
+    function startIntro() {
+        introFadeOut.stop();
+        introGrow.stop();
+        introGrown = false;
+        if (coverArt === "" || pageCount <= 0) {
+            introRunning = false;
+            introCover.opacity = 0;
+            return;
+        }
+        introRunning = true;
+        introCover.opacity = 0;
+        introCover.scale = 0.6;
+        introGrow.start();
+    }
+
+    function introGrowDone() {
+        introGrown = true;
+        introFadeIfReady();
+    }
+
+    function introFadeIfReady() {
+        if (introRunning && introGrown && !introFadeOut.running
+                && (leftPage.status === Image.Ready || leftPage.status === Image.Error))
+            introFadeOut.start();
+    }
+
+    function skipIntro() {
+        if (!introRunning) return;
+        introGrow.stop();
+        introFadeOut.stop();
+        introCover.opacity = 0;
+        introRunning = false;
+    }
+
+    onPageChanged: updateHelp()
+    onBookmarksChanged: updateHelp()
 
     function goTo(index) {
         if (pageCount <= 0) return;
@@ -114,14 +228,27 @@ id: root
 
     function openOverview() {
         playToggle();
+        overviewBookmarks = false;
         overview = true;
-        pageGrid.currentIndex = page;
-        pageGrid.positionViewAtIndex(page, GridView.Center);
+        pageGrid.currentIndex = overviewIndexOf(page);
+        pageGrid.positionViewAtIndex(pageGrid.currentIndex, GridView.Center);
         updateHelp();
     }
 
+    function toggleOverviewBookmarks() {
+        if (!overviewBookmarks && bookmarks.length === 0) { showToast("No bookmarks yet"); return; }
+        playToggle();
+        var current = overviewPages[pageGrid.currentIndex];
+        overviewBookmarks = !overviewBookmarks;
+        pageGrid.currentIndex = overviewIndexOf(current === undefined ? page : current);
+        pageGrid.positionViewAtIndex(pageGrid.currentIndex, GridView.Center);
+        updateHelp();
+    }
+
+    // pick: a page index, or -1 to go back without moving
     function closeOverview(pick) {
         overview = false;
+        overviewBookmarks = false;
         if (pick >= 0) goTo(spread ? spreadStart(pick) : pick);
         else playBack();
         updateHelp();
@@ -150,6 +277,8 @@ id: root
     Row {
     id: pageRow
         visible: !zoomed
+        // Hidden while the art grows in, then cross-fades in as the art fades out
+        opacity: introRunning ? (introGrown ? 1 - introCover.opacity : 0) : 1
         anchors {
             horizontalCenter: parent.horizontalCenter
             top: parent.top; topMargin: wideLayout ? 0 : headerH
@@ -166,6 +295,12 @@ id: root
             anchors.verticalCenter: parent.verticalCenter
             asynchronous: true
             smooth: true
+            onStatusChanged: introFadeIfReady()
+
+            Ribbon {
+                anchors { right: parent.right; rightMargin: vpx(18); top: parent.top; topMargin: -vpx(4) }
+                visible: leftPage.status === Image.Ready && isBookmarked(page)
+            }
         }
         Image {
         id: rightPage
@@ -177,7 +312,47 @@ id: root
             anchors.verticalCenter: parent.verticalCenter
             asynchronous: true
             smooth: true
+
+            Ribbon {
+                anchors { right: parent.right; rightMargin: vpx(18); top: parent.top; topMargin: -vpx(4) }
+                visible: rightPage.status === Image.Ready && isBookmarked(page + 1)
+            }
         }
+    }
+
+    // Opening animation: the box art, in the page area
+    Image {
+    id: introCover
+        anchors {
+            horizontalCenter: parent.horizontalCenter
+            top: parent.top; topMargin: headerH
+        }
+        width: availW
+        height: availH
+        visible: introRunning
+        source: coverArt
+        sourceSize: Qt.size(availW, availH)
+        fillMode: Image.PreserveAspectFit
+        asynchronous: true
+        smooth: true
+        opacity: 0
+
+        // Art that fails to load: skip straight to the page
+        onStatusChanged: if (status === Image.Error) skipIntro()
+    }
+    SequentialAnimation {
+    id: introGrow
+        ParallelAnimation {
+            NumberAnimation { target: introCover; property: "opacity"; to: 1; duration: 220; easing.type: Easing.OutCubic }
+            NumberAnimation { target: introCover; property: "scale"; to: 1; duration: 320; easing.type: Easing.OutBack; easing.overshoot: 1.2 }
+        }
+        ScriptAction { script: introGrowDone() }
+    }
+    SequentialAnimation {
+    id: introFadeOut
+        PauseAnimation { duration: 120 }
+        NumberAnimation { target: introCover; property: "opacity"; to: 0; duration: 260; easing.type: Easing.InOutQuad }
+        ScriptAction { script: introRunning = false }
     }
 
     // --- Zoom: page fills the width, up/down pans ---
@@ -209,6 +384,12 @@ id: root
             MouseArea {
                 anchors.fill: parent
                 onClicked: toggleZoom()
+            }
+
+            Ribbon {
+                anchors { right: parent.right; rightMargin: vpx(24); top: parent.top; topMargin: -vpx(4) }
+                width: vpx(34)
+                visible: zoomPage.status === Image.Ready && isBookmarked(page)
             }
         }
     }
@@ -320,7 +501,7 @@ id: root
             cellWidth: width / columns
             cellHeight: cellWidth * 1.4
             cacheBuffer: cellHeight * 2
-            model: overview ? pageCount : 0
+            model: overviewPages
             keyNavigationWraps: false
             highlightMoveDuration: 120
 
@@ -328,6 +509,7 @@ id: root
                 width: pageGrid.cellWidth
                 height: pageGrid.cellHeight
                 readonly property bool isCurrent: GridView.isCurrentItem
+                readonly property int pageIndex: modelData
 
                 Rectangle {
                 id: thumbFrame
@@ -346,8 +528,13 @@ id: root
                         anchors.margins: vpx(5)
                         fillMode: Image.PreserveAspectFit
                         asynchronous: true
-                        source: pageUrl(index)
+                        source: pageUrl(pageIndex)
                         sourceSize: Qt.size(Math.round(width), Math.round(height))
+                    }
+                    Ribbon {
+                        anchors { right: parent.right; rightMargin: vpx(10); top: parent.top; topMargin: -vpx(2) }
+                        width: vpx(16)
+                        visible: isBookmarked(pageIndex)
                     }
                 }
                 Text {
@@ -355,13 +542,13 @@ id: root
                         horizontalCenter: parent.horizontalCenter
                         top: thumbFrame.bottom; topMargin: vpx(8)
                     }
-                    text: index + 1
+                    text: pageIndex + 1
                     color: isCurrent ? theme.accent : "#bbbbbb"
                     font { family: titleFont.name; pixelSize: vpx(15) }
                 }
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: closeOverview(index)
+                    onClicked: closeOverview(pageIndex)
                 }
             }
         }
@@ -381,7 +568,8 @@ id: root
         }
         width: availW * 0.7
         Text {
-            text: overview ? "MANUAL · PAGES" : (zoomed ? "MANUAL · ZOOM" : "MANUAL")
+            text: overview ? (overviewBookmarks ? "MANUAL · BOOKMARKS" : "MANUAL · PAGES")
+                           : (zoomed ? "MANUAL · ZOOM" : "MANUAL")
             color: "#9a9a9a"
             font { family: bodyFont.name; pixelSize: vpx(13); letterSpacing: vpx(1) }
         }
@@ -400,7 +588,7 @@ id: root
         }
         visible: pageCount > 0
         Text {
-            text: overview ? (pageGrid.currentIndex + 1)
+            text: overview ? ((overviewPages[pageGrid.currentIndex] !== undefined ? overviewPages[pageGrid.currentIndex] : page) + 1)
                            : (hasRightPage ? (page + 1) + "–" + (page + 2) : (page + 1))
             color: "white"
             font { family: titleFont.name; pixelSize: vpx(20) }
@@ -438,6 +626,55 @@ id: root
             color: theme.accent
             Behavior on width { NumberAnimation { duration: 150 } }
         }
+
+        // Where the bookmarks are
+        Repeater {
+            model: pageCount > 0 ? bookmarks : []
+            Rectangle {
+                width: vpx(4)
+                height: vpx(14)
+                radius: width / 2
+                anchors.verticalCenter: parent.verticalCenter
+                x: progressTrack.width * (modelData + 0.5) / pageCount - width / 2
+                color: theme.accent
+                border { width: vpx(1); color: "black" }
+            }
+        }
+    }
+
+    // Short confirmation, under the title
+    Rectangle {
+    id: toast
+        anchors {
+            horizontalCenter: parent.horizontalCenter
+            top: parent.top; topMargin: headerH + vpx(10)
+        }
+        width: toastLabel.implicitWidth + vpx(40)
+        height: vpx(42)
+        radius: vpx(6)
+        color: "#1f1f1f"
+        border { width: vpx(1); color: "#333333" }
+        opacity: toastTimer.running ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 150 } }
+
+        Rectangle {
+            anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+            width: vpx(4)
+            radius: vpx(2)
+            color: theme.accent
+        }
+        Text {
+        id: toastLabel
+            anchors.centerIn: parent
+            text: toastText
+            color: "white"
+            font { family: bodyFont.name; pixelSize: vpx(16) }
+        }
+    }
+    Timer {
+    id: toastTimer
+        interval: 1600
     }
 
     // Touch: tap the left/right third to turn pages, the middle to zoom
@@ -460,12 +697,20 @@ id: root
         event.accepted = true;
         if (appDrawerKeys.indexOf(event.key) >= 0) return;   // theme-root list
 
+        // Any button finishes the opening animation
+        if (introRunning) skipIntro();
+
         if (overview) {
             if (event.isAutoRepeat && !(event.key === Qt.Key_Left || event.key === Qt.Key_Right
                                         || event.key === Qt.Key_Up || event.key === Qt.Key_Down))
                 return;
             if (api.keys.isCancel(event) || api.keys.isDetails(event)) { closeOverview(-1); return; }
-            if (api.keys.isAccept(event)) { closeOverview(pageGrid.currentIndex); return; }
+            if (api.keys.isFilters(event)) { toggleOverviewBookmarks(); return; }
+            if (api.keys.isAccept(event)) {
+                var picked = overviewPages[pageGrid.currentIndex];
+                closeOverview(picked === undefined ? -1 : picked);
+                return;
+            }
             var before = pageGrid.currentIndex;
             switch (event.key) {
                 case Qt.Key_Left:  pageGrid.moveCurrentIndexLeft(); break;
@@ -490,11 +735,15 @@ id: root
             return;
         }
         if (api.keys.isFilters(event)) {
+            if (!event.isAutoRepeat) toggleBookmark();
+            return;
+        }
+        if (api.keys.isPrevPage(event)) { if (!event.isAutoRepeat) jumpToBookmark(false); return; }
+        if (api.keys.isNextPage(event)) { if (!event.isAutoRepeat) jumpToBookmark(true); return; }
+        if (api.keys.isPageUp(event) || api.keys.isPageDown(event)) {
             if (!event.isAutoRepeat && pageCount > 1) toggleSpread();
             return;
         }
-        if (api.keys.isPrevPage(event)) { jump(-10); return; }
-        if (api.keys.isNextPage(event)) { jump(10); return; }
 
         switch (event.key) {
             case Qt.Key_Left:  goTo(prevIndex()); break;
@@ -514,13 +763,18 @@ id: root
         manualviewHelpModel.clear();
         manualviewHelpModel.append({ name: "Back", button: "cancel" });
         if (overview) {
+            if (bookmarks.length > 0)
+                manualviewHelpModel.append({ name: overviewBookmarks ? "All pages" : "Bookmarks", button: "filters" });
             manualviewHelpModel.append({ name: "Go to page", button: "accept" });
             return;
         }
         if (pageCount > 1)
             manualviewHelpModel.append({ name: "Pages", button: "details" });
+        manualviewHelpModel.append({ name: isBookmarked(page) ? "Remove bookmark" : "Bookmark", button: "filters" });
+        if (bookmarks.length > 0)
+            manualviewHelpModel.append({ name: "Bookmarks", button: "nextPage" });
         if (pageCount > 1 && !spreadScan)
-            manualviewHelpModel.append({ name: spread ? "One page" : "Two pages", button: "filters" });
+            manualviewHelpModel.append({ name: spread ? "One page" : "Two pages", button: "pageDown" });
         manualviewHelpModel.append({ name: zoomed ? "Fit page" : "Zoom", button: "accept" });
     }
 
