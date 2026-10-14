@@ -331,8 +331,6 @@ shortname: androidgames
 | **System background art** | `assets/images/systembackground/<system>.png` | Shown behind the Home page when a system tile is highlighted. `.png`, `.jpg`, `.jpeg` and `.webp` all work |
 | **System logos** | `assets/images/logospng/<shortname>.png` | Used on system tiles, headers, Discover and search results. Systems without a logo show their name instead |
 
-> **Tip:** System tiles show your **collection name** along the bottom on highlight (or always — *System tile titles → Always*). If you have two collections for one system (say, originals and English translations), give them different collection names but the same shortname, and they'll share the logo while staying easy to tell apart.
-
 ---
 
 ## Metadata & media
@@ -385,7 +383,6 @@ These are things the theme doesn't show a button prompt for. You'll also find th
 
 **Customizing**
 - **Your own system backgrounds.** Put an image in `assets/images/systembackground/`, named after the system's shortname (for example `snes.png`). It shows behind the Home page when that system's tile is highlighted. `.png`, `.jpg`, `.jpeg` and `.webp` all work.
-- **Two collections, one system.** The collection name labels a system's tile, while the shortname picks its logo and background. Give two collections different names but the same shortname, and they share the art while staying easy to tell apart.
 
 ---
 
