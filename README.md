@@ -254,7 +254,7 @@ Every setting has a **More info** page — press **X** on any row for a plain-la
 
 | Page | What's in it |
 |---|---|
-| **General** | UI scale, High Quality Mode, launch screen delay, button help, mouse hover, background & accent colors (30+ each, plus Gradient), dimming and bottom fade |
+| **General** | UI scale, High Quality Mode, launch screen delay, button help, mouse hover, background & accent colors (30+ each), dimming and bottom fade |
 | **Home page** | Profile corner logo, hero art, system sort, games per row, background art, custom & dynamic backgrounds, opacity |
 | **Collections** | Content, tile shape, size and ratio for each of the six Home rows |
 | **Tiles** | Game & system titles, Tile Halo, favorite accent, highlight animation, game counter, video thumbnails, featured box |
