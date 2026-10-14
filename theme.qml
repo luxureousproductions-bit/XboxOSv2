@@ -380,7 +380,8 @@ id: root
             AllowThumbVideoAudio:          api.memory.has("Video thumbnail audio") ? api.memory.get("Video thumbnail audio") : "Yes",
             HideLogo:                      api.memory.has("Hide logo when thumbnail video plays") ? api.memory.get("Hide logo when thumbnail video plays") : "Yes",
             HideButtonHelp:                api.memory.has("Hide button help") ? api.memory.get("Hide button help") : "No",
-            ColorLayout:                   api.memory.has("Color Layout") ? api.memory.get("Color Layout") : "Lime",
+            // "Gradient" was removed as an option; a stale saved value falls back to the default.
+            ColorLayout:                   (api.memory.has("Color Layout") && api.memory.get("Color Layout") !== "Gradient") ? api.memory.get("Color Layout") : "Lime",
             MouseHover:                    api.memory.has("Enable mouse hover") ? api.memory.get("Enable mouse hover") : "No",
             AlwaysShowTitles:              api.memory.has("Always show titles") ? api.memory.get("Always show titles") : "No",
             AnimateHighlight:              api.memory.has("Animate highlight") ? api.memory.get("Animate highlight") : "No",
@@ -428,7 +429,7 @@ id: root
             ShowcaseCollection6_Size:      api.memory.has("Collection 6 - Size") ? api.memory.get("Collection 6 - Size") : "Large",
             ShowcaseCollection6_Ratio:     api.memory.has("Collection 6 - Ratio") ? api.memory.get("Collection 6 - Ratio") : "0.66",
             GridRatio:                     api.memory.has("Grid Ratio") ? api.memory.get("Grid Ratio") : "0.66",
-            ColorBackground:               api.memory.has("Color Background") ? api.memory.get("Color Background") : "Black",
+            ColorBackground:               (api.memory.has("Color Background") && api.memory.get("Color Background") !== "Gradient") ? api.memory.get("Color Background") : "Black",
             XboxLogo:                      api.memory.has("Xbox Logo") ? api.memory.get("Xbox Logo") : "Logo1",
             LogoColorMatch:                api.memory.has("Logo Color Match") ? api.memory.get("Logo Color Match") : "No",
             BoxArtStyle:                   api.memory.has("Box Art") ? api.memory.get("Box Art") : "3D",
@@ -1172,12 +1173,6 @@ id: root
             background    = "#a06070";
             gradientstart = "#00a06070";
             gradientend   = "#FFa06070";
-        } else if (settings.ColorBackground === "Gradient") {
-            // theme.main becomes transparent so the root-level Gradient Image shows through.
-            background    = "transparent";
-            gradientstart = "#00000000";
-            gradientend   = "#A0000000";
-            text          = "#ebebeb";
         } else if (settings.ColorBackground === "White") {
             background    = "#ebebeb";
             gradientstart = "#00ebebeb";
@@ -1265,8 +1260,6 @@ id: root
             case "Jade":          accent = "#2a8a5a"; break;
             case "Onyx":          accent = "#353535"; break;
             case "White":         accent = "#e8e8e8"; break;
-            // Special: image-based palette using assets/images/colorspng/Gradient.png
-            case "Gradient":      accent = "#c060c0"; break;
             default:              accent = "#107C10"; break;
         }
         return {
@@ -1671,6 +1664,14 @@ id: root
 
     // Set default state to the platform screen
     Component.onCompleted: { 
+        // "Gradient" is no longer a color option. Clear it if it was saved, so
+        // Settings shows the default color instead of the last one in the list.
+        ["Color Background", "Color Layout"].forEach(function(k) {
+            if (api.memory.has(k) && api.memory.get(k) === "Gradient") {
+                api.memory.unset(k);
+                api.memory.unset(k + "Index");
+            }
+        });
         rebuildHomeHide();      // first fill, before the Home rows filter
         root.state = "showcasescreen";
 
@@ -1731,22 +1732,6 @@ id: root
         anchors.fill: parent
         // Image { source: "assets/images/backgrounds/halo.jpg"; fillMode: Image.PreserveAspectFit; anchors.fill: parent;  opacity: 0.3 }
         color: theme.main
-    }
-
-    // ── Background gradient image ─────────────────────────────────────────
-    // Renders behind all screen Loaders (z: -1). Each screen's bg Rectangle has
-    // color: theme.main, which is "transparent" only when Gradient is selected,
-    // so this image shows through. Other ColorBackground choices render normally
-    // as solid colors and this Image is hidden.
-    Image {
-        id: bgGradient
-        anchors.fill: parent
-        source: "assets/images/colorspng/Gradient.png"
-        fillMode: Image.PreserveAspectCrop
-        visible: settings.ColorBackground === "Gradient"
-        asynchronous: true
-        smooth: true
-        z: -1
     }
 
     Loader  {
