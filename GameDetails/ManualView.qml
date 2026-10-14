@@ -7,17 +7,23 @@
 // api.pdfPageCount before ever showing this view, so on stock Pegasus the
 // Manual button simply never appears.
 //
-// Modes (see the mockups): full page (default), zoom (A) where the page fills
-// the width and up/down pans, two pages (Y) paired like the printed booklet
-// (cover alone, then 2-3, 4-5, ...), and a page overview grid (X).
-// Y bookmarks the current page, LB/RB jump between bookmarks, the triggers
-// (LT/RT) toggle two pages. Bookmarks are kept per manual in api.memory.
-// Opening plays a short animation: the box art grows and fades into page 1.
+// Controls:
+//   A  zoom: the page fills the width, up/down pans
+//   X  bookmark / un-bookmark the page (kept per manual in api.memory)
+//   Y  page overview grid (in the overview: X = bookmarks only)
+//   B  back
+//   LB one page / two pages, paired like the printed booklet
+//      (cover alone, then 2-3, 4-5, ...)
+//   RB next bookmark (wraps round to the first)
+//   LT/RT  5 pages back / forward (not shown in any prompt)
+//   left/right turn pages
+// LB and RB have their own prompts in the header, either side of centre;
+// the help bar shows A, X, Y, B in the theme's usual order.
 // Manuals scanned as two-page spreads (wide pages) are detected and shown
-// edge to edge, with the two-page mode turned off.
-// Left/right turn pages, B closes. Always opens on page 1.
+// edge to edge, with the two-page mode turned off. Always opens on page 1.
 
 import QtQuick 2.15
+import "../utils.js" as Utils
 
 FocusScope {
 id: root
@@ -33,7 +39,6 @@ id: root
     property bool overview: false
     property bool overviewBookmarks: false      // overview shows bookmarks only
     property var bookmarks: []                  // sorted page indices
-    property string coverArt: ""
     property string toastText: ""
 
     // Layout: header on top, progress bar + the theme's help bar at the bottom
@@ -100,16 +105,24 @@ id: root
         api.memory.set(bookmarkKey(), JSON.stringify(list));
     }
 
-    // In two-page mode the right-hand page counts as part of the current view
-    function jumpToBookmark(forward) {
+    // RB: next bookmark after the current view, wrapping round to the first.
+    // In two-page mode the right-hand page counts as part of the current view.
+    function nextBookmark() {
         if (bookmarks.length === 0) { showToast("No bookmarks yet"); return; }
         var last = hasRightPage ? page + 1 : page;
-        var target = -1;
+        var target = bookmarks[0];
         for (var i = 0; i < bookmarks.length; i++) {
-            if (forward && bookmarks[i] > last) { target = bookmarks[i]; break; }
-            if (!forward && bookmarks[i] < page) target = bookmarks[i];
+            if (bookmarks[i] > last) { target = bookmarks[i]; break; }
         }
-        if (target < 0) { showToast(forward ? "No more bookmarks ahead" : "No bookmarks before this page"); return; }
+        var dest = spread ? spreadStart(target) : target;
+        if (dest === page) { showToast("No other bookmarks"); return; }
+        goTo(dest);
+    }
+
+    // LT/RT: skip a few pages, staying on booklet pairs in two-page mode
+    function jump(delta) {
+        if (pageCount <= 0) return;
+        var target = Math.max(0, Math.min(pageCount - 1, page + delta));
         goTo(spread ? spreadStart(target) : target);
     }
 
@@ -142,10 +155,9 @@ id: root
     }
 
     // Called by GameView before showing the view
-    function open(path, title, art) {
+    function open(path, title) {
         pdfPath = path;
         gameTitle = title;
-        coverArt = art || "";
         pageCount = api.pdfPageCount(path);
         zoomed = false;
         spread = false;
@@ -156,45 +168,6 @@ id: root
         zoomFlick.contentY = 0;
         loadBookmarks();
         updateHelp();
-        startIntro();
-    }
-
-    // --- Opening animation: box art grows in, then fades into page 1 ---
-    property bool introRunning: false
-    property bool introGrown: false
-
-    function startIntro() {
-        introFadeOut.stop();
-        introGrow.stop();
-        introGrown = false;
-        if (coverArt === "" || pageCount <= 0) {
-            introRunning = false;
-            introCover.opacity = 0;
-            return;
-        }
-        introRunning = true;
-        introCover.opacity = 0;
-        introCover.scale = 0.6;
-        introGrow.start();
-    }
-
-    function introGrowDone() {
-        introGrown = true;
-        introFadeIfReady();
-    }
-
-    function introFadeIfReady() {
-        if (introRunning && introGrown && !introFadeOut.running
-                && (leftPage.status === Image.Ready || leftPage.status === Image.Error))
-            introFadeOut.start();
-    }
-
-    function skipIntro() {
-        if (!introRunning) return;
-        introGrow.stop();
-        introFadeOut.stop();
-        introCover.opacity = 0;
-        introRunning = false;
     }
 
     onPageChanged: updateHelp()
@@ -277,8 +250,6 @@ id: root
     Row {
     id: pageRow
         visible: !zoomed
-        // Hidden while the art grows in, then cross-fades in as the art fades out
-        opacity: introRunning ? (introGrown ? 1 - introCover.opacity : 0) : 1
         anchors {
             horizontalCenter: parent.horizontalCenter
             top: parent.top; topMargin: wideLayout ? 0 : headerH
@@ -295,7 +266,6 @@ id: root
             anchors.verticalCenter: parent.verticalCenter
             asynchronous: true
             smooth: true
-            onStatusChanged: introFadeIfReady()
 
             Ribbon {
                 anchors { right: parent.right; rightMargin: vpx(18); top: parent.top; topMargin: -vpx(4) }
@@ -318,41 +288,6 @@ id: root
                 visible: rightPage.status === Image.Ready && isBookmarked(page + 1)
             }
         }
-    }
-
-    // Opening animation: the box art, in the page area
-    Image {
-    id: introCover
-        anchors {
-            horizontalCenter: parent.horizontalCenter
-            top: parent.top; topMargin: headerH
-        }
-        width: availW
-        height: availH
-        visible: introRunning
-        source: coverArt
-        sourceSize: Qt.size(availW, availH)
-        fillMode: Image.PreserveAspectFit
-        asynchronous: true
-        smooth: true
-        opacity: 0
-
-        // Art that fails to load: skip straight to the page
-        onStatusChanged: if (status === Image.Error) skipIntro()
-    }
-    SequentialAnimation {
-    id: introGrow
-        ParallelAnimation {
-            NumberAnimation { target: introCover; property: "opacity"; to: 1; duration: 220; easing.type: Easing.OutCubic }
-            NumberAnimation { target: introCover; property: "scale"; to: 1; duration: 320; easing.type: Easing.OutBack; easing.overshoot: 1.2 }
-        }
-        ScriptAction { script: introGrowDone() }
-    }
-    SequentialAnimation {
-    id: introFadeOut
-        PauseAnimation { duration: 120 }
-        NumberAnimation { target: introCover; property: "opacity"; to: 0; duration: 260; easing.type: Easing.InOutQuad }
-        ScriptAction { script: introRunning = false }
     }
 
     // --- Zoom: page fills the width, up/down pans ---
@@ -554,7 +489,61 @@ id: root
         }
     }
 
-    // Header: title on the left, page counter on the right
+    // Header: title on the left, page counter on the right, and the LB/RB
+    // prompts either side of centre (same icons as the help bar)
+    readonly property real shoulderOffset: width * 0.17
+
+    Row {
+    id: lbPrompt
+        anchors {
+            horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -shoulderOffset
+            verticalCenter: parent.top; verticalCenterOffset: headerH / 2
+        }
+        z: 1
+        spacing: vpx(8)
+        visible: !overview && pageCount > 1 && !spreadScan
+
+        Image {
+            anchors.verticalCenter: parent.verticalCenter
+            source: "../assets/images/controller/" + Utils.processButtonArt("prevPage") + ".png"
+            width: vpx(30); height: vpx(30)
+            sourceSize { width: Math.round(vpx(30) * 2); height: Math.round(vpx(30) * 2) }
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+        }
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: spread ? "One page" : "Two pages"
+            color: "white"
+            font { family: subtitleFont.name; pixelSize: fpx(16) }
+        }
+    }
+    Row {
+    id: rbPrompt
+        anchors {
+            horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: shoulderOffset
+            verticalCenter: parent.top; verticalCenterOffset: headerH / 2
+        }
+        z: 1
+        spacing: vpx(8)
+        visible: !overview && bookmarks.length > 0
+
+        Image {
+            anchors.verticalCenter: parent.verticalCenter
+            source: "../assets/images/controller/" + Utils.processButtonArt("nextPage") + ".png"
+            width: vpx(30); height: vpx(30)
+            sourceSize { width: Math.round(vpx(30) * 2); height: Math.round(vpx(30) * 2) }
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+        }
+        Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: "Jump to bookmark"
+            color: "white"
+            font { family: subtitleFont.name; pixelSize: fpx(16) }
+        }
+    }
+
     Rectangle {
         anchors { left: parent.left; right: parent.right; top: parent.top }
         height: headerH
@@ -566,7 +555,8 @@ id: root
             left: parent.left; leftMargin: sideMargin
             verticalCenter: parent.top; verticalCenterOffset: headerH / 2
         }
-        width: availW * 0.7
+        // Up to the LB prompt
+        width: Math.max(vpx(160), root.width / 2 - shoulderOffset - vpx(120) - sideMargin)
         Text {
             text: overview ? (overviewBookmarks ? "MANUAL · BOOKMARKS" : "MANUAL · PAGES")
                            : (zoomed ? "MANUAL · ZOOM" : "MANUAL")
@@ -697,15 +687,12 @@ id: root
         event.accepted = true;
         if (appDrawerKeys.indexOf(event.key) >= 0) return;   // theme-root list
 
-        // Any button finishes the opening animation
-        if (introRunning) skipIntro();
-
         if (overview) {
             if (event.isAutoRepeat && !(event.key === Qt.Key_Left || event.key === Qt.Key_Right
                                         || event.key === Qt.Key_Up || event.key === Qt.Key_Down))
                 return;
-            if (api.keys.isCancel(event) || api.keys.isDetails(event)) { closeOverview(-1); return; }
-            if (api.keys.isFilters(event)) { toggleOverviewBookmarks(); return; }
+            if (api.keys.isCancel(event) || api.keys.isFilters(event)) { closeOverview(-1); return; }
+            if (api.keys.isDetails(event)) { toggleOverviewBookmarks(); return; }
             if (api.keys.isAccept(event)) {
                 var picked = overviewPages[pageGrid.currentIndex];
                 closeOverview(picked === undefined ? -1 : picked);
@@ -726,24 +713,26 @@ id: root
             if (!event.isAutoRepeat) close();
             return;
         }
-        if (api.keys.isDetails(event)) {
-            if (!event.isAutoRepeat && pageCount > 1) openOverview();
-            return;
-        }
         if (api.keys.isAccept(event)) {
             if (!event.isAutoRepeat && pageCount > 0) toggleZoom();
             return;
         }
-        if (api.keys.isFilters(event)) {
+        if (api.keys.isDetails(event)) {
             if (!event.isAutoRepeat) toggleBookmark();
             return;
         }
-        if (api.keys.isPrevPage(event)) { if (!event.isAutoRepeat) jumpToBookmark(false); return; }
-        if (api.keys.isNextPage(event)) { if (!event.isAutoRepeat) jumpToBookmark(true); return; }
-        if (api.keys.isPageUp(event) || api.keys.isPageDown(event)) {
+        if (api.keys.isFilters(event)) {
+            if (!event.isAutoRepeat && pageCount > 1) openOverview();
+            return;
+        }
+        if (api.keys.isPrevPage(event)) {
             if (!event.isAutoRepeat && pageCount > 1) toggleSpread();
             return;
         }
+        if (api.keys.isNextPage(event)) { if (!event.isAutoRepeat) nextBookmark(); return; }
+        // Triggers: 5 pages at a time, holding repeats
+        if (api.keys.isPageUp(event))   { jump(-5); return; }
+        if (api.keys.isPageDown(event)) { jump(5); return; }
 
         switch (event.key) {
             case Qt.Key_Left:  goTo(prevIndex()); break;
@@ -759,22 +748,21 @@ id: root
         id: manualviewHelpModel
     }
 
+    // The help bar lays its model out right to left, so the entries go in
+    // as B, Y, X, A to read A, X, Y, B on screen like the rest of the theme.
+    // LB/RB have their own prompts in the header; LT/RT are never shown.
     function updateHelp() {
         manualviewHelpModel.clear();
         manualviewHelpModel.append({ name: "Back", button: "cancel" });
         if (overview) {
             if (bookmarks.length > 0)
-                manualviewHelpModel.append({ name: overviewBookmarks ? "All pages" : "Bookmarks", button: "filters" });
+                manualviewHelpModel.append({ name: overviewBookmarks ? "All pages" : "Bookmarks", button: "details" });
             manualviewHelpModel.append({ name: "Go to page", button: "accept" });
             return;
         }
         if (pageCount > 1)
-            manualviewHelpModel.append({ name: "Pages", button: "details" });
-        manualviewHelpModel.append({ name: isBookmarked(page) ? "Remove bookmark" : "Bookmark", button: "filters" });
-        if (bookmarks.length > 0)
-            manualviewHelpModel.append({ name: "Bookmarks", button: "nextPage" });
-        if (pageCount > 1 && !spreadScan)
-            manualviewHelpModel.append({ name: spread ? "One page" : "Two pages", button: "pageDown" });
+            manualviewHelpModel.append({ name: "Pages", button: "filters" });
+        manualviewHelpModel.append({ name: isBookmarked(page) ? "Remove bookmark" : "Bookmark", button: "details" });
         manualviewHelpModel.append({ name: zoomed ? "Fit page" : "Zoom", button: "accept" });
     }
 

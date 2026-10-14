@@ -291,7 +291,7 @@ id: root
         // The preview only stops when leaving the top row, and the Manual
         // button is on the top row, so stop it here
         toggleVideo(false);
-        manualScreen.open(manualPath, game.title, game.assets.boxFront || "");
+        manualScreen.open(manualPath, game.title);
         manualScreen.focus = true;
         manualScreen.opacity = 1;
     }

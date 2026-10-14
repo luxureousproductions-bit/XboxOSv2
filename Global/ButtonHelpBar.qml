@@ -135,6 +135,9 @@ id: root
             case "pageDown":
                 buttonModel = api.keys.pageDown;
                 break;
+            case "menu":   // Start (controller/b.png)
+                buttonModel = api.keys.menu;
+                break;
             default:
             buttonModel = api.keys.accept;
         }
