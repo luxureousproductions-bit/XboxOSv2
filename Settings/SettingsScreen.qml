@@ -751,7 +751,6 @@ id: root
         ListElement { settingName: "Duplicate apps"; setting: ""; header: false; tip: true }
         ListElement { settingName: "Customizing"; setting: ""; header: true; tip: false }
         ListElement { settingName: "Your own system backgrounds"; setting: ""; header: false; tip: true }
-        ListElement { settingName: "Two collections, one system"; setting: ""; header: false; tip: true }
     }
 
     property var tipsPage: {
@@ -1104,9 +1103,7 @@ id: root
         "Duplicate apps":
             "An app that's in both the Pegasus import and your own collection is only shown once, with your entry taking priority\nThe two names must match exactly",
         "Your own system backgrounds":
-            "Put an image in the theme's assets/images/systembackground folder, named after the system's shortname (for example snes.png)\nIt shows behind the Home page when that system's tile is highlighted. PNG, JPG, JPEG and WEBP all work",
-        "Two collections, one system":
-            "The collection name labels a system's tile; the shortname picks its logo and background\nGive two collections different names but the same shortname, and they share the art while staying easy to tell apart"
+            "Put an image in the theme's assets/images/systembackground folder, named after the system's shortname (for example snes.png)\nIt shows behind the Home page when that system's tile is highlighted. PNG, JPG, JPEG and WEBP all work"
     })
 
     // Cheap yes/no test. infoText() concatenates a lot of literals to build its
