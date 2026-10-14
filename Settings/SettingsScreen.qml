@@ -61,11 +61,11 @@ id: root
         }
         ListElement {
             settingName: "Color Background"
-            setting: "White,Light Gray,Silver,Cool Gray,Gray,Mid Gray,Dark Gray,Charcoal,Black,Light Blue,Steel Blue,Slate,Dark Steel,Dark Blue,Navy Blue,Midnight Blue,Teal,Dark Teal,Sage,Forest,Forest Green,Dark Green,Rose,Dark Red,Wine,Burgundy,Plum,Dark Purple,Deep Purple,Indigo,Tan,Dark Orange,Dark Brown,Gradient"
+            setting: "White,Light Gray,Silver,Cool Gray,Gray,Mid Gray,Dark Gray,Charcoal,Black,Light Blue,Steel Blue,Slate,Dark Steel,Dark Blue,Navy Blue,Midnight Blue,Teal,Dark Teal,Sage,Forest,Forest Green,Dark Green,Rose,Dark Red,Wine,Burgundy,Plum,Dark Purple,Deep Purple,Indigo,Tan,Dark Orange,Dark Brown"
         }
         ListElement {
             settingName: "Color Layout"
-            setting: "White,Silver,Light Gray,Stone,Mid Gray,Steel,Slate,Dark Gray,Gunmetal,Charcoal,Onyx,Ice Blue,Arctic,Sky Blue,Light Blue,Cyan,Royal Blue,Cobalt,Sapphire,Dark Blue,Navy Blue,Seafoam,Turquoise,Teal,Dark Teal,Mint,Lime,Light Green,Jade,Emerald,Sage,Olive,Dark Green,Forest Green,Yellow,Gold,Amber,Dark Gold,Orange,Dark Orange,Coral,Salmon,Copper,Bronze,Rust,Sienna,Light Pink,Hot Pink,Rose,Dark Pink,Magenta,Light Red,Ruby,Crimson,Dark Red,Brick Red,Maroon,Burgundy,Lavender,Violet,Purple,Dark Purple,Indigo,Tan,Light Brown,Dark Brown,Gradient"
+            setting: "White,Silver,Light Gray,Stone,Mid Gray,Steel,Slate,Dark Gray,Gunmetal,Charcoal,Onyx,Ice Blue,Arctic,Sky Blue,Light Blue,Cyan,Royal Blue,Cobalt,Sapphire,Dark Blue,Navy Blue,Seafoam,Turquoise,Teal,Dark Teal,Mint,Lime,Light Green,Jade,Emerald,Sage,Olive,Dark Green,Forest Green,Yellow,Gold,Amber,Dark Gold,Orange,Dark Orange,Coral,Salmon,Copper,Bronze,Rust,Sienna,Light Pink,Hot Pink,Rose,Dark Pink,Magenta,Light Red,Ruby,Crimson,Dark Red,Brick Red,Maroon,Burgundy,Lavender,Violet,Purple,Dark Purple,Indigo,Tan,Light Brown,Dark Brown"
         }
         ListElement {
             settingName: "Grid background dimming"
@@ -721,7 +721,47 @@ id: root
         }
     }
 
-    property var settingsArr: [generalPage, showcasePage, collectionsPage, tilesPage, gridPage, allGamesPage, gamePage, mediaCarouselPage, audioPage, raPage, advancedPage]
+
+    // ── Tips & Tricks ─────────────────────────────────────────────────────
+    // Read-only page: the lesser-known behaviours that have no button prompt
+    // anywhere on screen. Each `tip: true` row has no value to cycle; A or X
+    // opens its text (tipTexts below) in the shared More info panel.
+    // Every element declares both `header` and `tip` so the roles are fixed
+    // from the first element on.
+    ListModel {
+    id: tipsSettingsModel
+
+        ListElement { settingName: "Navigation"; setting: ""; header: true; tip: false }
+        ListElement { settingName: "Discover follows the Platform page"; setting: ""; header: false; tip: true }
+        ListElement { settingName: "Jump by letter"; setting: ""; header: false; tip: true }
+        ListElement { settingName: "Shortcut to the nav bar"; setting: ""; header: false; tip: true }
+        ListElement { settingName: "Skipping in Discover"; setting: ""; header: false; tip: true }
+        ListElement { settingName: "Mouse support"; setting: ""; header: false; tip: true }
+        ListElement { settingName: "Home page"; setting: ""; header: true; tip: false }
+        ListElement { settingName: "The hero tile"; setting: ""; header: false; tip: true }
+        ListElement { settingName: "Featured box and Discover"; setting: ""; header: false; tip: true }
+        ListElement { settingName: "Random rows stay put"; setting: ""; header: false; tip: true }
+        ListElement { settingName: "Platform page"; setting: ""; header: true; tip: false }
+        ListElement { settingName: "Per-system tiles"; setting: ""; header: false; tip: true }
+        ListElement { settingName: "Search"; setting: ""; header: true; tip: false }
+        ListElement { settingName: "Forgiving search"; setting: ""; header: false; tip: true }
+        ListElement { settingName: "App drawer"; setting: ""; header: true; tip: false }
+        ListElement { settingName: "The Hidden tab"; setting: ""; header: false; tip: true }
+        ListElement { settingName: "Moving apps between tabs"; setting: ""; header: false; tip: true }
+        ListElement { settingName: "Duplicate apps"; setting: ""; header: false; tip: true }
+        ListElement { settingName: "Customizing"; setting: ""; header: true; tip: false }
+        ListElement { settingName: "Your own system backgrounds"; setting: ""; header: false; tip: true }
+        ListElement { settingName: "Two collections, one system"; setting: ""; header: false; tip: true }
+    }
+
+    property var tipsPage: {
+        return {
+            pageName:  "Tips & Tricks",
+            listmodel: tipsSettingsModel
+        }
+    }
+
+    property var settingsArr: [generalPage, showcasePage, collectionsPage, tilesPage, gridPage, allGamesPage, gamePage, mediaCarouselPage, audioPage, raPage, advancedPage, tipsPage]
 
     // ── Help text ─────────────────────────────────────────────────────────
     // In a function, not on the ListElements: a ListElement only accepts
@@ -1030,8 +1070,44 @@ id: root
         if (name === "Show Clock") {
             return "The clock in the top corner: 12-hour, 24-hour, or off";
         }
-        return "";
+        return tipTexts.hasOwnProperty(name) ? tipTexts[name] : "";
     }
+
+    // Text for each row on the Tips & Tricks page, keyed by its settingName.
+    // infoText() falls back to this, and hasInfo() checks it, so tips use the
+    // same More info panel as settings.
+    readonly property var tipTexts: ({
+        "Discover follows the Platform page":
+            "Open Discover from a system's Platform page and it only plays that system's games\nOpen it from anywhere else and it covers your whole library",
+        "Jump by letter":
+            "On the Platform page and in search results, LT and RT jump to the previous or next letter",
+        "Shortcut to the nav bar":
+            "On the Home page and Game details, LB or RB jumps straight up to the nav bar along the top\nOn the Home page, coming back down returns you to the row you were on",
+        "Skipping in Discover":
+            "LB, RB, Left and Right all skip to another game\nWhen a video ends, Discover moves on to the next one by itself",
+        "Mouse support":
+            "The mouse wheel moves the selection through lists and grids, and the mouse back button works like B",
+        "The hero tile":
+            "The large tile at the start of the Home page's system row is always the game you played most recently. Press A to jump straight back in",
+        "Featured box and Discover":
+            "With Featured box shows set to Discover Videos, opening Discover carries on with the same video\nBacking out of Discover hands it back to the Home page",
+        "Random rows stay put":
+            "Rows like Recommended and Top by Genre keep their picks until you press Refresh (X) on the Home page\nTwo rows set to System always pick different systems",
+        "Per-system tiles":
+            "With Per-system tile settings on (Platform page settings), Y on a Platform page opens that system's own tile settings instead of the main Settings",
+        "Forgiving search":
+            "Search ignores capitals, punctuation and region tags like (USA)\nIt also finds \u201cLegend of Zelda, The\u201d when you type \u201cThe Legend of Zelda\u201d",
+        "The Hidden tab":
+            "The App Drawer's Hidden tab only appears once something is hidden\nThe first tile along the bottom of the drawer shows or hides it",
+        "Moving apps between tabs":
+            "Moving an app to another tab (Start \u2192 Move to) is remembered, and overrides both the automatic sorting and the app's genre tag\nUse Reset to automatic to undo it",
+        "Duplicate apps":
+            "An app that's in both the Pegasus import and your own collection is only shown once, with your entry taking priority\nThe two names must match exactly",
+        "Your own system backgrounds":
+            "Put an image in the theme's assets/images/systembackground folder, named after the system's shortname (for example snes.png)\nIt shows behind the Home page when that system's tile is highlighted. PNG, JPG, JPEG and WEBP all work",
+        "Two collections, one system":
+            "The collection name labels a system's tile; the shortname picks its logo and background\nGive two collections different names but the same shortname, and they share the art while staying easy to tell apart"
+    })
 
     // Cheap yes/no test. infoText() concatenates a lot of literals to build its
     // result, which is wasteful when all that's needed is whether one exists.
@@ -1109,7 +1185,8 @@ id: root
             || name === "Added App Launch"
             || name === "Show WiFi Indicator"
             || name === "Show Battery Percentage"
-            || name === "Show Clock";
+            || name === "Show Clock"
+            || tipTexts.hasOwnProperty(name);
     }
 
     property real itemheight: vpx(50)
@@ -1469,6 +1546,8 @@ id: root
                 // Section header rows: a label with a rule beneath, never
                 // selectable. Declared with `header: true` in the page model.
                 readonly property bool isHeader: (typeof header !== 'undefined') && header === true
+                // Tips & Tricks rows: a title only, no value; A or X opens the tip.
+                readonly property bool isTip: (typeof tip !== 'undefined') && tip === true
 
                 // Greyed-out/inert state — "Randomize System Tile Fanart" only has
                 // an effect while the fanart background is showing, so it locks
@@ -1478,7 +1557,7 @@ id: root
                 // mutually exclusive, but the custom image is a base layer now
                 // and fanart still runs on top of it.
                 property bool rowDisabled: {
-                    if (isHeader) return false;
+                    if (isHeader || isTip) return false;
                     var _v = settingsList.settingsVersion;   // re-evaluate after any save
                     // Both depend on the fanart background being shown at all.
                     // All Games: list rows are inert in Grid, grid rows in List.
@@ -1587,7 +1666,7 @@ id: root
                     if (i >= 0) api.memory.set(key + 'Index', i);
                 }
                 function saveSetting() {
-                    if (isTextInput || rowDisabled) return;
+                    if (isTextInput || rowDisabled || isTip) return;
                     api.memory.set(settingName + 'Index', savedIndex);
                     api.memory.set(settingName, settingList[savedIndex]);
                     // Box-front art already carries the game's name, so a logo on
@@ -1615,7 +1694,7 @@ id: root
                 }
 
                 function nextSetting() {
-                    if (isTextInput || rowDisabled) return;
+                    if (isTextInput || rowDisabled || isTip) return;
                     if (savedIndex != settingList.length -1)
                         savedIndex++;
                     else
@@ -1623,7 +1702,7 @@ id: root
                 }
 
                 function prevSetting() {
-                    if (isTextInput || rowDisabled) return;
+                    if (isTextInput || rowDisabled || isTip) return;
                     if (savedIndex > 0)
                         savedIndex--;
                     else
@@ -1679,7 +1758,7 @@ id: root
                 id: settingNameText
 
                     visible: !isHeader && (!isTextInput)
-                    text: displayLabel.toUpperCase() + ": "
+                    text: isTip ? displayLabel.toUpperCase() : displayLabel.toUpperCase() + ": "
                     color: settingsTextColor
                     font.family: subtitleFont.name
                     font.pixelSize: vpx(22)
@@ -1696,7 +1775,8 @@ id: root
                 id: settingtext
 
                     visible: !isHeader && (!isTextInput)
-                    text: (selected && !rowDisabled ? "\u2039  " : "") + settingList[savedIndex].toUpperCase() + (selected && !rowDisabled ? "  \u203A" : "")
+                    text: isTip ? (selected ? "\u203A" : "")
+                                : (selected && !rowDisabled ? "\u2039  " : "") + settingList[savedIndex].toUpperCase() + (selected && !rowDisabled ? "  \u203A" : "")
                     font.bold: selected
                     color: settingsTextColor
                     font.family: subtitleFont.name
@@ -1810,17 +1890,20 @@ id: root
 
                 // ── Input handling ────────────────────────────────────────
                 Keys.onRightPressed: {
-                    if (!isTextInput && !rowDisabled) { playToggle(); nextSetting(); saveSetting(); }
+                    if (!isTextInput && !rowDisabled && !isTip) { playToggle(); nextSetting(); saveSetting(); }
                 }
                 Keys.onLeftPressed: {
-                    if (!isTextInput && !rowDisabled) { playToggle(); prevSetting(); saveSetting(); }
+                    if (!isTextInput && !rowDisabled && !isTip) { playToggle(); prevSetting(); saveSetting(); }
                 }
 
                 Keys.onPressed: {
                     // Accept
                     if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                         event.accepted = true;
-                        if (isTextInput) {
+                        if (isTip) {
+                            playToggle();
+                            root.openInfo(displayLabel, root.infoText(settingName));
+                        } else if (isTextInput) {
                             // Capture current saved value before opening editor
                             playAccept();
                             root.openEditor(settingName, (typeof masked !== 'undefined' && masked));
@@ -1854,7 +1937,10 @@ id: root
                     onEntered: { playNav(); }
                     onClicked: {
                         if (selected) {
-                            if (isTextInput) {
+                            if (isTip) {
+                                playToggle();
+                                root.openInfo(displayLabel, root.infoText(settingName));
+                            } else if (isTextInput) {
                                 playAccept();
                                 root.openEditor(settingName, (typeof masked !== 'undefined' && masked));
                             } else if (!rowDisabled) {
