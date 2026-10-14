@@ -495,7 +495,9 @@ id: root
     // position (atYBeginning), not just currentIndex — so a mouse wheel or
     // finger flick (which scrolls contentY without changing currentIndex) also
     // hides the logo, matching controller behavior.
-    property bool logoAtTop: content.atYBeginning && content.currentIndex === 0 && detailsScreen.opacity === 0
+    // Also off while the manual reader is open: the logo sits above it in z
+    // (the media viewer never needed this, it opens from the media row).
+    property bool logoAtTop: content.atYBeginning && content.currentIndex === 0 && detailsScreen.opacity === 0 && !manualScreen.visible
     Image {
     id: logo
 
@@ -715,6 +717,9 @@ id: root
             right: parent.right
         }
         height: vpx(75)
+        // z: 10 puts it above the manual reader, whose own title bar sits here
+        opacity: manualScreen.visible ? 0 : 1
+        Behavior on opacity { NumberAnimation { duration: 100 } }
 
         // Platform-page band: fades in once the list leaves the Play row.
         // Never over the fullscreen media viewer (it sits under the header).
@@ -968,25 +973,6 @@ id: root
                 }
         }
 
-        Button {
-        id: button5
-
-            width: height
-            icon: "../assets/images/trophy.svg"
-            iconPadding: vpx(22)
-            height: parent.height
-            selected: ListView.isCurrentItem && menu.activeFocus
-            onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
-            onActivated:
-                if (selected) {
-                    playAccept();
-                    raEntryScreen();
-                } else {
-                    playNav();
-                    menu.currentIndex = ObjectModel.index;
-                }
-        }
-
         Button { 
         id: button2 
 
@@ -1020,6 +1006,25 @@ id: root
             onActivated:
                 if (selected) {
                     showManual();
+                } else {
+                    playNav();
+                    menu.currentIndex = ObjectModel.index;
+                }
+        }
+
+        Button {
+        id: button5
+
+            width: height
+            icon: "../assets/images/trophy.svg"
+            iconPadding: vpx(22)
+            height: parent.height
+            selected: ListView.isCurrentItem && menu.activeFocus
+            onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
+            onActivated:
+                if (selected) {
+                    playAccept();
+                    raEntryScreen();
                 } else {
                     playNav();
                     menu.currentIndex = ObjectModel.index;

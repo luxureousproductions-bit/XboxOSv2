@@ -357,10 +357,6 @@ id: root
             name: "Zoom"
             button: "accept"
         }
-        ListElement {
-            name: "+10 pages"
-            button: "nextPage"
-        }
     }
 
     onFocusChanged: {
