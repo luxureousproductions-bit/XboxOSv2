@@ -192,35 +192,94 @@ id: root
 
     // Game manual (PDF). Needs a Pegasus build with PDF support, which adds
     // api.pdfPageCount(); on stock Pegasus this stays "" and the Manual
-    // button never shows. Looks for, in order:
-    //   x-manual: <path>  in the metadata (absolute, or relative to the ROM)
-    //   <rom folder>/media/manuals/<rom file name>.pdf   (Skraper layout)
-    //   <rom folder>/manuals/<rom file name>.pdf
+    // button never shows. Tried in order, first match wins:
+    //   1. x-manual: <path> in the metadata (absolute, or relative to the ROM)
+    //   2. next to the game's own art: if the box art is
+    //      .../media/box2dfront/<sub path>/<name>.png, then
+    //      .../media/manuals/<sub path>/<name>.pdf (exactly the Skraper
+    //      layout Pegasus used to find the art, multi-disc folders included)
+    //   3. the ROM folder and its parent (for games without art):
+    //      <dir>/media/manuals/<path below dir>.pdf, and for games in a
+    //      subfolder also <folder name>.pdf / <folder name>/<folder name>.pdf
+    //   4. <dir>/media/manuals/<game title>.pdf
+    // Each "media/manuals" step is also tried as plain "manuals".
     readonly property string manualPath: game ? findManual(game) : ""
+
+    function localPath(url) {
+        var p = url ? String(url) : "";
+        if (p.indexOf("file://") === 0) p = p.substring(7);
+        try { p = decodeURIComponent(p); } catch (err) {}
+        return p;
+    }
+
+    function stripExt(path) {
+        var dot = path.lastIndexOf(".");
+        return (dot > path.lastIndexOf("/")) ? path.substring(0, dot) : path;
+    }
 
     function findManual(g) {
         if (typeof api.pdfPageCount !== "function") return "";
 
-        var romPath = (g.files && g.files.count > 0) ? (g.files.get(0).path || "") : "";
-        var slash = romPath.lastIndexOf("/");
-        var dir = slash >= 0 ? romPath.substring(0, slash) : "";
         var candidates = [];
+        var seen = {};
+        function add(path) {
+            if (path && !seen[path]) { seen[path] = true; candidates.push(path); }
+        }
+        function addRoot(root, name) {
+            add(root + "/media/manuals/" + name + ".pdf");
+            add(root + "/manuals/" + name + ".pdf");
+        }
 
+        var romPath = (g.files && g.files.count > 0) ? (g.files.get(0).path || "") : "";
+        if (romPath.indexOf("android:") === 0) romPath = "";
+        var romDir = romPath.substring(0, Math.max(0, romPath.lastIndexOf("/")));
+
+        // 1. metadata
         var extra = g.extra ? g.extra["manual"] : undefined;
         if (extra) {
             var e = (typeof extra === "string") ? extra : (extra[0] || "");
-            if (e !== "") candidates.push(e.charAt(0) === "/" ? e : dir + "/" + e);
-        }
-        if (dir !== "" && romPath.indexOf("android:") !== 0) {
-            var file = romPath.substring(slash + 1);
-            var dot = file.lastIndexOf(".");
-            var base = dot > 0 ? file.substring(0, dot) : file;
-            candidates.push(dir + "/media/manuals/" + base + ".pdf");
-            candidates.push(dir + "/manuals/" + base + ".pdf");
+            if (e !== "") add(e.charAt(0) === "/" ? e : romDir + "/" + e);
         }
 
-        for (var i = 0; i < candidates.length; i++) {
-            if (api.pdfPageCount(candidates[i]) > 0) return candidates[i];
+        // 2. mirror the art's location
+        var a = g.assets;
+        var arts = [a.boxFront, a.screenshot, a.logo, a.background, a.titlescreen,
+                    a.boxBack, a.cartridge, a.marquee, a.video];
+        for (var i = 0; i < arts.length; i++) {
+            var art = localPath(arts[i]);
+            var m = art.lastIndexOf("/media/");
+            if (m < 0) continue;
+            var rest = art.substring(m + 7);              // <type>/<sub path>/<name>.ext
+            var typeEnd = rest.indexOf("/");
+            if (typeEnd < 0) continue;
+            addRoot(art.substring(0, m), stripExt(rest.substring(typeEnd + 1)));
+            break;
+        }
+
+        // 3. walk up from the ROM folder: the folder itself and its parent
+        //    (enough for one level of game subfolders; going higher would
+        //    match collection names, eg. iROMs/media/manuals/psx.pdf)
+        if (romDir !== "") {
+            var dir = romDir;
+            for (var level = 0; level < 2 && dir.lastIndexOf("/") > 0; level++) {
+                var rel = stripExt(romPath.substring(dir.length + 1));
+                addRoot(dir, rel);
+                var sub = rel.indexOf("/");
+                if (sub > 0) {
+                    var folder = rel.substring(0, sub);
+                    var base = rel.substring(rel.lastIndexOf("/") + 1);
+                    addRoot(dir, base);
+                    addRoot(dir, folder);
+                    addRoot(dir, folder + "/" + folder);
+                }
+                // 4. by title, at the ROM folder and its parent
+                if (g.title) addRoot(dir, g.title);
+                dir = dir.substring(0, dir.lastIndexOf("/"));
+            }
+        }
+
+        for (var c = 0; c < candidates.length; c++) {
+            if (api.pdfPageCount(candidates[c]) > 0) return candidates[c];
         }
         return "";
     }
