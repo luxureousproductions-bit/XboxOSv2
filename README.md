@@ -2,7 +2,7 @@
 
 **A modern, Xbox-inspired theme for [Pegasus Frontend](https://pegasus-frontend.org), built for Android handhelds and controller-first play.**
 
-XboxOSv2 is a fork of a fork of [gameOS](https://github.com/PlayingKarrde/gameOS) — it continues the work of XboxOS and modernizes it with a Home page modeled on the Xbox dashboard, an Xbox-guide-style app drawer, library search, full RetroAchievements integration, a Discover video mode, and a deep set of customization options.
+XboxOSv2 is a fork of a fork of [gameOS](https://github.com/PlayingKarrde/gameOS) / [XboxOS](https://github.com/alfredolvera/XboxOS) — it continues the work of XboxOS and modernizes it with a Home page modeled on the Xbox dashboard, an Xbox-guide-style app drawer, library search, full RetroAchievements integration, a Discover video mode, and a deep set of customization options.
 
 <!-- 📷 HERO IMAGE: Home page, full width -->
 <img width="1920" height="1080" alt="1000813882" src="https://github.com/user-attachments/assets/bc4ff12a-f80e-4691-80bd-993867c2dafc" />
