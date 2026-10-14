@@ -9,8 +9,7 @@
 //
 // Modes (see the mockup): full page (default), zoom (A) where the page fills
 // the width and up/down pans, and two pages (Y) side by side.
-// Left/right turn pages, LB/RB jump 10, B closes. The last page read is
-// remembered per manual in api.memory.
+// Left/right turn pages, LB/RB jump 10, B closes. Always opens on page 1.
 
 import QtQuick 2.15
 
@@ -43,8 +42,6 @@ id: root
         return "image://pdf/" + index + "/" + encodeURIComponent(pdfPath);
     }
 
-    function memoryKey() { return "Manual page - " + pdfPath; }
-
     // Called by GameView before showing the view
     function open(path, title) {
         pdfPath = path;
@@ -52,8 +49,8 @@ id: root
         pageCount = api.pdfPageCount(path);
         zoomed = false;
         spread = false;
-        var saved = api.memory.has(memoryKey()) ? parseInt(api.memory.get(memoryKey())) : 0;
-        page = (saved > 0 && saved < pageCount) ? saved : 0;
+        page = 0;
+        zoomFlick.contentY = 0;
     }
 
     function goTo(index) {
@@ -63,7 +60,6 @@ id: root
         playNav();
         page = target;
         zoomFlick.contentY = 0;
-        api.memory.set(memoryKey(), String(page));
     }
 
     function toggleZoom() {
