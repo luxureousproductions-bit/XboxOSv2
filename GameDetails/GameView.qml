@@ -202,7 +202,7 @@ id: root
     //      <dir>/media/manuals/<path below dir>.pdf, and for games in a
     //      subfolder also <folder name>.pdf / <folder name>/<folder name>.pdf
     //   4. <dir>/media/manuals/<game title>.pdf
-    // Each "media/manuals" step is also tried as plain "manuals".
+    // Each step tries media/manuals, media/manual and plain manuals.
     readonly property string manualPath: game ? findManual(game) : ""
 
     function localPath(url) {
@@ -225,8 +225,10 @@ id: root
         function add(path) {
             if (path && !seen[path]) { seen[path] = true; candidates.push(path); }
         }
+        // Folder names: "manuals" and "manual" are both accepted
         function addRoot(root, name) {
             add(root + "/media/manuals/" + name + ".pdf");
+            add(root + "/media/manual/" + name + ".pdf");
             add(root + "/manuals/" + name + ".pdf");
         }
 
