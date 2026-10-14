@@ -229,6 +229,9 @@ id: root
     function showManual() {
         if (manualPath === "") return;
         playAccept();
+        // The preview only stops when leaving the top row, and the Manual
+        // button is on the top row, so stop it here
+        toggleVideo(false);
         manualScreen.open(manualPath, game.title);
         manualScreen.focus = true;
         manualScreen.opacity = 1;
@@ -239,6 +242,9 @@ id: root
         manualScreen.opacity = 0;
         content.focus = true;
         currentHelpbarModel = gameviewHelpModel;
+        // Back on the top row with details closed: preview resumes as usual
+        if (content.currentIndex === 0 && detailsOpacity === 0)
+            toggleVideo(true);
     }
 
     anchors.fill: parent
@@ -382,8 +388,11 @@ id: root
                     ? game.assets.videos[0] : ""
             anchors.fill: parent
             fillMode: VideoOutput.PreserveAspectCrop
+            // Also muted at once under the manual: toggleVideo(false) only
+            // unloads the player after its 1 s fade
             muted: settings.AllowVideoPreviewAudio === "No"
                    || playbackOwner !== "gameviewscreen"
+                   || manualScreen.visible
             loops: MediaPlayer.Infinite
             autoPlay: true
             //onPlaying: videocomponent.seek(5000)
