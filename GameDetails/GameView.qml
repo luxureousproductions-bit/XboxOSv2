@@ -136,6 +136,7 @@ id: root
         list2.savedIndex = 0;
         screenshot.opacity = 1;
         mediaScreen.opacity = 0;
+        manualScreen.opacity = 0;
         toggleVideo(true);
         // Defer the "More" list filter updates (Options 1 & 2) so the expensive
         // ExpressionFilter scans don't block the navigation transition.
@@ -188,6 +189,57 @@ id: root
     // Pre-computed media list for this game; used by both the strip and the full-screen viewer.
     // Binding to `game` means it is computed once per game change instead of twice.
     readonly property var mediaList: game ? mediaArray() : []
+
+    // Game manual (PDF). Needs a Pegasus build with PDF support, which adds
+    // api.pdfPageCount(); on stock Pegasus this stays "" and the Manual
+    // button never shows. Looks for, in order:
+    //   x-manual: <path>  in the metadata (absolute, or relative to the ROM)
+    //   <rom folder>/media/manuals/<rom file name>.pdf   (Skraper layout)
+    //   <rom folder>/manuals/<rom file name>.pdf
+    readonly property string manualPath: game ? findManual(game) : ""
+
+    function findManual(g) {
+        if (typeof api.pdfPageCount !== "function") return "";
+
+        var romPath = (g.files && g.files.count > 0) ? (g.files.get(0).path || "") : "";
+        var slash = romPath.lastIndexOf("/");
+        var dir = slash >= 0 ? romPath.substring(0, slash) : "";
+        var candidates = [];
+
+        var extra = g.extra ? g.extra["manual"] : undefined;
+        if (extra) {
+            var e = (typeof extra === "string") ? extra : (extra[0] || "");
+            if (e !== "") candidates.push(e.charAt(0) === "/" ? e : dir + "/" + e);
+        }
+        if (dir !== "" && romPath.indexOf("android:") !== 0) {
+            var file = romPath.substring(slash + 1);
+            var dot = file.lastIndexOf(".");
+            var base = dot > 0 ? file.substring(0, dot) : file;
+            candidates.push(dir + "/media/manuals/" + base + ".pdf");
+            candidates.push(dir + "/manuals/" + base + ".pdf");
+        }
+
+        for (var i = 0; i < candidates.length; i++) {
+            if (api.pdfPageCount(candidates[i]) > 0) return candidates[i];
+        }
+        return "";
+    }
+
+    // Show/hide the manual reader
+    function showManual() {
+        if (manualPath === "") return;
+        playAccept();
+        manualScreen.open(manualPath, game.title);
+        manualScreen.focus = true;
+        manualScreen.opacity = 1;
+    }
+
+    function closeManual() {
+        playBack();
+        manualScreen.opacity = 0;
+        content.focus = true;
+        currentHelpbarModel = gameviewHelpModel;
+    }
 
     anchors.fill: parent
 
@@ -952,6 +1004,28 @@ id: root
                 }
         }
 
+        Button {
+        id: buttonManual
+
+            // Only when this game has a manual. Hidden, a negative width
+            // cancels the row spacing so no gap is left behind; the menu's
+            // left/right handlers skip it.
+            visible: manualPath !== ""
+            width: visible ? height : -menu.spacing
+            icon: "../assets/images/icon_manual.svg"
+            iconPadding: vpx(22)
+            height: parent.height
+            selected: ListView.isCurrentItem && menu.activeFocus
+            onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
+            onActivated:
+                if (selected) {
+                    showManual();
+                } else {
+                    playNav();
+                    menu.currentIndex = ObjectModel.index;
+                }
+        }
+
         Button { 
         id: button3 
 
@@ -1006,8 +1080,14 @@ id: root
             orientation: ListView.Horizontal
             spacing: vpx(10)
             keyNavigationWraps: true
-            Keys.onLeftPressed: { playNav(); decrementCurrentIndex() }
-            Keys.onRightPressed: { playNav(); incrementCurrentIndex() }
+            Keys.onLeftPressed: {
+                playNav(); decrementCurrentIndex();
+                if (currentItem && !currentItem.visible) decrementCurrentIndex();   // hidden Manual button
+            }
+            Keys.onRightPressed: {
+                playNav(); incrementCurrentIndex();
+                if (currentItem && !currentItem.visible) incrementCurrentIndex();
+            }
         }
 
         HorizontalCollection {
@@ -1197,7 +1277,7 @@ id: root
     MouseArea {
         id: mediaInputBlocker
         anchors.fill: parent
-        enabled: mediaScreen.visible
+        enabled: mediaScreen.visible || manualScreen.visible
         visible: enabled
         acceptedButtons: Qt.AllButtons
         preventStealing: true
@@ -1222,12 +1302,25 @@ id: root
         onClose: closeMedia();
     }
 
+    ManualView {
+    id: manualScreen
+
+        anchors.fill: parent
+        opacity: 0
+        Behavior on opacity { NumberAnimation { duration: 100 } }
+        visible: opacity != 0
+        // Same as the media viewer: the drawer can't open over it
+        onVisibleChanged: hideAppsPrompt = visible
+        onClose: closeManual();
+    }
+
     // Input handling
     // Mouse back button: mirrors B in the same order — fullscreen media
     // closes first, then a focused header button returns to the content,
     // then the screen itself.
     function mouseBack() {
         if (mediaScreen.visible)  { closeMedia(); return; }
+        if (manualScreen.visible) { closeManual(); return; }
         if (!content.activeFocus) { content.focus = true; return; }
         previousScreen();
     }
@@ -1238,6 +1331,8 @@ id: root
             event.accepted = true;
             if (mediaScreen.visible)
                 closeMedia();
+            else if (manualScreen.visible)
+                closeManual();
             else
                 previousScreen();
         }
@@ -1299,7 +1394,7 @@ id: root
     StatusCluster {
         anchors.fill: parent
         z: 50
-        visible: mediaScreen.opacity < 0.5
+        visible: mediaScreen.opacity < 0.5 && manualScreen.opacity < 0.5
         dark: whiteBackground
     }
 
