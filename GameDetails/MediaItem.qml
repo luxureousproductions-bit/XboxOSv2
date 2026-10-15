@@ -96,16 +96,25 @@ id: root
 
                 text: {
                     if (isVideo) return "Video";
-                    if (mediaItem.includes("background") || mediaItem.includes("fanart")) return "Fanart";
-                    if (mediaItem.includes("titlescreen") || mediaItem.includes("screenshottitle")) return "Title Screen";
-                    if (mediaItem.includes("box3d") || mediaItem.includes("box_3d") || mediaItem.includes("3dbox")) return "3D Box";
-                    if (mediaItem.includes("box2dFront") || mediaItem.includes("box2dfront") || mediaItem.includes("box2d_front")) return "Box Art";
-                    if (mediaItem.includes("boxFront") || mediaItem.includes("box_front")) return "Box Art";
-                    if (mediaItem.includes("box2dBack") || mediaItem.includes("box2dback") || mediaItem.includes("box2d_back")) return "Back Box";
-                    if (mediaItem.includes("boxBack")  || mediaItem.includes("box_back"))  return "Back Box";
-                    if (mediaItem.includes("cartridge") || mediaItem.includes("support")) return "Cartridge";
-                    if (mediaItem.includes("miximage") || mediaItem.includes("mix_image") || mediaItem.includes("steamgrid") || mediaItem.includes("/steam/") || mediaItem.includes("/grid/")) return "Miximage";
-                    if (mediaItem.includes("wheel")) return "Logo";
+                    // Matched without regard to capitals (Box2dFront, BOXFRONT, ...)
+                    var m = String(mediaItem).toLowerCase();
+                    if (m.includes("background") || m.includes("fanart")) return "Fanart";
+                    if (m.includes("titlescreen") || m.includes("screenshottitle")) return "Title Screen";
+                    if (m.includes("box3d") || m.includes("box_3d") || m.includes("3dbox")) return "3D Box";
+                    if (m.includes("box2dfront") || m.includes("box2d_front")) return "Box Art";
+                    if (m.includes("boxfront") || m.includes("box_front")) return "Box Art";
+                    if (m.includes("box2dback") || m.includes("box2d_back")) return "Back Box";
+                    if (m.includes("boxback")  || m.includes("box_back"))  return "Back Box";
+                    // ES-DE media folders (Pegasus X reads these). Matched as
+                    // whole folders, so a game title containing "cover" or
+                    // "logos" can't trigger them; backcovers before covers.
+                    if (m.includes("/backcovers/")) return "Back Box";
+                    if (m.includes("/covers/")) return "Box Art";
+                    if (m.includes("/physicalmedia/")) return "Cartridge";
+                    if (m.includes("/marquees/") || m.includes("/marquee/") || m.includes("/logos/")) return "Logo";
+                    if (m.includes("cartridge") || m.includes("support")) return "Cartridge";
+                    if (m.includes("miximage") || m.includes("mix_image") || m.includes("steamgrid") || m.includes("/steam/") || m.includes("/grid/")) return "Miximage";
+                    if (m.includes("wheel")) return "Logo";
                     return "Screenshot";
                 }
                 // Always light: the pill is theme.secondary (fixed dark grey),
