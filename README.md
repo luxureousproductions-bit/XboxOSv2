@@ -241,10 +241,12 @@ Read a game's original manual without leaving the theme. When a game has a manua
 <!-- 📷 Game manuals: reading a page -->
 
 <!-- 📷 Game manuals: zoomed in -->
+<img width="1920" height="1080" alt="1000819697" src="https://github.com/user-attachments/assets/7006018b-3ff8-41f9-baf4-5753197c7fdf" />
 
 <!-- 📷 Game manuals: 2-page view -->
 
 <!-- 📷 Game manuals: page overview with bookmarks -->
+<img width="1920" height="1080" alt="1000819698" src="https://github.com/user-attachments/assets/56606247-22d4-4f4c-9ea4-cc287315c42c" />
 
 **Reading**
 - Opens on page 1, with the page fitted to the screen and a progress bar showing how far through you are.
