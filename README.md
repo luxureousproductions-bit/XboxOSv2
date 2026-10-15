@@ -237,6 +237,7 @@ A full-screen, lean-back video mode for finding something to play.
 Read a game's original manual without leaving the theme. When a game has a manual, a **Manual** button appears on its Game details page.
 
 <!-- 📷 Game manuals: the Manual button on Game details -->
+<img width="1920" height="1080" alt="1000819699" src="https://github.com/user-attachments/assets/ea81d263-cdda-4bcb-bcc0-1ceb38131255" />
 
 <!-- 📷 Game manuals: reading a page -->
 
