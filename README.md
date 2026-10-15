@@ -278,8 +278,8 @@ On a touchscreen, tap the left or right side of the page to turn it, or the midd
 Put each manual, as a PDF, in a `manuals` folder inside the system's `media` folder, named like the game's artwork:
 
 ```
-psx/media/box2dfront/Final Fantasy VII/Final Fantasy VII.png    ← the game's art
-psx/media/manuals/Final Fantasy VII/Final Fantasy VII.pdf       ← its manual
+snes/media/box2dfront/Super Mario World.png    ← the game's art
+snes/media/manuals/Super Mario World.pdf       ← its manual
 ```
 
 - If Skraper downloaded manuals for you, they're usually in the right place already.
