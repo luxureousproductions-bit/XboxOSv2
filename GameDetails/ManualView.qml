@@ -13,9 +13,9 @@
 //      (cover alone, then 2-3, 4-5, ...); shown bottom left
 //   Y  page overview grid (in the overview: X = bookmarks only)
 //   B  back
-//   LB / RB  zoom out / in, in steps (Fit, 150%, 200%, 250%, 300%);
-//      shown top centre. Zoomed, the D-pad pans and left/right at the
-//      page edge turn the page
+//   LB / RB  zoom out / in, in steps (fit, 150%, 200%, 250%, 300%);
+//      shown top centre as "LB Zoom RB", without the level. Zoomed,
+//      the D-pad pans and left/right at the page edge turn the page
 //   LT/RT  5 pages back / forward (not shown in any prompt)
 //   left/right turn pages
 // The help bar shows A, X, Y, B in the theme's usual order.
@@ -581,7 +581,8 @@ id: root
     }
 
     // Header: title on the left, page counter on the right, and the zoom
-    // control (LB  Zoom <level>  RB) top centre
+    // control (LB  Zoom  RB) top centre; no level shown, the LB/RB icons dim
+    // at the ends of the range
     Row {
     id: zoomPrompt
         anchors {
@@ -601,19 +602,11 @@ id: root
             smooth: true
             opacity: zoomStep > 0 ? 1 : 0.35   // nothing to zoom out of at Fit
         }
-        Row {
+        Text {
             anchors.verticalCenter: parent.verticalCenter
-            spacing: vpx(8)
-            Text {
-                text: "Zoom"
-                color: "white"
-                font { family: subtitleFont.name; pixelSize: fpx(17) }
-            }
-            Text {
-                text: zoomStep === 0 ? "Fit" : Math.round(zoomFactor * 100) + "%"
-                color: theme.accent
-                font { family: subtitleFont.name; pixelSize: fpx(17) }
-            }
+            text: "Zoom"
+            color: "white"
+            font { family: subtitleFont.name; pixelSize: fpx(17) }
         }
         Image {
             anchors.verticalCenter: parent.verticalCenter
