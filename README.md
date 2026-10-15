@@ -23,6 +23,7 @@ XboxOSv2 is a fork of a fork of [gameOS](https://github.com/PlayingKarrde/gameOS
 - [All Games menu](#all-games-menu)
 - [Discover](#discover)
 - [Game details](#game-details)
+- [Game manuals](#game-manuals) *(in development, needs Pegasus X)*
 - [RetroAchievements](#retroachievements)
 - [Settings](#settings)
 - [Base mode vs High Quality mode](#base-mode-vs-high-quality-mode)
@@ -217,7 +218,7 @@ A full-screen, lean-back video mode for finding something to play.
 <img width="1920" height="1080" alt="1000813892" src="https://github.com/user-attachments/assets/a907732f-2970-4e76-8e44-143bf44ea276" />
 
 
-- **Play** (shows **Open** for apps and emulators), **RetroAchievements**, **Full details**, and **Favorite** buttons.
+- **Play** (shows **Open** for apps and emulators), **Full details**, **Manual** *(when the game has one, see [Game manuals](#game-manuals))*, **RetroAchievements**, **Favorite** and **Back** buttons.
 - Publisher, developer, release date, genre and rating.
 - **Media carousel** — video, screenshots, title screen, fanart, 2D box, 3D box, back of box, cartridge, miximage and logo. Each type can be turned on/off; select one to view it full screen.
 - **"More" rows** below the carousel:
@@ -225,6 +226,63 @@ A full-screen, lean-back video mode for finding something to play.
   - **More by Genre** — match on the full genre, just the main genre, or just the subgenre (see [Metadata](#metadata--media)).
 - Background preview video, optional blur and scanlines, and a choice of screenshot or fanart backdrop.
 - Box art style: 2D, 3D or Miximage.
+
+---
+
+## Game manuals
+
+> [!IMPORTANT]
+> **Game manuals need Pegasus X, which is still in development.** Pegasus can't open PDF files on its own, so the pages are drawn by [Pegasus X](https://github.com/luxureousproductions-bit/pegasus-frontend), an unofficial Android fork of Pegasus that adds PDF support. It isn't released yet and may change. On the regular Pegasus app nothing breaks: the **Manual** button simply doesn't appear.
+
+Read a game's original manual without leaving the theme. When a game has a manual, a **Manual** button appears on its Game details page.
+
+<!-- 📷 Game manuals: the Manual button on Game details -->
+
+<!-- 📷 Game manuals: reading a page -->
+
+<!-- 📷 Game manuals: zoomed in -->
+
+<!-- 📷 Game manuals: 2-page view -->
+
+<!-- 📷 Game manuals: page overview with bookmarks -->
+
+**Reading**
+- Opens on page 1, with the page fitted to the screen and a progress bar showing how far through you are.
+- **View (X)** switches between **1 page** and **2 pages** side by side. Two-page view pairs pages like the printed booklet: the cover on its own, then 2–3, 4–5 and so on, so maps and spreads line up.
+- **Zoom (LB / RB)** zooms out and in, in steps. Zoomed in, the D-pad moves around the page, and pressing left or right at the edge turns the page. A small map in the corner shows which part you're looking at.
+- **Manuals scanned as two-page spreads** are detected automatically and shown as large as possible.
+
+**Finding your place**
+- **Pages (Y)** shows every page as a thumbnail. Pick one to jump straight to it.
+- **Bookmark (A)** marks the page you're on with a ribbon. Bookmarks are saved for each manual and show as ticks on the progress bar. In the page overview, **X** shows only your bookmarked pages.
+
+**Controls**
+
+| Button | Action |
+|---|---|
+| **A** | Bookmark / remove bookmark |
+| **X** | View: 1 page / 2 pages |
+| **Y** | Page overview (inside it: **X** bookmarks only) |
+| **B** | Back |
+| **LB / RB** | Zoom out / in |
+| **LT / RT** | Skip 5 pages back / forward |
+| **Left / Right** | Previous / next page (zoomed in: move around the page) |
+
+On a touchscreen, tap the left or right side of the page to turn it, or the middle to zoom.
+
+**Adding manuals**
+
+Put each manual, as a PDF, in a `manuals` folder inside the system's `media` folder, named like the game's artwork:
+
+```
+psx/media/box2dfront/Final Fantasy VII/Final Fantasy VII.png    ← the game's art
+psx/media/manuals/Final Fantasy VII/Final Fantasy VII.pdf       ← its manual
+```
+
+- If Skraper downloaded manuals for you, they're usually in the right place already.
+- `media/manual` (singular) works too, and so does a plain `manuals` folder next to your ROMs.
+- **Multi-disc games** in their own folder work: the manual can sit in a matching folder like above, or directly in `media/manuals` named after the game.
+- To point a game at a specific file, add `x-manual: <path to the PDF>` to its entry in your metadata file.
 
 ---
 
@@ -349,6 +407,7 @@ shortname: androidgames
 | support | Cartridge |
 | screenshottitle | Title Screen |
 | steamgrid | Miximage |
+| manuals | Game manual *(PDF, needs Pegasus X, see [Game manuals](#game-manuals))* |
 
 **Genre & subgenre** — write genres as `Genre / Subgenre` to power *More by Genre*. All of these separators work: `/` or `,`, with or without spaces (`Action/Platformer`, `Action / Platformer`, `Action, Platformer`, …).
 
@@ -369,6 +428,10 @@ These are things the theme doesn't show a button prompt for. You'll also find th
 - **The hero tile** at the start of the system row is always the game you played most recently.
 - **Featured box and Discover.** With *Featured box shows* set to *Discover Videos*, opening Discover carries on with the same video, and backing out hands it back to the Home page.
 - **Random rows stay put.** Rows like Recommended and Top by Genre keep their picks until you press **Refresh (X)**. Two rows set to *System* always pick different systems.
+
+**Game manuals**
+- **Skip ahead in a manual.** **LT / RT** skip 5 pages back or forward.
+- **Leave zoom with a tap.** On a touchscreen, tapping a zoomed page returns it to the full page.
 
 **Platform page**
 - **Per-system tiles.** With *Per-system tile settings* on, **Y** on a Platform page opens that system's own tile settings instead of the main Settings.
