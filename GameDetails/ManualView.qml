@@ -8,19 +8,19 @@
 // Manual button simply never appears.
 //
 // Controls:
-//   A  zoom: the page fills the width, up/down pans
-//   X  bookmark / un-bookmark the page (kept per manual in api.memory)
+//   A  bookmark / un-bookmark the page (kept per manual in api.memory)
+//   X  View: 1 page / 2 pages, paired like the printed booklet
+//      (cover alone, then 2-3, 4-5, ...); shown bottom left
 //   Y  page overview grid (in the overview: X = bookmarks only)
 //   B  back
-//   LB one page / two pages, paired like the printed booklet
-//      (cover alone, then 2-3, 4-5, ...)
-//   RB next bookmark (wraps round to the first)
+//   LB / RB  zoom out / in, in steps (Fit, 150%, 200%, 250%, 300%);
+//      shown top centre. Zoomed, the D-pad pans and left/right at the
+//      page edge turn the page
 //   LT/RT  5 pages back / forward (not shown in any prompt)
 //   left/right turn pages
-// LB and RB have their own prompts in the header, either side of centre;
-// the help bar shows A, X, Y, B in the theme's usual order.
+// The help bar shows A, X, Y, B in the theme's usual order.
 // Manuals scanned as two-page spreads (wide pages) are detected and shown
-// edge to edge, with the two-page mode turned off. Always opens on page 1.
+// edge to edge, with View fixed to 1 page. Always opens on page 1.
 
 import QtQuick 2.15
 import "../utils.js" as Utils
@@ -34,7 +34,10 @@ id: root
     property string gameTitle: ""
     property int pageCount: 0
     property int page: 0
-    property bool zoomed: false
+    property int zoomStep: 0                    // index into zoomLevels
+    readonly property var zoomLevels: [1, 1.5, 2, 2.5, 3]
+    readonly property real zoomFactor: zoomLevels[zoomStep]
+    readonly property bool zoomed: zoomStep > 0
     property bool spread: false
     property bool overview: false
     property bool overviewBookmarks: false      // overview shows bookmarks only
@@ -105,20 +108,6 @@ id: root
         api.memory.set(bookmarkKey(), JSON.stringify(list));
     }
 
-    // RB: next bookmark after the current view, wrapping round to the first.
-    // In two-page mode the right-hand page counts as part of the current view.
-    function nextBookmark() {
-        if (bookmarks.length === 0) { showToast("No bookmarks yet"); return; }
-        var last = hasRightPage ? page + 1 : page;
-        var target = bookmarks[0];
-        for (var i = 0; i < bookmarks.length; i++) {
-            if (bookmarks[i] > last) { target = bookmarks[i]; break; }
-        }
-        var dest = spread ? spreadStart(target) : target;
-        if (dest === page) { showToast("No other bookmarks"); return; }
-        goTo(dest);
-    }
-
     // LT/RT: skip a few pages, staying on booklet pairs in two-page mode
     function jump(delta) {
         if (pageCount <= 0) return;
@@ -159,12 +148,13 @@ id: root
         pdfPath = path;
         gameTitle = title;
         pageCount = api.pdfPageCount(path);
-        zoomed = false;
+        zoomStep = 0;
         spread = false;
         overview = false;
         overviewBookmarks = false;
         toastText = "";
         page = 0;
+        zoomFlick.contentX = 0;
         zoomFlick.contentY = 0;
         loadBookmarks();
         updateHelp();
@@ -173,29 +163,47 @@ id: root
     onPageChanged: updateHelp()
     onBookmarksChanged: updateHelp()
 
-    function goTo(index) {
+    // fromEnd: entered by paging back while zoomed, so start at the right
+    // edge (where reading of the previous page ended), not the left
+    function goTo(index, fromEnd) {
         if (pageCount <= 0) return;
         var target = Math.max(0, Math.min(pageCount - 1, index));
         if (target === page) return;
         playNav();
         page = target;
         zoomFlick.contentY = 0;
+        zoomFlick.contentX = fromEnd ? Math.max(0, zoomFlick.contentWidth - zoomFlick.width) : 0;
     }
 
-    function toggleZoom() {
+    // LB/RB: change the zoom step, keeping the point at the centre of the
+    // screen where it is (from Fit, zoom in on the middle of the page)
+    function setZoom(step) {
+        step = Math.max(0, Math.min(zoomLevels.length - 1, step));
+        if (step === zoomStep || pageCount <= 0) return;
+        var wasZoomed = zoomed;
+        var fx = 0.5, fy = 0.5;
+        if (wasZoomed && zoomFlick.contentWidth > 0 && zoomFlick.contentHeight > 0) {
+            fx = (zoomFlick.contentX + zoomFlick.width / 2) / zoomFlick.contentWidth;
+            fy = (zoomFlick.contentY + zoomFlick.height / 2) / zoomFlick.contentHeight;
+        }
         playToggle();
-        spread = false;
-        zoomed = !zoomed;
-        zoomFlick.contentY = 0;
+        zoomStep = step;
+        // content size is bound to zoomFactor, so it is already updated here
+        var maxX = Math.max(0, zoomFlick.contentWidth - zoomFlick.width);
+        var maxY = Math.max(0, zoomFlick.contentHeight - zoomFlick.height);
+        zoomFlick.contentX = Math.max(0, Math.min(maxX, fx * zoomFlick.contentWidth - zoomFlick.width / 2));
+        zoomFlick.contentY = Math.max(0, Math.min(maxY, fy * zoomFlick.contentHeight - zoomFlick.height / 2));
         updateHelp();
     }
 
+    // X: View, 1 page / 2 pages
     function toggleSpread() {
         if (spreadScan) return;   // pages are already spreads
         playToggle();
-        zoomed = false;
         spread = !spread;
         if (spread) page = spreadStart(page);
+        zoomFlick.contentX = 0;
+        zoomFlick.contentY = 0;
         updateHelp();
     }
 
@@ -239,6 +247,18 @@ id: root
         zoomFlick.contentY = Math.max(0, Math.min(maxY, zoomFlick.contentY + delta));
     }
 
+    // Zoomed left/right: pan, or turn the page once already at that edge
+    function panOrTurn(forward) {
+        var maxX = Math.max(0, zoomFlick.contentWidth - zoomFlick.width);
+        if (forward) {
+            if (zoomFlick.contentX >= maxX - 1) { goTo(nextIndex(), false); return; }
+            zoomFlick.contentX = Math.min(maxX, zoomFlick.contentX + zoomFlick.width * 0.4);
+        } else {
+            if (zoomFlick.contentX <= 1) { goTo(prevIndex(), true); return; }
+            zoomFlick.contentX = Math.max(0, zoomFlick.contentX - zoomFlick.width * 0.4);
+        }
+    }
+
     // Backdrop
     Rectangle {
         anchors.fill: parent
@@ -259,7 +279,7 @@ id: root
 
         Image {
         id: leftPage
-            source: root.visible && !zoomed ? pageUrl(page) : ""
+            source: root.visible ? pageUrl(page) : ""
             sourceSize: Qt.size(spread ? (availW - pageRow.spacing) / 2 : availW, pageAreaH)
             width: status === Image.Ready ? implicitWidth : 0
             height: status === Image.Ready ? implicitHeight : 0
@@ -274,7 +294,7 @@ id: root
         }
         Image {
         id: rightPage
-            source: root.visible && hasRightPage && !zoomed ? pageUrl(page + 1) : ""
+            source: root.visible && hasRightPage ? pageUrl(page + 1) : ""
             sourceSize: Qt.size((availW - pageRow.spacing) / 2, availH)
             visible: hasRightPage
             width: status === Image.Ready ? implicitWidth : 0
@@ -290,7 +310,15 @@ id: root
         }
     }
 
-    // --- Zoom: page fills the width, up/down pans ---
+    // --- Zoom: the current view (1 or 2 pages) scaled by zoomFactor ---
+    // Sizes come from the fit view, so they are known before the sharper
+    // render arrives; the fit render is stretched underneath meanwhile.
+    readonly property real zoomPageW: leftPage.width * zoomFactor
+    readonly property real zoomPageH: leftPage.height * zoomFactor
+    readonly property real zoomRightW: hasRightPage ? rightPage.width * zoomFactor : 0
+    readonly property real zoomRowW: zoomPageW + (hasRightPage ? pageRow.spacing * zoomFactor + zoomRightW : 0)
+    readonly property real zoomRowH: Math.max(zoomPageH, hasRightPage ? rightPage.height * zoomFactor : 0)
+
     Flickable {
     id: zoomFlick
         visible: zoomed
@@ -301,59 +329,123 @@ id: root
             bottom: parent.bottom; bottomMargin: footerH
         }
         clip: true
-        contentWidth: width
-        contentHeight: zoomPage.height
+        contentWidth: Math.max(width, zoomRowW)
+        contentHeight: Math.max(height, zoomRowH)
         boundsBehavior: Flickable.StopAtBounds
         interactive: zoomed
 
-        Image {
-        id: zoomPage
-            source: root.visible && zoomed ? pageUrl(page) : ""
-            sourceSize: Qt.size(zoomFlick.width, 0)
-            width: zoomFlick.width
-            height: status === Image.Ready ? implicitHeight : zoomFlick.height
-            asynchronous: true
-            smooth: true
+        Item {
+        id: zoomRow
+            // centred while smaller than the screen in that direction
+            x: Math.max(0, (zoomFlick.width - zoomRowW) / 2)
+            y: Math.max(0, (zoomFlick.height - zoomRowH) / 2)
+            width: zoomRowW
+            height: zoomRowH
 
-            // Touch: a tap (not a drag) returns to the full page
-            MouseArea {
-                anchors.fill: parent
-                onClicked: toggleZoom()
+            Image {   // placeholder: the fit render, stretched
+                x: 0
+                anchors.verticalCenter: parent.verticalCenter
+                width: zoomPageW; height: zoomPageH
+                visible: zoomLeft.status !== Image.Ready
+                source: leftPage.source
+                sourceSize: leftPage.sourceSize
+                asynchronous: true
             }
+            Image {
+            id: zoomLeft
+                x: 0
+                anchors.verticalCenter: parent.verticalCenter
+                width: zoomPageW; height: zoomPageH
+                source: root.visible && zoomed && leftPage.status === Image.Ready ? pageUrl(page) : ""
+                sourceSize: Qt.size(Math.round(zoomPageW), 0)
+                asynchronous: true
+                smooth: true
 
-            Ribbon {
-                anchors { right: parent.right; rightMargin: vpx(24); top: parent.top; topMargin: -vpx(4) }
-                width: vpx(34)
-                visible: zoomPage.status === Image.Ready && isBookmarked(page)
+                Ribbon {
+                    anchors { right: parent.right; rightMargin: vpx(24); top: parent.top; topMargin: -vpx(4) }
+                    width: vpx(34)
+                    visible: isBookmarked(page)
+                }
             }
+            Image {   // placeholder for the right-hand page
+                x: zoomRowW - zoomRightW
+                anchors.verticalCenter: parent.verticalCenter
+                width: zoomRightW; height: hasRightPage ? rightPage.height * zoomFactor : 0
+                visible: hasRightPage && zoomRight.status !== Image.Ready
+                source: rightPage.source
+                sourceSize: rightPage.sourceSize
+                asynchronous: true
+            }
+            Image {
+            id: zoomRight
+                x: zoomRowW - zoomRightW
+                anchors.verticalCenter: parent.verticalCenter
+                width: zoomRightW; height: hasRightPage ? rightPage.height * zoomFactor : 0
+                visible: hasRightPage
+                source: root.visible && zoomed && hasRightPage && rightPage.status === Image.Ready ? pageUrl(page + 1) : ""
+                sourceSize: Qt.size(Math.max(1, Math.round(zoomRightW)), 0)
+                asynchronous: true
+                smooth: true
+
+                Ribbon {
+                    anchors { right: parent.right; rightMargin: vpx(24); top: parent.top; topMargin: -vpx(4) }
+                    width: vpx(34)
+                    visible: isBookmarked(page + 1)
+                }
+            }
+        }
+
+        // Touch: a tap (not a drag) goes back to Fit
+        MouseArea {
+            width: zoomFlick.contentWidth
+            height: zoomFlick.contentHeight
+            onClicked: setZoom(0)
         }
     }
 
-    // Mini-map while zoomed: whole page with the visible part outlined
+    // Mini-map while zoomed: the whole view with the visible part outlined
     Rectangle {
     id: miniMap
-        visible: zoomed && zoomPage.status === Image.Ready
+        visible: zoomed && leftPage.status === Image.Ready && zoomRowW > 0
         anchors {
             right: parent.right; rightMargin: sideMargin + vpx(8)
             top: parent.top; topMargin: headerH + vpx(8)
         }
-        width: vpx(110)
-        height: zoomPage.height > 0 ? width * zoomPage.height / zoomPage.width : 0
+        width: hasRightPage ? vpx(160) : vpx(110)
+        height: zoomRowW > 0 ? width * zoomRowH / zoomRowW : 0
         color: "white"
         border { width: vpx(2); color: theme.accent }
 
-        Image {
+        Row {
             anchors.fill: parent
             anchors.margins: parent.border.width
-            source: miniMap.visible ? pageUrl(page) : ""
-            sourceSize: Qt.size(vpx(110), 0)
-            asynchronous: true
+            Image {
+                width: hasRightPage ? parent.width * zoomPageW / zoomRowW : parent.width
+                height: parent.height
+                source: miniMap.visible ? leftPage.source : ""
+                sourceSize: leftPage.sourceSize
+                fillMode: Image.PreserveAspectFit
+                asynchronous: true
+            }
+            Image {
+                visible: hasRightPage
+                width: hasRightPage ? parent.width * zoomRightW / zoomRowW : 0
+                height: parent.height
+                source: miniMap.visible && hasRightPage ? rightPage.source : ""
+                sourceSize: rightPage.sourceSize
+                fillMode: Image.PreserveAspectFit
+                asynchronous: true
+            }
         }
         Item {
-            x: 0
-            width: parent.width
-            y: zoomFlick.contentHeight > 0 ? parent.height * zoomFlick.contentY / zoomFlick.contentHeight : 0
-            height: zoomFlick.contentHeight > 0 ? parent.height * Math.min(1, zoomFlick.height / zoomFlick.contentHeight) : parent.height
+            readonly property real cw: zoomFlick.contentWidth
+            readonly property real ch: zoomFlick.contentHeight
+            readonly property real ox: (cw - zoomRowW) / 2 > 0 ? (cw - zoomRowW) / 2 : 0
+            readonly property real oy: (ch - zoomRowH) / 2 > 0 ? (ch - zoomRowH) / 2 : 0
+            x: parent.width * Math.max(0, zoomFlick.contentX - ox) / zoomRowW
+            y: parent.height * Math.max(0, zoomFlick.contentY - oy) / zoomRowH
+            width: parent.width * Math.min(1, zoomFlick.width / zoomRowW)
+            height: parent.height * Math.min(1, zoomFlick.height / zoomRowH)
 
             // theme.accent is a hex string, so tint with opacity, not rgba()
             Rectangle {
@@ -373,7 +465,7 @@ id: root
     // as the visible pages, so they land in the same image cache entries.
     Repeater {
         model: {
-            if (!root.visible || zoomed || overview || pageCount <= 0) return [];
+            if (!root.visible || overview || pageCount <= 0) return [];
             var next = nextIndex();
             var prev = prevIndex();
             // in two-page mode, also the right-hand pages of both neighbours
@@ -402,9 +494,8 @@ id: root
         visible: text !== ""
         text: {
             if (pageCount <= 0) return "This manual couldn't be opened";
-            var img = zoomed ? zoomPage : leftPage;
-            if (img.status === Image.Error) return "This page couldn't be shown";
-            if (img.status === Image.Loading) return "Loading page…";
+            if (leftPage.status === Image.Error) return "This page couldn't be shown";
+            if (leftPage.status === Image.Loading) return "Loading page…";
             return "";
         }
         color: "#ebebeb"
@@ -489,19 +580,17 @@ id: root
         }
     }
 
-    // Header: title on the left, page counter on the right, and the LB/RB
-    // prompts either side of centre (same icons as the help bar)
-    readonly property real shoulderOffset: width * 0.17
-
+    // Header: title on the left, page counter on the right, and the zoom
+    // control (LB  Zoom <level>  RB) top centre
     Row {
-    id: lbPrompt
+    id: zoomPrompt
         anchors {
-            horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -shoulderOffset
+            horizontalCenter: parent.horizontalCenter
             verticalCenter: parent.top; verticalCenterOffset: headerH / 2
         }
         z: 1
-        spacing: vpx(8)
-        visible: !overview && pageCount > 1 && !spreadScan
+        spacing: vpx(14)
+        visible: !overview && pageCount > 0
 
         Image {
             anchors.verticalCenter: parent.verticalCenter
@@ -510,24 +599,22 @@ id: root
             sourceSize { width: Math.round(vpx(30) * 2); height: Math.round(vpx(30) * 2) }
             fillMode: Image.PreserveAspectFit
             smooth: true
+            opacity: zoomStep > 0 ? 1 : 0.35   // nothing to zoom out of at Fit
         }
-        Text {
+        Row {
             anchors.verticalCenter: parent.verticalCenter
-            text: spread ? "One page" : "Two pages"
-            color: "white"
-            font { family: subtitleFont.name; pixelSize: fpx(16) }
+            spacing: vpx(8)
+            Text {
+                text: "Zoom"
+                color: "white"
+                font { family: subtitleFont.name; pixelSize: fpx(17) }
+            }
+            Text {
+                text: zoomStep === 0 ? "Fit" : Math.round(zoomFactor * 100) + "%"
+                color: theme.accent
+                font { family: subtitleFont.name; pixelSize: fpx(17) }
+            }
         }
-    }
-    Row {
-    id: rbPrompt
-        anchors {
-            horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: shoulderOffset
-            verticalCenter: parent.top; verticalCenterOffset: headerH / 2
-        }
-        z: 1
-        spacing: vpx(8)
-        visible: !overview && bookmarks.length > 0
-
         Image {
             anchors.verticalCenter: parent.verticalCenter
             source: "../assets/images/controller/" + Utils.processButtonArt("nextPage") + ".png"
@@ -535,12 +622,7 @@ id: root
             sourceSize { width: Math.round(vpx(30) * 2); height: Math.round(vpx(30) * 2) }
             fillMode: Image.PreserveAspectFit
             smooth: true
-        }
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: "Jump to bookmark"
-            color: "white"
-            font { family: subtitleFont.name; pixelSize: fpx(16) }
+            opacity: zoomStep < zoomLevels.length - 1 ? 1 : 0.35
         }
     }
 
@@ -555,8 +637,8 @@ id: root
             left: parent.left; leftMargin: sideMargin
             verticalCenter: parent.top; verticalCenterOffset: headerH / 2
         }
-        // Up to the LB prompt
-        width: Math.max(vpx(160), root.width / 2 - shoulderOffset - vpx(120) - sideMargin)
+        // Up to the zoom control
+        width: Math.max(vpx(160), root.width / 2 - vpx(150) - sideMargin)
         Text {
             text: overview ? (overviewBookmarks ? "MANUAL · BOOKMARKS" : "MANUAL · PAGES")
                            : (zoomed ? "MANUAL · ZOOM" : "MANUAL")
@@ -632,6 +714,27 @@ id: root
         }
     }
 
+    // View, bottom left on the help bar's row (the bar sits at the bottom,
+    // vpx(50) tall, its prompts laid out from its top)
+    Row {
+        anchors {
+            left: parent.left; leftMargin: globalMargin
+            verticalCenter: parent.bottom; verticalCenterOffset: -vpx(35)
+        }
+        spacing: vpx(6)
+        visible: !overview && pageCount > 1 && !spreadScan
+        Text {
+            text: "View:"
+            color: "#9a9a9a"
+            font { family: subtitleFont.name; pixelSize: fpx(16) }
+        }
+        Text {
+            text: spread ? "2 Pages" : "1 Page"
+            color: "white"
+            font { family: subtitleFont.name; pixelSize: fpx(16) }
+        }
+    }
+
     // Short confirmation, under the title
     Rectangle {
     id: toast
@@ -674,7 +777,7 @@ id: root
         onClicked: {
             if (mouse.x < width / 3) goTo(prevIndex());
             else if (mouse.x > width * 2 / 3) goTo(nextIndex());
-            else toggleZoom();
+            else setZoom(1);
         }
     }
 
@@ -714,29 +817,26 @@ id: root
             return;
         }
         if (api.keys.isAccept(event)) {
-            if (!event.isAutoRepeat && pageCount > 0) toggleZoom();
+            if (!event.isAutoRepeat) toggleBookmark();
             return;
         }
         if (api.keys.isDetails(event)) {
-            if (!event.isAutoRepeat) toggleBookmark();
+            if (!event.isAutoRepeat && pageCount > 1) toggleSpread();
             return;
         }
         if (api.keys.isFilters(event)) {
             if (!event.isAutoRepeat && pageCount > 1) openOverview();
             return;
         }
-        if (api.keys.isPrevPage(event)) {
-            if (!event.isAutoRepeat && pageCount > 1) toggleSpread();
-            return;
-        }
-        if (api.keys.isNextPage(event)) { if (!event.isAutoRepeat) nextBookmark(); return; }
+        if (api.keys.isPrevPage(event)) { if (!event.isAutoRepeat) setZoom(zoomStep - 1); return; }
+        if (api.keys.isNextPage(event)) { if (!event.isAutoRepeat) setZoom(zoomStep + 1); return; }
         // Triggers: 5 pages at a time, holding repeats
         if (api.keys.isPageUp(event))   { jump(-5); return; }
         if (api.keys.isPageDown(event)) { jump(5); return; }
 
         switch (event.key) {
-            case Qt.Key_Left:  goTo(prevIndex()); break;
-            case Qt.Key_Right: goTo(nextIndex()); break;
+            case Qt.Key_Left:  if (zoomed) panOrTurn(false); else goTo(prevIndex()); break;
+            case Qt.Key_Right: if (zoomed) panOrTurn(true); else goTo(nextIndex()); break;
             case Qt.Key_Up:    if (zoomed) pan(-zoomFlick.height * 0.4); break;
             case Qt.Key_Down:  if (zoomed) pan(zoomFlick.height * 0.4); break;
         }
@@ -750,7 +850,7 @@ id: root
 
     // The help bar lays its model out right to left, so the entries go in
     // as B, Y, X, A to read A, X, Y, B on screen like the rest of the theme.
-    // LB/RB have their own prompts in the header; LT/RT are never shown.
+    // LB/RB (zoom) have their own prompt top centre; LT/RT are never shown.
     function updateHelp() {
         manualviewHelpModel.clear();
         manualviewHelpModel.append({ name: "Back", button: "cancel" });
@@ -762,8 +862,9 @@ id: root
         }
         if (pageCount > 1)
             manualviewHelpModel.append({ name: "Pages", button: "filters" });
-        manualviewHelpModel.append({ name: isBookmarked(page) ? "Remove bookmark" : "Bookmark", button: "details" });
-        manualviewHelpModel.append({ name: zoomed ? "Fit page" : "Zoom", button: "accept" });
+        if (pageCount > 1 && !spreadScan)
+            manualviewHelpModel.append({ name: "View", button: "details" });
+        manualviewHelpModel.append({ name: isBookmarked(page) ? "Remove bookmark" : "Bookmark", button: "accept" });
     }
 
     onFocusChanged: {

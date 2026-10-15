@@ -343,7 +343,7 @@ function processButtonArt(button) {
       case "pageDown":
         buttonModel = api.keys.pageDown;
         break;
-    case "menu":   // Start (controller/b.png)
+    case "menu":   // Start (controller/11.png)
       buttonModel = api.keys.menu;
       break;
     default:
@@ -354,7 +354,9 @@ function processButtonArt(button) {
   for (i = 0; buttonModel.length; i++) {
     if (buttonModel[i].name().includes("Gamepad")) {
       var buttonValue = buttonModel[i].key.toString(16)
-      return buttonValue.substring(buttonValue.length-1, buttonValue.length);
+      // Last hex digit of the gamepad key = button index (A 0 ... Select a,
+      // Start b); the glyph files are named in decimal (10.png, 11.png)
+      return String(parseInt(buttonValue.substring(buttonValue.length-1, buttonValue.length), 16));
     }
   }
 }
