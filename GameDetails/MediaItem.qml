@@ -32,10 +32,11 @@ id: root
     // Name of a system's game media; anything not listed is a "Cartridge"
     function physicalMediaLabel() {
         switch (systemShortName.toLowerCase()) {
+            // CD / DVD / Blu-ray / GD-ROM
             case "psx": case "ps1": case "playstation": case "ps2": case "ps2_alt":
             case "ps3": case "ps4":
             case "segacd": case "megacd": case "megacdjp": case "saturn": case "saturnjp":
-            case "dreamcast":
+            case "dreamcast": case "naomigd": case "triforce":
             case "gc": case "gamecube": case "wii": case "wiiu":
             case "xbox": case "xbox360": case "xboxone":
             case "3do": case "pcfx": case "pcenginecd": case "tgcd": case "turbografxcd":
@@ -44,11 +45,22 @@ id: root
             case "atarijaguarcd": case "fmtowns":
             case "windows": case "windows9x":
                 return "Disc";
-            case "windows3x": case "pc": case "pc98":   // IBM PC, NEC PC-98
+            case "laserdisc": case "daphne":
+                return "LaserDisc";
+            // Disk-based computers
+            case "windows3x": case "pc": case "dos": case "pc88": case "pc98":
+            case "amiga": case "amiga600": case "amiga1200": case "atarist":
+            case "apple2": case "apple2gs": case "archimedes": case "macintosh":
+            case "x1": case "fm7": case "to8": case "c64":
                 return "Floppy Disk";
+            // Tape-based computers
+            case "zxspectrum": case "zx81": case "trs-80": case "bbcmicro": case "electron":
+            case "amstradcpc": case "dragon32": case "plus4": case "moto": case "spectravideo":
+                return "Cassette";
             case "psp":
                 return "UMD";
             case "nds": case "3ds": case "n3ds": case "switch": case "psvita": case "vita":
+            case "atarilynx": case "ngage":
                 return "Game Card";
             case "pcengine": case "supergrafx":
                 return "HuCard";
@@ -58,6 +70,26 @@ id: root
                 return "Disk Card";
             case "n64dd":
                 return "Disk";
+            case "channelf":
+                return "Videocart";
+            case "coco":
+                return "Program Pak";
+            case "adam":
+                return "Data Pack";
+            // Arcade: the game is the board itself
+            case "arcade": case "mame": case "fba": case "fbneo":
+            case "cps": case "cps1": case "cps2": case "cps3":
+            case "model1": case "model2": case "model3": case "type-x":
+                return "Arcade Board";
+            // Digital-only and mixed collections: a neutral name
+            case "android": case "androidapps": case "androidgames": case "steam": case "epic":
+            case "desktop": case "emulators": case "ports": case "doom": case "scummvm":
+            case "pico8": case "tic80": case "easyrpg": case "mugen": case "ags":
+            case "cavestory": case "chailove": case "stratagus": case "flash": case "fpinball":
+            case "palm": case "arduboy": case "zxnext": case "mess": case "consolearcade":
+            case "pcarcade": case "gameandwatch": case "lcdgames":
+            case "completed": case "custom-collections": case "final-fantasy":
+                return "Physical Media";
             default:
                 return "Cartridge";
         }
