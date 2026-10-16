@@ -1240,8 +1240,10 @@ ListView {
         // Only meaningful with an app highlighted — the quick menu acts on the
         // current row, so it's hidden in the tab and nav zones.
         Row {
+        id: moreOptionsHint
             spacing: vpx(12)
             visible: root.zone === root.zoneApps && root.filteredApps.length > 0
+            opacity: moreOptionsMouse.pressed ? 0.6 : 1
             Image {
                 anchors.verticalCenter: parent.verticalCenter
                 width: vpx(24); height: vpx(24)
@@ -1257,6 +1259,17 @@ ListView {
                 font.family: subtitleFont.name
                 font.pixelSize: fpx(17)
                 elide: Text.ElideRight
+
+                // Clicking "More options" opens the quick menu, same as Start.
+                // Lives inside the Text (a Row lays out its own children) and
+                // reaches back over the icon with a negative margin.
+                MouseArea {
+                id: moreOptionsMouse
+                    anchors.fill: parent
+                    anchors.leftMargin: -(vpx(24) + vpx(12))
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: { if (!root.quickOpen) { playToggle(); root.openQuickMenu(); } }
+                }
             }
         }
     }

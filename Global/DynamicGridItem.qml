@@ -242,7 +242,10 @@ id: root
             height: Math.max(vpx(44), container.height * 0.16, container.width * 0.16, nameBarText.contentHeight + vpx(16))   // scales with tile size; wide tiles use width factor
             color: "#99000000"            // ~60% black; text stays full-opacity
             // Game tile titles: Never hides it even on focus; Always keeps it up.
-            opacity: titleMode === "Never" ? 0 : ((selected || titleMode === "Always") ? 1 : 0)
+            // Hidden when the tile already shows the name in the middle (no logo),
+            // so the title isn't printed twice.
+            opacity: (titleMode === "Never" || platformname.visible) ? 0
+                   : ((selected || titleMode === "Always") ? 1 : 0)
             visible: opacity > 0
             Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 120 } }
             Text {
@@ -372,7 +375,7 @@ id: root
                     width:  parent.width  * 1.45
                     height: parent.height * 1.45
                     source: root.appIconArt
-                    sourceSize { width: hqMode ? 384 : 256; height: hqMode ? 384 : 256 }
+                    sourceSize { width: hrpx(hqMode ? 384 : 256); height: hrpx(hqMode ? 384 : 256) }
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
                     asynchronous: true
@@ -415,11 +418,18 @@ id: root
             anchors.fill: parent
             anchors.centerIn: parent
             anchors.margins: root.width/10
-            property var logoImage: (gameData && gameData.collections.get(0).shortName === "retropie") ? gameData.assets.boxFront : (gameData.collections.get(0).shortName === "steam") ? logo(gameData) : gameData.assets.logo
+            // Guarded: a recycled tile can briefly have no game (or a game with
+            // no collection), and the unguarded form threw on both.
+            readonly property string logoShort: (gameData && gameData.collections.count > 0)
+                                                ? (gameData.collections.get(0).shortName || "") : ""
+            property var logoImage: !gameData ? ""
+                                  : logoShort === "retropie" ? gameData.assets.boxFront
+                                  : logoShort === "steam"    ? logo(gameData)
+                                  : gameData.assets.logo
             // No decode at all when the logo isn't shown — an invisible Image
             // still loads its source, which was a wasted decode per tile.
             source: (showLogo && modelData && artArmed) ? (logoImage || "") : ""
-            sourceSize { width: 200; height: 150 }
+            sourceSize { width: hrpx(200); height: hrpx(150) }
             fillMode: Image.PreserveAspectFit
             asynchronous: true
             smooth: true
@@ -465,8 +475,12 @@ id: root
 
         active: selected
         anchors.fill: parent
+        // Built synchronously: an asynchronous Loader only builds in spare time
+        // between frames, so on a busy screen (art decoding, 4K) the old frame
+        // vanished at once and the new one turned up late. The frame is two
+        // Rectangles, so building it on the spot costs nothing.
         sourceComponent: border
-        asynchronous: true
+        asynchronous: false
     }
 
     Component {
@@ -503,7 +517,7 @@ id: root
     Text {
     id: platformname
 
-        text: modelData.title
+        text: modelData ? modelData.title : ""
         anchors { fill: parent; margins: vpx(10) }
         color: "white"
         scale: selected ? 1.1 : 1
@@ -556,13 +570,25 @@ id: root
         }
     }
 
+    // Mouse hover selects a tile only once the pointer rests on it for a
+    // moment. Selecting on every tile the pointer crosses started a background
+    // crossfade, a scroll and a preview timer per tile, which lagged badly on
+    // large windows: the sounds played but the highlight couldn't keep up.
+    Timer {
+    id: hoverIntent
+        interval: 60
+        onTriggered: if (hoverArea.containsMouse) { playNav(); highlighted(); }
+    }
+
     // Mouse/touch functionality
     MouseArea {
+    id: hoverArea
         anchors.fill: parent
         hoverEnabled: settings.MouseHover == "Yes"
-        onEntered: { playNav(); highlighted(); }
-        onExited: { unhighlighted(); }
+        onEntered: hoverIntent.restart()
+        onExited: { hoverIntent.stop(); unhighlighted(); }
         onClicked: {
+            hoverIntent.stop();
             playNav();
             activated();
         }

@@ -42,8 +42,10 @@ id: root
     property bool showInfo: true
 
     onShowInfoChanged: {
-        if (showInfo)
+        if (showInfo) {
             currentHelpbarModel = discoverHelpModel;
+            currentHelpOwner = root;
+        }
         else
             currentHelpbarModel = null;
         // Hide the shared Apps prompt along with this screen's own UI.
@@ -236,7 +238,7 @@ id: root
             source: shortName !== ""
                     ? "../assets/images/logospng/" + Utils.processPlatformName(shortName) + ".png"
                     : ""
-            sourceSize { width: 400; height: 80 }
+            sourceSize { width: hrpx(400); height: hrpx(80) }
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true
@@ -287,8 +289,10 @@ id: root
     }
 
     onActiveFocusChanged: {
-        if (activeFocus)
+        if (activeFocus) {
             currentHelpbarModel = discoverHelpModel;
+            currentHelpOwner = root;
+        }
         else
             hideAppsPrompt = false;   // safety net for any other exit path
     }
@@ -299,8 +303,9 @@ id: root
 
     // Mouse back button: the same exit B performs — hand the game and
     // position back so the featured box resumes here, and clear the prompt.
+    // (There is no key event here: the old `event.accepted = true` line threw
+    // "event is not defined", so the mouse Back button did nothing.)
     function mouseBack() {
-        event.accepted = true;
         // Clear on the way out, or leaving with the UI hidden would keep
         // the Apps prompt suppressed on every other screen.
         hideAppsPrompt = false;
@@ -311,6 +316,14 @@ id: root
         }
         previousScreen();
             }
+
+    // Clickable help prompts: each does what pressing its button does.
+    function helpAction(button) {
+        if (button === "accept")       { if (currentGame) launchGameFromDiscover(currentGame); }
+        else if (button === "cancel")  mouseBack();
+        else if (button === "details") showInfo = !showInfo;
+        else if (button === "filters") { if (currentGame) gameDetailsFromDiscover(currentGame); }
+    }
 
     Keys.onPressed: {
         // Accept – launch the game directly

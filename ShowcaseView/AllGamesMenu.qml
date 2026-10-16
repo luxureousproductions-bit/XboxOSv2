@@ -277,7 +277,7 @@ id: root
         visible: false
         asynchronous: true
         source: artBoxSource
-        sourceSize: Qt.size(64, 64)
+        sourceSize: Qt.size(hrpx(64), hrpx(64))
     }
     property bool boxRotated: is3dPath(artBoxSource.toString())
                               && boxProbe.status === Image.Ready
@@ -562,6 +562,7 @@ id: root
 
     Component.onCompleted: {
         currentHelpbarModel     = allGamesHelpModel;
+        currentHelpOwner        = root;
         currentCustomCollection = listAllGames.collection;
         restoreSelection();   // restore the row we were on (if the model is ready)
         settledGame = currentGame;   // show the persisted game's art right away
@@ -616,7 +617,13 @@ id: root
             readonly property Item blurSrc: bgArtImg
             sourceComponent: Component {
                 FastBlur {
-                    anchors.fill: parent
+                    // Big desktop screens: blur at 1080p size and scale up. Same look
+                    // as a handheld (64 is the blur's hard cap, so it can't just grow)
+                    // and a quarter of the GPU work at 4K. hiResScale is 1 on Android.
+                    width: parent.width / hiResScale
+                    height: parent.height / hiResScale
+                    scale: hiResScale
+                    transformOrigin: Item.TopLeft
                     source: bgBlurLoader.blurSrc
                     radius: 64
                     opacity: 0.55
@@ -697,7 +704,7 @@ id: root
                     width:  parent.width  * 1.45
                     height: parent.height * 1.45
                     source: appIconMode ? artScreenshot : ""
-                    sourceSize { width: hqMode ? 768 : 512; height: hqMode ? 768 : 512 }
+                    sourceSize { width: hrpx(hqMode ? 768 : 512); height: hrpx(hqMode ? 768 : 512) }
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
                     asynchronous: true
@@ -1665,11 +1672,15 @@ id: root
                 anchors { right: parent.right; rightMargin: vpx(36); bottom: parent.bottom; bottomMargin: vpx(18) }
                 spacing: vpx(22)
                 Row { spacing: vpx(6)
-                    Image { anchors.verticalCenter: parent.verticalCenter; width: vpx(20); height: vpx(20); source: "../assets/images/controller/" + Utils.processButtonArt("filters") + ".png"; sourceSize { width: 40; height: 40 } }
-                    Text { anchors.verticalCenter: parent.verticalCenter; text: "Theme settings"; color: "#D2D2D2"; font.family: subtitleFont.name; font.pixelSize: vpx(16) } }
+                    Image { anchors.verticalCenter: parent.verticalCenter; width: vpx(20); height: vpx(20); source: "../assets/images/controller/" + Utils.processButtonArt("filters") + ".png"; sourceSize { width: hrpx(40); height: hrpx(40) } }
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: "Theme settings"; color: "#D2D2D2"; font.family: subtitleFont.name; font.pixelSize: vpx(16)
+                        // Clickable, reaching back over the icon: same as pressing the button.
+                        MouseArea { anchors.fill: parent; anchors.leftMargin: -vpx(26); cursorShape: Qt.PointingHandCursor; onClicked: root.helpAction("filters") } } }
                 Row { spacing: vpx(6)
-                    Image { anchors.verticalCenter: parent.verticalCenter; width: vpx(20); height: vpx(20); source: "../assets/images/controller/" + Utils.processButtonArt("cancel") + ".png"; sourceSize { width: 40; height: 40 } }
-                    Text { anchors.verticalCenter: parent.verticalCenter; text: "Back"; color: "#D2D2D2"; font.family: subtitleFont.name; font.pixelSize: vpx(16) } }
+                    Image { anchors.verticalCenter: parent.verticalCenter; width: vpx(20); height: vpx(20); source: "../assets/images/controller/" + Utils.processButtonArt("cancel") + ".png"; sourceSize { width: hrpx(40); height: hrpx(40) } }
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: "Back"; color: "#D2D2D2"; font.family: subtitleFont.name; font.pixelSize: vpx(16)
+                        // Clickable, reaching back over the icon: same as pressing the button.
+                        MouseArea { anchors.fill: parent; anchors.leftMargin: -vpx(26); cursorShape: Qt.PointingHandCursor; onClicked: root.helpAction("cancel") } } }
             }
         }
         Keys.onPressed: {
@@ -1956,19 +1967,31 @@ id: root
                          : genrePickerOpen  ? [ {a:"accept",t:"Toggle"}, {a:"cancel",t:"Done"} ]
                          : systemPickerOpen ? [ {a:"accept",t:"Select"}, {a:"cancel",t:"Back"} ]
                          :                    [ {a:"accept",t:"Select"}, {a:"details",t:"Clear all"}, {a:"cancel",t:"Close"} ]
-                    delegate: Row {
-                        spacing: vpx(7)
-                        Image {
-                            anchors.verticalCenter: parent.verticalCenter
-                            source: "../assets/images/controller/" + fpBtnArt(modelData.a) + ".png"
-                            width: vpx(26); height: vpx(26)
-                            asynchronous: true; smooth: true
+                    // Clickable: a click does what pressing that button does.
+                    delegate: Item {
+                        width: filterPrompt.width; height: filterPrompt.height
+                        opacity: filterPromptMouse.pressed ? 0.6 : 1
+                        Row {
+                        id: filterPrompt
+                            spacing: vpx(7)
+                            Image {
+                                anchors.verticalCenter: parent.verticalCenter
+                                source: "../assets/images/controller/" + fpBtnArt(modelData.a) + ".png"
+                                width: vpx(26); height: vpx(26)
+                                asynchronous: true; smooth: true
+                            }
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: modelData.t
+                                color: "white"; opacity: 0.55
+                                font.family: subtitleFont.name; font.pixelSize: fpx(15)
+                            }
                         }
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: modelData.t
-                            color: "white"; opacity: 0.55
-                            font.family: subtitleFont.name; font.pixelSize: fpx(15)
+                        MouseArea {
+                        id: filterPromptMouse
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.helpAction(modelData.a)
                         }
                     }
                 }
@@ -2169,6 +2192,74 @@ id: root
         currentHelpbarModel = gridMode ? (currentIsImportedApp ? allGamesGridAppHelpModel : allGamesGridHelpModel)
                             : currentIsImportedApp ? allGamesAppHelpModel
                                                    : allGamesHelpModel;
+        currentHelpOwner = root;
+    }
+
+    // Clickable help prompts: a click does what pressing that button does
+    // right now, following the same states as the key handlers (per-list
+    // panel, Filters panel and its pickers, top nav buttons, list or grid).
+    // A copy of those branches, so the controller code is left untouched.
+    function helpAction(button) {
+        if (searchActive) return;                // the keyboard has its own prompts
+        if (listPanelOpen) {
+            if (button === "cancel")       { playBack(); listPanelOpen = false; focusGames(); }
+            else if (button === "filters") { listPanelOpen = false; settingsScreen(); }
+            else if (button === "accept")  listCycle(listRow, 1);
+            return;
+        }
+        if (filterOpen) {
+            if (genrePickerOpen) {
+                if (button === "accept")       { playAccept(); toggleGenre(genreOptions[genrePickerIndex]); }
+                else if (button === "cancel")  { playBack(); genrePickerOpen = false; }
+                else if (button === "details") { playAccept(); genrePickerOpen = false; }
+                return;
+            }
+            if (systemPickerOpen) {
+                if (button === "accept") { playAccept(); selectSystem(systemOptions[systemPickerIndex]); }
+                else if (button === "cancel" || button === "details") { playBack(); systemPickerOpen = false; }
+                return;
+            }
+            if (button === "accept") {
+                playAccept();
+                if (filterRow === 0) activateSearch();
+                else if (filterRow === 1) openGenrePicker();
+                else if (filterRow === 2) openSystemPicker();
+                else if (filterRow <= sortFields.length + 2) selectSort(sortFields[filterRow - 3].key);
+                else if (filterRow === sortFields.length + 3) { favsOnly = !favsOnly; gamesView.currentIndex = 0; }
+            }
+            else if (button === "cancel")  { playBack(); filterOpen = false; focusGames(); }
+            else if (button === "details") { playToggle(); clearAllFilters(); }
+            return;
+        }
+        // Top nav buttons handle A and B themselves.
+        var nav = homebutton.activeFocus ? "home" : discoverbutton.activeFocus ? "discover"
+                : achievementsbutton.activeFocus ? "achievements" : settingsbutton.activeFocus ? "settings" : "";
+        if (nav !== "" && button === "accept") {
+            if (nav === "home") showcaseScreen();
+            else if (nav === "discover") discoverScreen();
+            else if (nav === "achievements") achievementsScreen();
+            else settingsScreen();
+            return;
+        }
+        if (nav !== "" && button === "cancel") { playBack(); focusGames(); return; }
+        if (!gamesFocused) return;
+        if (button === "accept") {
+            if (!currentGame) return;
+            if (gridMode) activateCurrent();
+            else activateGame(currentGame, false);
+        } else if (button === "cancel") {
+            previousScreen();
+        } else if (button === "details") {
+            playAccept();
+            var fi = sortFields.map(function(f){ return f.key; }).indexOf(sortField);
+            filterRow = fi >= 0 ? fi + 2 : 0;
+            filterOpen = true;
+            searchActive = false;
+            genrePickerOpen = false;
+            filterPanel.forceActiveFocus();
+        } else if (button === "filters") {
+            playAccept(); listRow = 0; listPanelOpen = true; listPanel.forceActiveFocus();
+        }
     }
     // Only fires when crossing between an app and a normal entry, not on every
     // cursor move.

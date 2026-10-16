@@ -76,12 +76,25 @@ id: root
     // for the decoder to reach ready, and keeps the box's pause short.
     property int previewDelay:  hqPreviewDelay
     property int previewWarmup: hqPreviewWarmup
+    // The preview's file, captured once when the Video is created. The Video
+    // reads this rather than `game` directly: when a list re-filters or a tile
+    // is recycled, `game` can briefly become null while the Video still
+    // exists, and a live `game.assets...` binding then throws
+    // "Cannot read property 'assets' of null" mid-teardown.
+    property url previewUrl: ""
+
     function unloadPreview() {
         armed = false;
         rowPreviewPlaying = false;
-        videoPreviewLoader.sourceComponent = undefined;
         warmupDelay.stop();
         videoDelay.stop();
+        // Stop the player before the Loader destroys it. Destroying a player
+        // that is still playing is not safe on every platform's media backend
+        // (Windows in particular); stopping first lets it shut down cleanly.
+        var v = videoPreviewLoader.item;
+        if (v) v.stop();
+        videoPreviewLoader.sourceComponent = undefined;
+        previewUrl = "";
     }
     // Start warming immediately; the delay now only gates the reveal.
     function beginPreview() {
@@ -121,8 +134,10 @@ id: root
         interval: Math.max(0, root.previewDelay - root.previewWarmup)
         onTriggered: {
             if (!playbackActive || !selected) return;
-            if (game && game.assets.videos.length)
+            if (game && game.assets && game.assets.videoList.length) {
+                previewUrl = game.assets.videoList[0];
                 videoPreviewLoader.sourceComponent = videoPreviewWrapper;
+            }
         }
     }
 
@@ -146,7 +161,7 @@ id: root
                                       // edge sits +2 in. The video's square corners are then
                                       // hidden beneath the ring — no gap, and no masking of
                                       // the VideoOutput (which renders black on weak GPUs).
-            source: game.assets.videoList.length ? game.assets.videoList[0] : ""
+            source: root.previewUrl
             fillMode: VideoOutput.PreserveAspectCrop
             muted: !root.allowAudio || !root.playbackActive
             loops: MediaPlayer.Infinite

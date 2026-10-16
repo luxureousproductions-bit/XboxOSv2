@@ -880,7 +880,8 @@ id: root
             return "Shows the live game count on the platform page and all games menu";
         }
         if (name === "Allow video thumbnails") {
-            return "Plays a short preview video on the highlighted tile (Home & Platform page)";
+            return "Plays a short preview video on the highlighted tile (Home & Platform page)\n"
+                 + "On by default on Android, off by default on Windows and Linux";
         }
         if (name === "Hide logo when thumbnail video plays") {
             return "While a tile's preview video plays, hides the game's logo so it doesn't cover the video (Home & Platform page)";
@@ -902,7 +903,8 @@ id: root
                  + "GRID fills the page with tiles \u2014 no preview panel. Its own tile style, ratio, art and items-per-row are below, separate from the Platform page";
         }
         if (name === "AllGames Video preview") {
-            return "Plays a short preview video for the highlighted game in the All Games menu (List & Grid mode)";
+            return "Plays a short preview video for the highlighted game in the All Games menu (List & Grid mode)\n"
+                 + "On by default on Android, off by default on Windows and Linux";
         }
         if (name === "AllGames Hide box art on video") {
             return "In the All Games list, hides the box art in the preview panel while the video plays";
@@ -977,7 +979,8 @@ id: root
             return "Opens Game Details straight onto the full description instead of the summary";
         }
         if (name === "Video preview") {
-            return "Plays the game's preview video in the background of the Game Details page";
+            return "Plays the game's preview video in the background of the Game Details page\n"
+                 + "On by default on Android, off by default on Windows and Linux";
         }
         if (name === "Blur Background") {
             return "Softens the background picture on the Game Details page";
@@ -1608,17 +1611,17 @@ id: root
 
                     // Showcase thumbnail previews: the logo-hide and audio rows do nothing without them.
                     if (settingName === "Hide logo when thumbnail video plays" || settingName === "Video thumbnail audio")
-                        return mem("Allow video thumbnails", "Yes") === "No";
+                        return mem("Allow video thumbnails", previewDefault) === "No";
 
                     // Game Details preview video and its audio.
                     if (settingName === "Game details video preview audio")
-                        return mem("Video preview", "Yes") === "No";
+                        return mem("Video preview", previewDefault) === "No";
 
                     // All Games preview video and the rows that only matter while it plays.
                     if (settingName === "All games menu video audio"
                         || settingName === "AllGames Hide box art on video"
                         || settingName === "AllGames Hide logo on video")
-                        return mem("AllGames Video preview", "Yes") === "No";
+                        return mem("AllGames Video preview", previewDefault) === "No";
 
                     // Featured box off: its content and pin rows are moot.
                     if (settingName === "Featured Box Content" || settingName === "Pins to collection")
@@ -2060,7 +2063,35 @@ id: root
 
     Component.onCompleted: rebuildHelpbar()
 
-    onFocusChanged: { if (focus) currentHelpbarModel = settingsHelpModel; }
+    onFocusChanged: { if (focus) { currentHelpbarModel = settingsHelpModel; currentHelpOwner = root; } }
+
+    // Clickable help prompts (Back, More info): each does what pressing its
+    // button does, in the same order as the key handlers — the info panel
+    // first, then a setting row, then the page list.
+    function helpAction(button) {
+        if (kbOpen) return;                      // the keyboard has its own prompts
+        if (infoOpen) {
+            if (button === "cancel" || button === "details") { playBack(); closeInfo(); }
+            return;
+        }
+        if (settingsList.focus) {
+            // Model roles aren't readable through currentItem, so the name
+            // comes from the page model (as rebuildHelpbar does).
+            var page = settingsArr[pagelist.currentIndex];
+            var i = settingsList.currentIndex;
+            var entry = (page && page.listmodel && i >= 0 && i < page.listmodel.count) ? page.listmodel.get(i) : null;
+            var item = settingsList.currentItem;
+            if (button === "details" && entry && item && hasInfo(entry.settingName)) {
+                playToggle();
+                openInfo(item.displayLabel, infoText(entry.settingName));
+            } else if (button === "cancel") {
+                playBack();
+                pagelist.focus = true;
+            }
+            return;
+        }
+        if (button === "cancel") previousScreen();
+    }
 
     // ── Info panel ────────────────────────────────────────────────────────
     property bool   infoOpen:  false

@@ -308,10 +308,17 @@ id: root
     // settings object below (as each key's fallback) AND by SettingsScreen (to
     // show the right current value on a fresh install) — one table, so the two
     // can never disagree. Keys absent here keep the fallback written inline.
+    // Preview videos (tiles, All Games, Game Details background) default ON for
+    // Android and OFF for Windows/Linux,
+    // where video playback has been the source of crashes and lag. Only the
+    // default changes; a saved choice is always kept.
+    readonly property string previewDefault: Qt.platform.os === "android" ? "Yes" : "No"
+
     readonly property var settingDefaults: ({
         "3D Box":                                    "Yes",
         "All games menu video audio":                "Yes",
-        "Allow video thumbnails":                    "Yes",
+        "Allow video thumbnails":                    previewDefault,
+        "AllGames Video preview":                    previewDefault,
         "Bottom fade":                               "Strong",
         "Box Art":                                   "3D",
         "Collection 1":                              "Recommended",
@@ -342,6 +349,7 @@ id: root
         "Featured Box Content":                      "Fanart Slideshow",
         "Game Background":                           "Fanart",
         "Game details video preview audio":          "Yes",
+        "Video preview":                             previewDefault,
         "Grid Thumbnail":                            "Square",
         "Hide Android System Tile":                  "Yes",
         "Hide Android Games System Tile":            "No",
@@ -375,8 +383,8 @@ id: root
             GameBackground:                api.memory.has("Game Background") ? api.memory.get("Game Background") : "Fanart",
             GameLogo:                      api.memory.has("Game Logo") ? api.memory.get("Game Logo") : "Show",
             GameBlurBackground:            api.memory.has("Blur Background") ? api.memory.get("Blur Background") : "No",
-            VideoPreview:                  api.memory.has("Video preview") ? api.memory.get("Video preview") : "Yes",
-            AllowThumbVideo:               api.memory.has("Allow video thumbnails") ? api.memory.get("Allow video thumbnails") : "Yes",
+            VideoPreview:                  api.memory.has("Video preview") ? api.memory.get("Video preview") : previewDefault,
+            AllowThumbVideo:               api.memory.has("Allow video thumbnails") ? api.memory.get("Allow video thumbnails") : previewDefault,
             AllowThumbVideoAudio:          api.memory.has("Video thumbnail audio") ? api.memory.get("Video thumbnail audio") : "Yes",
             HideLogo:                      api.memory.has("Hide logo when thumbnail video plays") ? api.memory.get("Hide logo when thumbnail video plays") : "Yes",
             HideButtonHelp:                api.memory.has("Hide button help") ? api.memory.get("Hide button help") : "No",
@@ -458,7 +466,7 @@ id: root
             MenuSounds:                      api.memory.has("Menu sounds") ? api.memory.get("Menu sounds") : "Yes",
             MenuVolume:                      api.memory.has("Menu Volume") ? api.memory.get("Menu Volume") : "1.0",
             StartupChime:                    api.memory.has("Start up chime") ? api.memory.get("Start up chime") : "Yes",
-            AllGamesVideoPreview:            api.memory.has("AllGames Video preview") ? api.memory.get("AllGames Video preview") : "Yes",
+            AllGamesVideoPreview:            api.memory.has("AllGames Video preview") ? api.memory.get("AllGames Video preview") : previewDefault,
             AllGamesView:                  api.memory.has("All Games View") ? api.memory.get("All Games View") : "List",
             AllGamesTileStyle:             api.memory.has("AllGames Tile Style") ? api.memory.get("AllGames Tile Style") : "Wide",
             AllGamesTileRatio:             api.memory.has("AllGames Tile Ratio") ? api.memory.get("AllGames Tile Ratio") : "0.66",
@@ -593,7 +601,7 @@ id: root
     // less than a big Showcase row tile wants. Nothing on screen changes;
     // only the wasted pixels go. Extra room covers the focus pop.
     readonly property real hqTileDecodeScale: hqMode ? 1.5 : 1.25
-    readonly property int  hqTileArtPx:     hqMode ? 1024 : 512   // hard cap on that decode
+    readonly property int  hqTileArtPx:     hrpx(hqMode ? 1024 : 512)   // hard cap on that decode (grows on 1440p/4K desktops)
     // Showcase app-tile backdrop. Kept LIGHT: at the old 48/64 the icon behind
     // the tile dissolved into a colour wash. A gentler blur keeps its shape
     // readable while still reading as a backdrop rather than a second icon.
@@ -1307,6 +1315,16 @@ id: root
     // bare name in child screens and Global/ components, exactly like vpx().
     property real uiScale: parseFloat(settings.UiScale) || 1.0
     function fpx(n) { return vpx(n) * uiScale; }
+
+    // ── Big desktop screens (1440p / 4K) ─────────────────────────────────
+    // Layout already scales with vpx(). What doesn't are the FIXED pixel
+    // numbers tuned for 1080p handhelds: image decode sizes (icons, logos,
+    // the tile-art cap) and blur strength. hiResScale grows those in step
+    // with the window: 1 at 1080p, 1.33 at 1440p, 2 at 4K.
+    // Always exactly 1 on Android, so handhelds decode and draw exactly what
+    // they did before.
+    readonly property real hiResScale: Qt.platform.os === "android" ? 1 : Math.max(1, vpx(1) / 1.5)
+    function hrpx(n) { return Math.round(n * hiResScale); }
     property real helpMargin: buttonbar.height
     property int transitionTime: 100
 
@@ -2001,10 +2019,36 @@ id: root
     
     // Button help
     property var currentHelpbarModel
+    // Clickable prompts: the screen that owns the current help bar registers
+    // itself here (right after setting currentHelpbarModel) and implements
+    // helpAction(button). Any model change clears it first, so a screen that
+    // doesn't register yet simply has prompts that ignore clicks.
+    property var currentHelpOwner: null
+    onCurrentHelpbarModelChanged: currentHelpOwner = null
+    function helpPromptClicked(button) {
+        if (librarySearch.open || appDrawer.open) return;
+        if (currentHelpOwner && typeof currentHelpOwner.helpAction === "function")
+            currentHelpOwner.helpAction(button);
+    }
+    // Opens or closes the App Drawer: the Select key and the Apps prompt.
+    function toggleAppDrawer() {
+        if (librarySearch.open) return;   // no drawer over an open search
+        if (appDrawer.open) {
+            appDrawer.closeDrawer();
+        } else {
+            playAccept();
+            drawerOpenChime.restart();    // tabRight follows once accept has sounded
+            appDrawer.openDrawer();
+        }
+    }
     // Help bar text follows theme.text everywhere EXCEPT the settings page,
     // whose background is locked black — there it stays light so it never vanishes.
     ButtonHelpBar {
     id: buttonbar
+
+        clickable: currentHelpOwner !== null
+        onPromptClicked: helpPromptClicked(button)
+        onLeftPromptClicked: toggleAppDrawer()
 
         height: vpx(50)
         anchors {
@@ -2091,6 +2135,9 @@ id: root
             id: drawerSnap
                 anchors.fill: parent
                 sourceItem: activeScreenItem
+                // Captured at 1080p size on big desktops; it's blurred anyway.
+                // Same as the item size on Android (hiResScale 1).
+                textureSize: Qt.size(Math.round(width / hiResScale), Math.round(height / hiResScale))
                 // Live only while the drawer is sliding open, then frozen. A
                 // single capture at the open instant caught the highlighted
                 // tile mid-transition: its art was still faded out under the
@@ -2103,7 +2150,13 @@ id: root
                 visible: false
             }
             FastBlur {
-                anchors.fill: parent
+                // Big desktop screens: blur at 1080p size and scale up. Same look
+                // as a handheld (64 is the blur's hard cap, so it can't just grow)
+                // and a quarter of the GPU work at 4K. hiResScale is 1 on Android.
+                width: parent.width / hiResScale
+                height: parent.height / hiResScale
+                scale: hiResScale
+                transformOrigin: Item.TopLeft
                 source: drawerSnap
                 radius: 48
                 cached: true
@@ -2253,14 +2306,7 @@ id: root
 
         if (appDrawerKeys.indexOf(event.key) === -1) return;
         event.accepted = true;
-        if (librarySearch.open) return;   // no drawer over an open search
-        if (appDrawer.open) {
-            appDrawer.closeDrawer();
-        } else {
-            playAccept();
-            drawerOpenChime.restart();    // tabRight follows once accept has sounded
-            appDrawer.openDrawer();
-        }
+        toggleAppDrawer();
     }
 
     ///////////////////

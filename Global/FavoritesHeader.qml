@@ -469,7 +469,7 @@ id: root
             anchors.fill: tile
             active: selected
             sourceComponent: favBorderComponent
-            asynchronous: true
+            asynchronous: false   // see DynamicGridItem: async made the frame lag
         }
         Component {
         id: favBorderComponent

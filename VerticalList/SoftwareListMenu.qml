@@ -204,7 +204,7 @@ id: root
         // Details
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            toggleSort();
+            cycleSort();   // was toggleSort(), which never existed (ReferenceError)
         }
     }
 
@@ -230,5 +230,17 @@ id: root
         }
     }
     
-    onFocusChanged: { if (focus) currentHelpbarModel = gridviewHelpModel; }
+    onFocusChanged: { if (focus) { currentHelpbarModel = gridviewHelpModel; currentHelpOwner = root; } }
+
+    // Clickable help prompts: each does what pressing its button does.
+    function helpAction(button) {
+        if (button === "accept") {
+            if (softwarelist.focus) launchGame();
+            else { currentGameIndex = 0; softwarelist.focus = true; }
+        } else if (button === "cancel") {
+            if (softwarelist.focus) previousScreen();
+            else { currentGameIndex = 0; softwarelist.focus = true; }
+        } else if (button === "filters") toggleFavs();
+        else if (button === "details") cycleSort();
+    }
 }

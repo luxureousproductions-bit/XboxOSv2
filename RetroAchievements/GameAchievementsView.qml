@@ -114,7 +114,7 @@ id: root
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true
-            sourceSize { width: 96; height: 96 }
+            sourceSize { width: hrpx(96); height: hrpx(96) }
         }
 
         Row {
@@ -135,7 +135,7 @@ id: root
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
                     asynchronous: true
-                    sourceSize { width: 64; height: 64 }
+                    sourceSize { width: hrpx(64); height: hrpx(64) }
                     layer.enabled: true
                     layer.smooth: true
                     layer.effect: OpacityMask {
@@ -244,7 +244,7 @@ id: root
                 fillMode: Image.PreserveAspectFit
                 smooth: true
                 asynchronous: true
-                sourceSize { width: 120; height: 120 }
+                sourceSize { width: hrpx(120); height: hrpx(120) }
             }
         }
 
@@ -518,7 +518,7 @@ id: root
                         fillMode:    Image.PreserveAspectFit
                         smooth:      true
                         asynchronous: true
-                        sourceSize { width: 64; height: 64 }
+                        sourceSize { width: hrpx(64); height: hrpx(64) }
                         opacity: isEarned ? 1.0 : 0.28
                     }
                 }
@@ -697,22 +697,34 @@ id: root
 
         Repeater {
             model: localHelpModel
-            delegate: Row {
-                spacing: vpx(6)
-                Image {
-                    source: "../assets/images/controller/"
-                            + buttonbar.processButtonArt(button) + ".png"
-                    width: vpx(32); height: vpx(32)
-                    asynchronous: true
-                    sourceSize { width: 48; height: 48 }
+            // Clickable: a click does what pressing that button does here.
+            delegate: Item {
+                width: raPrompt.width; height: raPrompt.height
+                opacity: raPromptMouse.pressed ? 0.6 : 1
+                Row {
+                id: raPrompt
+                    spacing: vpx(6)
+                    Image {
+                        source: "../assets/images/controller/"
+                                + buttonbar.processButtonArt(button) + ".png"
+                        width: vpx(32); height: vpx(32)
+                        asynchronous: true
+                        sourceSize { width: hrpx(48); height: hrpx(48) }
+                    }
+                    Text {
+                        text: name
+                        font.family: subtitleFont.name
+                        font.pixelSize: fpx(19)
+                        color: theme.text
+                        height: vpx(32)
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
-                Text {
-                    text: name
-                    font.family: subtitleFont.name
-                    font.pixelSize: fpx(19)
-                    color: theme.text
-                    height: vpx(32)
-                    verticalAlignment: Text.AlignVCenter
+                MouseArea {
+                id: raPromptMouse
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.helpAction(button)
                 }
             }
         }
@@ -779,6 +791,31 @@ id: root
 
     // Mouse back button: same as B.
     function mouseBack() { achievementsScreenFromGame(); }
+
+    // Clickable prompts (this page's own row): each does what its button does.
+    // A copy of the key branches below, so the controller code is untouched.
+    function helpAction(button) {
+        if (librarySearch.open) return;
+        if (button === "cancel") achievementsScreenFromGame();
+        else if (button === "filters") { playToggle(); cycleSort(); currentIndex = 0; }
+        else if (button === "details") {
+            playAccept();
+            if (cheevosData.currentGameDetails.Title !== "")
+                cheevosData.loadGameAchievements(cheevosData.currentGameID);
+        } else if (button === "accept") {
+            var raTitle = cheevosData.currentGameDetails.Title || "";
+            var target  = null;
+            if (currentGame && raTitle !== ""
+                && cheevosData.normalizeTitle(currentGame.title) === cheevosData.normalizeTitle(raTitle))
+                target = currentGame;
+            if (!target)
+                target = cheevosData.findLocalGame(raTitle, cheevosData.currentGameDetails.ConsoleName || "");
+            if (target) {
+                playAccept();
+                launchGameFromRA(target);
+            }
+        }
+    }
 
     Keys.onPressed: {
         // B — back to the RA overview. A second B there exits RA entirely.

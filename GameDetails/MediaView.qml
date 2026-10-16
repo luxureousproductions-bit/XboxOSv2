@@ -241,6 +241,12 @@ id: root
     onFocusChanged: { 
         if (focus) { 
             currentHelpbarModel = mediaviewHelpModel;
+            currentHelpOwner = root;
         }
+    }
+
+    // Clickable help prompt: Back closes, same as B.
+    function helpAction(button) {
+        if (button === "cancel" || button === "accept") close();
     }
 }

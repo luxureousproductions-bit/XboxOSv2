@@ -112,6 +112,9 @@ id: root
 
     signal activate(int activeIndex)
     signal activateSelected
+    // The clickable Select prompt on Home calls this on the current row;
+    // it does exactly what pressing A on the row does.
+    function activateCurrent() { collectionList.activateCurrent(); }
     signal listHighlighted
 
     Text {
@@ -346,6 +349,20 @@ id: root
             } else {
                 collectionList.incrementCurrentIndex();
             }
+        }
+        // The clickable Select prompt: does exactly what A does on this row.
+        function activateCurrent() {
+            if (onFavoritesHeader) {
+                if (root.favTargetGame) {
+                    activateSelected();
+                    openGame(root.favTargetGame);
+                }
+                return;
+            }
+            var it = currentItem;
+            if (!it) return;
+            if (typeof it.activated === "function") it.activated();      // DynamicGridItem
+            else if (typeof it.activate === "function") it.activate();   // BoxArtGridItem
         }
         Keys.onPressed: {
             if (onFavoritesHeader && api.keys.isAccept(event) && !event.isAutoRepeat) {

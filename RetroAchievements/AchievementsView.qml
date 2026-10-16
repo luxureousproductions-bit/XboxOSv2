@@ -94,7 +94,7 @@ id: root
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true
-            sourceSize { width: 96; height: 96 }
+            sourceSize { width: hrpx(96); height: hrpx(96) }
         }
 
         // Avatar + username + points + rank + member since
@@ -116,7 +116,7 @@ id: root
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
                     asynchronous: true
-                    sourceSize { width: 64; height: 64 }
+                    sourceSize { width: hrpx(64); height: hrpx(64) }
                     layer.enabled: true
                     layer.smooth: true
                     layer.effect: OpacityMask {
@@ -307,7 +307,7 @@ id: root
                         fillMode: Image.PreserveAspectFit
                         smooth: true
                         asynchronous: true
-                        sourceSize { width: 96; height: 96 }
+                        sourceSize { width: hrpx(96); height: hrpx(96) }
                     }
                 }
 
@@ -500,22 +500,34 @@ id: root
 
         Repeater {
             model: localHelpModel
-            delegate: Row {
-                spacing: vpx(8)
-                Image {
-                    source: "../assets/images/controller/"
-                            + buttonbar.processButtonArt(button) + ".png"
-                    width: vpx(32); height: vpx(32)
-                    asynchronous: true
-                    sourceSize { width: 48; height: 48 }
+            // Clickable: a click does what pressing that button does here.
+            delegate: Item {
+                width: raPrompt.width; height: raPrompt.height
+                opacity: raPromptMouse.pressed ? 0.6 : 1
+                Row {
+                id: raPrompt
+                    spacing: vpx(8)
+                    Image {
+                        source: "../assets/images/controller/"
+                                + buttonbar.processButtonArt(button) + ".png"
+                        width: vpx(32); height: vpx(32)
+                        asynchronous: true
+                        sourceSize { width: hrpx(48); height: hrpx(48) }
+                    }
+                    Text {
+                        text: name
+                        font.family: subtitleFont.name
+                        font.pixelSize: fpx(20)
+                        color: theme.text
+                        height: vpx(32)
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
-                Text {
-                    text: name
-                    font.family: subtitleFont.name
-                    font.pixelSize: fpx(20)
-                    color: theme.text
-                    height: vpx(32)
-                    verticalAlignment: Text.AlignVCenter
+                MouseArea {
+                id: raPromptMouse
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.helpAction(button)
                 }
             }
         }
@@ -555,6 +567,15 @@ id: root
     // theme.qml's mouseBack() handles it first.
     function mouseBack() {
         previousScreen();
+    }
+
+    // Clickable prompts (this page's own row): each does what its button does.
+    function helpAction(button) {
+        if (librarySearch.open) return;
+        if (button === "details") openLibrarySearch("ra");
+        else if (button === "accept") { playAccept(); openSelectedGame(); }
+        else if (button === "cancel") previousScreen();
+        else if (button === "filters") { playAccept(); initialized = false; cheevosData.refreshAll(); }
     }
 
     Keys.onPressed: {

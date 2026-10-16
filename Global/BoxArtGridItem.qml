@@ -372,7 +372,10 @@ id: root
             }
         }
     }
-    readonly property bool titleShown: titleMode === "Never" ? false : (selected || titleMode === "Always")
+    // Hidden when the tile has no art and already shows the name in the
+    // middle, so the title isn't printed twice.
+    readonly property bool titleShown: (titleMode === "Never" || platformname.visible) ? false
+                                     : (selected || titleMode === "Always")
 
     // Thin persistent accent border for favorited tiles — always visible
     // (not just on focus), so favorites stand out while scrolling past.
@@ -389,8 +392,12 @@ id: root
     Loader {
         active: selected && !is3d
         anchors.fill: artBounds
+        // Built synchronously: an asynchronous Loader only builds in spare time
+        // between frames, so on a busy screen (art decoding, 4K) the old frame
+        // vanished at once and the new one turned up late. The frame is two
+        // Rectangles, so building it on the spot costs nothing.
         sourceComponent: border
-        asynchronous: true
+        asynchronous: false
     }
 
     Component {
@@ -444,7 +451,7 @@ id: root
     Text {
     id: platformname
 
-        text: modelData.title
+        text: modelData ? modelData.title : ""
         anchors { fill: parent; margins: vpx(10) }
         color: "white"
         scale: selected ? 1.1 : 1
@@ -497,12 +504,25 @@ id: root
         }
     }
 
+    // Mouse hover selects a tile only once the pointer rests on it for a
+    // moment. Selecting on every tile the pointer crosses started a background
+    // crossfade, a scroll and a preview timer per tile, which lagged badly on
+    // large windows: the sounds played but the highlight couldn't keep up.
+    Timer {
+    id: hoverIntent
+        interval: 60
+        onTriggered: if (hoverArea.containsMouse) { playNav(); highlighted(); }
+    }
+
     // Mouse/touch functionality
     MouseArea {
+    id: hoverArea
         anchors.fill: parent
         hoverEnabled: settings.MouseHover == "Yes"
-        onEntered: { playNav(); highlighted(); }
+        onEntered: hoverIntent.restart()
+        onExited: hoverIntent.stop()
         onClicked: {
+            hoverIntent.stop();
             playNav();
             activate();
         }

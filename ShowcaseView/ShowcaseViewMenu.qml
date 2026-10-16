@@ -197,6 +197,7 @@ id: root
         listRecommended.refresh();
         listRandomSystem.refresh();
         currentHelpbarModel = gridviewHelpModel;
+        currentHelpOwner = root;
     }
 
 
@@ -710,7 +711,7 @@ id: root
             // Logo Color Match: tints the logo to the current Color Layout accent.
             layer.enabled: settings.LogoColorMatch === "Yes"
             layer.effect: ColorOverlay { color: theme.accent }
-            sourceSize { width: 150; height: 100}
+            sourceSize { width: hrpx(150); height: hrpx(100)}
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true
@@ -751,7 +752,7 @@ id: root
                         source: cheevosData.avatarUrl
                         fillMode: Image.PreserveAspectCrop
                         smooth: true; asynchronous: true
-                        sourceSize { width: 64; height: 64 }
+                        sourceSize { width: hrpx(64); height: hrpx(64) }
                         layer.enabled: true
                         layer.smooth: true
                         layer.effect: OpacityMask {
@@ -1466,7 +1467,7 @@ id: root
                     anchors.fill: parent
                     anchors.margins: vpx(15)
                     source: (!isHero && coll) ? "../assets/images/logospng/" + Utils.processPlatformName(coll.shortName) + ".png" : ""
-                    sourceSize { width: 512; height: 512 }
+                    sourceSize { width: hrpx(512); height: hrpx(512) }
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                     smooth: true
@@ -1604,16 +1605,19 @@ id: root
                 if (currentIndex < count - 1) incrementCurrentIndex();
                 else currentIndex = 0;            // last tile -> hero
             }
+            function activateCurrent() {
+                if (currentIndex <= 0) {
+                    if (resumeGame) { launchGame(resumeGame); }
+                } else {
+                    currentCollectionIndex = sortedColl[currentIndex - 1];
+                    collectionVisited = true;
+                    softwareScreen();
+                }
+            }
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                     event.accepted = true;
-                    if (currentIndex <= 0) {
-                        if (resumeGame) { launchGame(resumeGame); }
-                    } else {
-                        currentCollectionIndex = sortedColl[currentIndex - 1];
-                        collectionVisited = true;
-                        softwareScreen();
-                    }
+                    activateCurrent();
                 }
             }
 
@@ -2035,6 +2039,26 @@ id: root
         discoverScreen();
     }
 
+    // Clickable prompts (theme.qml routes clicks here while Home owns the bar).
+    // Each does exactly what its button does on this page.
+    function helpAction(button) {
+        if (button === "filters") settingsScreen();
+        else if (button === "details") refreshLists();
+        else if (button === "cancel") discoverScreen();
+        else if (button === "accept") helpSelect();
+    }
+    // Select = A on whatever is highlighted: a nav icon, the system row, or a row's tile.
+    function helpSelect() {
+        if (homebutton.activeFocus)         { allGamesScreen(); return; }
+        if (discoverbutton.activeFocus)     { discoverScreen(); return; }
+        if (achievementsbutton.activeFocus) { achievementsScreen(); return; }
+        if (searchbutton.activeFocus)       { openLibrarySearch(); return; }
+        if (settingsbutton.activeFocus)     { settingsScreen(); return; }
+        if (platformlist.activeFocus)       { platformlist.activateCurrent(); return; }
+        var row = mainList.currentItem;
+        if (row && typeof row.activateCurrent === "function") row.activateCurrent();
+    }
+
     Keys.onPressed: {
         // Settings
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
@@ -2048,6 +2072,11 @@ id: root
         }
         // Discover mode (B)
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
+            // The keyboard's Esc is left unhandled here so it reaches Pegasus,
+            // which opens its own menu (switch themes, settings). Without this,
+            // keyboard users had no way to that menu except F1. A controller's
+            // B (and Backspace) still opens Discover; Android is unaffected.
+            if (event.key === Qt.Key_Escape) return;
             event.accepted = true;
             discoverScreen();
         }
@@ -2095,6 +2124,7 @@ id: root
     onActiveFocusChanged: {
         if (activeFocus) {
             currentHelpbarModel = gridviewHelpModel;
+            currentHelpOwner = root;
             listRecommended.maybeRefresh();   // re-pick Recommended only if the showcased count changed
             // Re-read live settings on every return to this screen. Coming back
             // from Settings always lands here, so the featured box picks up a

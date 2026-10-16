@@ -4,7 +4,8 @@
 // every 15 seconds. Without a rank (RA hasn't returned one, or the account
 // has none) it simply shows the points line and never rotates.
 //
-// Used by the RA overview header and the Home page RA header card. Each host
+// Used by every RA profile header (overview, game RA page, game entry /
+// no-achievements page) and the Home page RA header card. Each host
 // passes its own colour/font/size so it matches the line it replaces:
 //
 //   RAStatLine { color: theme.text; fontFamily: bodyFont.name; pixelSize: fpx(15); opacity: 0.65 }

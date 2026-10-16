@@ -20,9 +20,28 @@ import QtQuick.Layouts 1.15
 Item {
 id: root
 
+    // Clicking a prompt does what pressing its button does. The bar only
+    // reports which prompt was clicked; theme.qml routes it to the screen
+    // that owns the bar. `clickable` is false on screens not wired up yet.
+    signal promptClicked(string button)
+    signal leftPromptClicked()
+    property bool clickable: false
+
     Component {
         id: buttonhelpDelegate
+        Item {
+        width: promptRow.width
+        height: promptRow.height
+        opacity: promptMouse.pressed ? 0.6 : 1
+        MouseArea {
+        id: promptMouse
+            anchors.fill: parent
+            enabled: root.clickable
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.promptClicked(button)
+        }
         Row {
+        id: promptRow
             spacing: 10
             Image {
                 // An entry may supply its own icon instead of a controller
@@ -48,6 +67,7 @@ id: root
                 verticalAlignment: Text.AlignVCenter
             }
         }
+        }
     }
 
     ListView {
@@ -72,6 +92,8 @@ id: root
     // rows out from the TOP of the bar, so centring this one instead is what
     // made "Apps" sit lower than everything else.
     Row {
+    id: leftPrompt
+        opacity: leftMouse.pressed ? 0.6 : 1
         anchors {
             left: parent.left
             top: parent.top
@@ -102,6 +124,16 @@ id: root
             height: parent.height
             verticalAlignment: Text.AlignVCenter
         }
+    }
+
+    // Click area for the Apps prompt. A sibling covering the Row rather than
+    // a child of it, so the Row doesn't lay it out as one more item.
+    MouseArea {
+    id: leftMouse
+        anchors.fill: leftPrompt
+        enabled: leftPrompt.visible
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.leftPromptClicked()
     }
 
     visible: currentHelpbarModel ? true : false

@@ -468,21 +468,33 @@ id: searchOverlay
         Repeater {
             model: [ { n: "Open", b: "accept" },
                      { n: "Back", b: "cancel" } ]
-            delegate: Row {
-                spacing: vpx(8)
-                Image {
-                    source: "../assets/images/controller/" + buttonbar.processButtonArt(modelData.b) + ".png"
-                    width: vpx(30); height: vpx(30)
-                    asynchronous: true
-                    sourceSize { width: 48; height: 48 }
+            // Clickable: a click does what pressing that button does.
+            delegate: Item {
+                width: searchPrompt.width; height: searchPrompt.height
+                opacity: searchPromptMouse.pressed ? 0.6 : 1
+                Row {
+                id: searchPrompt
+                    spacing: vpx(8)
+                    Image {
+                        source: "../assets/images/controller/" + buttonbar.processButtonArt(modelData.b) + ".png"
+                        width: vpx(30); height: vpx(30)
+                        asynchronous: true
+                        sourceSize { width: hrpx(48); height: hrpx(48) }
+                    }
+                    Text {
+                        text: modelData.n
+                        font.family: subtitleFont.name
+                        font.pixelSize: fpx(18)
+                        color: "white"
+                        height: vpx(30)
+                        verticalAlignment: Text.AlignVCenter
+                    }
                 }
-                Text {
-                    text: modelData.n
-                    font.family: subtitleFont.name
-                    font.pixelSize: fpx(18)
-                    color: "white"
-                    height: vpx(30)
-                    verticalAlignment: Text.AlignVCenter
+                MouseArea {
+                id: searchPromptMouse
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: searchOverlay.helpAction(modelData.b)
                 }
             }
         }
@@ -535,6 +547,13 @@ id: searchOverlay
         event.accepted = true;
         if (!showingResults) return;
         resultList.currentIndex = Math.min(results.length - 1, resultList.currentIndex + 10);
+    }
+
+    // Clickable results-page prompts: same as pressing the button.
+    function helpAction(button) {
+        if (!showingResults) return;
+        if (button === "accept") chooseResult();
+        else if (button === "cancel") { playBack(); resetSearch(); }
     }
 
     Keys.onPressed: {

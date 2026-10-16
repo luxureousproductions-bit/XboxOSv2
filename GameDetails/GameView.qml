@@ -181,6 +181,7 @@ id: root
         mediaScreen.opacity = 0;
         content.focus = true;
         currentHelpbarModel = gameviewHelpModel;
+        currentHelpOwner = root;
     }
 
     onGameChanged: reset();
@@ -407,7 +408,13 @@ id: root
         readonly property real blurOpacity: screenshot.opacity
         sourceComponent: Component {
             FastBlur {
-                anchors.fill: parent
+                // Big desktop screens: blur at 1080p size and scale up. Same look
+                // as a handheld (64 is the blur's hard cap, so it can't just grow)
+                // and a quarter of the GPU work at 4K. hiResScale is 1 on Android.
+                width: parent.width / hiResScale
+                height: parent.height / hiResScale
+                scale: hiResScale
+                transformOrigin: Item.TopLeft
                 source: blurLoader.blurSource
                 radius: 64
                 opacity: blurLoader.blurOpacity
@@ -454,7 +461,7 @@ id: root
         width: vpx(500)
         height: vpx(450) + header.height
         source: settings.GameLogo === "Show" && game ? Utils.logo(game) : ""
-        sourceSize { width: 512; height: 512 }
+        sourceSize { width: hrpx(512); height: hrpx(512) }
         fillMode: Image.PreserveAspectFit
         asynchronous: true
         opacity: logoAtTop ? 1 : 0
@@ -634,7 +641,7 @@ id: root
                             source: Utils.boxArt(game, settings.BoxArtStyle)
                             width: vpx(350)
                             height: parent.height
-                            sourceSize { width: 512; height: 512 }
+                            sourceSize { width: hrpx(512); height: hrpx(512) }
                             fillMode: Image.PreserveAspectFit
                             asynchronous: true
                             smooth: true
@@ -684,7 +691,7 @@ id: root
             }
             fillMode: Image.PreserveAspectFit
             source: "../assets/images/logospng/" + Utils.processPlatformName(game.collections.get(0).shortName) + ".png"
-            sourceSize { width: 256; height: 256 }
+            sourceSize { width: hrpx(256); height: hrpx(256) }
             smooth: true
             asynchronous: true
 
@@ -1232,6 +1239,29 @@ id: root
         previousScreen();
     }
 
+    // Clickable help prompts: a click does what pressing that button does
+    // here. Select goes to whatever is focused (nav button, button row, media
+    // strip, a "More games" row); Back follows mouseBack(), which already
+    // mirrors B. A copy of the key branches, so the controller code is untouched.
+    function helpAction(button) {
+        if (button === "cancel") { mouseBack(); return; }
+        if (button === "filters") { settingsScreen(); return; }
+        if (button === "details") {
+            if (game) { playAccept(); game.favorite = !game.favorite; }
+            return;
+        }
+        if (button !== "accept") return;
+        if (gv_homebutton.activeFocus)     { showcaseScreen(); return; }
+        if (gv_discoverbutton.activeFocus) { discoverScreen(); return; }
+        if (gv_settingsbutton.activeFocus) { settingsScreen(); return; }
+        if (menu.activeFocus) {
+            if (menu.currentItem) menu.currentItem.activated();
+            return;
+        }
+        var row = content.currentItem;
+        if (row && typeof row.activateCurrent === "function") row.activateCurrent();
+    }
+
     Keys.onPressed: {
         // Back
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
@@ -1284,6 +1314,7 @@ id: root
     onActiveFocusChanged: {
         if (activeFocus) {
             currentHelpbarModel = gameviewHelpModel;
+            currentHelpOwner = root;
             content.currentIndex = 0;
             content.focus = true;
             menu.currentIndex = 0;

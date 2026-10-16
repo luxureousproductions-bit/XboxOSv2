@@ -901,11 +901,15 @@ id: root
                 anchors { right: parent.right; rightMargin: vpx(36); bottom: parent.bottom; bottomMargin: vpx(18) }
                 spacing: vpx(22)
                 Row { spacing: vpx(6)
-                    Image { anchors.verticalCenter: parent.verticalCenter; width: vpx(20); height: vpx(20); source: "../assets/images/controller/" + Utils.processButtonArt("filters") + ".png"; sourceSize { width: 40; height: 40 } }
-                    Text { anchors.verticalCenter: parent.verticalCenter; text: "Theme settings"; color: "#D2D2D2"; font.family: subtitleFont.name; font.pixelSize: vpx(16) } }
+                    Image { anchors.verticalCenter: parent.verticalCenter; width: vpx(20); height: vpx(20); source: "../assets/images/controller/" + Utils.processButtonArt("filters") + ".png"; sourceSize { width: hrpx(40); height: hrpx(40) } }
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: "Theme settings"; color: "#D2D2D2"; font.family: subtitleFont.name; font.pixelSize: vpx(16)
+                        // Clickable, reaching back over the icon: same as pressing the button.
+                        MouseArea { anchors.fill: parent; anchors.leftMargin: -vpx(26); cursorShape: Qt.PointingHandCursor; onClicked: root.helpAction("filters") } } }
                 Row { spacing: vpx(6)
-                    Image { anchors.verticalCenter: parent.verticalCenter; width: vpx(20); height: vpx(20); source: "../assets/images/controller/" + Utils.processButtonArt("cancel") + ".png"; sourceSize { width: 40; height: 40 } }
-                    Text { anchors.verticalCenter: parent.verticalCenter; text: "Back"; color: "#D2D2D2"; font.family: subtitleFont.name; font.pixelSize: vpx(16) } }
+                    Image { anchors.verticalCenter: parent.verticalCenter; width: vpx(20); height: vpx(20); source: "../assets/images/controller/" + Utils.processButtonArt("cancel") + ".png"; sourceSize { width: hrpx(40); height: hrpx(40) } }
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: "Back"; color: "#D2D2D2"; font.family: subtitleFont.name; font.pixelSize: vpx(16)
+                        // Clickable, reaching back over the icon: same as pressing the button.
+                        MouseArea { anchors.fill: parent; anchors.leftMargin: -vpx(26); cursorShape: Qt.PointingHandCursor; onClicked: root.helpAction("cancel") } } }
             }
         }
 
@@ -1127,19 +1131,31 @@ id: root
                     model: searchActive   ? [ {a:"accept",t:"Type"}, {a:"details",t:"Delete"}, {a:"filters",t:"Done"}, {a:"cancel",t:"Close"} ]
                          : genrePickerOpen ? [ {a:"accept",t:"Toggle"}, {a:"cancel",t:"Done"} ]
                          :                   [ {a:"accept",t:"Select"}, {a:"details",t:"Clear all"}, {a:"cancel",t:"Close"} ]
-                    delegate: Row {
-                        spacing: vpx(7)
-                        Image {
-                            anchors.verticalCenter: parent.verticalCenter
-                            source: "../assets/images/controller/" + fpBtnArt(modelData.a) + ".png"
-                            width: vpx(26); height: vpx(26)
-                            asynchronous: true; smooth: true
+                    // Clickable: a click does what pressing that button does.
+                    delegate: Item {
+                        width: filterPrompt.width; height: filterPrompt.height
+                        opacity: filterPromptMouse.pressed ? 0.6 : 1
+                        Row {
+                        id: filterPrompt
+                            spacing: vpx(7)
+                            Image {
+                                anchors.verticalCenter: parent.verticalCenter
+                                source: "../assets/images/controller/" + fpBtnArt(modelData.a) + ".png"
+                                width: vpx(26); height: vpx(26)
+                                asynchronous: true; smooth: true
+                            }
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: modelData.t
+                                color: "white"; opacity: 0.55
+                                font.family: subtitleFont.name; font.pixelSize: fpx(15)
+                            }
                         }
-                        Text {
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: modelData.t
-                            color: "white"; opacity: 0.55
-                            font.family: subtitleFont.name; font.pixelSize: fpx(15)
+                        MouseArea {
+                        id: filterPromptMouse
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.helpAction(modelData.a)
                         }
                     }
                 }
@@ -1339,7 +1355,67 @@ id: root
     onFocusChanged: {
         if (focus) {
             currentHelpbarModel = gridviewHelpModel;
+            currentHelpOwner = root;
             gamegrid.focus = true;
+        }
+    }
+
+    // Clickable help prompts: a click does what pressing that button does
+    // right now, so it follows the same states as the key handlers above
+    // (per-system panel, Filters panel, genre picker, top nav buttons, grid).
+    // A copy of those branches, so the controller code is left untouched.
+    function helpAction(button) {
+        if (searchActive) return;                // the keyboard has its own prompts
+        if (sysPanelOpen) {
+            if (button === "cancel")       { playBack(); sysPanelOpen = false; gamegrid.focus = true; }
+            else if (button === "filters") { sysPanelOpen = false; settingsScreen(); }
+            else if (button === "accept")  sysCycle(sysRow, 1);
+            return;
+        }
+        if (filterOpen) {
+            if (genrePickerOpen) {
+                if (button === "accept") { playAccept(); toggleGenre(genreOptions[genrePickerIndex]); }
+                else if (button === "cancel" || button === "details") { playBack(); genrePickerOpen = false; }
+                return;
+            }
+            if (button === "accept") {
+                playAccept();
+                if (filterRow === 0) activateSearch();
+                else if (filterRow === 1) openGenrePicker();
+                else if (filterRow <= sortFields.length + 1) selectSort(sortFields[filterRow - 2].idx);
+                else { showFavs = !showFavs; gamegrid.currentIndex = 0; sortedGames = null; }
+            }
+            else if (button === "cancel")  { playBack(); filterOpen = false; gamegrid.focus = true; }
+            else if (button === "details") { playToggle(); clearAllFilters(); }
+            return;
+        }
+        // Top nav buttons handle A and B themselves.
+        var nav = homebutton.activeFocus ? "home" : discoverbutton.activeFocus ? "discover"
+                : achievementsbutton.activeFocus ? "achievements" : settingsbutton.activeFocus ? "settings" : "";
+        if (nav !== "" && button === "accept") {
+            if (nav === "home") showcaseScreen();
+            else if (nav === "discover") discoverScreen(list.collection);
+            else if (nav === "achievements") achievementsScreen();
+            else settingsScreen();
+            return;
+        }
+        if (nav !== "" && button === "cancel") { playBack(); gamegrid.currentIndex = 0; gamegrid.focus = true; return; }
+        if (button === "accept") {
+            if (gamegrid.focus) gameActivated();
+            else { playAccept(); gamegrid.currentIndex = 0; gamegrid.focus = true; }
+        } else if (button === "cancel") {
+            if (gamegrid.focus) previousScreen();
+            else { playBack(); gamegrid.focus = true; }
+        } else if (button === "details") {
+            playAccept();
+            filterRow = (sortByIndex >= 0 && sortByIndex < sortFields.length) ? sortByIndex + 2 : 0;
+            searchActive = false;
+            genrePickerOpen = false;
+            filterOpen = true;
+            filterPanel.forceActiveFocus();
+        } else if (button === "filters") {
+            if (perSystemOn && sysKey !== "") { playAccept(); sysRow = 0; sysPanelOpen = true; sysPanel.forceActiveFocus(); }
+            else settingsScreen();
         }
     }
 
