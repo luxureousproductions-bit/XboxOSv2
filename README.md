@@ -275,16 +275,28 @@ On a touchscreen, tap the left or right side of the page to turn it, or the midd
 
 **Adding manuals**
 
-Put each manual, as a PDF, in a `manuals` folder inside the system's `media` folder, named like the game's artwork:
+Put each manual, as a PDF, in a `manuals` folder inside the system's `media` folder. Name it the same way as the game's artwork, so it matches how your game is stored:
+
+**Single-file games** — the game is one file directly in the system folder. The manual goes straight into `media/manuals`:
 
 ```
-snes/media/box2dfront/Super Mario World.png    ← the game's art
+snes/Super Mario World.sfc                     ← the game
+snes/media/box2dfront/Super Mario World.png    ← its art
 snes/media/manuals/Super Mario World.pdf       ← its manual
 ```
 
+**Multi-disc games** — the game has its own folder holding the discs. The manual goes in a matching folder inside `media/manuals`, just like the art:
+
+```
+psx/Final Fantasy VII/Final Fantasy VII.m3u                  ← the game (with its discs)
+psx/media/box2dfront/Final Fantasy VII/Final Fantasy VII.png ← its art
+psx/media/manuals/Final Fantasy VII/Final Fantasy VII.pdf    ← its manual
+```
+
+For a multi-disc game, `psx/media/manuals/Final Fantasy VII.pdf` (no folder) works too.
+
 - If Skraper downloaded manuals for you, they're usually in the right place already.
 - `media/manual` (singular) works too, and so does a plain `manuals` folder next to your ROMs.
-- **Multi-disc games** in their own folder work: the manual can sit in a matching folder like above, or directly in `media/manuals` named after the game.
 - To point a game at a specific file, add `x-manual: <path to the PDF>` to its entry in your metadata file.
 
 ---
