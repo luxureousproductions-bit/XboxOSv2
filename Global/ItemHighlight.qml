@@ -26,9 +26,13 @@ id: root
     property bool boxArt
     property bool playVideo: (settings.AllowThumbVideo === "Yes") && !boxArt
 
+    // A new game always drops the old preview first. Since the Video reads
+    // previewUrl (captured once) instead of following `game`, restarting the
+    // timers alone left the old clip playing while the highlight slid to the
+    // next tile, until the new one replaced it.
     onGameChanged: {
+        unloadPreview();
         if (playVideo && selected && playbackActive) beginPreview();
-        else unloadPreview();
     }
 
     // Stops the preview when its screen stops being current.
