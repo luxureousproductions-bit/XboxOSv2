@@ -375,7 +375,7 @@ id: root
                     width:  parent.width  * 1.45
                     height: parent.height * 1.45
                     source: root.appIconArt
-                    sourceSize { width: hrpx(hqMode ? 384 : 256); height: hrpx(hqMode ? 384 : 256) }
+                    sourceSize { width: hqMode ? 384 : 256; height: hqMode ? 384 : 256 }
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
                     asynchronous: true
@@ -429,7 +429,7 @@ id: root
             // No decode at all when the logo isn't shown — an invisible Image
             // still loads its source, which was a wasted decode per tile.
             source: (showLogo && modelData && artArmed) ? (logoImage || "") : ""
-            sourceSize { width: hrpx(200); height: hrpx(150) }
+            sourceSize { width: 200; height: 150 }   // per tile: kept fixed (see hqTileArtPx)
             fillMode: Image.PreserveAspectFit
             asynchronous: true
             smooth: true

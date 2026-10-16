@@ -1992,7 +1992,7 @@ id: root
         view: settingsList
         columns: 1
         active: !infoOpen
-        onStepped: function() { playNav(); }
+        onStepped: function(quiet) { if (!quiet) playNav(); }
     }
 
     // ── On-screen keyboard overlay ────────────────────────────────────────

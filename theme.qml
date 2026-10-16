@@ -313,6 +313,10 @@ id: root
     // where video playback has been the source of crashes and lag. Only the
     // default changes; a saved choice is always kept.
     readonly property string previewDefault: Qt.platform.os === "android" ? "Yes" : "No"
+    // Desktop-only defaults (Android keeps its old ones): mouse hover on, since
+    // a desktop is driven by a mouse, and the startup chime off.
+    readonly property string hoverDefault: Qt.platform.os === "android" ? "No" : "Yes"
+    readonly property string chimeDefault: Qt.platform.os === "android" ? "Yes" : "No"
 
     readonly property var settingDefaults: ({
         "3D Box":                                    "Yes",
@@ -344,6 +348,7 @@ id: root
         "Color Layout":                              "Lime",
         "Custom Background":                         "Yes",
         "Discover video audio":                      "Yes",
+        "Enable mouse hover":                        hoverDefault,
         "Dynamic Background":                        "No",
         "Favorited Tile Accent":                     "Yes",
         "Featured Box Content":                      "Fanart Slideshow",
@@ -367,6 +372,7 @@ id: root
         "Show scanlines":                            "No",
         "Showcase Background Art":                   "Yes",
         "Showcase Background Opacity":               "1.00",
+        "Start up chime":                            chimeDefault,
         "System sort":                               "Release year (oldest)",
         "UI Scale":                                  "1.0",
         "Video thumbnail audio":                     "Yes",
@@ -390,7 +396,7 @@ id: root
             HideButtonHelp:                api.memory.has("Hide button help") ? api.memory.get("Hide button help") : "No",
             // "Gradient" was removed as an option; a stale saved value falls back to the default.
             ColorLayout:                   (api.memory.has("Color Layout") && api.memory.get("Color Layout") !== "Gradient") ? api.memory.get("Color Layout") : "Lime",
-            MouseHover:                    api.memory.has("Enable mouse hover") ? api.memory.get("Enable mouse hover") : "No",
+            MouseHover:                    api.memory.has("Enable mouse hover") ? api.memory.get("Enable mouse hover") : hoverDefault,
             AlwaysShowTitles:              api.memory.has("Always show titles") ? api.memory.get("Always show titles") : "No",
             AnimateHighlight:              api.memory.has("Animate highlight") ? api.memory.get("Animate highlight") : "No",
             AllowVideoPreviewAudio:        api.memory.has("Game details video preview audio") ? api.memory.get("Game details video preview audio") : "Yes",
@@ -465,7 +471,7 @@ id: root
             AllowDiscoverVideoAudio:         api.memory.has("Discover video audio") ? api.memory.get("Discover video audio") : "Yes",
             MenuSounds:                      api.memory.has("Menu sounds") ? api.memory.get("Menu sounds") : "Yes",
             MenuVolume:                      api.memory.has("Menu Volume") ? api.memory.get("Menu Volume") : "1.0",
-            StartupChime:                    api.memory.has("Start up chime") ? api.memory.get("Start up chime") : "Yes",
+            StartupChime:                    api.memory.has("Start up chime") ? api.memory.get("Start up chime") : chimeDefault,
             AllGamesVideoPreview:            api.memory.has("AllGames Video preview") ? api.memory.get("AllGames Video preview") : previewDefault,
             AllGamesView:                  api.memory.has("All Games View") ? api.memory.get("All Games View") : "List",
             AllGamesTileStyle:             api.memory.has("AllGames Tile Style") ? api.memory.get("AllGames Tile Style") : "Wide",
@@ -601,7 +607,10 @@ id: root
     // less than a big Showcase row tile wants. Nothing on screen changes;
     // only the wasted pixels go. Extra room covers the focus pop.
     readonly property real hqTileDecodeScale: hqMode ? 1.5 : 1.25
-    readonly property int  hqTileArtPx:     hrpx(hqMode ? 1024 : 512)   // hard cap on that decode (grows on 1440p/4K desktops)
+    // Not scaled by hiResScale: this runs for every tile, and decoding every
+    // tile at up to 4x the pixels on 4K is the likely cause of art loading
+    // very slowly on the Windows tester's 4K screen.
+    readonly property int  hqTileArtPx:     hqMode ? 1024 : 512   // hard cap on that decode
     // Showcase app-tile backdrop. Kept LIGHT: at the old 48/64 the icon behind
     // the tile dissolved into a colour wash. A gentler blur keeps its shape
     // readable while still reading as a backdrop rather than a second icon.

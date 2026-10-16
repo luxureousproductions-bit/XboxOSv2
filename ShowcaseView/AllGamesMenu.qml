@@ -1321,7 +1321,7 @@ id: root
         view: gamelist
         columns: 1
         active: !gridMode && !filterOpen
-        onStepped: function() { playNav(); }
+        onStepped: function(quiet) { if (!quiet) playNav(); }
     }
 
     // ── Letter jump overlay ───────────────────────────────────────────────
@@ -1518,7 +1518,7 @@ id: root
         view: gamegrid
         columns: gridColumns
         active: gridMode && !filterOpen
-        onStepped: function() { playNav(); noteGridNav(); }
+        onStepped: function(quiet) { if (!quiet) playNav(); noteGridNav(); }
     }
 
     // ── Sorting & Filters overlay ─────────────────────────────────────────

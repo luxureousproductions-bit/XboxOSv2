@@ -307,11 +307,13 @@ id: root
             customBg_drift.stop();
             scale = 1.0; customBg_pan.x = 0; customBg_pan.y = 0;
         }
-        onShowingChanged: {
-            if (showing && dynamicBg) beginDrift();
-            else if (!showing) endDrift();
-        }
-        Component.onCompleted: if (showing && dynamicBg) beginDrift()
+        // Follows the setting as well as visibility: watching `showing` alone
+        // meant switching Dynamic Background on while this image was already
+        // up (coming back from Settings) never started the drift, and switching
+        // it off left it drifting.
+        readonly property bool driftOn: showing && dynamicBg
+        onDriftOnChanged: { if (driftOn) beginDrift(); else endDrift(); }
+        Component.onCompleted: if (driftOn) beginDrift()
     }
 
     // Fanart / screenshot background with crossfade. The fade is started by
@@ -1467,7 +1469,7 @@ id: root
                     anchors.fill: parent
                     anchors.margins: vpx(15)
                     source: (!isHero && coll) ? "../assets/images/logospng/" + Utils.processPlatformName(coll.shortName) + ".png" : ""
-                    sourceSize { width: hrpx(512); height: hrpx(512) }
+                    sourceSize { width: 512; height: 512 }   // one per system tile: kept fixed
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                     smooth: true
@@ -1934,7 +1936,9 @@ id: root
         anchors.fill: parent
         model: mainModel
         focus: true
-        highlightMoveDuration: 200
+        // Snaps while the mouse wheel is spinning: one 200ms slide per notch
+        // queued up and made wheel scrolling feel clunky. Keys are unchanged.
+        highlightMoveDuration: homeWheel.busy ? 0 : 200
         highlightRangeMode: ListView.ApplyRange 
         preferredHighlightBegin: header.height
         preferredHighlightEnd: parent.height - (helpMargin * 2)
@@ -2018,11 +2022,12 @@ id: root
     // a list the user isn't in. navJump/savedRow are left alone: this is an
     // ordinary row change, not a jump to the nav bar.
     WheelNav {
+    id: homeWheel
         anchors.fill: mainList
         view: mainList
         columns: 1
         active: mainList.activeFocus
-        onStepped: function() { playNav(); }
+        onStepped: function(quiet) { if (!quiet) playNav(); }
     }
 
     // Global input handling for the screen

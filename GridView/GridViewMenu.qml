@@ -780,7 +780,7 @@ id: root
             view: gamegrid
             columns: numColumns
             active: !filterOpen && !sysPanelOpen
-            onStepped: function() { playNav(); noteGridNav(); }
+            onStepped: function(quiet) { if (!quiet) playNav(); noteGridNav(); }
         }
 
     }

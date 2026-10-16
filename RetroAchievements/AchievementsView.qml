@@ -466,7 +466,7 @@ id: root
         view: gameList
         columns: 1
         active: !librarySearch.open
-        onStepped: function() { playNav(); }
+        onStepped: function(quiet) { if (!quiet) playNav(); }
     }
 
     // ── Page counter ─────────────────────────────────────────────────────

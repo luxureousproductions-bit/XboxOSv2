@@ -63,7 +63,11 @@ id: root
                 font.family: subtitleFont.name
                 font.pixelSize: fpx(16)
                 color: promptColor
-                height: parent.height
+                // The icon's height, not parent.height: the Row's height comes
+                // from this Text, so the old binding was circular and could
+                // keep a stale value after a window resize, leaving the text
+                // out of line with its icon.
+                height: vpx(30)
                 verticalAlignment: Text.AlignVCenter
             }
         }
@@ -121,7 +125,7 @@ id: root
             font.family: subtitleFont.name
             font.pixelSize: fpx(16)
             color: promptColor
-            height: parent.height
+            height: vpx(30)        // icon height; see the delegate above
             verticalAlignment: Text.AlignVCenter
         }
     }

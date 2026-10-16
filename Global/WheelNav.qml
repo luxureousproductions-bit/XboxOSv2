@@ -28,8 +28,16 @@ id: root
     property int columns: 1
     // Off while an overlay covers the view (filters, a picker, a dialog).
     property bool active: true
-    // Called after a successful move — usually a navigation sound.
+    // Called after a successful move — usually a navigation sound. It gets
+    // one argument, `quiet`: true for every step after the first in a quick
+    // burst, so a fast spin plays the sound once instead of on every notch.
     property var onStepped: null
+    // True while the wheel is spinning (and briefly after). A host can snap
+    // its scroll animation while this is set, so a fast spin doesn't queue up
+    // one slide per notch.
+    readonly property bool busy: burst.running
+    property double lastStep: 0
+    Timer { id: burst; interval: 250 }
 
     acceptedButtons: Qt.NoButton      // clicks pass straight through
     hoverEnabled: false               // hover passes through too
@@ -56,6 +64,10 @@ id: root
         if (target > view.count - 1) target = view.count - 1;
         if (target === view.currentIndex) return;
         view.currentIndex = target;
-        if (onStepped) onStepped();
+        var now = Date.now();
+        var quiet = burst.running && (now - lastStep) < 150;
+        lastStep = now;
+        burst.restart();
+        if (onStepped) onStepped(quiet);
     }
 }
