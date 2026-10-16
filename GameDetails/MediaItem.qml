@@ -25,6 +25,40 @@ id: root
     signal highlighted
 
     property string mediaItem: ""
+    // The game's system (collection shortname), so the physical media art
+    // (support / physicalmedia) can be named the way that system named it
+    property string systemShortName: ""
+
+    // Name of a system's game media; anything not listed is a "Cartridge"
+    function physicalMediaLabel() {
+        switch (systemShortName.toLowerCase()) {
+            case "psx": case "ps1": case "playstation": case "ps2": case "ps2_alt":
+            case "ps3": case "ps4":
+            case "segacd": case "megacd": case "megacdjp": case "saturn": case "saturnjp":
+            case "dreamcast":
+            case "gc": case "gamecube": case "wii": case "wiiu":
+            case "xbox": case "xbox360": case "xboxone":
+            case "3do": case "pcfx": case "pcenginecd": case "tgcd": case "turbografxcd":
+            case "neogeocd": case "neogeocdjp":
+            case "cdimono1": case "cdi": case "cdtv": case "amigacd32":
+            case "atarijaguarcd": case "fmtowns":
+                return "Disc";
+            case "psp":
+                return "UMD";
+            case "nds": case "3ds": case "n3ds": case "switch": case "psvita": case "vita":
+                return "Game Card";
+            case "pcengine": case "supergrafx":
+                return "HuCard";
+            case "tg16":
+                return "TurboChip";
+            case "fds":
+                return "Disk Card";
+            case "n64dd":
+                return "Disk";
+            default:
+                return "Cartridge";
+        }
+    }
     property bool selected
     property bool isVideo: mediaItem.includes(".mp4") || mediaItem.includes(".webm")
     // True once the highlighted video tile's player is playing. The film
@@ -110,9 +144,9 @@ id: root
                     // "logos" can't trigger them; backcovers before covers.
                     if (m.includes("/backcovers/")) return "Back Box";
                     if (m.includes("/covers/")) return "Box Art";
-                    if (m.includes("/physicalmedia/")) return "Cartridge";
+                    if (m.includes("/physicalmedia/")) return physicalMediaLabel();
                     if (m.includes("/marquees/") || m.includes("/marquee/") || m.includes("/logos/")) return "Logo";
-                    if (m.includes("cartridge") || m.includes("support")) return "Cartridge";
+                    if (m.includes("cartridge") || m.includes("support")) return physicalMediaLabel();
                     if (m.includes("miximage") || m.includes("mix_image") || m.includes("steamgrid") || m.includes("/steam/") || m.includes("/grid/")) return "Miximage";
                     if (m.includes("wheel")) return "Logo";
                     return "Screenshot";

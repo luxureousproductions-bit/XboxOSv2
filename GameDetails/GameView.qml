@@ -1180,6 +1180,7 @@ id: root
                 height: width
                 selected: ListView.isCurrentItem && media.ListView.isCurrentItem
                 mediaItem: modelData
+                systemShortName: collectionShortName   // Disc / UMD / Game Card label
 
                 onHighlighted: {
                     playNav(); 
