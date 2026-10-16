@@ -324,6 +324,10 @@ id: root
 
         Video {
         id: videocomponent
+            // Stop before the player is destroyed (screen change, row rebuild, or
+            // Pegasus unloading the theme to launch a game). Destroying a playing
+            // video is what the Windows media backend crashes on.
+            Component.onDestruction: stop()
 
             property bool videoExists: game ? game.assets.videos.length : false
             // Cleared off-screen, same reason as the other players.

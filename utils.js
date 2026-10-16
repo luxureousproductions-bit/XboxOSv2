@@ -66,6 +66,9 @@ function formatPlayTime(playTime) {
 // Process the platform name to make it friendly for the logo
 // Unfortunately necessary for LaunchBox
 function processPlatformName(platform) {
+  // Asset files are all lowercase. Windows and Android ignore capitals in
+  // file names but Linux does not, so a shortname like "SNES" found no logo there.
+  platform = String(platform || "").toLowerCase();
   switch (platform) {
     case "panasonic 3do":
       return "3do";
@@ -347,13 +350,17 @@ function processButtonArt(button) {
       buttonModel = api.keys.accept;
   }
 
-  var i;
-  for (i = 0; buttonModel.length; i++) {
+  // `i < length`: see the same function in Global/ButtonHelpBar.qml. Keys
+  // without a controller binding fall back to the default glyph.
+  for (var i = 0; i < buttonModel.length; i++) {
     if (buttonModel[i].name().includes("Gamepad")) {
       var buttonValue = buttonModel[i].key.toString(16)
       return buttonValue.substring(buttonValue.length-1, buttonValue.length);
     }
   }
+  var fallback = { accept: "0", cancel: "1", details: "2", filters: "3",
+                   prevPage: "4", pageUp: "5", nextPage: "7", pageDown: "8" };
+  return fallback[button] || "0";
 }
 
 function steamAppID (gameData) {

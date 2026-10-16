@@ -27,7 +27,8 @@ id: root
     signal close
     property var mediaModel: []
     property int mediaIndex: 0
-    property bool isVideo: mediaModel.length ? mediaModel[mediaIndex].includes(".mp4") || mediaModel[mediaIndex].includes(".webm") : false
+    // Any common video format, any capitals (.MP4, .mkv and .avi are usual on PC).
+    property bool isVideo: mediaModel.length ? /\.(mp4|webm|mkv|avi|mov|m4v|wmv|flv|mpe?g|ogv)$/i.test(String(mediaModel[mediaIndex])) : false
 
     function next() {
         if (mediaIndex == mediaModel.length-1)
@@ -58,6 +59,10 @@ id: root
 
         Video {
         id: carouselVideo
+            // Stop before the player is destroyed (screen change, row rebuild, or
+            // Pegasus unloading the theme to launch a game). Destroying a playing
+            // video is what the Windows media backend crashes on.
+            Component.onDestruction: stop()
             source: isVideo ? mediaModel[mediaIndex] : ""
             anchors.fill: parent
             fillMode: VideoOutput.PreserveAspectFit
@@ -121,7 +126,7 @@ id: root
 
             width: root.width
             height: root.height
-            source: modelData.includes(".mp4") || modelData.includes(".webm") ? "" : modelData
+            source: /\.(mp4|webm|mkv|avi|mov|m4v|wmv|flv|mpe?g|ogv)$/i.test(String(modelData)) ? "" : modelData
             sourceSize { width: root.width; height: root.height }
             smooth: true
             fillMode: Image.PreserveAspectFit

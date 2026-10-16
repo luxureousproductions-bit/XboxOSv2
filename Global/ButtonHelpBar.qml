@@ -175,13 +175,19 @@ id: root
             buttonModel = api.keys.accept;
         }
 
-        var i;
-        for (i = 0; buttonModel.length; i++) {
+        // `i < length`: the old loop tested `buttonModel.length` alone, so a
+        // key with no controller binding (keyboard-only setups on PC) ran
+        // past the end and threw, leaving the prompt without an icon.
+        // Unbound keys fall back to the default controller glyph.
+        for (var i = 0; i < buttonModel.length; i++) {
             if (buttonModel[i].name().includes("Gamepad")) {
             var buttonValue = buttonModel[i].key.toString(16)
             return buttonValue.substring(buttonValue.length-1, buttonValue.length);
             }
         }
+        return defaultButtonArt[button] || "0";
     }
+    readonly property var defaultButtonArt: ({ accept: "0", cancel: "1", details: "2", filters: "3",
+                                               prevPage: "4", pageUp: "5", nextPage: "7", pageDown: "8" })
     
 }

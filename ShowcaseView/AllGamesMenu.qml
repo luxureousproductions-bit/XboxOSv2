@@ -719,6 +719,10 @@ id: root
             // Video preview — plays over the screenshot once armed (after resting)
             Video {
             id: previewVideo
+                // Stop before the player is destroyed (screen change, row rebuild, or
+                // Pegasus unloading the theme to launch a game). Destroying a playing
+                // video is what the Windows media backend crashes on.
+                Component.onDestruction: stop()
                 anchors.fill: parent
                 anchors.margins: vpx(3)   // inset so the square video corners stay inside the
                                           // rounded screenshot; corners then show the backdrop

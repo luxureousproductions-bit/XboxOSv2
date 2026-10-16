@@ -1881,9 +1881,49 @@ id: root
         interval: launchSplashDelay
         repeat: false
         onTriggered: {
-            if (root.state === "launchgamescreen" && launchingGame)
+            if (root.state === "launchgamescreen" && launchingGame) {
+                rememberLaunch(launchingGame);
                 launchingGame.launch();
+            }
         }
+    }
+
+    // ── The theme's own record of the last launch ─────────────────────────
+    // The hero box follows Pegasus's "last played", which Pegasus only writes
+    // once a game has FINISHED (and skips entirely while a library scan is
+    // running). On Android that happens the moment the game starts; on
+    // Windows/Linux only after it closes, and some setups never record it.
+    // So the theme notes each launch itself, and the hero uses that when it
+    // is newer than what Pegasus reports. When Pegasus did record the game,
+    // its time is later than this one, so nothing changes.
+    function rememberLaunch(game) {
+        if (!game) return;
+        var path = (game.files && game.files.count > 0) ? game.files.get(0).path : "";
+        api.memory.set("lastLaunch", JSON.stringify({ t: Date.now(), title: game.title, path: path }));
+    }
+    // -> { game, index, t } for the remembered launch, or null. The library
+    // search is cached against the stored text, so it runs once per launch.
+    property string lastLaunchKey: ""
+    property var lastLaunchCache: null
+    function lastLaunchRecord() {
+        if (!api.memory.has("lastLaunch")) return null;
+        var raw = api.memory.get("lastLaunch");
+        if (raw === lastLaunchKey) return lastLaunchCache;
+        lastLaunchKey = raw;
+        lastLaunchCache = null;
+        var r;
+        try { r = JSON.parse(raw); } catch (e) { return null; }
+        if (!r || !r.title) return null;
+        var all = api.allGames.toVarArray();
+        for (var i = 0; i < all.length; i++) {
+            var g = all[i];
+            if (!g || g.title !== r.title) continue;
+            var p = (g.files && g.files.count > 0) ? g.files.get(0).path : "";
+            if (r.path && p !== r.path) continue;
+            lastLaunchCache = { game: g, index: i, t: r.t };
+            break;
+        }
+        return lastLaunchCache;
     }
 
     Loader  {

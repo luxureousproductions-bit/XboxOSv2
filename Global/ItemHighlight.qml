@@ -158,6 +158,10 @@ id: root
 
         Video {
         id: videocomponent
+            // Stop before the player is destroyed (screen change, row rebuild, or
+            // Pegasus unloading the theme to launch a game). Destroying a playing
+            // video is what the Windows media backend crashes on.
+            Component.onDestruction: stop()
 
             anchors.fill: parent
             anchors.margins: vpx(2)   // Meets the selection frame's INNER edge exactly:

@@ -26,7 +26,8 @@ id: root
 
     property string mediaItem: ""
     property bool selected
-    property bool isVideo: mediaItem.includes(".mp4") || mediaItem.includes(".webm")
+    // Any common video format, any capitals (.MP4, .mkv and .avi are usual on PC).
+    property bool isVideo: /\.(mp4|webm|mkv|avi|mov|m4v|wmv|flv|mpe?g|ogv)$/i.test(String(mediaItem))
     // True once the highlighted video tile's player is playing. The film
     // placeholder stays up until then, so there's never a frame where the tile
     // is empty (the player is created asynchronously on highlight).
@@ -51,6 +52,10 @@ id: root
     id: videoPreviewWrapper
 
         Video {
+            // Stop before the player is destroyed (screen change, row rebuild, or
+            // Pegasus unloading the theme to launch a game). Destroying a playing
+            // video is what the Windows media backend crashes on.
+            Component.onDestruction: stop()
             anchors.fill: parent
             source: mediaItem
             fillMode: VideoOutput.PreserveAspectCrop

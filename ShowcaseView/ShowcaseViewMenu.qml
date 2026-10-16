@@ -1207,10 +1207,30 @@ id: root
             property var resumeGame: null
             function refreshResume() {
                 var g = listLastPlayed.games.count > 0 ? listLastPlayed.currentGame(0) : null;
+                // The theme's own launch record wins when it's newer than what
+                // Pegasus reports (see rememberLaunch in theme.qml) — as long
+                // as Home isn't hiding that game.
+                var rec = lastLaunchRecord();
+                if (rec && rec.game !== g && heroAllowed(rec)) {
+                    var gt = (g && g.lastPlayed) ? g.lastPlayed.getTime() : NaN;
+                    if (!g || isNaN(gt) || rec.t > gt) g = rec.game;
+                }
                 if (g === resumeGame) return;
                 resumeGame = g;
                 // Hero highlighted right now: the page background follows it.
                 if (topRow.selected && currentIndex === 0) updateTopRowBackground(0, g);
+            }
+            // Same rules the Last Played row filters with (Lists/ListLastPlayed.qml).
+            function heroAllowed(rec) {
+                if (libraryHideRows[rec.index] === true) return false;
+                if (homeHideTitles[rec.game.title] === true) return false;
+                var genres = rec.game.genreList;
+                for (var i = 0; i < genres.length; i++) {
+                    var gn = genres[i].toLowerCase();
+                    if (omitAppsLive && gn === "application") return false;
+                    if (omitEmulatorsLive && gn === "emulator") return false;
+                }
+                return true;
             }
             readonly property var resumeDeps: [homeHideTitles, omitAppsLive, omitEmulatorsLive, libraryHideRows]
             onResumeDepsChanged: Qt.callLater(platformlist.refreshResume)
