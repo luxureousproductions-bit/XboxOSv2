@@ -673,7 +673,8 @@ id: root
             setting: "Yes,No"
         }
         ListElement {
-            settingName: "Cartridge"
+            settingName: "Cartridge"          // saved-setting key, keep as is
+            label: "Physical Media"
             setting: "Yes,No"
         }
         ListElement {

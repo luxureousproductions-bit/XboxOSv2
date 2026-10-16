@@ -42,7 +42,10 @@ id: root
             case "neogeocd": case "neogeocdjp":
             case "cdimono1": case "cdi": case "cdtv": case "amigacd32":
             case "atarijaguarcd": case "fmtowns":
+            case "windows": case "windows9x":
                 return "Disc";
+            case "windows3x":
+                return "Floppy Disk";
             case "psp":
                 return "UMD";
             case "nds": case "3ds": case "n3ds": case "switch": case "psvita": case "vita":
