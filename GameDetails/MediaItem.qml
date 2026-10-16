@@ -44,7 +44,7 @@ id: root
             case "atarijaguarcd": case "fmtowns":
             case "windows": case "windows9x":
                 return "Disc";
-            case "windows3x":
+            case "windows3x": case "pc": case "pc98":   // IBM PC, NEC PC-98
                 return "Floppy Disk";
             case "psp":
                 return "UMD";
