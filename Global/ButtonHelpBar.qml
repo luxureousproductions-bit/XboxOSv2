@@ -76,6 +76,11 @@ id: root
 
     ListView {
         anchors.fill: parent
+        // Never scrolls. A ListView is a Flickable, and an interactive one
+        // grabs every press over its whole area, even with no prompts in it.
+        // The RetroAchievements pages draw their own clickable prompts in this
+        // same strip (the bar stays up there for "Apps"), so it ate their clicks.
+        interactive: false
         model: currentHelpbarModel
         delegate: buttonhelpDelegate
         orientation: ListView.Horizontal
