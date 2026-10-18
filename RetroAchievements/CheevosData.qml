@@ -95,6 +95,7 @@ id: root
     readonly property var consoleMappings: ({
         // Nintendo handhelds
         "gb":             4,  "gameboy":        4,
+        "sgb":            4,
         "gbc":            6,  "gameboycolor":   6,
         "gba":            5,  "gameboyadvance": 5,
         "pokemini":      24,
@@ -105,16 +106,19 @@ id: root
         "nes":            7,  "famicom":        7,
         "fds":           81,  "famicomdisksystem": 81,
         "snes":           3,  "superfamicom":   3,
+        "sfc":            3,  "snesna":         3,
         "n64":            2,  "nintendo64":     2,
+        "n64dd":          2,
         "gc":            16,  "gamecube":      16,  "ngc":           16,
         "wii":           19,
         // Sega
         "genesis":        1,  "megadrive":      1,  "md":             1,
+        "megadrivejp":    1,
         "sms":           11,  "mastersystem":  11,
         "gamegear":      15,  "gg":            15,
         "32x":           10,  "sega32x":       10,
         "segacd":         9,  "megacd":         9,  "scd":            9,
-        "saturn":        39,
+        "saturn":        39,  "saturnjp":      39,
         "dreamcast":     40,  "dc":            40,
         "sg1000":        33,  "sg-1000":       33,
         "segapico":      68,  "pico":          68,
@@ -124,38 +128,44 @@ id: root
         "psp":           41,
         // NEC
         "pce":            8,  "tg16":           8,  "pcengine":       8,
+        "supergrafx":     8,
         "pcecd":         76,  "tgcd":          76,  "pcenginecd":    76,
         "pc88":          47,  "pc8800":        47,
-        "pcfx":          49,
+        "pcfx":          49,  "pc-fx":         49,
         // SNK
         "neogeo":        14,  "ngp":           14,  "ngpc":          14,
         "neogeopocket":  14,
         "neogeocd":      56,  "ngcd":          56,
         // Atari
         "atari2600":     25,  "2600":          25,
+        "atari5200":     50,
         "atari7800":     51,  "7800":          51,
         "lynx":          13,  "atarilynx":     13,
         "jaguar":        17,  "atarijaguar":   17,
-        "jaguarcd":      77,
+        "jaguarcd":      77,  "atarijaguarcd": 77,
         // Other
         "3do":           43,
         "coleco":        44,  "colecovision":  44,
         "intellivision": 45,  "intv":          45,
         "vectrex":       46,
         "wonderswan":    53,  "ws":            53,  "wsc":           53,
+        "wonderswancolor": 53,
         "megaduck":      69,
         "watara":        63,  "supervision":   63,
         "channelf":      57,  "fairchildchannelf": 57,
         "arcadia2001":   73,  "arcadia":       73,
-        "odyssey2":      23,  "o2":            23,
+        "odyssey2":      23,  "o2":            23,  "videopac":      23,
         "vc4000":        74,
+        "arduboy":       71,  "uzebox":        80,  "wasm4":         72,
         // Home computers
         "c64":           30,  "commodore64":   30,
-        "msx":           29,
+        "msx":           29,  "msx1":          29,  "msx2":          29,
         "amstradcpc":    37,  "cpc":           37,
         "apple2":        38,  "appleii":       38,
         // Arcade
-        "arcade":        27,  "mame":          27
+        "arcade":        27,  "mame":          27,
+        "cps1":          27,  "cps2":          27,  "cps3":          27,
+        "fbneo":         27
     })
 
     // ── Formatted strings for UI headers ─────────────────────────────────
