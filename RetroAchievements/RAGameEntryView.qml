@@ -61,7 +61,7 @@ id: root
     // synchronous cache hits; the hasNavigated guard prevents double-navigation.
     Connections {
         target: cheevosData
-        onPendingGameIDChanged: {
+        function onPendingGameIDChanged() {
             if (root.hasNavigated || !root.activeFocus) return;
             if (cheevosData.pendingGameID > 0) {
                 root.hasNavigated = true;

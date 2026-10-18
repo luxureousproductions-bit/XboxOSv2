@@ -979,15 +979,16 @@ id: root
 
                 // Name row — shows the current search text
                 Rectangle {
+                id: gvFilterRow1
                     visible: !genrePickerOpen
                     width: parent.width; height: vpx(52); radius: vpx(6)
                     property bool onRow: filterRow === 0 || searchActive
-                    color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+                    color: gvFilterRow1.onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
 
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\uD83D\uDD0D"; font.pixelSize: fpx(15); width: vpx(22)
-                        color: "white"; opacity: onRow ? 1 : 0.6
+                        color: "white"; opacity: gvFilterRow1.onRow ? 1 : 0.6
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
@@ -995,24 +996,25 @@ id: root
                               ? (searchTerm === "" ? "Type a name\u2026" : searchTerm)
                               : (searchTerm === "" ? "Name: (no filter)" : "Name: " + searchTerm)
                         color: "white"
-                        opacity: onRow ? 1 : 0.85
+                        opacity: gvFilterRow1.onRow ? 1 : 0.85
                         elide: Text.ElideRight
-                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: onRow
+                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: gvFilterRow1.onRow
                     }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 0; activateSearch(); } }
                 }
 
                 // Genre row — opens the genre picker
                 Rectangle {
+                id: gvFilterRow2
                     visible: !searchActive && !genrePickerOpen
                     width: parent.width; height: vpx(52); radius: vpx(6)
                     property bool onRow: filterRow === 1
-                    color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+                    color: gvFilterRow2.onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
 
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\u2630"; font.pixelSize: fpx(15); width: vpx(22)
-                        color: "white"; opacity: onRow ? 1 : 0.6
+                        color: "white"; opacity: gvFilterRow2.onRow ? 1 : 0.6
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(46); right: gvArrow.left; rightMargin: vpx(8); verticalCenter: parent.verticalCenter }
@@ -1020,15 +1022,15 @@ id: root
                              : genreSelected.length === 1 ? "Genre: " + genreSelected[0]
                              : "Genre: " + genreSelected.length + " selected"
                         color: "white"
-                        opacity: onRow ? 1 : 0.85
+                        opacity: gvFilterRow2.onRow ? 1 : 0.85
                         elide: Text.ElideRight
-                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: onRow
+                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: gvFilterRow2.onRow
                     }
                     Text {
                         id: gvArrow
                         anchors { right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\u25B8"; color: "white"
-                        opacity: onRow ? 1 : 0.6; font.pixelSize: fpx(18)
+                        opacity: gvFilterRow2.onRow ? 1 : 0.6; font.pixelSize: fpx(18)
                     }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 1; openGenrePicker(); } }
                 }
@@ -1043,11 +1045,12 @@ id: root
                     currentIndex: genrePickerIndex
                     onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
                     delegate: Rectangle {
+                    id: gvFilterRow3
                         width: ListView.view.width; height: vpx(42); radius: vpx(4)
                         property bool onRow: index === genrePickerIndex
                         property bool isSel: modelData === "All" ? genreSelected.length === 0
                                                                  : genreSelected.indexOf(modelData) >= 0
-                        color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+                        color: gvFilterRow3.onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: isSel ? "\u2713" : "  "
@@ -1057,9 +1060,9 @@ id: root
                             anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: modelData
                             color: "white"
-                            opacity: onRow ? 1 : 0.85
+                            opacity: gvFilterRow3.onRow ? 1 : 0.85
                             elide: Text.ElideRight
-                            font.family: subtitleFont.name; font.pixelSize: fpx(19); font.bold: onRow || isSel
+                            font.family: subtitleFont.name; font.pixelSize: fpx(19); font.bold: gvFilterRow3.onRow || isSel
                         }
                         MouseArea { anchors.fill: parent; onClicked: { genrePickerIndex = index; toggleGenre(modelData); } }
                     }
@@ -1074,10 +1077,11 @@ id: root
                     Repeater {
                         model: sortFields
                         Rectangle {
+                        id: gvFilterRow4
                             width: parent.width; height: vpx(46); radius: vpx(6)
                             property bool active: sortByIndex === modelData.idx
                             property bool onRow:  filterRow === index + 2
-                            color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+                            color: gvFilterRow4.onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
 
                             Text {
                                 anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
@@ -1098,9 +1102,10 @@ id: root
 
                     // Favorites-only toggle
                     Rectangle {
+                    id: gvFilterRow5
                         width: parent.width; height: vpx(46); radius: vpx(6)
                         property bool onRow: filterRow === sortFields.length + 2
-                        color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+                        color: gvFilterRow5.onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
 
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }

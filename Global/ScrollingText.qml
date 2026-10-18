@@ -111,7 +111,7 @@ id: root
     // is the moment the old binding-based version usually missed.
     Connections {
         target: label
-        onImplicitWidthChanged: root.restart()
+        function onImplicitWidthChanged() { root.restart(); }
     }
     Component.onCompleted: restart()
 }

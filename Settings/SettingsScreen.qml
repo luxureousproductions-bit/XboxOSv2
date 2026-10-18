@@ -1534,7 +1534,7 @@ id: root
 
                 Connections {
                     target: settingsList
-                    onSettingsVersionChanged: {
+                    function onSettingsVersionChanged() {
                         savedIndex = Math.min(
                             api.memory.has(settingName + 'Index') ? (api.memory.get(settingName + 'Index') || 0) : defaultIndex(),
                             settingList.length - 1);
@@ -1654,7 +1654,7 @@ id: root
                 }
 
                 // Text-input rows (RA credentials) skip the cycling logic
-                property bool isTextInput: inputType === "text"
+                property bool isTextInput: typeof inputType !== "undefined" && inputType === "text"   // only some pages define inputType
                 property bool isEditing:   false
                 property string originalText: ""
 

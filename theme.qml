@@ -255,7 +255,7 @@ id: root
     onOmitEmulatorsLiveChanged: Qt.callLater(rebuildHomeHide)
     Connections {
         target: appDrawer
-        onLibraryHiddenPkgsChanged: Qt.callLater(rebuildHomeHide)
+        function onLibraryHiddenPkgsChanged() { Qt.callLater(rebuildHomeHide); }
     }
     // After the drawer's slide-out, so the one re-filter doesn't land on it.
     Timer {
@@ -335,6 +335,18 @@ id: root
         videoFailedSources = m;
         if (Object.keys(m).length >= 2) videoUnsupported = true;
     }
+    // ── System background file lookup ─────────────────────────────────────
+    // A system's background may be .png/.jpg/.jpeg/.webp, tried in that order
+    // so a user's own .png overrides the bundled .webp. Every miss is a failed
+    // file open (and a log line), and tiles recycle constantly, so the
+    // extension that worked (or "none") is remembered for the session.
+    property var sysBgExtCache: ({})
+    function sysBgStartExt(path, count) {
+        var v = sysBgExtCache[path];
+        return v === undefined ? 0 : (v < 0 ? count - 1 : v);
+    }
+    function sysBgRemember(path, idx) { if (path) sysBgExtCache[path] = idx; }
+
     readonly property string hoverDefault: Qt.platform.os === "android" ? "No" : "Yes"
     readonly property string chimeDefault: Qt.platform.os === "android" ? "Yes" : "No"
 

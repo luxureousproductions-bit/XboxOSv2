@@ -515,20 +515,23 @@ id: root
             basePath = path;   // onBasePathChanged kicks off the load chain
         }
         onBasePathChanged: {
-            extIdx = 0;
-            source = basePath !== "" ? (basePath + exts[0]) : "";
+            extIdx = sysBgStartExt(basePath, exts.length);   // straight to the known file
+            source = basePath !== "" ? (basePath + exts[extIdx]) : "";
         }
         onStatusChanged: {
             if (status === Image.Error) {
                 if (extIdx < exts.length - 1) {
                     extIdx = extIdx + 1;          // try next extension
                     source = basePath + exts[extIdx];
-                } else if (sysTileBgActive && sysBgFallbackColl && sysBgFallbackColl.games.count > 0) {
+                } else {
+                    sysBgRemember(basePath, -1);      // no file for this system
+                    if (!(sysTileBgActive && sysBgFallbackColl && sysBgFallbackColl.games.count > 0)) return;
                     // No background file for this system — random fanart fallback
                     highlightedGame = sysBgFallbackColl.games.get(Math.floor(Math.random() * sysBgFallbackColl.games.count));
                     sysTileBgActive = false;
                 }
             } else if (status === Image.Ready) {
+                sysBgRemember(basePath, extIdx);
                 // File is ready — NOW run the single clean crossfade to it
                 if (sysTileBgActive) crossfadeTo(source);
             }
@@ -1236,12 +1239,12 @@ id: root
             onResumeDepsChanged: Qt.callLater(platformlist.refreshResume)
             Connections {
                 target: listLastPlayed.games
-                onRowsInserted:  Qt.callLater(platformlist.refreshResume)
-                onRowsRemoved:   Qt.callLater(platformlist.refreshResume)
-                onRowsMoved:     Qt.callLater(platformlist.refreshResume)
-                onModelReset:    Qt.callLater(platformlist.refreshResume)
-                onLayoutChanged: Qt.callLater(platformlist.refreshResume)
-                onCountChanged:  Qt.callLater(platformlist.refreshResume)
+                function onRowsInserted() { Qt.callLater(platformlist.refreshResume); }
+                function onRowsRemoved() { Qt.callLater(platformlist.refreshResume); }
+                function onRowsMoved() { Qt.callLater(platformlist.refreshResume); }
+                function onModelReset() { Qt.callLater(platformlist.refreshResume); }
+                function onLayoutChanged() { Qt.callLater(platformlist.refreshResume); }
+                function onCountChanged() { Qt.callLater(platformlist.refreshResume); }
             }
             height: topRow.tileSz + globalMargin * 2
             clip: false
@@ -1458,11 +1461,14 @@ id: root
                     property string basePath: (!isHero && coll)
                         ? "../assets/images/systembackground/" + Utils.processPlatformName(coll.shortName) : ""
                     property var exts: [".png", ".jpg", ".jpeg", ".webp"]
-                    property int extIdx: 0
-                    onBasePathChanged: extIdx = 0      // reset when tile recycles to a new system
+                    property int extIdx: sysBgStartExt(basePath, exts.length)
+                    onBasePathChanged: extIdx = sysBgStartExt(basePath, exts.length)   // tile recycled to a new system
                     onStatusChanged: {
-                        if (status === Image.Error && extIdx < exts.length - 1)
-                            extIdx = extIdx + 1;       // try next extension
+                        if (status === Image.Ready) sysBgRemember(basePath, extIdx);
+                        else if (status === Image.Error) {
+                            if (extIdx < exts.length - 1) extIdx = extIdx + 1;   // try next extension
+                            else sysBgRemember(basePath, -1);                    // no file for this system
+                        }
                     }
                     visible: !isHero && status === Image.Ready
                     anchors.fill: parent

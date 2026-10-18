@@ -563,7 +563,9 @@ id: root
     Component.onCompleted: {
         currentHelpbarModel     = allGamesHelpModel;
         currentHelpOwner        = root;
-        currentCustomCollection = listAllGames.collection;
+        // (A write to `currentCustomCollection`, a gameOS leftover that no
+        // longer exists, used to sit here. It threw, which silently skipped
+        // the two lines below on every open.)
         restoreSelection();   // restore the row we were on (if the model is ready)
         settledGame = currentGame;   // show the persisted game's art right away
     }
@@ -1753,15 +1755,16 @@ id: root
 
                 // Name row — shows the current search text
                 Rectangle {
+                id: agFilterRow1
                     visible: !genrePickerOpen && !systemPickerOpen
                     width: parent.width; height: vpx(52); radius: vpx(6)
                     property bool onRow: filterRow === 0 || searchActive
-                    color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+                    color: agFilterRow1.onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
 
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\uD83D\uDD0D"; font.pixelSize: fpx(15); width: vpx(22)
-                        color: "white"; opacity: onRow ? 1 : 0.6
+                        color: "white"; opacity: agFilterRow1.onRow ? 1 : 0.6
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
@@ -1769,24 +1772,25 @@ id: root
                               ? (nameFilter === "" ? "Type a name\u2026" : nameFilter)
                               : (nameFilter === "" ? "Name: (no filter)" : "Name: " + nameFilter)
                         color: "white"
-                        opacity: onRow ? 1 : 0.85
+                        opacity: agFilterRow1.onRow ? 1 : 0.85
                         elide: Text.ElideRight
-                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: onRow
+                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: agFilterRow1.onRow
                     }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 0; activateSearch(); } }
                 }
 
                 // Genre row — opens the genre picker
                 Rectangle {
+                id: agFilterRow2
                     visible: !searchActive && !genrePickerOpen && !systemPickerOpen
                     width: parent.width; height: vpx(52); radius: vpx(6)
                     property bool onRow: filterRow === 1
-                    color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+                    color: agFilterRow2.onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
 
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\u2630"; font.pixelSize: fpx(15); width: vpx(22)
-                        color: "white"; opacity: onRow ? 1 : 0.6
+                        color: "white"; opacity: agFilterRow2.onRow ? 1 : 0.6
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(46); right: arrow.left; rightMargin: vpx(8); verticalCenter: parent.verticalCenter }
@@ -1794,15 +1798,15 @@ id: root
                              : genreSelected.length === 1 ? "Genre: " + genreSelected[0]
                              : "Genre: " + genreSelected.length + " selected"
                         color: "white"
-                        opacity: onRow ? 1 : 0.85
+                        opacity: agFilterRow2.onRow ? 1 : 0.85
                         elide: Text.ElideRight
-                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: onRow
+                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: agFilterRow2.onRow
                     }
                     Text {
                         id: arrow
                         anchors { right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\u25B8"; color: "white"
-                        opacity: onRow ? 1 : 0.6; font.pixelSize: fpx(18)
+                        opacity: agFilterRow2.onRow ? 1 : 0.6; font.pixelSize: fpx(18)
                     }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 1; openGenrePicker(); } }
                 }
@@ -1817,11 +1821,12 @@ id: root
                     currentIndex: genrePickerIndex
                     onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
                     delegate: Rectangle {
+                    id: agFilterRow3
                         width: ListView.view.width; height: vpx(42); radius: vpx(4)
                         property bool onRow: index === genrePickerIndex
                         property bool isSel: modelData === "All" ? genreSelected.length === 0
                                                                  : genreSelected.indexOf(modelData) >= 0
-                        color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+                        color: agFilterRow3.onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: isSel ? "\u2713" : "  "
@@ -1831,9 +1836,9 @@ id: root
                             anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: modelData
                             color: "white"
-                            opacity: onRow ? 1 : 0.85
+                            opacity: agFilterRow3.onRow ? 1 : 0.85
                             elide: Text.ElideRight
-                            font.family: subtitleFont.name; font.pixelSize: fpx(19); font.bold: onRow || isSel
+                            font.family: subtitleFont.name; font.pixelSize: fpx(19); font.bold: agFilterRow3.onRow || isSel
                         }
                         MouseArea { anchors.fill: parent; onClicked: { genrePickerIndex = index; toggleGenre(modelData); } }
                     }
@@ -1841,29 +1846,30 @@ id: root
 
                 // System row — opens the system picker
                 Rectangle {
+                id: agFilterRow4
                     visible: !searchActive && !genrePickerOpen && !systemPickerOpen
                     width: parent.width; height: vpx(52); radius: vpx(6)
                     property bool onRow: filterRow === 2
-                    color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+                    color: agFilterRow4.onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
 
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\u25A4"; font.pixelSize: fpx(15); width: vpx(22)
-                        color: "white"; opacity: onRow ? 1 : 0.6
+                        color: "white"; opacity: agFilterRow4.onRow ? 1 : 0.6
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(46); right: sysArrow.left; rightMargin: vpx(8); verticalCenter: parent.verticalCenter }
                         text: systemIndex < 0 ? "System: ALL" : "System: " + systemFilter
                         color: "white"
-                        opacity: onRow ? 1 : 0.85
+                        opacity: agFilterRow4.onRow ? 1 : 0.85
                         elide: Text.ElideRight
-                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: onRow
+                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: agFilterRow4.onRow
                     }
                     Text {
                         id: sysArrow
                         anchors { right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\u25B8"; color: "white"
-                        opacity: onRow ? 1 : 0.6; font.pixelSize: fpx(18)
+                        opacity: agFilterRow4.onRow ? 1 : 0.6; font.pixelSize: fpx(18)
                     }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 2; openSystemPicker(); } }
                 }
@@ -1878,10 +1884,11 @@ id: root
                     currentIndex: systemPickerIndex
                     onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
                     delegate: Rectangle {
+                    id: agFilterRow5
                         width: ListView.view.width; height: vpx(42); radius: vpx(4)
                         property bool onRow: index === systemPickerIndex
                         property bool isSel: modelData.index === systemIndex
-                        color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+                        color: agFilterRow5.onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: isSel ? "\u2713" : "  "
@@ -1891,9 +1898,9 @@ id: root
                             anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: modelData.name
                             color: "white"
-                            opacity: onRow ? 1 : 0.85
+                            opacity: agFilterRow5.onRow ? 1 : 0.85
                             elide: Text.ElideRight
-                            font.family: subtitleFont.name; font.pixelSize: fpx(19); font.bold: onRow || isSel
+                            font.family: subtitleFont.name; font.pixelSize: fpx(19); font.bold: agFilterRow5.onRow || isSel
                         }
                         MouseArea { anchors.fill: parent; onClicked: { systemPickerIndex = index; selectSystem(modelData); } }
                     }
@@ -1908,10 +1915,11 @@ id: root
                     Repeater {
                         model: sortFields
                         Rectangle {
+                        id: agFilterRow6
                             width: parent.width; height: vpx(48); radius: vpx(6)
                             property bool active: sortField === modelData.key
                             property bool onRow:  filterRow === index + 3
-                            color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+                            color: agFilterRow6.onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
 
                             Text {
                                 anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
@@ -1939,9 +1947,10 @@ id: root
 
                     // Favorites only
                     Rectangle {
+                    id: agFilterRow7
                         width: parent.width; height: vpx(48); radius: vpx(6)
                         property bool onRow: filterRow === sortFields.length + 3
-                        color: onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
+                        color: agFilterRow7.onRow ? Qt.rgba(1,1,1,0.12) : "transparent"
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                             text: favsOnly ? "\u2713" : "  "
@@ -2279,7 +2288,8 @@ id: root
             // Covers focus arriving before the model has populated; once it
             // does, currentIsImportedApp changes and refreshes this again.
             refreshHelpbar();
-            currentCustomCollection = listAllGames.collection;
+            // (Removed: a write to the undeclared `currentCustomCollection`.
+            // It threw and skipped the re-centre below on every return.)
             // Returning from game details: re-center the list on the current game
             restoreViewTimer.restart();
         }
