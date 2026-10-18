@@ -36,6 +36,7 @@ id: root
         onPressed: mouse.accepted = true
         onClicked: mouse.accepted = true
         onReleased: mouse.accepted = true
+        onWheel: wheel.accepted = true   // the wheel must not reach the screen underneath either
     }
     function gameActivated() {
         storedCollectionGameIndex = gamegrid.currentIndex
@@ -844,7 +845,7 @@ id: root
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, 0.78)
         focus: sysPanelOpen
-        MouseArea { anchors.fill: parent; onClicked: { sysPanelOpen = false; gamegrid.focus = true; } }
+        MouseArea { anchors.fill: parent; onWheel: wheel.accepted = true; onClicked: { sysPanelOpen = false; gamegrid.focus = true; } }
 
         Rectangle {
             anchors.centerIn: parent
@@ -931,7 +932,7 @@ id: root
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, 0.78)
 
-        MouseArea { anchors.fill: parent; onClicked: { searchActive = false; filterOpen = false; gamegrid.focus = true; } }
+        MouseArea { anchors.fill: parent; onWheel: wheel.accepted = true; onClicked: { searchActive = false; filterOpen = false; gamegrid.focus = true; } }
 
         // Shared on-screen keyboard — same presentation as the RA search:
         // title and text field up top, keys below, its own help prompts.

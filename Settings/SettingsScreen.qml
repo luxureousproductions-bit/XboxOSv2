@@ -34,6 +34,7 @@ id: root
         onPressed: mouse.accepted = true
         onClicked: mouse.accepted = true
         onReleased: mouse.accepted = true
+        onWheel: wheel.accepted = true   // the wheel must not reach the screen underneath either
     }
 
     ListModel {
@@ -2121,7 +2122,7 @@ id: root
             anchors.fill: parent
             color: "#000000"
             opacity: 0.65
-            MouseArea { anchors.fill: parent; onClicked: root.closeInfo() }
+            MouseArea { anchors.fill: parent; onWheel: wheel.accepted = true; onClicked: root.closeInfo() }
         }
 
         Rectangle {

@@ -592,6 +592,7 @@ id: root
         MouseArea {
             anchors.fill: parent
             onClicked: root.closeDrawer()
+            onWheel: wheel.accepted = true   // don't scroll the screen behind the drawer
         }
     }
 

@@ -575,7 +575,11 @@ id: root
     //
     // To add a global rule (pause while the keyboard is up, a mute switch),
     // change THIS line. Nothing else needs to know.
-    readonly property string playbackOwner: appActive ? state : ""
+    // Pegasus's own menu (Esc / Start) takes focus away from the whole theme
+    // (src/frontend/main.qml sets the theme's focus to false while it's up),
+    // and videos kept playing with sound behind it. No owner while it's open.
+    readonly property bool pegasusMenuOpen: !root.focus
+    readonly property string playbackOwner: (appActive && !pegasusMenuOpen) ? state : ""
 
     // ── High Quality Mode ─────────────────────────────────────────────────
     // One toggle, off by default, bundling extras that only capable devices

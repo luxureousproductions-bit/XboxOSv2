@@ -34,6 +34,7 @@ id: root
         onPressed: mouse.accepted = true
         onClicked: mouse.accepted = true
         onReleased: mouse.accepted = true
+        onWheel: wheel.accepted = true   // the wheel must not reach the screen underneath either
     }
 
     anchors.fill: parent

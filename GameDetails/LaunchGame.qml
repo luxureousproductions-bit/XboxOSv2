@@ -312,6 +312,7 @@ id: root
         onPressed: mouse.accepted = true
         onClicked: mouse.accepted = true
         onReleased: mouse.accepted = true
+        onWheel: wheel.accepted = true   // the wheel must not reach the screen underneath either
     }
 
     // "B  Back" hint, bottom-right, matching the global help bar's glyph + label.

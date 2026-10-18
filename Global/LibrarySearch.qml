@@ -203,6 +203,7 @@ id: searchOverlay
         onPressed:  mouse.accepted = true
         onClicked:  mouse.accepted = true
         onReleased: mouse.accepted = true
+        onWheel: wheel.accepted = true   // the wheel must not reach the screen underneath either
     }
     Rectangle {
         anchors.fill: parent
@@ -260,6 +261,15 @@ id: searchOverlay
             x: vpx(10) + Math.min(queryBox.width - vpx(20), queryCaretMetrics.width)
             visible: searchOverlay.query !== "" && !searchOverlay.showingResults
         }
+    }
+
+    // Mouse wheel over the results: one result per notch, like every other
+    // list (the ListView's own flick-scrolling moved the view, not the pick).
+    // resultList already plays the nav sound on every index change.
+    WheelNav {
+        anchors.fill: resultList
+        view: resultList
+        active: searchOverlay.showingResults
     }
 
     // Results
