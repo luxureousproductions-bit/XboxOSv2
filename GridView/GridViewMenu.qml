@@ -331,6 +331,7 @@ id: root
         if (now - lastNavMs < 180) fastScrolling = true;
         lastNavMs = now;
         fastScrollRelease.restart();
+        noteNav();                      // PC: also skip new tiles' corner masks while racing
     }
     property int numColumns: parseInt(tileColumns) || 6
     property int titleMargin: tileTitles === "Always" ? vpx(30) : 0

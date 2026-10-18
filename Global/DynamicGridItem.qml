@@ -107,7 +107,15 @@ id: root
     // starts false when the tile is born mid-race.
     property bool deferArt: false
     property bool artArmed: true
-    Component.onCompleted: if (deferArt) artArmed = false
+    // PC only (navRacing is never set on Android): a tile created while the
+    // cursor races skips its rounded-corner mask until the cursor stops.
+    property bool lightWhileRacing: false
+    readonly property bool racingNow: navRacing
+    onRacingNowChanged: if (!racingNow) lightWhileRacing = false
+    Component.onCompleted: {
+        if (deferArt) artArmed = false;
+        if (navRacing) lightWhileRacing = true;
+    }
     onDeferArtChanged: if (!deferArt) artArmed = true
     readonly property bool previewCovering: selected && playVideo
                                           && (ownScreen === "" || playbackOwner === ownScreen)
@@ -176,7 +184,7 @@ id: root
     Loader {
         // Only when the setting is on: with it off the effect was still built
         // on every move, just drawn invisible. Same look, less work per move.
-        active: selected && settings.TileHalo === "Yes"
+        active: selected && settings.TileHalo === "Yes" && !navRacing
         anchors.fill: tileHaloSrc
         z: -1
         sourceComponent: Component {
@@ -225,7 +233,7 @@ id: root
 
         // Round the tile art to match the rounded selection frame (vpx(6)),
         // so the crop-filled screenshot doesn't poke past the frame's corners.
-        layer.enabled: true
+        layer.enabled: !lightWhileRacing
         layer.smooth: true
         layer.effect: OpacityMask {
             maskSource: Rectangle {

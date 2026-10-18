@@ -105,7 +105,15 @@ id: root
     // starts false when the tile is born mid-race.
     property bool deferArt: false
     property bool artArmed: true
-    Component.onCompleted: if (deferArt) artArmed = false
+    // PC only (navRacing is never set on Android): a tile created while the
+    // cursor races skips its rounded-corner mask until the cursor stops.
+    property bool lightWhileRacing: false
+    readonly property bool racingNow: navRacing
+    onRacingNowChanged: if (!racingNow) lightWhileRacing = false
+    Component.onCompleted: {
+        if (deferArt) artArmed = false;
+        if (navRacing) lightWhileRacing = true;
+    }
     onDeferArtChanged: if (!deferArt) artArmed = true
 
     scale: selected ? 1.1 : 1
@@ -148,7 +156,7 @@ id: root
     Loader {
         // Only when the setting is on: with it off the effect was still built
         // on every move, just drawn invisible. Same look, less work per move.
-        active: selected && !is3d && settings.TileHalo === "Yes"
+        active: selected && !is3d && settings.TileHalo === "Yes" && !navRacing
         anchors.fill: tileHaloSrc
         z: -1
         sourceComponent: Component {
@@ -237,7 +245,7 @@ id: root
             // One layer slot: 2D boxes use it for rounded corners; a 3D box has
             // its own silhouette, so when selected it uses it for the accent
             // glow that traces that silhouette instead (as the carousel does).
-            layer.enabled: is3d ? selected : true
+            layer.enabled: lightWhileRacing ? false : (is3d ? selected : true)
             layer.smooth: true
             layer.effect: is3d ? accentTrace : roundedMask
             Component {

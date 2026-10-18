@@ -77,6 +77,7 @@ id: root
         if (now - lastNavMs < 180) fastScrolling = true;
         lastNavMs = now;
         fastScrollRelease.restart();
+        noteNav();                      // PC: also skip new tiles' corner masks while racing
     }
 
     // The view currently showing the games; the letter jumps drive this.

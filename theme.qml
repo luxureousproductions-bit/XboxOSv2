@@ -1374,6 +1374,22 @@ id: root
     // tiles). Base mode decodes them for a 1080p screen; High Quality Mode
     // decodes them for the real screen, up to 4K. Android never uses these.
     readonly property bool onDesktop: Qt.platform.os !== "android"
+    // ── Lighter drawing while the cursor races (PC only) ─────────────────
+    // On weak PC graphics, fast scrolling creates tiles faster than their
+    // rounded-corner masks, art and glows can be drawn. While moves come
+    // faster than ~4 a second, new tiles skip those extras and the Home
+    // background waits; everything fills in once the cursor stops, so the
+    // look at rest is unchanged. Never set on Android.
+    property bool navRacing: false
+    property double lastNavMs: 0
+    function noteNav() {
+        if (!onDesktop) return;
+        var now = Date.now();
+        if (now - lastNavMs < 250) navRacing = true;
+        lastNavMs = now;
+        navRacingEnd.restart();
+    }
+    Timer { id: navRacingEnd; interval: 300; onTriggered: navRacing = false }
     function decodePxFor(displayPx) {
         return Math.max(1, Math.round(displayPx * (hqMode ? 1 : 1 / hiResScale)));
     }

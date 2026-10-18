@@ -163,6 +163,7 @@ id: root
         displayMarginEnd: itemWidth
         cacheBuffer: itemWidth * hqCacheTiles
         keyNavigationWraps: true
+        onCurrentIndexChanged: if (currentIndex >= 0 && focus) noteNav()   // PC racing detection (theme.qml)
         
         property int savedIndex: 0
         // True while focus is "resting" on the favorites carousel rather than
@@ -210,6 +211,8 @@ id: root
         id: dynamicDelegate
             DynamicGridItem {
                 selected: ListView.isCurrentItem && collectionList.focus && !collectionList.onFavoritesHeader
+                deferArt: navRacing        // PC only: art waits until the cursor stops
+                reduceMotion: navRacing
                 width: itemWidth
                 height: itemHeight
                 // Same relay the highlight gets, so the tile knows when its
@@ -237,6 +240,8 @@ id: root
         id: boxArtDelegate
             BoxArtGridItem {
                 selected: ListView.isCurrentItem && collectionList.focus && !collectionList.onFavoritesHeader
+                deferArt: navRacing        // PC only: art waits until the cursor stops
+                reduceMotion: navRacing
                 // Unlike the dynamic tile, this one has no default for gameData —
                 // without it the art has no game to draw (the title still showed,
                 // as it reads modelData directly).

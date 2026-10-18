@@ -619,7 +619,8 @@ id: root
     //     While a fade runs, new targets wait (bgFadeDone re-flushes).
     property bool bgFadeRunning: false
     property var  bgOutgoing: null
-    Timer { id: bgSettle;   interval: 180;              onTriggered: flushBg() }
+    // While the cursor races on PC the background waits for it to stop.
+    Timer { id: bgSettle;   interval: 180;              onTriggered: { if (navRacing) { restart(); return; } flushBg(); } }
     Timer {
     id: bgFadeDone
         interval: hqFanartFadeMs + 30
@@ -1280,6 +1281,7 @@ id: root
 
             onCurrentIndexChanged: {
                 if (currentIndex < 0) return;   // deselected (focus moved away) — leave the scroll position alone
+                noteNav();                      // PC racing detection (theme.qml)
                 // Align the list to whole-tile boundaries (same routine used on load).
                 alignToIndex(currentIndex);
                 // Update the page background for the highlighted strip item
@@ -2006,6 +2008,7 @@ id: root
             duration: 220; easing.type: Easing.OutCubic
         }
         onCurrentIndexChanged: {
+            noteNav();                      // PC racing detection (theme.qml)
             if (navJump) return;            // jumping to/from the nav bar: leave scroll position alone
             if (currentIndex <= 1) {
                 highlightRangeMode = ListView.NoHighlightRange;
