@@ -1400,6 +1400,9 @@ id: root
                         // keeps its proportions, with top/bottom cropped) — no stretching.
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true; smooth: true
+                        // Desktop: the hero art is a full-size file shrunk into
+                        // the tile; mipmaps keep that smooth instead of jagged.
+                        mipmap: onDesktop
                         source: heroArtSource(platformlist.resumeGame)
                         opacity: selected ? 1 : 0.5
                     }
@@ -1466,6 +1469,11 @@ id: root
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true; smooth: true
                     source: basePath !== "" ? basePath + exts[extIdx] : ""
+                    // Desktop: decode for the tile's GROWN size instead of the
+                    // full 1920x1080 file. Shrinking the full image 8x on the GPU
+                    // in one step is what made the tiles look jagged/pixelated.
+                    // Android keeps the default (sourceSize unset = -1).
+                    sourceSize.height: onDesktop ? decodePxFor(topRow.tileSz * topRow.growScale) : -1
                     // HQ: dissolve in once decoded instead of snapping. The
                     // target opacity is unchanged; the Behavior only animates
                     // the change, and only when HQ is on.
@@ -1474,6 +1482,13 @@ id: root
                     // Rounded-corner clip just on the image
                     layer.enabled: !isHero
                     layer.smooth: true
+                    // Desktop: render the masked art at the GROWN size. The
+                    // layer is drawn at the resting size by default and then
+                    // enlarged 1.5x when the tile is highlighted, which blurred
+                    // it. Android keeps the default (0x0 = the item's own size).
+                    layer.textureSize: onDesktop
+                        ? Qt.size(decodePxFor(width * topRow.growScale), decodePxFor(height * topRow.growScale))
+                        : Qt.size(0, 0)
                     layer.effect: OpacityMask {
                         maskSource: Rectangle {
                             width: sysBg.width
@@ -1489,7 +1504,12 @@ id: root
                     anchors.fill: parent
                     anchors.margins: vpx(15)
                     source: (!isHero && coll) ? "../assets/images/logospng/" + Utils.processPlatformName(coll.shortName) + ".png" : ""
-                    sourceSize { width: 512; height: 512 }   // one per system tile: kept fixed
+                    // 512 as before; on a big desktop screen (HQ: real size) it
+                    // grows with the highlighted tile, never below 512.
+                    sourceSize {
+                        width:  onDesktop ? Math.max(512, decodePxFor(topRow.tileSz * topRow.growScale)) : 512
+                        height: onDesktop ? Math.max(512, decodePxFor(topRow.tileSz * topRow.growScale)) : 512
+                    }
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                     smooth: true

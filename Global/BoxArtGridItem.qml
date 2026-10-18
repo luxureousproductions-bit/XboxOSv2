@@ -146,7 +146,9 @@ id: root
     // only while it could be seen. It used to be instantiated on EVERY tile —
     // two effects per tile doing nothing on every screen full of tiles.
     Loader {
-        active: selected
+        // Only when the setting is on: with it off the effect was still built
+        // on every move, just drawn invisible. Same look, less work per move.
+        active: selected && !is3d && settings.TileHalo === "Yes"
         anchors.fill: tileHaloSrc
         z: -1
         sourceComponent: Component {
@@ -168,7 +170,7 @@ id: root
     // only while it could be seen. It used to be instantiated on EVERY tile —
     // two effects per tile doing nothing on every screen full of tiles.
     Loader {
-        active: gameData && gameData.favorite && !selected
+        active: gameData && gameData.favorite && !selected && settings.FavoritedTileAccent !== "No"
         anchors.fill: tileHaloSrc
         z: -1
         sourceComponent: Component {

@@ -24,7 +24,7 @@ id: root
     property var game
     property bool selected
     property bool boxArt
-    property bool playVideo: (settings.AllowThumbVideo === "Yes") && !boxArt
+    property bool playVideo: (settings.AllowThumbVideo === "Yes") && !boxArt && !videoUnsupported
 
     // A new game always drops the old preview first. Since the Video reads
     // previewUrl (captured once) instead of following `game`, restarting the
@@ -162,6 +162,7 @@ id: root
             // Pegasus unloading the theme to launch a game). Destroying a playing
             // video is what the Windows media backend crashes on.
             Component.onDestruction: stop()
+            onErrorChanged: reportVideoError(videocomponent)   // logs it; see videoUnsupported in theme.qml
 
             anchors.fill: parent
             anchors.margins: vpx(2)   // Meets the selection frame's INNER edge exactly:

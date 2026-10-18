@@ -1,44 +1,43 @@
-XboxOSv2 - Windows test build (batches 1, 2 and 4K)
+XboxOSv2 - Windows test build (windows-wip branch)
 
-INSTALL (clean - please don't copy over an old install)
-1. Delete your current XboxOSv2 theme folder.
-2. Download the theme from GitHub (green Code button > Download ZIP) and
-   extract it into your Pegasus themes folder. theme.qml must sit directly
-   inside the theme folder.
-3. Copy everything from this zip over it, replacing files (23 .qml files).
-4. Check: the top bar shows a Search icon between the trophy and the gear.
+INSTALL
+1. Download the windows-wip branch from GitHub (switch the branch to
+   windows-wip, then Code > Download ZIP) and extract it into your Pegasus
+   themes folder.
+2. Rename the extracted folder to the name your old XboxOSv2 folder had.
+   Pegasus keeps theme settings per folder name, so a new name starts from
+   defaults.
+
+VIDEOS (black screens)
+Pegasus plays video through Windows' own DirectShow, which can't open .mp4
+on a stock Windows install. Pegasus's Windows guide recommends a codec pack:
+  - Install the K-Lite Codec Pack Basic, then restart Pegasus.
+    (Pegasus for Windows is a 32-bit program; K-Lite includes the 32-bit
+    decoders it needs.)
+Without codecs the theme now shows the game's art instead of black, and
+Discover says what to install. Each failed video is listed in lastrun.log
+as "XboxOSv2: video could not play".
+Note: preview videos are OFF by default on Windows. Turn them on in Settings
+to test them (Tiles, All Games and Game details > Video previews).
+
+TEST LAUNCHER (optional, in the zip's extras)
+"Pegasus test launcher.bat": put it next to pegasus-fe.exe and use it to
+start Pegasus. It writes your graphics driver details to lastrun.log and
+turns on Qt's threaded drawing, which is usually smoother.
+
+FRAME COUNTER
+Press Ctrl+F on a keyboard to show frames per second (top left). Read it
+WHILE scrolling: about 60 is smooth. Note which screen drops and whether
+High Quality Mode, Tile Halo or Dynamic Background change it.
 
 WHAT'S NEW IN THIS BUILD
-- Clickable button prompts on every screen (A/B/X/Y and Apps).
-- 4K: sharper icons, logos and tile art on 1440p/4K screens, and lighter
-  background blurs.
-- Highlight lag fixed: the selection frame now appears the instant you move.
-- All preview videos are OFF by default on Windows/Linux, including the
-  Game Details background video.
-- Fixed: the mouse Back button / right-click did nothing on Discover.
+- System tiles: sharper. Base mode = 1080p detail, High Quality Mode =
+  full detail for your screen (up to 4K).
+- Less work per move: the home background decodes at 1080p size in base
+  mode on big screens; tile glows are only built when switched on.
+- Game details no longer goes black when its video can't start.
+- Hero box follows the last game you launched.
 
-WHAT TO TRY
-1. Click the prompts at the bottom of each screen. Each should do exactly
-   what its button does:
-   Home, Platform page, All Games (list and grid), Game details, the media
-   viewer, Discover, Settings, the two RetroAchievements pages, Search
-   results, and the Filters / per-system panels. Apps (bottom left) opens
-   the app drawer anywhere. In the drawer, click "More options".
-2. Highlight: move quickly through rows and grids with keyboard/controller
-   and mouse. The accent frame should follow with no delay.
-3. 4K (if you have it): icons, system logos, game logos and tile art should
-   be sharp, not soft. Game details blur and the All Games blur should look
-   as strong as at 1080p.
-4. Esc on the Home page opens the Pegasus menu; B on a controller still
-   opens Discover.
-5. Video previews: on a fresh install they're off. If you turned them on
-   before, they stay on.
-6. CRASH TEST (important): turn video previews ON
-   (Settings > Tiles > Video previews, All Games > Video previews,
-   Game details > Video previews), change a few settings, go back to Home,
-   and browse for a few minutes. This confirms the crash itself is fixed,
-   not just avoided by having videos off.
-
-IF IT CRASHES
-Send: the steps right before the crash (which setting, which screen) and
-config/lastrun.log from your Pegasus folder.
+IF SOMETHING GOES WRONG
+Send the steps right before it and config/lastrun.log from your Pegasus
+folder.

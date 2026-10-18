@@ -315,6 +315,26 @@ id: root
     readonly property string previewDefault: Qt.platform.os === "android" ? "Yes" : "No"
     // Desktop-only defaults (Android keeps its old ones): mouse hover on, since
     // a desktop is driven by a mouse, and the startup chime off.
+    // ── Video health (Windows/Linux) ─────────────────────────────────────
+    // Pegasus plays video through the OS: DirectShow on Windows, GStreamer on
+    // Linux. Without the right codecs EVERY video fails and the screens that
+    // show one stay black (Pegasus's Windows notes recommend the K-Lite Codec
+    // Pack, Basic). Each failure is logged to lastrun.log; once two different
+    // files have failed this session the theme stops trying: previews, the
+    // Game Details video and the carousel video fall back to art, and Discover
+    // shows art and a hint. Never set on Android.
+    property bool videoUnsupported: false
+    property var  videoFailedSources: ({})
+    function reportVideoError(player) {
+        if (!player || player.error === MediaPlayer.NoError) return;
+        var src = String(player.source);
+        console.warn("XboxOSv2: video could not play (" + player.errorString + "): " + src);
+        if (Qt.platform.os === "android" || src === "" || videoFailedSources[src]) return;
+        var m = videoFailedSources;
+        m[src] = true;
+        videoFailedSources = m;
+        if (Object.keys(m).length >= 2) videoUnsupported = true;
+    }
     readonly property string hoverDefault: Qt.platform.os === "android" ? "No" : "Yes"
     readonly property string chimeDefault: Qt.platform.os === "android" ? "Yes" : "No"
 
@@ -647,8 +667,12 @@ id: root
     // One definition of the fanart decode size, used by the crossfade layers
     // AND the prefetcher. They must match exactly, or a prefetched image lands
     // in a different cache entry and the crossfade decodes it all over again.
-    readonly property size fanartDecodeSize: Qt.size(Math.round(width  * hqFanartScale),
-                                                     Math.round(height * hqFanartScale))
+    // Desktop base mode decodes the background for a 1080p screen even on a
+    // bigger one (each move decodes and uploads a new one); High Quality Mode
+    // decodes for the real screen. Factor is exactly 1 on Android and on 1080p.
+    readonly property real fanartDesktopFactor: (onDesktop && !hqMode) ? 1 / hiResScale : 1
+    readonly property size fanartDecodeSize: Qt.size(Math.round(width  * hqFanartScale * fanartDesktopFactor),
+                                                     Math.round(height * hqFanartScale * fanartDesktopFactor))
     readonly property int  hqCacheTiles:    hqMode ? 4    : 2     // off-screen row tiles pre-decoded
 
     // All Games Menu
@@ -1334,6 +1358,13 @@ id: root
     // they did before.
     readonly property real hiResScale: Qt.platform.os === "android" ? 1 : Math.max(1, vpx(1) / 1.5)
     function hrpx(n) { return Math.round(n * hiResScale); }
+    // Desktop image sharpness, for images drawn at a size we know (system
+    // tiles). Base mode decodes them for a 1080p screen; High Quality Mode
+    // decodes them for the real screen, up to 4K. Android never uses these.
+    readonly property bool onDesktop: Qt.platform.os !== "android"
+    function decodePxFor(displayPx) {
+        return Math.max(1, Math.round(displayPx * (hqMode ? 1 : 1 / hiResScale)));
+    }
     property real helpMargin: buttonbar.height
     property int transitionTime: 100
 
@@ -2347,11 +2378,50 @@ id: root
     property bool logKeys: false
     property bool logCollections: true
 
+    // ── Frame counter (desktop diagnostics) ──────────────────────────────
+    // Ctrl+F on a keyboard shows frames per second, top-left. Qt only draws
+    // when something changes, so read it WHILE scrolling: ~60 is smooth, a
+    // drop shows which screen or setting costs frames. Nothing exists until
+    // it's switched on, and a handheld has no Ctrl key.
+    property bool showFps: false
+    property int  fpsFrames: 0
+    property int  fpsValue: 0
+    Connections {
+        target: showFps ? root.Window.window : null
+        function onFrameSwapped() { root.fpsFrames += 1; }
+    }
+    Timer {
+        running: showFps; repeat: true; interval: 1000
+        onTriggered: { fpsValue = fpsFrames; fpsFrames = 0; }
+    }
+    Rectangle {
+        visible: showFps
+        z: 100000
+        anchors { left: parent.left; top: parent.top; margins: vpx(8) }
+        width: fpsText.implicitWidth + vpx(16); height: fpsText.implicitHeight + vpx(8)
+        radius: vpx(4)
+        color: "#CC000000"
+        Text {
+        id: fpsText
+            anchors.centerIn: parent
+            text: fpsValue + " fps"
+            color: fpsValue >= 55 ? "#7CFC00" : fpsValue >= 40 ? "#FFD700" : "#FF5555"
+            font.pixelSize: vpx(16)
+            font.bold: true
+        }
+    }
+
     Keys.onPressed: {
         if (event.isAutoRepeat) return;
 
         if (logKeys)
             console.log("[theme] key code:", event.key, "text:", event.text);
+
+        if (event.key === Qt.Key_F && (event.modifiers & Qt.ControlModifier)) {
+            event.accepted = true;
+            showFps = !showFps;
+            return;
+        }
 
         if (appDrawerKeys.indexOf(event.key) === -1) return;
         event.accepted = true;

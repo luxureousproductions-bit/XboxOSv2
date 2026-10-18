@@ -52,10 +52,12 @@ id: root
     id: videoPreviewWrapper
 
         Video {
+        id: mediaItemVideo
             // Stop before the player is destroyed (screen change, row rebuild, or
             // Pegasus unloading the theme to launch a game). Destroying a playing
             // video is what the Windows media backend crashes on.
             Component.onDestruction: stop()
+            onErrorChanged: reportVideoError(mediaItemVideo)   // logs it; see videoUnsupported in theme.qml
             anchors.fill: parent
             source: mediaItem
             fillMode: VideoOutput.PreserveAspectCrop

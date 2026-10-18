@@ -77,7 +77,7 @@ id: root
     property int fallbackIndex: 0
     property int artIndex: 0
     property bool videosScanned: false
-    readonly property bool useVideoFallback: fallbackList.length > 0
+    readonly property bool useVideoFallback: fallbackList.length > 0 && !videoUnsupported
     property var fallbackGame: (boxMode === "video")
         ? ((fallbackIndex < fallbackList.length) ? fallbackList[fallbackIndex] : null)
         : ((artIndex < artList.length) ? artList[artIndex] : null)
@@ -289,7 +289,7 @@ id: root
                         retrying = false;
                     }
                 }
-                onErrorChanged: if (error !== MediaPlayer.NoError) retryStart.restart()
+                onErrorChanged: if (error !== MediaPlayer.NoError) { reportVideoError(fallbackVideo); retryStart.restart(); }
                 readonly property bool shouldPlay: playbackOwner === "showcasescreen"
                                                 && (hqDualDecoder || showcaseRowPreviews === 0 || !hasFrame)
                 onShouldPlayChanged: {

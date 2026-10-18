@@ -73,7 +73,7 @@ id: root
 
 
     // In order to use the retropie icons here we need to do a little collection specific hack
-    property bool playVideo: gameData ? gameData.assets.videoList.length && (settings.AllowThumbVideo == "Yes") : ""
+    property bool playVideo: gameData ? gameData.assets.videoList.length && (settings.AllowThumbVideo == "Yes") && !videoUnsupported : ""
     // HQ: neighbours recede further and the pop is eased. The highlighted
     // tile itself stays at 1.0 so it lines up with the highlight's video.
     scale: selected ? 1 : hqRestScale
@@ -174,7 +174,9 @@ id: root
     // only while it could be seen. It used to be instantiated on EVERY tile —
     // two effects per tile doing nothing on every screen full of tiles.
     Loader {
-        active: selected
+        // Only when the setting is on: with it off the effect was still built
+        // on every move, just drawn invisible. Same look, less work per move.
+        active: selected && settings.TileHalo === "Yes"
         anchors.fill: tileHaloSrc
         z: -1
         sourceComponent: Component {
@@ -197,7 +199,7 @@ id: root
     // only while it could be seen. It used to be instantiated on EVERY tile —
     // two effects per tile doing nothing on every screen full of tiles.
     Loader {
-        active: gameData && gameData.favorite && !selected
+        active: gameData && gameData.favorite && !selected && settings.FavoritedTileAccent !== "No"
         anchors.fill: tileHaloSrc
         z: -1
         sourceComponent: Component {

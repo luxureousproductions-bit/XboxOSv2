@@ -183,7 +183,7 @@ id: root
     property int listEpoch: 0
     function lv(key, fallback) { var e = listEpoch; return api.memory.has(key) ? api.memory.get(key) : fallback; }
     readonly property string lvView:      lv("All Games View",                settings.AllGamesView)
-    readonly property string lvVideo:     lv("AllGames Video preview",        settings.AllGamesVideoPreview)
+    readonly property string lvVideo:     videoUnsupported ? "No" : lv("AllGames Video preview", settings.AllGamesVideoPreview)
     readonly property string lvHideBox:   lv("AllGames Hide box art on video", settings.AllGamesHideBoxOnVideo)
     readonly property string lvHideLogo:  lv("AllGames Hide logo on video",    settings.AllGamesHideLogoOnVideo)
     readonly property string lvBlur:      lv("AllGames Blur Background",       settings.AllGamesBlurBackground)
@@ -723,6 +723,7 @@ id: root
                 // Pegasus unloading the theme to launch a game). Destroying a playing
                 // video is what the Windows media backend crashes on.
                 Component.onDestruction: stop()
+                onErrorChanged: reportVideoError(previewVideo)   // logs it; see videoUnsupported in theme.qml
                 anchors.fill: parent
                 anchors.margins: vpx(3)   // inset so the square video corners stay inside the
                                           // rounded screenshot; corners then show the backdrop

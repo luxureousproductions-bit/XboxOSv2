@@ -63,6 +63,7 @@ id: root
             // Pegasus unloading the theme to launch a game). Destroying a playing
             // video is what the Windows media backend crashes on.
             Component.onDestruction: stop()
+            onErrorChanged: reportVideoError(carouselVideo)   // logs it; see videoUnsupported in theme.qml
             source: isVideo ? mediaModel[mediaIndex] : ""
             anchors.fill: parent
             fillMode: VideoOutput.PreserveAspectFit
