@@ -5,7 +5,9 @@
 // at the end of the splash, so the theme asks first and then launches the
 // chosen file itself (theme.qml launchDelay).
 //
-// The disc played last is highlighted, from each file's own lastPlayed.
+// Drawn like Pegasus' own dialog (dialogs/MultifileSelector.qml): grey title
+// bar, darker list, lighter highlight, shade behind, grows in from half size.
+// The disc played last starts highlighted, from each file's own lastPlayed.
 
 import QtQuick 2.15
 
@@ -18,10 +20,14 @@ id: discPicker
 
     property var game: null
     property bool open: false
-    property var discs: []          // [{ label, detail }]
+    property var discs: []          // [{ label }]
+    property int lastIndex: -1
+
+    readonly property int textSize: vpx(16)
+    readonly property int titleTextSize: vpx(18)
 
     anchors.fill: parent
-    visible: open
+    visible: shade.opacity > 0
     focus: open
 
     // "Final Fantasy VII (USA) (Disc 2)" -> "Disc 2"; anything else keeps its name
@@ -40,8 +46,7 @@ id: discPicker
         var lastTime = 0;
         for (var i = 0; i < g.files.count; i++) {
             var f = g.files.get(i);
-            var label = discLabel(f.name, i);
-            out.push({ "label": label, "detail": label === f.name ? "" : f.name });
+            out.push({ "label": discLabel(f.name, i) });
             var t = f.lastPlayed ? f.lastPlayed.getTime() : 0;
             if (!isNaN(t) && t > lastTime) { lastTime = t; last = i; }
         }
@@ -52,15 +57,13 @@ id: discPicker
         open = true;
         forceActiveFocus();
     }
-    property int lastIndex: -1
 
     function closePicker(byUser) {
         open = false;
         if (byUser) playBack();
         closed();
     }
-    function choose() {
-        var i = discList.currentIndex;
+    function choose(i) {
         if (i < 0 || i >= discs.length) return;
         playAccept();
         open = false;
@@ -69,128 +72,117 @@ id: discPicker
     }
 
     Keys.onPressed: {
-        if (event.isAutoRepeat && !(event.key === Qt.Key_Up || event.key === Qt.Key_Down)) return;
-        if (api.keys.isAccept(event)) { event.accepted = true; choose(); return; }
+        if (event.isAutoRepeat) return;
+        if (api.keys.isAccept(event)) { event.accepted = true; choose(discList.currentIndex); return; }
         if (api.keys.isCancel(event)) { event.accepted = true; closePicker(true); return; }
         // the drawer key and anything else stays here while the picker is up
         event.accepted = true;
     }
 
-    // Full-bleed blocker so touches never reach the screen underneath.
+    // shade, as Pegasus' Shade.qml: black at 0.8, tap to close
+    Rectangle {
+    id: shade
+        anchors.fill: parent
+        color: "#000"
+        opacity: discPicker.open ? 0.8 : 0
+        Behavior on opacity { NumberAnimation { duration: 125 } }
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.AllButtons
+            enabled: discPicker.open
+            onClicked: discPicker.closePicker(true)
+        }
+    }
+
+    // swallow taps on the dialog itself
     MouseArea {
-        anchors.fill: parent
-        acceptedButtons: Qt.AllButtons
-        onClicked: discPicker.closePicker(true)
-    }
-    Rectangle {
-        anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.78)
-    }
-
-    Rectangle {
-    id: card
-
         anchors.centerIn: parent
-        width: Math.min(parent.width * 0.5, vpx(620))
-        height: header.height + discList.height + footer.height + vpx(24)
-        color: "#1f1f1f"
-        radius: vpx(6)
+        width: dialogBox.width
+        height: dialogBox.height
+        enabled: discPicker.open
+    }
 
-        // swallow taps on the card itself
-        MouseArea { anchors.fill: parent }
+    Column {
+    id: dialogBox
 
-        Column {
-        id: header
+        width: parent.height * 0.66
+        anchors.centerIn: parent
+        opacity: shade.opacity / 0.8
+        scale: discPicker.open ? 1 : 0.5
+        Behavior on scale { NumberAnimation { duration: 125 } }
 
-            anchors { top: parent.top; left: parent.left; right: parent.right; margins: vpx(22) }
-            spacing: vpx(4)
+        // title bar
+        Rectangle {
+            width: parent.width
+            height: titleText.height
+            color: "#444"
+
             Text {
+            id: titleText
                 width: parent.width
-                text: discPicker.game ? discPicker.game.title : ""
-                color: "white"
-                font.family: titleFont.name
-                font.pixelSize: fpx(24)
-                font.bold: true
-                elide: Text.ElideRight
-            }
-            Text {
-                width: parent.width
-                bottomPadding: vpx(10)
-                text: "Choose a disc"
-                color: Qt.rgba(1, 1, 1, 0.6)
-                font.family: bodyFont.name
-                font.pixelSize: fpx(17)
+                text: discPicker.game
+                    ? "“" + discPicker.game.title + "” has multiple discs, which one would you like to play?"
+                    : ""
+                color: "#eee"
+                font.pixelSize: discPicker.titleTextSize
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                wrapMode: Text.WordWrap
+                padding: font.pixelSize
             }
         }
 
-        ListView {
-        id: discList
+        // content area
+        Rectangle {
+            width: parent.width
+            height: Math.min(discList.fullHeight, discPicker.height * 0.5)
+            color: "#333"
 
-            anchors { top: header.bottom; left: parent.left; right: parent.right; leftMargin: vpx(12); rightMargin: vpx(12) }
-            height: Math.min(count, 5) * vpx(58)
-            clip: true
-            focus: true
-            model: discPicker.discs
-            keyNavigationWraps: true
-            highlightMoveDuration: 100
-            onCurrentIndexChanged: if (discPicker.open) playNav()
+            ListView {
+            id: discList
 
-            delegate: Item {
-                width: ListView.view.width
-                height: vpx(58)
-                readonly property bool selected: ListView.isCurrentItem
+                readonly property int itemHeight: discPicker.textSize * 3
+                readonly property int fullHeight: count * itemHeight
 
-                Rectangle {
-                    anchors.fill: parent
-                    anchors.margins: vpx(3)
-                    radius: vpx(4)
-                    color: parent.selected ? theme.accent : Qt.rgba(1, 1, 1, 0.06)
-                }
-                Text {
-                    anchors { left: parent.left; leftMargin: vpx(20); verticalCenter: parent.verticalCenter;
-                              verticalCenterOffset: modelData.detail !== "" ? -vpx(8) : 0 }
-                    text: modelData.label
-                    color: "white"
-                    font.family: subtitleFont.name
-                    font.pixelSize: fpx(20)
-                }
-                Text {
-                    visible: modelData.detail !== ""
-                    anchors { left: parent.left; leftMargin: vpx(20); right: lastTag.left; rightMargin: vpx(12)
-                              verticalCenter: parent.verticalCenter; verticalCenterOffset: vpx(11) }
-                    text: modelData.detail
-                    color: Qt.rgba(1, 1, 1, 0.6)
-                    font.family: bodyFont.name
-                    font.pixelSize: fpx(13)
-                    elide: Text.ElideMiddle
-                }
-                Text {
-                id: lastTag
-                    anchors { right: parent.right; rightMargin: vpx(20); verticalCenter: parent.verticalCenter }
-                    text: index === discPicker.lastIndex ? "Last played" : ""
-                    color: Qt.rgba(1, 1, 1, 0.75)
-                    font.family: bodyFont.name
-                    font.pixelSize: fpx(15)
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: {
-                        if (discList.currentIndex === index) discPicker.choose();
-                        else discList.currentIndex = index;
+                anchors.fill: parent
+                clip: true
+                focus: true
+                highlightRangeMode: ListView.ApplyRange
+                preferredHighlightBegin: height * 0.5 - itemHeight * 0.5
+                preferredHighlightEnd: height * 0.5 + itemHeight * 0.5
+                onCurrentIndexChanged: if (discPicker.open) playNav()
+
+                model: discPicker.discs
+                delegate: Rectangle {
+                    readonly property bool highlighted: ListView.isCurrentItem || mouseArea.containsMouse
+
+                    width: dialogBox.width
+                    height: discList.itemHeight
+                    color: highlighted ? "#585858" : "transparent"
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: modelData.label
+                        color: "#eee"
+                        font.pixelSize: discPicker.textSize
+                    }
+                    Text {
+                        anchors.right: parent.right
+                        anchors.rightMargin: discPicker.textSize
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: index === discPicker.lastIndex ? "last played" : ""
+                        color: "#aaa"
+                        font.pixelSize: discPicker.textSize * 0.85
+                    }
+
+                    MouseArea {
+                    id: mouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: discPicker.choose(index)
                     }
                 }
             }
-        }
-
-        Text {
-        id: footer
-
-            anchors { top: discList.bottom; topMargin: vpx(10); right: parent.right; rightMargin: vpx(22) }
-            height: implicitHeight + vpx(6)
-            text: "A  Play      B  Back"
-            color: Qt.rgba(1, 1, 1, 0.6)
-            font.family: bodyFont.name
-            font.pixelSize: fpx(15)
         }
     }
 }
