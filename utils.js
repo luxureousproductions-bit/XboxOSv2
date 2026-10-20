@@ -194,7 +194,7 @@ function processPlatformName(platform) {
       return "ps3";
       break;
     case "sony playstation vita":
-      return "vita";
+      return "psvita";
       break;
     case "sega saturn":
       return "saturn";
@@ -263,7 +263,7 @@ var systemData = {
   "ps2":          { year: 2000, maker: "Sony" },
   "ps3":          { year: 2006, maker: "Sony" },
   "psp":          { year: 2004, maker: "Sony" },
-  "vita":         { year: 2011, maker: "Sony" },
+  "psvita":         { year: 2011, maker: "Sony" },
   // Microsoft
   "xbox":         { year: 2001, maker: "Microsoft" },
   "xbox360":      { year: 2005, maker: "Microsoft" },
@@ -343,6 +343,9 @@ function processButtonArt(button) {
       case "pageDown":
         buttonModel = api.keys.pageDown;
         break;
+    case "menu":   // Start (controller/11.png)
+      buttonModel = api.keys.menu;
+      break;
     default:
       buttonModel = api.keys.accept;
   }
@@ -351,7 +354,9 @@ function processButtonArt(button) {
   for (i = 0; buttonModel.length; i++) {
     if (buttonModel[i].name().includes("Gamepad")) {
       var buttonValue = buttonModel[i].key.toString(16)
-      return buttonValue.substring(buttonValue.length-1, buttonValue.length);
+      // Last hex digit of the gamepad key = button index (A 0 ... Select a,
+      // Start b); the glyph files are named in decimal (10.png, 11.png)
+      return String(parseInt(buttonValue.substring(buttonValue.length-1, buttonValue.length), 16));
     }
   }
 }
