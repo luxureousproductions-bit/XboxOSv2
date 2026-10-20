@@ -863,6 +863,7 @@ id: root
     }
     property var currentGame
     property var launchingGame: null         // game shown on the launch splash
+    property var launchingFile: null         // multi-disc: the disc picked before the splash
     property bool launchSuspended: false     // true once the app has backgrounded for a launch
     property int  launchSplashDelay: {       // ms the splash is held before launch, from the "Launch screen delay" setting (seconds)
         var v = parseFloat(settings.LaunchScreenDelay);
@@ -952,7 +953,40 @@ id: root
     Timer { id: drawerOpenChime;  interval: 140; onTriggered: playTabRight() }
     Timer { id: drawerCloseChime; interval: 140; onTriggered: playTabLeft()  }
 
+    // ── Multi-disc: ask for the disc BEFORE the launch splash ──────────────
+    // Every launch path calls askDisc() first. A game with more than one file
+    // opens the disc picker and the launch is replayed once a disc is chosen
+    // (discReady lets that second call through); launchDelay then starts the
+    // chosen file instead of the game, so Pegasus doesn't ask again.
+    property bool discReady: false
+    property string discKind: ""
+    property var discGame: null
+    property var discPrevFocus: null
+    function askDisc(game, kind) {
+        if (discReady) { discReady = false; return false; }
+        launchingFile = null;
+        var g = (game !== null && game !== undefined) ? game : currentGame;
+        if (!g || !g.files || g.files.count < 2) return false;
+        discKind = kind;
+        discGame = game;
+        discPrevFocus = Window.activeFocusItem;
+        playAccept();
+        discPicker.openFor(g);
+        return true;
+    }
+    function discChosen(index) {
+        var g = (discGame !== null && discGame !== undefined) ? discGame : currentGame;
+        launchingFile = g.files.get(index);
+        discReady = true;
+        if (discKind === "ra")            launchGameFromRA(discGame);
+        else if (discKind === "discover") launchGameFromDiscover(discGame);
+        else if (discKind === "drawer")   launchAppFromDrawer(discGame);
+        else                              launchGame(discGame);
+        discReady = false;
+    }
+
     function launchGame(game) {
+        if (askDisc(game, "game")) return;
         launchingGame = (game !== null) ? game : currentGame;
         launchGameScreen();
         saveCurrentState(launchingGame);
@@ -964,6 +998,7 @@ id: root
     // stale achievements page (possibly for a game reached via search) isn't
     // useful. lastState must be replaced BEFORE saveCurrentState() serializes it.
     function launchGameFromRA(game) {
+        if (askDisc(game, "ra")) return;
         launchingGame = (game !== null) ? game : currentGame;
         launchGameScreen();             // pushes the RA screen onto lastState
         lastState = ["showcasescreen"];  // ...replaced: return to the Showcase
@@ -1576,6 +1611,7 @@ id: root
     // Launch a game from DiscoverView without pushing "discoverscreen" onto
     // lastState so that returning from the game skips the Discover screen.
     function launchGameFromDiscover(game) {
+        if (game !== null && askDisc(game, "discover")) return;
         if (game !== null) {
             playAccept();
             launchingGame = game;
@@ -1591,6 +1627,7 @@ id: root
     // the normal return path is left completely alone.
     function launchAppFromDrawer(game) {
         if (game === null) return;
+        if (askDisc(game, "drawer")) return;
         launchingGame = game;
         // MUST go through launchGameScreen(): it pushes the current state onto
         // lastState before switching. Setting root.state directly pushed
@@ -1854,8 +1891,14 @@ id: root
         interval: launchSplashDelay
         repeat: false
         onTriggered: {
-            if (root.state === "launchgamescreen" && launchingGame)
+            if (root.state !== "launchgamescreen" || !launchingGame) return;
+            if (launchingFile) {
+                var file = launchingFile;   // the disc picked before the splash
+                launchingFile = null;
+                file.launch();
+            } else {
                 launchingGame.launch();
+            }
         }
     }
 
@@ -2191,6 +2234,25 @@ id: root
             var s = root.state;
             root.state = "";
             root.state = s;
+        }
+    }
+
+    // Disc picker for multi-disc games, shown before the launch splash (see
+    // askDisc). Above the drawer and search so a launch from either works.
+    DiscPicker {
+    id: discPicker
+
+        z: 700
+        onChosen: discChosen(index)
+        onClosed: {
+            if (discPrevFocus) {
+                discPrevFocus.forceActiveFocus();
+            } else {
+                var s = root.state;
+                root.state = "";
+                root.state = s;
+            }
+            discPrevFocus = null;
         }
     }
 
