@@ -86,6 +86,15 @@ id: root
             if ((gl[i] || "").toLowerCase() === want) return true;
         return false;
     }
+    // Pegasus X tags every entry of its one "Android" collection as Game,
+    // Emulator or Application (Settings > Library > Combine Android collections)
+    function hasTag(g, want) {
+        var tl = g ? g.tagList : null;
+        if (!tl) return false;
+        for (var i = 0; i < tl.length; i++)
+            if ((tl[i] || "").toLowerCase() === want) return true;
+        return false;
+    }
     readonly property var emulatorTitleSet: {
         var set = {};
         var idx = appDrawer.appIndex;
@@ -731,6 +740,7 @@ id: root
         if (isPegasusImport(game)) return "import";
         if (hasGenre(game, "application")) return "app";
         if (hasGenre(game, "emulator"))    return "emulator";
+        if (hasTag(game, "game"))          return "game";   // Pegasus X's Android collection
         var cl = game.collections;
         if (!cl) return "";
         var inGames = false, inApps = false;

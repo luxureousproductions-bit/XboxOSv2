@@ -498,7 +498,17 @@ id: root
     //   in an androidgames collection, not tagged
     //   "Application"                             -> game
     function categoryHint(g, gamesCol, imported) {
-        if (imported || !g) return "";
+        if (!g) return "";
+        // Pegasus X tags every Android entry, its own imports included
+        // (Game / Emulator / Application); Application falls through to the
+        // rules below, which tell system apps from the rest.
+        var tl = g.tagList;
+        for (var t = 0; tl && t < tl.length; t++) {
+            var tt = (tl[t] || "").toLowerCase();
+            if (tt === "game") return "game";
+            if (tt === "emulator") return "emulator";
+        }
+        if (imported) return "";
         var gl = g.genreList, isApp = false;
         for (var i = 0; gl && i < gl.length; i++) {
             var gg = (gl[i] || "").toLowerCase();
