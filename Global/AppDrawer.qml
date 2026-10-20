@@ -593,6 +593,7 @@ id: root
             anchors.fill: parent
             onClicked: root.closeDrawer()
             onWheel: wheel.accepted = true   // don't scroll the screen behind the drawer
+            hoverEnabled: true               // ...or light up its tiles under the pointer
         }
     }
 

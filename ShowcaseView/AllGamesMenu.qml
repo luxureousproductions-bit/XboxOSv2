@@ -1619,7 +1619,7 @@ id: root
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, 0.78)
         focus: listPanelOpen
-        MouseArea { anchors.fill: parent; onWheel: wheel.accepted = true; onClicked: { listPanelOpen = false; focusGames(); } }
+        MouseArea { anchors.fill: parent; hoverEnabled: true; onWheel: wheel.accepted = true; onClicked: { listPanelOpen = false; focusGames(); } }
         Rectangle {
             anchors.centerIn: parent
             width: vpx(720); height: vpx(576)
@@ -1709,7 +1709,7 @@ id: root
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, 0.78)
 
-        MouseArea { anchors.fill: parent; onWheel: wheel.accepted = true; onClicked: { searchActive = false; filterOpen = false; focusGames(); } }
+        MouseArea { anchors.fill: parent; hoverEnabled: true; onWheel: wheel.accepted = true; onClicked: { searchActive = false; filterOpen = false; focusGames(); } }
 
         // Shared on-screen keyboard — same presentation as the RA search:
         // title and text field up top, keys below, its own help prompts.

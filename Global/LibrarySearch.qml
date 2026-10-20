@@ -204,6 +204,9 @@ id: searchOverlay
         onClicked:  mouse.accepted = true
         onReleased: mouse.accepted = true
         onWheel: wheel.accepted = true   // the wheel must not reach the screen underneath either
+        // Takes hover too, so tiles behind the search (Home, RA) don't light
+        // up as the pointer passes over them.
+        hoverEnabled: true
     }
     Rectangle {
         anchors.fill: parent

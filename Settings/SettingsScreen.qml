@@ -2122,7 +2122,7 @@ id: root
             anchors.fill: parent
             color: "#000000"
             opacity: 0.65
-            MouseArea { anchors.fill: parent; onWheel: wheel.accepted = true; onClicked: root.closeInfo() }
+            MouseArea { anchors.fill: parent; hoverEnabled: true; onWheel: wheel.accepted = true; onClicked: root.closeInfo() }
         }
 
         Rectangle {
