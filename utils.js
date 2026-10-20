@@ -194,7 +194,7 @@ function processPlatformName(platform) {
       return "ps3";
       break;
     case "sony playstation vita":
-      return "vita";
+      return "psvita";
       break;
     case "sega saturn":
       return "saturn";
@@ -263,7 +263,7 @@ var systemData = {
   "ps2":          { year: 2000, maker: "Sony" },
   "ps3":          { year: 2006, maker: "Sony" },
   "psp":          { year: 2004, maker: "Sony" },
-  "vita":         { year: 2011, maker: "Sony" },
+  "psvita":         { year: 2011, maker: "Sony" },
   // Microsoft
   "xbox":         { year: 2001, maker: "Microsoft" },
   "xbox360":      { year: 2005, maker: "Microsoft" },
