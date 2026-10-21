@@ -133,7 +133,7 @@ id: root
     // keep their selected-tile glow layer. Falls back to the mask if the
     // shader ever fails to compile.
     readonly property bool fastArt: fastCornersLive && !is3d
-                                    && artFx.status !== ShaderEffect.Error
+                                    && !artFx.failed
 
     Image {
         id: tileHaloSrc
@@ -290,7 +290,7 @@ id: root
             opacity: screenshot.opacity
             // Only once the image is decoded: with no texture yet, GL samples
             // solid black, which would flash a black box while art loads.
-            visible: fastCornersLive && !root.is3d && status !== ShaderEffect.Error
+            visible: fastCornersLive && !root.is3d && !failed
                      && screenshot.status === Image.Ready
         }
 

@@ -13,7 +13,7 @@
 // Usage: keep the Image (visible: false) as the decoder, point `source` at it,
 // and put this where the Image was. Video is never routed through here.
 //
-// If the shader fails to compile on some GPU, status becomes Error; the tiles
+// If the shader fails to compile on some GPU, `failed` turns true; the tiles
 // watch for that and fall back to the old mask, so the art never disappears.
 
 import QtQuick 2.15
@@ -47,7 +47,14 @@ id: fx
         return Qt.size(Math.min(1, w / (iw * s)), Math.min(1, h / (ih * s)));
     }
 
-    onStatusChanged: if (status === ShaderEffect.Error) console.warn("RoundedArt shader:", log)
+    // A REAL failure. Qt 5.15 also reports Error, with an EMPTY log, for a
+    // shader that compiled fine: when the renderer batches the effect it
+    // compiles through its own path (qsgbatchrenderer.cpp, prepareMaterial),
+    // which skips the step that records success. A genuine compile or link
+    // failure always carries a log, so only that counts. (Relay checks the
+    // same way.) Tiles watch this, not status, to fall back to the old mask.
+    readonly property bool failed: status === ShaderEffect.Error && log.length > 0
+    onFailedChanged: if (failed) console.warn("RoundedArt shader failed:", log)
 
     fragmentShader: "
         uniform sampler2D source;

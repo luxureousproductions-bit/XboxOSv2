@@ -115,7 +115,7 @@ id: root
     // their blurred backdrop needs it — and so does every tile if the shader
     // ever fails to compile. The video preview is not part of this tile.
     readonly property bool fastArt: fastCornersLive && !isImportedApp
-                                    && artFx.status !== ShaderEffect.Error
+                                    && !artFx.failed
     readonly property bool previewCovering: selected && playVideo
                                           && (ownScreen === "" || playbackOwner === ownScreen)
     function restoreArt() {
@@ -452,7 +452,7 @@ id: root
             opacity: screenshot.opacity
             // Only once the image is decoded: with no texture yet, GL samples
             // solid black, which would flash a black box while art loads.
-            visible: fastCornersLive && !root.isImportedApp && status !== ShaderEffect.Error
+            visible: fastCornersLive && !root.isImportedApp && !failed
                      && screenshot.status === Image.Ready
         }
 
