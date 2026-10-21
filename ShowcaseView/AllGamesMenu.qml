@@ -1420,7 +1420,7 @@ id: root
                 allowAudio: lv("All games menu video audio", settings.AllGamesVideoAudio) === "Yes"   // this page's audio row, live from the Y panel
             }
         }
-        highlightMoveDuration: root.fastScrolling ? 0 : 200   // snap while racing; matches the Platform grid at rest
+        highlightMoveDuration: root.fastScrolling ? 0 : animMs(200)   // snap while racing; matches the Platform grid at rest
         preferredHighlightBegin: 0
         preferredHighlightEnd: height
         highlightRangeMode: GridView.ApplyRange
@@ -1625,7 +1625,8 @@ id: root
             width: vpx(720); height: vpx(576)
             radius: vpx(14)
             color: "#1E1E20"; border.color: theme.accent; border.width: vpx(2)
-            MouseArea { anchors.fill: parent }
+            // Swallows clicks inside the box; the wheel steps between rows.
+            MouseArea { anchors.fill: parent; onWheel: listStep(wheel.angleDelta.y > 0 ? -1 : 1) }
             Text {
                 anchors { left: parent.left; leftMargin: vpx(36); top: parent.top; topMargin: vpx(28) }
                 text: "All Games"; color: "white"; font.family: titleFont.name; font.pixelSize: vpx(28); font.bold: true
@@ -1666,9 +1667,22 @@ id: root
                         border.color: cur ? theme.accent : "transparent"; border.width: vpx(3)
                         Text { anchors { left: parent.left; leftMargin: vpx(12); verticalCenter: parent.verticalCenter }
                                text: panelRows[index].label; color: dis ? "#6E6E6E" : "white"; font.family: subtitleFont.name; font.pixelSize: vpx(20) }
-                        Text { anchors { right: parent.right; rightMargin: vpx(12); verticalCenter: parent.verticalCenter }
+                        Text { id: agPanelValue
+                               anchors { right: parent.right; rightMargin: vpx(12); verticalCenter: parent.verticalCenter }
                                text: { var e = listEpoch; return "<  " + listValue(index) + "  >"; }
                                color: dis ? "#646464" : "#D7D7D7"; font.family: subtitleFont.name; font.pixelSize: vpx(20) }
+                        // Mouse: hover picks the row; a click changes its value,
+                        // back a step on the "<" end, forward anywhere else.
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: settings.MouseHover == "Yes"
+                            cursorShape: dis ? Qt.ArrowCursor : Qt.PointingHandCursor
+                            onEntered: if (!dis && listRow !== index) { listRow = index; playNav(); }
+                            onClicked: {
+                                listRow = index;
+                                listCycle(index, mouse.x < agPanelValue.x + vpx(30) ? -1 : 1);
+                            }
+                        }
                     }
                 }
             }

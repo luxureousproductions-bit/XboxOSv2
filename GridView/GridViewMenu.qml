@@ -655,7 +655,7 @@ id: root
             preferredHighlightBegin: vpx(0)
             preferredHighlightEnd: gamegrid.height - helpMargin - vpx(40)
             highlightRangeMode: GridView.ApplyRange
-            highlightMoveDuration: fastScrolling ? 0 : 200   // snap while racing
+            highlightMoveDuration: fastScrolling ? 0 : animMs(200)   // snap while racing
             highlight: highlightcomponent
             keyNavigationWraps: false
             // Paint margin covers the halo bleed only; two whole rows painted
@@ -852,7 +852,8 @@ id: root
             width: vpx(720); height: vpx(616)
             radius: vpx(14)
             color: "#1E1E20"; border.color: theme.accent; border.width: vpx(2)
-            MouseArea { anchors.fill: parent; }   // swallow clicks inside
+            // Swallows clicks inside the box; the wheel steps between rows.
+            MouseArea { anchors.fill: parent; onWheel: sysStep(wheel.angleDelta.y > 0 ? -1 : 1) }
 
             Text {
                 anchors { left: parent.left; leftMargin: vpx(36); top: parent.top; topMargin: vpx(28) }
@@ -884,9 +885,22 @@ id: root
                             color: dis ? "#6E6E6E" : "white"; font.family: subtitleFont.name; font.pixelSize: vpx(20)
                         }
                         Text {
+                        id: gvPanelValue
                             anchors { right: parent.right; rightMargin: vpx(12); verticalCenter: parent.verticalCenter }
                             text: { var e = sysEpoch; return "<  " + sysValue(index) + "  >"; }
                             color: dis ? "#646464" : "#D7D7D7"; font.family: subtitleFont.name; font.pixelSize: vpx(20)
+                        }
+                        // Mouse: hover picks the row; a click changes its value,
+                        // back a step on the "<" end, forward anywhere else.
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: settings.MouseHover == "Yes"
+                            cursorShape: dis ? Qt.ArrowCursor : Qt.PointingHandCursor
+                            onEntered: if (!dis && sysRow !== index) { sysRow = index; playNav(); }
+                            onClicked: {
+                                sysRow = index;
+                                sysCycle(index, mouse.x < gvPanelValue.x + vpx(30) ? -1 : 1);
+                            }
                         }
                         // a divider under the first row
                         Rectangle { visible: index === 0; anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: -vpx(4) } height: vpx(1); color: "#3C3C40" }

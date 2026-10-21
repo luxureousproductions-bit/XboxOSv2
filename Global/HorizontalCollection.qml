@@ -158,7 +158,7 @@ id: root
         preferredHighlightEnd: parent.width - vpx(60)
         highlightRangeMode: ListView.ApplyRange
         snapMode: ListView.SnapOneItem 
-        highlightMoveDuration: 100
+        highlightMoveDuration: animMs(100)
         highlight: highlightcomponent
         displayMarginEnd: itemWidth
         cacheBuffer: itemWidth * hqCacheTiles

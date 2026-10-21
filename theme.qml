@@ -1394,6 +1394,9 @@ id: root
         navRacingEnd.restart();
     }
     Timer { id: navRacingEnd; interval: 300; onTriggered: navRacing = false }
+    // Selection animations run at half length on PC (grow, highlight, slide):
+    // with a mouse they read as lag. Android keeps its timings exactly.
+    function animMs(ms) { return onDesktop ? Math.round(ms / 2) : ms; }
     function decodePxFor(displayPx) {
         return Math.max(1, Math.round(displayPx * (hqMode ? 1 : 1 / hiResScale)));
     }
@@ -1829,6 +1832,10 @@ id: root
 
         readonly property bool shown: (root.state === "showcasescreen")
         focus: shown
+        // Stays loaded under every other screen at opacity 0, and an invisible
+        // item still gets the mouse: hover lit its tiles and played the nav
+        // sound behind Settings and the rest. No input unless it's the screen.
+        enabled: shown
         opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
@@ -1883,6 +1890,10 @@ id: root
 
         readonly property bool shown: (root.state === "gameviewscreen")
         focus: shown
+        // Stays loaded under every other screen at opacity 0, and an invisible
+        // item still gets the mouse: hover lit its tiles and played the nav
+        // sound behind Settings and the rest. No input unless it's the screen.
+        enabled: shown
         // Stay alive once loaded: the first visit sets gameviewLoaded = true via onLoaded,
         // after which active is always true so the component is never destroyed.
         // This prevents the blank-screen bug that occurred when returning from Settings

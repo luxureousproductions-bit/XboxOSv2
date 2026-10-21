@@ -1258,7 +1258,7 @@ id: root
             orientation: ListView.Horizontal
             highlightRangeMode: ListView.NoHighlightRange
             snapMode: ListView.SnapToItem
-            highlightMoveDuration: 100
+            highlightMoveDuration: animMs(100)
             keyNavigationWraps: false
             
             // Whole-tile alignment of the scroll position. Shared by both the live
@@ -1337,7 +1337,7 @@ id: root
                 height: topRow.tileSz
                 radius: vpx(12)
                 color: selected ? theme.accent : theme.secondary
-                Behavior on color { ColorAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                Behavior on color { ColorAnimation { duration: animMs(180); easing.type: Easing.OutCubic } }
                 // Grow from the bottom edge so the bottom stays put. The first (hero) tile
                 // grows up-and-right (left border pinned) and the last tile grows up-and-left
                 // (right border pinned) so neither outer border is clipped at the screen edge;
@@ -1345,11 +1345,11 @@ id: root
                 transformOrigin: index === 0 ? Item.BottomLeft
                                  : (index === platformlist.count - 1 ? Item.BottomRight : Item.Bottom)
                 scale: selected ? topRow.growScale : 1.0
-                Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                Behavior on scale { NumberAnimation { duration: animMs(180); easing.type: Easing.OutCubic } }
                 // Animated horizontal shift so neighbors slide out of the way of the selected tile
                 transform: Translate {
                     x: navShift
-                    Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                    Behavior on x { NumberAnimation { duration: animMs(180); easing.type: Easing.OutCubic } }
                 }
                 // Selected always renders above its neighbors so the border can't be clipped behind them
                 z: selected ? 1 : 0
@@ -1986,7 +1986,7 @@ id: root
         focus: true
         // Snaps while the mouse wheel is spinning: one 200ms slide per notch
         // queued up and made wheel scrolling feel clunky. Keys are unchanged.
-        highlightMoveDuration: homeWheel.busy ? 0 : 200
+        highlightMoveDuration: homeWheel.busy ? 0 : animMs(200)
         highlightRangeMode: ListView.ApplyRange 
         preferredHighlightBegin: header.height
         preferredHighlightEnd: parent.height - (helpMargin * 2)

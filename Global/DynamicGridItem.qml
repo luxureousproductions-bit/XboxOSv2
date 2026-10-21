@@ -79,7 +79,7 @@ id: root
     scale: selected ? 1 : hqRestScale
     Behavior on scale { enabled: !reduceMotion;
         NumberAnimation {
-            duration: hqMode ? 180 : 100
+            duration: animMs(hqMode ? 180 : 100)
             easing.type: hqMode ? Easing.OutBack : Easing.Linear
             easing.overshoot: 1.2
         }
@@ -196,7 +196,7 @@ id: root
             z: -1
             opacity: (selected && settings.TileHalo === "Yes") ? 0.95 : 0
             visible: opacity > 0
-            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(180); easing.type: Easing.OutCubic } }
         }
         }
     }
@@ -219,7 +219,7 @@ id: root
             z: -1
             opacity: (gameData && gameData.favorite && !selected && settings.FavoritedTileAccent !== "No") ? 0.35 : 0
             visible: opacity > 0
-            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(180); easing.type: Easing.OutCubic } }
         }
         }
     }
@@ -229,7 +229,7 @@ id: root
     id: container
 
         anchors.fill: parent
-        Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 200 } }
+        Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(200) } }
 
         // Round the tile art to match the rounded selection frame (vpx(6)),
         // so the crop-filled screenshot doesn't poke past the frame's corners.
@@ -257,7 +257,7 @@ id: root
             opacity: (titleMode === "Never" || platformname.visible) ? 0
                    : ((selected || titleMode === "Always") ? 1 : 0)
             visible: opacity > 0
-            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 120 } }
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(120) } }
             Text {
                 anchors {
                     left: parent.left; leftMargin: vpx(8)
@@ -418,7 +418,7 @@ id: root
             sourceSize { width: decodePx; height: decodePx }
             smooth: false
             asynchronous: true
-            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 200 } }
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(200) } }
         }
 
         Image {
@@ -444,7 +444,7 @@ id: root
             asynchronous: true
             smooth: true
             scale: selected ? 1.1 : 1
-            Behavior on scale { enabled: !reduceMotion; NumberAnimation { duration: 100 } }
+            Behavior on scale { enabled: !reduceMotion; NumberAnimation { duration: animMs(100) } }
             z: 10
         }
 
@@ -531,7 +531,7 @@ id: root
         anchors { fill: parent; margins: vpx(10) }
         color: "white"
         scale: selected ? 1.1 : 1
-        Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 100 } }
+        Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(100) } }
         font.pixelSize: fpx(18)
         font.family: subtitleFont.name
         font.bold: true
