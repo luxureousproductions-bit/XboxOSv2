@@ -480,10 +480,20 @@ id: root
     id: displayModel
         // All systems -> full all-games list; a chosen system -> that collection's games
         sourceModel: systemIndex < 0 ? listAllGames.games : api.collections.get(systemIndex).games
-        sorters: RoleSorter {
-            roleName:  sortField
-            sortOrder: sortDir
-        }
+        // By title: A to Z ignoring upper/lower case (see ListCollectionGames)
+        sorters: [
+            StringSorter {
+                roleName: sortField
+                caseSensitivity: Qt.CaseInsensitive
+                sortOrder: sortDir
+                enabled: sortField === "sortBy" || sortField === "title"
+            },
+            RoleSorter {
+                roleName:  sortField
+                sortOrder: sortDir
+                enabled: sortField !== "sortBy" && sortField !== "title"
+            }
+        ]
         filters: [
             RegExpFilter {
                 roleName: "title"
