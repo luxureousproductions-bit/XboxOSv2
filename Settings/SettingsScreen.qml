@@ -454,6 +454,10 @@ id: root
             settingName: "Fast tile corners"
             setting: "Yes,No"
         }
+        ListElement {
+            settingName: "Scroll look-ahead"
+            setting: "Yes,No"
+        }
 
         ListElement { settingName: "Video"; setting: ""; header: true }
         ListElement {
@@ -900,6 +904,11 @@ id: root
                  + "\n"
                  + "Should scroll smoother and look the same; switch off to compare";
         }
+        if (name === "Scroll look-ahead") {
+            return "Keeps the next rows of the All Games grid built ahead while you scroll fast"
+                 + "\n"
+                 + "They are built a little at a time instead of a whole row in one frame; switch off to compare";
+        }
         if (name === "Allow video thumbnails") {
             return "Plays a short preview video on the highlighted tile (Home & Platform page)";
         }
@@ -1163,6 +1172,7 @@ id: root
             || name === "Game Counter"
             || name === "Frame counter"
             || name === "Fast tile corners"
+            || name === "Scroll look-ahead"
             || name === "Allow video thumbnails"
             || name === "Hide logo when thumbnail video plays"
             || name === "Featured Box"

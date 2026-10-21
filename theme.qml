@@ -232,6 +232,10 @@ id: root
         var e = settingsEpoch;
         return (api.memory.has("Fast tile corners") ? api.memory.get("Fast tile corners") : "Yes") === "Yes";
     }
+    readonly property bool scrollLookAheadLive: {
+        var e = settingsEpoch;
+        return (api.memory.has("Scroll look-ahead") ? api.memory.get("Scroll look-ahead") : "Yes") === "Yes";
+    }
 
     // ── What the Home rows hide, as ONE list ──────────────────────────────
     // The rows re-filter the whole library (~4.4k games each, 7 rows) every

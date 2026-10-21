@@ -1396,7 +1396,15 @@ id: root
         // of decode and GPU buffers for nothing on screen.
         displayMarginBeginning: gridCellH * 0.15
         displayMarginEnd: gridCellH * 0.15
-        cacheBuffer: root.fastScrolling ? 0 : gridCellH * (hqMode ? 1.0 : 0.5)   // no look-ahead while racing
+        // Look-ahead rows. Qt builds tiles inside the cacheBuffer in the
+        // BACKGROUND, a few per frame; tiles that are already on screen are
+        // built in ONE frame. Dropping it to 0 while racing (the old way) made
+        // every new row land in a single frame, and tore the ready rows down
+        // and rebuilt them each time a race started and stopped. Tiles born
+        // mid-race already hold off loading their art (deferArt), so keeping
+        // the look-ahead costs no decoding. Performance test toggle: Settings >
+        // Appearance > Scroll look-ahead (No = the old behaviour).
+        cacheBuffer: (root.fastScrolling && !scrollLookAheadLive) ? 0 : gridCellH * (hqMode ? 1.0 : 0.5)
 
         // Video previews live in the highlight, exactly as on the platform
         // grid. Follows the All Games video setting and the coordinator.

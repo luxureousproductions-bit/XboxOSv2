@@ -119,7 +119,6 @@ id: root
     readonly property bool previewCovering: selected && playVideo
                                           && (ownScreen === "" || playbackOwner === ownScreen)
     function restoreArt() {
-        fadescreenshot.stop();
         screenshot.opacity = 1;
         container.opacity = 1;
     }
@@ -133,7 +132,6 @@ id: root
         else restoreArt();
     }
     function fadeArt() {
-        fadescreenshot.stop();
         if (settings.HideLogo == "Yes") container.opacity = 0;
         else screenshot.opacity = 0;
     }
@@ -146,18 +144,8 @@ id: root
         if (!selected) restoreArt();
     }
 
-    // NOTE: Fade out the bg so there is a smooth transition into the video
-    Timer {
-    id: fadescreenshot
-
-        interval: 3000
-        onTriggered: {
-            if (settings.HideLogo == "Yes")
-                container.opacity = 0;
-            else
-                screenshot.opacity = 0;
-        }
-    }
+    // (The old 3s fadescreenshot Timer is gone: nothing started it any more —
+    // the reveal is driven by videoShowing — but every tile still built it.)
 
     // Focus glow — same asset, tint, and technique as the system tiles so it
     // matches their look. The white PNG (transparent centre) gives the glow
@@ -525,30 +513,8 @@ id: root
         ItemBorder { }
     }
 
-    Text {
-    id: title
-
-        text: modelData ? modelData.title : ''
-        color: theme.text
-        font {
-            family: subtitleFont.name
-            pixelSize: vpx(12)
-            bold: true
-        }
-
-        elide: Text.ElideRight
-        horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignVCenter
-
-        anchors {
-            top: container.bottom; topMargin: vpx(8)
-        }
-
-        width: parent.width
-
-        opacity: 0.2
-        visible: false   // old faint under-tile title; replaced by the on-tile black bar
-    }
+    // (The old faint under-tile title, permanently hidden, is gone: replaced
+    // long ago by the on-tile name bar, but every tile still built it.)
 
     Text {
     id: platformname
