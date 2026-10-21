@@ -221,6 +221,18 @@ id: root
               ? api.memory.get("Omit genre: Emulator from Showcase") : "No") === "Yes";
     }
 
+    // Performance test (Settings > Appearance). Live, so the two can be
+    // compared on the spot: turn the counter on, scroll a grid, flip Fast tile
+    // corners, scroll again.
+    readonly property bool frameCounterLive: {
+        var e = settingsEpoch;
+        return (api.memory.has("Frame counter") ? api.memory.get("Frame counter") : "No") === "Yes";
+    }
+    readonly property bool fastCornersLive: {
+        var e = settingsEpoch;
+        return (api.memory.has("Fast tile corners") ? api.memory.get("Fast tile corners") : "Yes") === "Yes";
+    }
+
     // ── What the Home rows hide, as ONE list ──────────────────────────────
     // The rows re-filter the whole library (~4.4k games each, 7 rows) every
     // time an input they read changes. They used to read homeAppTitleSet and
@@ -2125,6 +2137,15 @@ id: root
         // Otherwise hand it to the screen showing, if it knows what B means.
         var scr = activeScreenItem ? activeScreenItem.item : null;
         if (scr && typeof scr.mouseBack === "function") scr.mouseBack();
+    }
+
+    // Frame rate counter (Settings > Appearance > Frame counter). Top-left,
+    // above everything. Exists only while switched on.
+    Loader {
+        active: frameCounterLive
+        z: 2000
+        anchors { left: parent.left; top: parent.top; margins: vpx(8) }
+        sourceComponent: Component { FrameCounter { } }
     }
 
     MouseArea {

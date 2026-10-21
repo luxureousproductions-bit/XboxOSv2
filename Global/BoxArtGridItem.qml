@@ -127,6 +127,13 @@ id: root
     // source image's own proportions, so it works for any wide system.
     readonly property bool wide3d: is3d && screenshot.status === Image.Ready
                                    && screenshot.implicitWidth > screenshot.implicitHeight
+    // Fast corners (Settings > Appearance > Fast tile corners): a 2D box rounds
+    // its own corners in one draw (RoundedArt) instead of going through an
+    // offscreen layer + OpacityMask. 3D renders have no corners to round and
+    // keep their selected-tile glow layer. Falls back to the mask if the
+    // shader ever fails to compile.
+    readonly property bool fastArt: fastCornersLive && !is3d
+                                    && artFx.status !== ShaderEffect.Error
 
     Image {
         id: tileHaloSrc
@@ -218,6 +225,8 @@ id: root
             width:  (root.wide3d ? parent.height : parent.width)  - vpx(4)
             height: (root.wide3d ? parent.width  : parent.height) - vpx(4)
             rotation: root.wide3d ? 90 : 0
+            // Fast corners: this Image only decodes; artFx below draws it.
+            visible: !root.fastArt
 
             asynchronous: true
             // HQ: dissolve in on load instead of snapping.
@@ -235,7 +244,7 @@ id: root
             // One layer slot: 2D boxes use it for rounded corners; a 3D box has
             // its own silhouette, so when selected it uses it for the accent
             // glow that traces that silhouette instead (as the carousel does).
-            layer.enabled: is3d ? selected : true
+            layer.enabled: is3d ? selected : !root.fastArt
             layer.smooth: true
             layer.effect: is3d ? accentTrace : roundedMask
             Component {
@@ -251,15 +260,6 @@ id: root
                     }
                 }
             }
-            // 2D title fade, inside the mask so its corners round with the box.
-            Loader {
-                active: !root.is3d && root.titleShown
-                anchors.centerIn: parent
-                width: screenshot.paintedWidth; height: screenshot.paintedHeight
-                sourceComponent: boxTitleBar
-                opacity: active ? 1 : 0
-                Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 120 } }
-            }
             Component {
             id: accentTrace
                 Glow {
@@ -273,6 +273,40 @@ id: root
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.verticalCenter: parent.verticalCenter
 
+        }
+
+        // Fast corners: the 2D box above, drawn with its corners rounded in the
+        // same pass. Sized to the PAINTED box (PreserveAspectFit centres it),
+        // which the texture fills exactly. Follows the image's opacity, so the
+        // HQ dissolve-in is unchanged.
+        RoundedArt {
+        id: artFx
+            anchors.centerIn: screenshot
+            width: screenshot.paintedWidth
+            height: screenshot.paintedHeight
+            source: screenshot
+            crop: false
+            radius: vpx(12)
+            opacity: screenshot.opacity
+            // Only once the image is decoded: with no texture yet, GL samples
+            // solid black, which would flash a black box while art loads.
+            visible: fastCornersLive && !root.is3d && status !== ShaderEffect.Error
+                     && screenshot.status === Image.Ready
+        }
+
+        // 2D title bar over the box. It used to live INSIDE the image so the
+        // box's mask rounded its corners; it now rounds its own (see
+        // boxTitleBar), so it sits beside the image and works whether the
+        // image is drawn masked or by artFx. 2D boxes are never rotated, so
+        // centring on the image places it exactly where it was.
+        Loader {
+            active: !root.is3d && root.titleShown
+            anchors.centerIn: screenshot
+            width: screenshot.paintedWidth; height: screenshot.paintedHeight
+            sourceComponent: boxTitleBar
+            // As a child of the image it inherited the HQ dissolve-in; keep that.
+            opacity: (active ? 1 : 0) * screenshot.opacity
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 120 } }
         }
 
         // Favorite heart — bottom-right corner of the tile. No title bar exists
@@ -333,15 +367,33 @@ id: root
     }
 
     // Title bar for 2D boxes: the SAME bar the dynamic tile shows — solid,
-    // along the bottom of the box, favourite pin inside it at the right. Drawn
-    // as a child of the image so the box's rounded mask clips its corners.
+    // along the bottom of the box, favourite pin inside it at the right. It
+    // rounds its own bottom corners to the box's 12px radius (a square upper
+    // part, and a rounded strip cut to its lower half by a clip; the two never
+    // overlap, so the 60% black stays even).
     Component {
     id: boxTitleBar
         Item {
             Rectangle {
                 anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                 height: Math.max(vpx(44), parent.height * 0.16, parent.width * 0.16, barText.contentHeight + vpx(16))
-                color: "#99000000"
+                color: "transparent"
+                Rectangle {
+                    anchors { left: parent.left; right: parent.right; top: parent.top }
+                    height: parent.height - vpx(12)
+                    color: "#99000000"
+                }
+                Item {
+                    clip: true
+                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                    height: vpx(12)
+                    Rectangle {
+                        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                        height: vpx(24)
+                        radius: vpx(12)
+                        color: "#99000000"
+                    }
+                }
                 Text {
                 id: barText
                     anchors {

@@ -444,6 +444,16 @@ id: root
             label: "Show game count"
             setting: "Yes,No"
         }
+        ListElement { settingName: "Performance test"; setting: ""; header: true }
+        ListElement {
+            settingName: "Frame counter"
+            label: "Frame rate counter"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "Fast tile corners"
+            setting: "Yes,No"
+        }
 
         ListElement { settingName: "Video"; setting: ""; header: true }
         ListElement {
@@ -880,6 +890,16 @@ id: root
         if (name === "Game Counter") {
             return "Shows the live game count on the platform page and all games menu";
         }
+        if (name === "Frame counter") {
+            return "Shows frames per second and the slowest frame in the top-left corner"
+                 + "\n"
+                 + "At 60 fps each frame has about 17 ms; a worst well past that is a visible stutter";
+        }
+        if (name === "Fast tile corners") {
+            return "Rounds game tile corners in a single draw instead of an offscreen mask"
+                 + "\n"
+                 + "Should scroll smoother and look the same; switch off to compare";
+        }
         if (name === "Allow video thumbnails") {
             return "Plays a short preview video on the highlighted tile (Home & Platform page)";
         }
@@ -1141,6 +1161,8 @@ id: root
             || name === "Favorited Tile Accent"
             || name === "Animate highlight"
             || name === "Game Counter"
+            || name === "Frame counter"
+            || name === "Fast tile corners"
             || name === "Allow video thumbnails"
             || name === "Hide logo when thumbnail video plays"
             || name === "Featured Box"

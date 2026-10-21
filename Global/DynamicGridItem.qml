@@ -109,6 +109,13 @@ id: root
     property bool artArmed: true
     Component.onCompleted: if (deferArt) artArmed = false
     onDeferArtChanged: if (!deferArt) artArmed = true
+    // Fast corners (Settings > Appearance > Fast tile corners): the art rounds
+    // its own corners in one draw (RoundedArt) instead of the whole tile going
+    // through an offscreen layer + OpacityMask. Imported apps keep the layer —
+    // their blurred backdrop needs it — and so does every tile if the shader
+    // ever fails to compile. The video preview is not part of this tile.
+    readonly property bool fastArt: fastCornersLive && !isImportedApp
+                                    && artFx.status !== ShaderEffect.Error
     readonly property bool previewCovering: selected && playVideo
                                           && (ownScreen === "" || playbackOwner === ownScreen)
     function restoreArt() {
@@ -223,7 +230,8 @@ id: root
 
         // Round the tile art to match the rounded selection frame (vpx(6)),
         // so the crop-filled screenshot doesn't poke past the frame's corners.
-        layer.enabled: true
+        // Fast corners skip the layer; each piece below rounds itself instead.
+        layer.enabled: !root.fastArt
         layer.smooth: true
         layer.effect: OpacityMask {
             maskSource: Rectangle {
@@ -240,11 +248,33 @@ id: root
             z: 20
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
             height: Math.max(vpx(44), container.height * 0.16, container.width * 0.16, nameBarText.contentHeight + vpx(16))   // scales with tile size; wide tiles use width factor
-            color: "#99000000"            // ~60% black; text stays full-opacity
+            color: root.fastArt ? "transparent" : "#99000000"   // ~60% black; text stays full-opacity
             // Game tile titles: Never hides it even on focus; Always keeps it up.
             opacity: titleMode === "Never" ? 0 : ((selected || titleMode === "Always") ? 1 : 0)
             visible: opacity > 0
             Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 120 } }
+            // Fast corners: without the tile's mask the bar rounds its own
+            // bottom corners — a square upper part, and a rounded strip cut to
+            // its lower half by a clip. The two never overlap, so the 60% black
+            // stays even (overlapping halves would double up darker).
+            Rectangle {
+                visible: root.fastArt
+                anchors { left: parent.left; right: parent.right; top: parent.top }
+                height: parent.height - vpx(12)
+                color: "#99000000"
+            }
+            Item {
+                visible: root.fastArt
+                clip: true
+                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                height: vpx(12)
+                Rectangle {
+                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                    height: vpx(24)
+                    radius: vpx(12)
+                    color: "#99000000"
+                }
+            }
             Text {
                 anchors {
                     left: parent.left; leftMargin: vpx(8)
@@ -385,7 +415,8 @@ id: root
 
             anchors.fill: parent
             anchors.margins: vpx(2)
-            visible: !appTile.visible
+            // Fast corners: this Image only decodes; artFx below draws it.
+            visible: !appTile.visible && !root.fastArt
             // HQ: dissolve in on load. Starts hidden and lifts on Ready with a
             // plain assignment, matching how restoreArt/fadeArt already drive
             // this property — no binding for them to break. OFF starts at 1.
@@ -406,6 +437,23 @@ id: root
             smooth: false
             asynchronous: true
             Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 200 } }
+        }
+
+        // Fast corners: the screenshot above, drawn with its corners rounded in
+        // the same pass. Follows its opacity, so the HQ fade-in and the fade
+        // under the video preview behave exactly as before.
+        RoundedArt {
+        id: artFx
+            anchors.fill: screenshot
+            source: screenshot
+            crop: true
+            radius: vpx(12)
+            inset: vpx(2)
+            opacity: screenshot.opacity
+            // Only once the image is decoded: with no texture yet, GL samples
+            // solid black, which would flash a black box while art loads.
+            visible: fastCornersLive && !root.isImportedApp && status !== ShaderEffect.Error
+                     && screenshot.status === Image.Ready
         }
 
         Image {
@@ -434,12 +482,14 @@ id: root
             anchors.fill: parent
             color: screenshot.source == "" ? theme.secondary : "black"
             opacity: screenshot.source == "" ? 1 : selected ? 0.1 : 0.2
+            radius: root.fastArt ? vpx(12) : 0
         }
-        
+
         Rectangle {
         id: regborder
 
             anchors.fill: parent
+            radius: root.fastArt ? vpx(12) : 0
             color: "transparent"
             border.width: vpx(1)
             border.color: "white"
