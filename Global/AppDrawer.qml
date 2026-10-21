@@ -218,6 +218,12 @@ id: root
                 }
             }
         }
+        // One A-to-Z order for every tab, upper and lower case alike, whatever
+        // collection or source an entry came from (filteredApps keeps it).
+        out.sort(function(a, b) {
+            var ta = a.title.toLowerCase(), tb = b.title.toLowerCase();
+            return ta < tb ? -1 : (ta > tb ? 1 : 0);
+        });
         return out;
     }
 
