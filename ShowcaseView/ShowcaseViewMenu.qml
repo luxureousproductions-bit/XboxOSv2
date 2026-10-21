@@ -485,6 +485,14 @@ id: root
         if (!sysTileBgActive) crossfadeTo(bgSource);
     }
     property var  sysBgFallbackColl: null
+    // Pegasus X: a collection's own background and logo (Settings > Edit
+    // metadata) win over the theme's bundled system art
+    function customSystemBackground(c) {
+        return (c && c.assets && c.assets.background) ? c.assets.background : "";
+    }
+    function customSystemLogo(c) {
+        return (c && c.assets && c.assets.logo) ? c.assets.logo : "";
+    }
 
     Image {
     id: sysBgResolver
@@ -493,6 +501,9 @@ id: root
         property string basePath: ""
         property var exts: [".png", ".jpg", ".jpeg", ".webp"]
         property int extIdx: 0
+        // Pegasus X: a background set for the collection itself (Settings >
+        // Edit metadata) is one exact file, no extensions to try
+        readonly property bool exact: basePath.indexOf("file:") === 0 || basePath.indexOf("/") === 0
         // Request the background for a system. Re-requesting the system that's
         // already resolved re-applies it instantly (returning from game rows);
         // a new system starts the load chain and the page holds the current
@@ -513,11 +524,11 @@ id: root
         }
         onBasePathChanged: {
             extIdx = 0;
-            source = basePath !== "" ? (basePath + exts[0]) : "";
+            source = basePath !== "" ? (exact ? basePath : basePath + exts[0]) : "";
         }
         onStatusChanged: {
             if (status === Image.Error) {
-                if (extIdx < exts.length - 1) {
+                if (!exact && extIdx < exts.length - 1) {
                     extIdx = extIdx + 1;          // try next extension
                     source = basePath + exts[extIdx];
                 } else if (sysTileBgActive && sysBgFallbackColl && sysBgFallbackColl.games.count > 0) {
@@ -564,7 +575,8 @@ id: root
         // art, which matches the tile.
         sysBgFallbackColl = coll;
         sysTileBgActive   = true;
-        sysBgResolver.request("../assets/images/systembackground/" + Utils.processPlatformName(coll.shortName));
+        sysBgResolver.request(customSystemBackground(coll)
+            || "../assets/images/systembackground/" + Utils.processPlatformName(coll.shortName));
     }
 
     // Dim overlay so content stays readable. Lowered from 0.45: it sits above
@@ -1442,7 +1454,8 @@ id: root
                     anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true; smooth: true
-                    source: basePath !== "" ? basePath + exts[extIdx] : ""
+                    readonly property string customBg: (!isHero && coll) ? customSystemBackground(coll) : ""
+                    source: customBg !== "" ? customBg : (basePath !== "" ? basePath + exts[extIdx] : "")
                     // HQ: dissolve in once decoded instead of snapping. The
                     // target opacity is unchanged; the Behavior only animates
                     // the change, and only when HQ is on.
@@ -1465,7 +1478,8 @@ id: root
                     visible: !isHero
                     anchors.fill: parent
                     anchors.margins: vpx(15)
-                    source: (!isHero && coll) ? "../assets/images/logospng/" + Utils.processPlatformName(coll.shortName) + ".png" : ""
+                    source: (!isHero && coll)
+                        ? (customSystemLogo(coll) || "../assets/images/logospng/" + Utils.processPlatformName(coll.shortName) + ".png") : ""
                     sourceSize { width: 512; height: 512 }
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true

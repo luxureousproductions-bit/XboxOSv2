@@ -519,14 +519,23 @@ id: root
     // never reports it, windowSeenActive stays false and the expression falls
     // back to the old behaviour instead of silencing everything forever.
     property bool windowSeenActive: false
-    onActiveFocusChanged: if (Window.active) windowSeenActive = true
+    onActiveFocusChanged: {
+        if (Window.active) windowSeenActive = true;
+        if (activeFocus) themeSeenFocused = true;   // see appActive
+    }
     Connections {
         target: root.Window.window
         function onActiveChanged() { if (root.Window.active) root.windowSeenActive = true; }
     }
 
+    // Also false while Pegasus' own menu (its Settings) is open over the
+    // theme: focus then leaves the theme, so every preview pauses, audio and
+    // all, and resumes when the menu closes. Only trusted once the theme has
+    // had focus, like windowSeenActive above.
+    property bool themeSeenFocused: false
     readonly property bool appActive: Qt.application.state === Qt.ApplicationActive
                                       && (!windowSeenActive || Window.active)
+                                      && (!themeSeenFocused || activeFocus)
                                       && !appDrawer.open
 
     // ── Playback coordinator ──────────────────────────────────────────────
