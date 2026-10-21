@@ -357,6 +357,8 @@ id: root
             // Ascending/descending
             Item {
             id: directionbutton
+                // Click does what A does on this button.
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: toggleOrderBy() }
 
                 property bool selected: ListView.isCurrentItem && root.focus
                 width: directiontitle.contentWidth + vpx(30)
@@ -394,6 +396,8 @@ id: root
             // Order by title
             Item {
             id: titlebutton
+                // Click does what A does on this button.
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: cycleSort() }
 
                 property bool selected: ListView.isCurrentItem && root.focus
                 width: ordertitle.contentWidth + vpx(30)
@@ -431,6 +435,8 @@ id: root
             // Filters menu
             Item {
             id: filterbutton
+                // Click does what A does on this button.
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: toggleFavs() }
 
                 property bool selected: ListView.isCurrentItem && root.focus
                 width: filtertitle.contentWidth + vpx(30)
@@ -469,6 +475,8 @@ id: root
             // ── Nav buttons (home, discover, RA, settings) ──────────────────
             Item {
             id: sl_settingsbutton
+                // Click does what A does on this button.
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: settingsScreen() }
                 property bool selected: ListView.isCurrentItem && root.focus
                 width: vpx(40); height: searchbar.height
                 Rectangle {
@@ -489,6 +497,8 @@ id: root
 
             Item {
             id: sl_rabutton
+                // Click does what A does on this button.
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: achievementsScreen() }
                 property bool selected: ListView.isCurrentItem && root.focus
                 width: vpx(40); height: searchbar.height
                 Rectangle {
@@ -510,6 +520,8 @@ id: root
 
             Item {
             id: sl_discoverbutton
+                // Click does what A does on this button.
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: discoverScreen() }
                 property bool selected: ListView.isCurrentItem && root.focus
                 width: vpx(40); height: searchbar.height
                 Rectangle {
@@ -538,6 +550,8 @@ id: root
 
             Item {
             id: sl_homebutton
+                // Click does what A does on this button.
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: showcaseScreen() }
                 property bool selected: ListView.isCurrentItem && root.focus
                 width: vpx(40); height: searchbar.height
                 Rectangle {

@@ -391,6 +391,12 @@ id: root
                         font.pixelSize: fpx(14)
                         font.bold: active
                     }
+                    // Click picks this filter, same as LB/RB/Left/Right reaching it.
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: if (!active) { playToggle(); cheevosData.filterMode = modelData.mode; root.currentIndex = 0; }
+                    }
                 }
             }
         }
@@ -436,6 +442,12 @@ id: root
                         font.family: subtitleFont.name
                         font.pixelSize: fpx(13)
                         font.bold: active
+                    }
+                    // Click picks this sort, same as Y reaching it.
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: if (!active) { playToggle(); cheevosData.sortMode = modelData.mode; root.currentIndex = 0; }
                     }
                 }
             }

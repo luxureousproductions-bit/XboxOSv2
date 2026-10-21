@@ -349,6 +349,8 @@ id: root
 
     readonly property string hoverDefault: Qt.platform.os === "android" ? "No" : "Yes"
     readonly property string chimeDefault: Qt.platform.os === "android" ? "Yes" : "No"
+    // Menu sounds: off by default on Windows only (Android and Linux keep them).
+    readonly property string menuSoundsDefault: Qt.platform.os === "windows" ? "No" : "Yes"
 
     readonly property var settingDefaults: ({
         "3D Box":                                    "Yes",
@@ -381,6 +383,7 @@ id: root
         "Custom Background":                         "Yes",
         "Discover video audio":                      "Yes",
         "Enable mouse hover":                        hoverDefault,
+        "Menu sounds":                               menuSoundsDefault,
         "Dynamic Background":                        "No",
         "Favorited Tile Accent":                     "Yes",
         "Featured Box Content":                      "Fanart Slideshow",
@@ -501,7 +504,7 @@ id: root
             HideAndroidGamesSystemTile:    api.memory.has("Hide Android Games System Tile") ? api.memory.get("Hide Android Games System Tile") : "No",
             MoreByGenreDisplay:            api.memory.has("More by Genre Display") ? api.memory.get("More by Genre Display") : "Full",
             AllowDiscoverVideoAudio:         api.memory.has("Discover video audio") ? api.memory.get("Discover video audio") : "Yes",
-            MenuSounds:                      api.memory.has("Menu sounds") ? api.memory.get("Menu sounds") : "Yes",
+            MenuSounds:                      api.memory.has("Menu sounds") ? api.memory.get("Menu sounds") : menuSoundsDefault,
             MenuVolume:                      api.memory.has("Menu Volume") ? api.memory.get("Menu Volume") : "1.0",
             StartupChime:                    api.memory.has("Start up chime") ? api.memory.get("Start up chime") : chimeDefault,
             AllGamesVideoPreview:            api.memory.has("AllGames Video preview") ? api.memory.get("AllGames Video preview") : previewDefault,
@@ -1848,6 +1851,7 @@ id: root
 
         readonly property bool shown: (root.state === "allgamesscreen")
         focus: shown
+        enabled: shown   // input only while this is the current screen (also during its fade-out)
         active: opacity !== 0
         opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
@@ -1862,6 +1866,7 @@ id: root
 
         readonly property bool shown: (root.state === "softwaregridscreen")
         focus: shown
+        enabled: shown   // input only while this is the current screen (also during its fade-out)
         active: opacity !== 0
         opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
@@ -1876,6 +1881,7 @@ id: root
 
         readonly property bool shown: (root.state === "softwarescreen")
         focus: shown
+        enabled: shown   // input only while this is the current screen (also during its fade-out)
         active: opacity !== 0
         opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
@@ -1921,6 +1927,7 @@ id: root
         z: 100
         readonly property bool shown: (root.state === "launchgamescreen")
         focus: shown
+        enabled: shown   // input only while this is the current screen (also during its fade-out)
         active: opacity !== 0
         opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
@@ -2005,6 +2012,7 @@ id: root
 
         readonly property bool shown: (root.state === "settingsscreen")
         focus: shown
+        enabled: shown   // input only while this is the current screen (also during its fade-out)
         active: opacity !== 0
         opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
@@ -2019,6 +2027,7 @@ id: root
 
         readonly property bool shown: (root.state === "achievementsscreen")
         focus: shown
+        enabled: shown   // input only while this is the current screen (also during its fade-out)
         active: opacity !== 0
         opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
@@ -2033,6 +2042,7 @@ id: root
 
         readonly property bool shown: (root.state === "gameachievementsscreen")
         focus: shown
+        enabled: shown   // input only while this is the current screen (also during its fade-out)
         active: opacity !== 0
         opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
@@ -2047,6 +2057,7 @@ id: root
 
         readonly property bool shown: (root.state === "raentryscreen")
         focus: shown
+        enabled: shown   // input only while this is the current screen (also during its fade-out)
         active: opacity !== 0
         opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
@@ -2124,6 +2135,7 @@ id: root
 
         readonly property bool shown: (root.state === "discoverscreen")
         focus: shown
+        enabled: shown   // input only while this is the current screen (also during its fade-out)
         active: opacity !== 0
         opacity: shown ? 1 : 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }

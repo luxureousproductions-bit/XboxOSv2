@@ -1393,6 +1393,9 @@ ListView {
             anchors.fill: parent
             enabled: root.quickOpen
             onClicked: root.closeQuickMenu()
+            // The drawer list underneath must not scroll or light up either.
+            onWheel: wheel.accepted = true
+            hoverEnabled: true
         }
     }
 

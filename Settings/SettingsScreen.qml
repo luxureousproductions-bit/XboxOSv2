@@ -1601,7 +1601,7 @@ id: root
 
                     // Sound master: with Menu sounds off, the volume and the chime are silent anyway.
                     if (settingName === "Menu Volume" || settingName === "Start up chime")
-                        return mem("Menu sounds", "Yes") === "No";
+                        return mem("Menu sounds", menuSoundsDefault) === "No";
 
                     // Logo tint only applies to the Xbox logos — not to None,
                     // and not to the RetroAchievements logo, which keeps its own colours.
@@ -2008,7 +2008,9 @@ id: root
         color: Qt.rgba(0, 0, 0, 0.82)
         focus: kbOpen
 
-        MouseArea { anchors.fill: parent; onClicked: closeEditor(); }
+        // Blocks the settings list underneath: clicks close the editor; the
+        // wheel and hover stop here.
+        MouseArea { anchors.fill: parent; hoverEnabled: true; onWheel: wheel.accepted = true; onClicked: closeEditor(); }
 
         VirtualKeyboard {
         id: credsKb

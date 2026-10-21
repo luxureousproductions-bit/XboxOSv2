@@ -295,6 +295,21 @@ id: root
                 selected: collectionList.focus && collectionList.onFavoritesHeader
                 itemWidth: root.itemWidth
                 itemHeight: root.itemHeight
+
+                // Mouse, same as a tile: hover (when on) or a first click moves
+                // onto the featured box; clicking it while it's highlighted opens
+                // what it shows, exactly like A.
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: settings.MouseHover == "Yes"
+                    cursorShape: Qt.PointingHandCursor
+                    function enter() { playNav(); listHighlighted(); collectionList.enterFavoritesHeader(); }
+                    onEntered: if (!favHeader.selected) enter()
+                    onClicked: {
+                        if (favHeader.selected) collectionList.activateCurrent();
+                        else enter();
+                    }
+                }
             }
         }
 
