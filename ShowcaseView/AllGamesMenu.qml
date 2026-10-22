@@ -956,7 +956,7 @@ id: root
             height: vpx(50)
             fillMode: Image.PreserveAspectFit
             source: (logoGame && logoGame.collections.count > 0)
-                    ? "../assets/images/logospng/" + Utils.processPlatformName(logoGame.collections.get(0).shortName) + ".png"
+                    ? systemLogoSource(logoGame.collections.get(0))
                     : ""
             visible: status === Image.Ready
             // Decoded at the height it's shown (x2 for sharpness), not the

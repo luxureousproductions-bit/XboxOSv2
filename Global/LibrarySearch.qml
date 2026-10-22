@@ -397,9 +397,7 @@ id: searchOverlay
                 }
                 opacity: 0.85
                 source: (modelData && modelData.collections.count > 0)
-                        ? "../assets/images/logospng/"
-                          + Utils.processPlatformName(modelData.collections.get(0).shortName) + ".png"
-                        : ""
+                        ? systemLogoSource(modelData.collections.get(0)) : ""
             }
 
             MouseArea {

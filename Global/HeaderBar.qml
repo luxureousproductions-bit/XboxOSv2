@@ -88,7 +88,7 @@ id: root
             }
             height: vpx(45)
             fillMode: Image.PreserveAspectFit
-            source: "../assets/images/logospng/" + Utils.processPlatformName(currentCollection.shortName) + ".png"
+            source: systemLogoSource(currentCollection)
             sourceSize: Qt.size(parent.width, parent.height)
             smooth: true
             visible: false

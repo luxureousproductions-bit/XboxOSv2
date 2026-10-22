@@ -233,9 +233,7 @@ id: root
                                        ? currentGame.collections.get(0).shortName : ""
 
             anchors.fill: parent
-            source: shortName !== ""
-                    ? "../assets/images/logospng/" + Utils.processPlatformName(shortName) + ".png"
-                    : ""
+            source: shortName !== "" ? systemLogoSource(currentGame.collections.get(0)) : ""
             sourceSize { width: 400; height: 80 }
             fillMode: Image.PreserveAspectFit
             smooth: true

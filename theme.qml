@@ -79,6 +79,15 @@ id: root
     //                               the keyword rules or wherever you moved it
     //                               (saved moves update categoryMap, so this
     //                               follows them live)
+    // A system's logo: the collection's own (Pegasus X Settings > Library >
+    // System tile), else the theme's bundled one. Every screen uses this, so
+    // a logo set for a collection shows everywhere. Relative to the screens'
+    // folders (they all sit one level down).
+    function systemLogoSource(coll) {
+        if (!coll) return "";
+        if (coll.assets && coll.assets.logo) return coll.assets.logo;
+        return "../assets/images/logospng/" + Utils.processPlatformName(coll.shortName) + ".png";
+    }
     function hasGenre(g, want) {
         var gl = g ? g.genreList : null;
         if (!gl) return false;
