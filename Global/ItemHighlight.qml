@@ -200,6 +200,11 @@ id: root
         Rectangle {
             anchors.fill: parent
             anchors.margins: vpx(2)   // the video's own inset
+            // Rounded like the selection frame (ItemBorder: radius 15 at -3,
+            // 5 wide, so its inner curve is radius 10 at +2). Square corners
+            // blurred into faint dark corners just past the rounded frame on
+            // light backgrounds.
+            radius: vpx(10)
             color: "#000000"
         }
     }
