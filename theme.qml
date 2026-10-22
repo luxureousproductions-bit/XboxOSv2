@@ -230,24 +230,10 @@ id: root
               ? api.memory.get("Omit genre: Emulator from Showcase") : "No") === "Yes";
     }
 
-    // Performance test (Settings > Appearance). Live, so the two can be
-    // compared on the spot: turn the counter on, scroll a grid, flip Fast tile
-    // corners, scroll again.
+    // Frame rate counter (Settings > Appearance > Diagnostics). Live.
     readonly property bool frameCounterLive: {
         var e = settingsEpoch;
         return (api.memory.has("Frame counter") ? api.memory.get("Frame counter") : "No") === "Yes";
-    }
-    readonly property bool fastCornersLive: {
-        var e = settingsEpoch;
-        return (api.memory.has("Fast tile corners") ? api.memory.get("Fast tile corners") : "Yes") === "Yes";
-    }
-    readonly property bool scrollLookAheadLive: {
-        var e = settingsEpoch;
-        return (api.memory.has("Scroll look-ahead") ? api.memory.get("Scroll look-ahead") : "Yes") === "Yes";
-    }
-    readonly property bool reuseTilesLive: {
-        var e = settingsEpoch;
-        return (api.memory.has("Reuse tiles") ? api.memory.get("Reuse tiles") : "Yes") === "Yes";
     }
 
     // ── What the Home rows hide, as ONE list ──────────────────────────────
@@ -2156,7 +2142,7 @@ id: root
         if (scr && typeof scr.mouseBack === "function") scr.mouseBack();
     }
 
-    // Frame rate counter (Settings > Appearance > Frame counter). Top-left,
+    // Frame rate counter (Settings > Appearance > Diagnostics). Top-left,
     // above everything. Exists only while switched on.
     Loader {
         active: frameCounterLive

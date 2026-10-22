@@ -1,5 +1,5 @@
 // XboxOS-V2
-// Frame rate counter (Settings > Appearance > Performance test).
+// Frame rate counter (Settings > Appearance > Diagnostics).
 //
 // Counts the frames the theme actually draws each second and the slowest one.
 // "worst" is what you feel as a stutter: at 60 fps a frame has 16.7 ms, so

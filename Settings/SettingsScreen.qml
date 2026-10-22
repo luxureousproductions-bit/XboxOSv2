@@ -444,23 +444,11 @@ id: root
             label: "Show game count"
             setting: "Yes,No"
         }
-        ListElement { settingName: "Performance test"; setting: ""; header: true }
+        ListElement { settingName: "Diagnostics"; setting: ""; header: true }
         ListElement {
             settingName: "Frame counter"
             label: "Frame rate counter"
             setting: "No,Yes"
-        }
-        ListElement {
-            settingName: "Fast tile corners"
-            setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "Scroll look-ahead"
-            setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "Reuse tiles"
-            setting: "Yes,No"
         }
 
         ListElement { settingName: "Video"; setting: ""; header: true }
@@ -903,21 +891,6 @@ id: root
                  + "\n"
                  + "At 60 fps each frame has about 17 ms; a worst well past that is a visible stutter";
         }
-        if (name === "Fast tile corners") {
-            return "Rounds game tile corners in a single draw instead of an offscreen mask"
-                 + "\n"
-                 + "Should scroll smoother and look the same; switch off to compare";
-        }
-        if (name === "Scroll look-ahead") {
-            return "Keeps the next rows of the All Games grid built ahead while you scroll fast"
-                 + "\n"
-                 + "They are built a little at a time instead of a whole row in one frame; switch off to compare";
-        }
-        if (name === "Reuse tiles") {
-            return "The All Games grid recycles tiles that scroll away instead of building new ones"
-                 + "\n"
-                 + "Less work per row and fewer clean-up pauses on long scrolls; switch off to compare";
-        }
         if (name === "Allow video thumbnails") {
             return "Plays a short preview video on the highlighted tile (Home & Platform page)";
         }
@@ -1180,9 +1153,6 @@ id: root
             || name === "Animate highlight"
             || name === "Game Counter"
             || name === "Frame counter"
-            || name === "Fast tile corners"
-            || name === "Scroll look-ahead"
-            || name === "Reuse tiles"
             || name === "Allow video thumbnails"
             || name === "Hide logo when thumbnail video plays"
             || name === "Featured Box"

@@ -1444,16 +1444,14 @@ id: root
         // every new row land in a single frame, and tore the ready rows down
         // and rebuilt them each time a race started and stopped. Tiles born
         // mid-race already hold off loading their art (deferArt), so keeping
-        // the look-ahead costs no decoding. Performance test toggle: Settings >
-        // Appearance > Scroll look-ahead (No = the old behaviour).
-        cacheBuffer: (root.fastScrolling && !scrollLookAheadLive) ? 0 : gridCellH * (hqMode ? 1.0 : 0.5)
+        // the look-ahead costs no decoding.
+        cacheBuffer: gridCellH * (hqMode ? 1.0 : 0.5)
         // Recycle tiles that scroll away instead of destroying them and
         // building new ones (Qt 5.15). Far less to build per row, and far less
         // garbage piling up until the JS engine pauses to clean it — the
         // likely cause of dips that grow the longer you scroll. Each tile
-        // resets itself on reuse (resetForReuse). Performance test toggle:
-        // Settings > Appearance > Reuse tiles.
-        reuseItems: reuseTilesLive
+        // resets itself on reuse (resetForReuse).
+        reuseItems: true
 
         // Video previews live in the highlight, exactly as on the platform
         // grid. Follows the All Games video setting and the coordinator.

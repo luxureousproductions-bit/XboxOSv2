@@ -135,12 +135,12 @@ id: root
     // source image's own proportions, so it works for any wide system.
     readonly property bool wide3d: is3d && screenshot.status === Image.Ready
                                    && screenshot.implicitWidth > screenshot.implicitHeight
-    // Fast corners (Settings > Appearance > Fast tile corners): a 2D box rounds
+    // Fast corners: a 2D box rounds
     // its own corners in one draw (RoundedArt) instead of going through an
     // offscreen layer + OpacityMask. 3D renders have no corners to round and
     // keep their selected-tile glow layer. Falls back to the mask if the
     // shader ever fails to compile.
-    readonly property bool fastArt: fastCornersLive && !is3d
+    readonly property bool fastArt: !is3d
                                     && !artFx.failed
 
     Image {
@@ -301,7 +301,7 @@ id: root
             opacity: screenshot.opacity
             // Only once the image is decoded: with no texture yet, GL samples
             // solid black, which would flash a black box while art loads.
-            visible: fastCornersLive && !root.is3d && !failed
+            visible: !root.is3d && !failed
                      && screenshot.status === Image.Ready
         }
 
