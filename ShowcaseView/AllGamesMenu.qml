@@ -1405,6 +1405,13 @@ id: root
         // the look-ahead costs no decoding. Performance test toggle: Settings >
         // Appearance > Scroll look-ahead (No = the old behaviour).
         cacheBuffer: (root.fastScrolling && !scrollLookAheadLive) ? 0 : gridCellH * (hqMode ? 1.0 : 0.5)
+        // Recycle tiles that scroll away instead of destroying them and
+        // building new ones (Qt 5.15). Far less to build per row, and far less
+        // garbage piling up until the JS engine pauses to clean it — the
+        // likely cause of dips that grow the longer you scroll. Each tile
+        // resets itself on reuse (resetForReuse). Performance test toggle:
+        // Settings > Appearance > Reuse tiles.
+        reuseItems: reuseTilesLive
 
         // Video previews live in the highlight, exactly as on the platform
         // grid. Follows the All Games video setting and the coordinator.
@@ -1457,6 +1464,7 @@ id: root
                 gameData: modelData
                 reduceMotion: root.fastScrolling
                 deferArt: root.fastScrolling
+                GridView.onReused: resetForReuse()
                 columns: gridColumns
                 artStyle: tileStyle
                 width:  GridView.view.cellWidth
@@ -1482,6 +1490,7 @@ id: root
                 ownScreen: "allgamesscreen"
                 reduceMotion: root.fastScrolling
                 deferArt: root.fastScrolling
+                GridView.onReused: resetForReuse()
                 width:  GridView.view.cellWidth
                 height: GridView.view.cellHeight - gridTitleMargin
                 onActivated: {

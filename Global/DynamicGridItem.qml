@@ -109,6 +109,17 @@ id: root
     property bool artArmed: true
     Component.onCompleted: if (deferArt) artArmed = false
     onDeferArtChanged: if (!deferArt) artArmed = true
+    // Item reuse: a grid with reuseItems recycles tiles instead of destroying
+    // them, so a recycled tile must start exactly like a new one. Its host
+    // calls this from GridView.onReused. The art latch follows the host's
+    // current deferArt (as onCompleted does for a new tile), and the art is
+    // made fully visible again in case the tile was fading under a preview.
+    // A recycled tile skips the HQ dissolve: its new art may come straight
+    // from the image cache, with no status change to trigger the fade-in.
+    function resetForReuse() {
+        artArmed = !deferArt;
+        restoreArt();
+    }
     // Fast corners (Settings > Appearance > Fast tile corners): the art rounds
     // its own corners in one draw (RoundedArt) instead of the whole tile going
     // through an offscreen layer + OpacityMask. Imported apps keep the layer —

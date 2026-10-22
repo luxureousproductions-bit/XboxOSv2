@@ -107,6 +107,14 @@ id: root
     property bool artArmed: true
     Component.onCompleted: if (deferArt) artArmed = false
     onDeferArtChanged: if (!deferArt) artArmed = true
+    // Item reuse: a grid with reuseItems recycles tiles instead of destroying
+    // them. Its host calls this from GridView.onReused so a recycled tile
+    // starts like a new one: the art latch follows the host's current
+    // deferArt, as onCompleted does for a new tile. Everything else here is
+    // a binding and follows the new game by itself.
+    function resetForReuse() {
+        artArmed = !deferArt;
+    }
 
     scale: selected ? 1.1 : 1
     z: selected ? 10 : 1

@@ -458,6 +458,10 @@ id: root
             settingName: "Scroll look-ahead"
             setting: "Yes,No"
         }
+        ListElement {
+            settingName: "Reuse tiles"
+            setting: "Yes,No"
+        }
 
         ListElement { settingName: "Video"; setting: ""; header: true }
         ListElement {
@@ -909,6 +913,11 @@ id: root
                  + "\n"
                  + "They are built a little at a time instead of a whole row in one frame; switch off to compare";
         }
+        if (name === "Reuse tiles") {
+            return "The All Games grid recycles tiles that scroll away instead of building new ones"
+                 + "\n"
+                 + "Less work per row and fewer clean-up pauses on long scrolls; switch off to compare";
+        }
         if (name === "Allow video thumbnails") {
             return "Plays a short preview video on the highlighted tile (Home & Platform page)";
         }
@@ -1173,6 +1182,7 @@ id: root
             || name === "Frame counter"
             || name === "Fast tile corners"
             || name === "Scroll look-ahead"
+            || name === "Reuse tiles"
             || name === "Allow video thumbnails"
             || name === "Hide logo when thumbnail video plays"
             || name === "Featured Box"
