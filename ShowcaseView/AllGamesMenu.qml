@@ -3,6 +3,7 @@ import QtQuick 2.15
 import QtQuick.Layouts 1.11
 import QtGraphicalEffects 1.12
 import QtMultimedia 5.15
+import QtQuick.Window 2.15   // Window.window: frame pacing for held-key scrolling
 import "../Global"
 import "../Lists"
 import "../utils.js" as Utils
@@ -71,6 +72,35 @@ id: root
     id: fastScrollRelease
         interval: 200
         onTriggered: root.fastScrolling = false
+    }
+    // Held-key pacing. A held direction sends repeat presses at a fixed rate.
+    // When a device can't draw each step that fast (the Odin 1's 845), the
+    // repeats queued up and were then all carried out one after another: the
+    // grid crawled, froze, and kept scrolling for many seconds after release.
+    // Now a REPEAT press is skipped while the previous step hasn't reached the
+    // screen yet, so the queue never forms: scrolling runs as fast as the
+    // device can draw and stops on release. A fresh press is never skipped.
+    property bool stepPending: false
+    Connections {
+        target: root.Window.window
+        onFrameSwapped: root.stepPending = false
+    }
+    // Safety: a step that changes nothing on screen produces no new frame.
+    Timer {
+    id: stepPendingSafety
+        interval: 250
+        onTriggered: root.stepPending = false
+    }
+    function gridRepeatBlocked(event) {
+        // A held key is racing by definition, skipped repeat or not. Racing was
+        // only detected from steps under 180ms apart, and on a slow device the
+        // pacing can space steps wider, which would drop the grid out of its
+        // light racing mode (art held back, no halo) into loading every step.
+        if (event.isAutoRepeat) { fastScrolling = true; noteGridNav(); }
+        if (event.isAutoRepeat && stepPending) return true;
+        stepPending = true;
+        stepPendingSafety.restart();
+        return false;
     }
     function noteGridNav() {
         var now = Date.now();
@@ -1518,12 +1548,14 @@ id: root
         // last row wraps to the same column on the first row. Left/Right wrap
         // end-to-end. All mirror the platform grid's feel.
         Keys.onUpPressed: {
+            if (gridRepeatBlocked(event)) { event.accepted = true; return; }
             playNav(); noteGridNav();
             if (currentIndex - gridColumns >= 0) currentIndex -= gridColumns;
             else homebutton.focus = true;
         }
         Keys.onDownPressed: {
             if (count === 0) return;
+            if (gridRepeatBlocked(event)) { event.accepted = true; return; }
             playNav(); noteGridNav();
             // Same rule as the Platform grid: "last row" is anything with no
             // full row beneath it (the last row is often partial). From there
@@ -1534,11 +1566,13 @@ id: root
         }
         Keys.onLeftPressed: {
             if (count === 0) return;
+            if (gridRepeatBlocked(event)) { event.accepted = true; return; }
             playNav(); noteGridNav();
             currentIndex = (currentIndex > 0) ? currentIndex - 1 : count - 1;
         }
         Keys.onRightPressed: {
             if (count === 0) return;
+            if (gridRepeatBlocked(event)) { event.accepted = true; return; }
             playNav(); noteGridNav();
             currentIndex = (currentIndex < count - 1) ? currentIndex + 1 : 0;
         }
