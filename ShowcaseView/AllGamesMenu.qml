@@ -300,6 +300,15 @@ id: root
     // settles, so flicking the list doesn't decode four images on every step.
     // Metadata text stays bound to currentGame (instant); video has its own debounce.
     property var settledGame: null
+    // The game the header's system logo follows. While racing it holds still
+    // (the logo used to load and decode a different system's PNG on every
+    // step) and catches up the moment the race ends.
+    // (currentGame lives in theme.qml, so no handler on it here: the game is
+    // captured when a race starts, and the binding returns to currentGame
+    // when it ends.)
+    property var logoHeld: null
+    onFastScrollingChanged: if (fastScrolling) logoHeld = currentGame
+    readonly property var logoGame: fastScrolling ? logoHeld : currentGame
     Timer {
     id: artDebounce
         interval: hqAllGamesArtMs; repeat: false      // HQ: art follows the cursor more closely
@@ -916,10 +925,13 @@ id: root
             anchors { top: parent.top; topMargin: vpx(8); left: parent.left; leftMargin: globalMargin }
             height: vpx(50)
             fillMode: Image.PreserveAspectFit
-            source: (currentGame && currentGame.collections.count > 0)
-                    ? "../assets/images/logospng/" + Utils.processPlatformName(currentGame.collections.get(0).shortName) + ".png"
+            source: (logoGame && logoGame.collections.count > 0)
+                    ? "../assets/images/logospng/" + Utils.processPlatformName(logoGame.collections.get(0).shortName) + ".png"
                     : ""
             visible: status === Image.Ready
+            // Decoded at the height it's shown (x2 for sharpness), not the
+            // PNG's full size; it was decoded and uploaded full size each time.
+            sourceSize.height: Math.round(height * 2)
             smooth: true; asynchronous: true; cache: true
         }
         Text {
@@ -928,7 +940,7 @@ id: root
             // load). `!sysLogo.visible` also covered the Loading state, so the
             // name flashed for a frame and the logo popped in over it.
             visible: sysLogo.status === Image.Error || sysLogo.source == ""
-            text: (currentGame && currentGame.collections.count > 0) ? currentGame.collections.get(0).name : "My Games & Apps"
+            text: (logoGame && logoGame.collections.count > 0) ? logoGame.collections.get(0).name : "My Games & Apps"
             color: theme.text; font.family: titleFont.name; font.pixelSize: fpx(24); font.bold: true
         }
         // Game counter: low in the band but clear of its edge, so it survives

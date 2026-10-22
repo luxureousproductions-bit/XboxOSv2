@@ -160,8 +160,11 @@ id: root
     // On demand: the effect (a shader plus its own offscreen texture) exists
     // only while it could be seen. It used to be instantiated on EVERY tile —
     // two effects per tile doing nothing on every screen full of tiles.
+    // Not while racing (reduceMotion): it was built and torn down on every
+    // step; it appears as soon as the cursor stops. The accent frame still
+    // follows the cursor throughout.
     Loader {
-        active: selected
+        active: selected && !reduceMotion
         anchors.fill: tileHaloSrc
         z: -1
         sourceComponent: Component {
