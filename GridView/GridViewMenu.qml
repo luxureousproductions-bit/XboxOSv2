@@ -392,7 +392,7 @@ id: root
             anchors { top: parent.top; topMargin: vpx(8); left: parent.left; leftMargin: globalMargin }
             height: vpx(50)
             fillMode: Image.PreserveAspectFit
-            source: list.collection ? "../assets/images/logospng/" + Utils.processPlatformName(list.collection.shortName) + ".png" : ""
+            source: list.collection ? systemLogoSource(list.collection) : ""
             smooth: true
             asynchronous: false
             cache: true

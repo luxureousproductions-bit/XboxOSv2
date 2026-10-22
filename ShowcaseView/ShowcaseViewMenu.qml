@@ -1479,7 +1479,7 @@ id: root
                     anchors.fill: parent
                     anchors.margins: vpx(15)
                     source: (!isHero && coll)
-                        ? (customSystemLogo(coll) || "../assets/images/logospng/" + Utils.processPlatformName(coll.shortName) + ".png") : ""
+                        ? systemLogoSource(coll) : ""
                     sourceSize { width: 512; height: 512 }
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true

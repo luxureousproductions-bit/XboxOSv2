@@ -917,7 +917,7 @@ id: root
             height: vpx(50)
             fillMode: Image.PreserveAspectFit
             source: (currentGame && currentGame.collections.count > 0)
-                    ? "../assets/images/logospng/" + Utils.processPlatformName(currentGame.collections.get(0).shortName) + ".png"
+                    ? systemLogoSource(currentGame.collections.get(0))
                     : ""
             visible: status === Image.Ready
             smooth: true; asynchronous: true; cache: true
