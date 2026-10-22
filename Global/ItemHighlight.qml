@@ -181,17 +181,42 @@ id: root
 
     }
 
+    // Shadow around the playing preview.
+    //
+    // It used to take its shape from videocontainer itself: the playing video
+    // was copied into an offscreen texture and blurred on EVERY video frame,
+    // only to keep its outline. The outline is always the same rectangle, so
+    // the shadow is now drawn from a plain plate of exactly the video's size
+    // (the same vpx(2) inset), blurred once and reused (cached). It shows
+    // while the video is on screen, as before. The video is not touched, and
+    // nothing routes it through a texture any more.
+    readonly property bool videoShown: videoPreviewLoader.item
+                                       ? videoPreviewLoader.item.opacity > 0 : false
+    Item {
+    id: shadowShape
+
+        anchors.fill: parent
+        visible: false   // only the shadow below draws it
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: vpx(2)   // the video's own inset
+            color: "#000000"
+        }
+    }
+
     DropShadow {
     id: outershadow
 
-        anchors.fill: videocontainer
+        anchors.fill: shadowShape
         horizontalOffset: 0
         verticalOffset: 0
         radius: 20.0
         samples: 11
         color: "#000000"
-        source: videocontainer
-        opacity: selected ? 0.5 : 0
+        source: shadowShape
+        cached: true
+        opacity: (selected && root.videoShown) ? 0.5 : 0
+        visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 100 } }
         z: -5
     }
