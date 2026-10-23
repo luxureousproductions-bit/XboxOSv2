@@ -178,28 +178,8 @@ id: root
         scale: selected ? 1 : 0.95
         Behavior on scale { NumberAnimation { duration: 100 } }
 
-        // Focus halo — identical asset and per-dimension sizing to the tiles so
-        // it matches on any aspect. Lives OUTSIDE the masked tile below, or the
-        // rounded-corner mask would clip the glow away.
-        Image {
-            id: favHaloSrc
-            anchors.centerIn: tile
-            width:  tile.width  * 1.1228
-            height: tile.height * 1.1228
-            source: "../assets/images/focus_halo.png"
-            smooth: true
-            mipmap: false
-            visible: false
-        }
-        ColorOverlay {
-            anchors.fill: favHaloSrc
-            source: favHaloSrc
-            color: theme.accent
-            z: -1
-            opacity: (selected && settings.TileHalo === "Yes") ? 0.95 : 0
-            visible: opacity > 0
-            Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-        }
+        // (The focus halo image that sat here is gone: the Xbox-style frame
+        // below draws its own tight glow, following the Tile Halo setting.)
 
         Item {
         id: tile
@@ -215,7 +195,7 @@ id: root
                 maskSource: Rectangle {
                     width: tile.width
                     height: tile.height
-                    radius: vpx(12)
+                    radius: vpx(6)   // the game tiles' radius (Xbox style)
                 }
             }
 
@@ -474,7 +454,7 @@ id: root
         Component {
         id: favBorderComponent
 
-            ItemBorder { }
+            ItemBorder { xboxStyle: true; artRadius: vpx(6) }
         }
     }
 }

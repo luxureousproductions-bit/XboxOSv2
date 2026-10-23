@@ -408,7 +408,8 @@ id: root
         id: screenshot
 
             anchors.fill: parent
-            anchors.margins: vpx(2)
+            anchors.margins: 0   // fills the tile, rounded at its edge like the preview video (was 2: a
+                                 // leftover from the old frame, which covered the tile's edge)
             // Fast corners: this Image only decodes; artFx below draws it.
             visible: !appTile.visible && !root.fastArt
             // HQ: dissolve in on load. Starts hidden and lifts on Ready with a
@@ -442,7 +443,7 @@ id: root
             source: screenshot
             crop: true
             radius: root.tileRadius
-            inset: vpx(2)
+            inset: 0
             opacity: screenshot.opacity
             // Only once the image is decoded: with no texture yet, GL samples
             // solid black, which would flash a black box while art loads.
