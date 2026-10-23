@@ -17,6 +17,7 @@
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
 import QtGraphicalEffects 1.15
+import QtQuick.Window 2.15   // Window.window: frame pacing for held-key scrolling
 import "../Global"
 import "../Lists"
 import "../utils.js" as Utils
@@ -320,9 +321,9 @@ id: root
     }
 
     // ── Fast-scroll detection (same rule as the All Games grid) ────────────
-    // Two moves inside 180ms = racing. While it holds: tile animations off,
-    // the highlight snaps, no look-ahead rows, and (per the Fast scroll art
-    // setting) new tiles hold their art until the scroll stops.
+    // Two moves inside 180ms (or any held-key repeat) = racing. While it
+    // holds: tile animations and the halo off, the highlight snaps, and new
+    // tiles hold their art until the scroll stops. Look-ahead rows stay.
     property bool fastScrolling: false
     property double lastNavMs: 0
     Timer { id: fastScrollRelease; interval: 200; onTriggered: fastScrolling = false }
@@ -331,6 +332,31 @@ id: root
         if (now - lastNavMs < 180) fastScrolling = true;
         lastNavMs = now;
         fastScrollRelease.restart();
+    }
+    // Held-key pacing, as on the All Games grid. When a device can't draw
+    // each step as fast as a held direction repeats, the repeats queued and
+    // were carried out long after release (the Odin 1 froze for seconds). A
+    // REPEAT press is skipped while the previous step hasn't reached the
+    // screen, so no backlog forms; a fresh press is never skipped.
+    property bool stepPending: false
+    Connections {
+        target: root.Window.window
+        onFrameSwapped: root.stepPending = false
+    }
+    // Safety: a step that changes nothing on screen produces no new frame.
+    Timer {
+    id: stepPendingSafety
+        interval: 250
+        onTriggered: root.stepPending = false
+    }
+    function gridRepeatBlocked(event) {
+        // A held key is racing by definition, skipped repeat or not, so slower
+        // pacing can't drop the grid out of its light racing mode.
+        if (event.isAutoRepeat) { fastScrolling = true; noteGridNav(); }
+        if (event.isAutoRepeat && stepPending) return true;
+        stepPending = true;
+        stepPendingSafety.restart();
+        return false;
     }
     property int numColumns: parseInt(tileColumns) || 6
     property int titleMargin: tileTitles === "Always" ? vpx(30) : 0
@@ -660,7 +686,18 @@ id: root
             // off-screen was wasted work on every scroll step.
             displayMarginBeginning: cellHeight * 0.15
             displayMarginEnd: cellHeight * 0.15
-            cacheBuffer: fastScrolling ? 0 : cellHeight * (hqMode ? 1.0 : 0.5)   // no look-ahead while racing
+            // Look-ahead rows, kept while racing too. Qt builds tiles inside
+            // the cacheBuffer in the background, a few per frame; on-screen
+            // tiles are built in ONE frame. Dropping it to 0 while racing made
+            // every new row land in a single frame and rebuilt the ready rows
+            // at each race start/stop. Tiles born mid-race hold their art
+            // (deferArt), so this costs no decoding.
+            cacheBuffer: cellHeight * (hqMode ? 1.0 : 0.5)
+            // Recycle tiles that scroll away instead of destroying and building
+            // new ones (Qt 5.15): less to build per row, and less garbage for
+            // the JS engine to pause on during long scrolls. Each tile resets
+            // itself on reuse (resetForReuse).
+            reuseItems: true
 
             model: list.games
             delegate: (showBoxes) ? boxartdelegate : dynamicDelegate
@@ -673,6 +710,7 @@ id: root
                     gameData: modelData
                     reduceMotion: fastScrolling
                     deferArt: fastScrolling
+                    GridView.onReused: resetForReuse()
                     titleMode: tileTitles
                     artStyle: tileShape
 
@@ -699,6 +737,7 @@ id: root
                 id: dynamicdelegatecontainer
                 reduceMotion: fastScrolling
                 deferArt: fastScrolling
+                GridView.onReused: resetForReuse()
 
                     selected: GridView.isCurrentItem && gamegrid.focus
                     artMode: tileArt
@@ -735,6 +774,7 @@ id: root
             }
 
             Keys.onUpPressed: {
+                if (gridRepeatBlocked(event)) { event.accepted = true; return; }
                 playNav(); noteGridNav();
                 if (currentIndex < numColumns) {
                     homebutton.focus = true;
@@ -744,6 +784,7 @@ id: root
                 }
             }
             Keys.onDownPressed: {
+                if (gridRepeatBlocked(event)) { event.accepted = true; return; }
                 playNav(); noteGridNav();
                 // From the last row, wrap to the FIRST row in the same column
                 // rather than dead-ending. The last row is often partial, so
@@ -756,6 +797,7 @@ id: root
                 }
             }
             Keys.onLeftPressed: {
+                if (gridRepeatBlocked(event)) { event.accepted = true; return; }
                 playNav(); noteGridNav();
                 // Wrap to the last tile when on the very first one (Up still
                 // reaches the nav buttons).
@@ -763,6 +805,7 @@ id: root
                 else moveCurrentIndexLeft();
             }
             Keys.onRightPressed: {
+                if (gridRepeatBlocked(event)) { event.accepted = true; return; }
                 playNav(); noteGridNav();
                 // Wrap to the first tile from the very last one.
                 if (currentIndex === count - 1) currentIndex = 0;
