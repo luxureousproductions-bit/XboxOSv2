@@ -141,11 +141,12 @@ id: root
         id: videocomponent
 
             anchors.fill: parent
-            anchors.margins: vpx(2)   // Meets the selection frame's INNER edge exactly:
-                                      // the frame overhangs -3 and is 5 wide, so its inner
-                                      // edge sits +2 in. The video's square corners are then
-                                      // hidden beneath the ring — no gap, and no masking of
-                                      // the VideoOutput (which renders black on weak GPUs).
+            anchors.margins: vpx(3)   // Meets the selection frame's INNER edge exactly:
+                                      // the frame overhangs -3 and is 6 wide, so its inner
+                                      // edge sits +3 in. The video's square corners are then
+                                      // hidden well beneath the ring (over 2 units inside its
+                                      // outer curve) — no gap, and no masking of the
+                                      // VideoOutput (which renders black on weak GPUs).
             source: game.assets.videoList.length ? game.assets.videoList[0] : ""
             fillMode: VideoOutput.PreserveAspectCrop
             muted: !root.allowAudio || !root.playbackActive
@@ -187,7 +188,7 @@ id: root
     // was copied into an offscreen texture and blurred on EVERY video frame,
     // only to keep its outline. The outline is always the same rectangle, so
     // the shadow is now drawn from a plain plate of exactly the video's size
-    // (the same vpx(2) inset), blurred once and reused (cached). It shows
+    // (the same vpx(3) inset), blurred once and reused (cached). It shows
     // while the video is on screen, as before. The video is not touched, and
     // nothing routes it through a texture any more.
     readonly property bool videoShown: videoPreviewLoader.item
@@ -199,12 +200,12 @@ id: root
         visible: false   // only the shadow below draws it
         Rectangle {
             anchors.fill: parent
-            anchors.margins: vpx(2)   // the video's own inset
+            anchors.margins: vpx(3)   // the video's own inset
             // Rounded like the selection frame (ItemBorder: radius 15 at -3,
-            // 5 wide, so its inner curve is radius 10 at +2). Square corners
+            // 6 wide, so its inner curve is radius 9 at +3). Square corners
             // blurred into faint dark corners just past the rounded frame on
             // light backgrounds.
-            radius: vpx(10)
+            radius: vpx(9)
             color: "#000000"
         }
     }

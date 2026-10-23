@@ -34,7 +34,12 @@ id: root
         color: "transparent"
         radius: vpx(15)
         border.color: theme.accent
-        border.width: vpx(5)
+        // 6, not 5: one unit thicker on the INSIDE only (the outer edge, -3,
+        // and its curve are unchanged), so its inner edge sits at +3. The
+        // preview video (ItemHighlight) is inset +3 to meet it; at +2 its
+        // square corners sat under the frame's outer curve by less than a
+        // pixel and faintly showed through on light backgrounds.
+        border.width: vpx(6)
         antialiasing: true
     }
 
@@ -48,7 +53,7 @@ id: root
         color: "transparent"
         radius: vpx(15)
         border.color: "#ffffff"
-        border.width: vpx(5)
+        border.width: vpx(6)   // matches the frame above
         antialiasing: true
         opacity: 0   // start invisible so it can't pop in at peak brightness
         SequentialAnimation on opacity {
