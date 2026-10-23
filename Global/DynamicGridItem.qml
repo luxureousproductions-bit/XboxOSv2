@@ -125,12 +125,6 @@ id: root
     // through an offscreen layer + OpacityMask. Imported apps keep the layer —
     // their blurred backdrop needs it — and so does every tile if the shader
     // ever fails to compile. The video preview is not part of this tile.
-    // Corner radius of the tile, as on the Xbox dashboard (was 12). The
-    // selection frame stands off it by a 4-unit gap (ItemBorder xboxStyle).
-    readonly property real tileRadius: vpx(6)
-    // How far the Xbox-style frame's outer edge sits outside the tile
-    // (ItemBorder: 2 gap + 2 ring).
-    readonly property real frameReach: vpx(4)
     readonly property bool fastArt: !isImportedApp
                                     && !artFx.failed
     readonly property bool previewCovering: selected && playVideo
@@ -175,11 +169,8 @@ id: root
         // wide — with no gap. 1.1228 = 1 + 2*0.0614 keeps the same bleed as the
         // system tiles.
         anchors.centerIn: container
-        // Wrapped around the FRAME now (it stands frameReach off the tile),
-        // so the glow starts at the frame's outer edge, as on the Xbox, and
-        // never lights the see-through gap.
-        width:  (container.width  + 2 * frameReach) * 1.1228
-        height: (container.height + 2 * frameReach) * 1.1228
+        width:  container.width  * 1.1228
+        height: container.height * 1.1228
         source: "../assets/images/focus_halo.png"
         smooth: true
         mipmap: false
@@ -188,11 +179,28 @@ id: root
     // On demand: the effect (a shader plus its own offscreen texture) exists
     // only while it could be seen. It used to be instantiated on EVERY tile —
     // two effects per tile doing nothing on every screen full of tiles.
-    // (The selected-tile halo that sat here is gone for the game tile: the
-    // Xbox-style frame draws its own tight glow, ItemBorder > GlowRing,
-    // following the same Tile Halo setting.)
+    // Not while racing (reduceMotion): it was built and torn down on every
+    // step; it appears as soon as the cursor stops. The accent frame still
+    // follows the cursor throughout.
+    Loader {
+        active: selected && !reduceMotion
+        anchors.fill: tileHaloSrc
+        z: -1
+        sourceComponent: Component {
+        ColorOverlay {
+            id: tileGlow
+            anchors.fill: parent   // the Loader, which already fills tileHaloSrc
+            source: tileHaloSrc
+            color: theme.accent
+            z: -1
+            opacity: (selected && settings.TileHalo === "Yes") ? 0.95 : 0
+            visible: opacity > 0
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+        }
+        }
+    }
     // Subtle persistent glow for favorited tiles (not selected — the bright
-    // selected tile has the frame's own glow). Same halo asset/accent tint,
+    // tileGlow above already covers that case). Same halo asset/accent tint,
     // much dimmer, so favorites read as "special" while browsing past them.
     // On demand: the effect (a shader plus its own offscreen texture) exists
     // only while it could be seen. It used to be instantiated on EVERY tile —
@@ -231,7 +239,7 @@ id: root
             maskSource: Rectangle {
                 width: container.width
                 height: container.height
-                radius: root.tileRadius
+                radius: vpx(12)
             }
         }
 
@@ -254,18 +262,18 @@ id: root
             Rectangle {
                 visible: root.fastArt
                 anchors { left: parent.left; right: parent.right; top: parent.top }
-                height: parent.height - root.tileRadius
+                height: parent.height - vpx(12)
                 color: "#99000000"
             }
             Item {
                 visible: root.fastArt
                 clip: true
                 anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                height: root.tileRadius
+                height: vpx(12)
                 Rectangle {
                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                    height: root.tileRadius * 2
-                    radius: root.tileRadius
+                    height: vpx(24)
+                    radius: vpx(12)
                     color: "#99000000"
                 }
             }
@@ -408,8 +416,7 @@ id: root
         id: screenshot
 
             anchors.fill: parent
-            anchors.margins: 0   // fills the tile, rounded at its edge like the preview video (was 2: a
-                                 // leftover from the old frame, which covered the tile's edge)
+            anchors.margins: vpx(2)
             // Fast corners: this Image only decodes; artFx below draws it.
             visible: !appTile.visible && !root.fastArt
             // HQ: dissolve in on load. Starts hidden and lifts on Ready with a
@@ -442,8 +449,8 @@ id: root
             anchors.fill: screenshot
             source: screenshot
             crop: true
-            radius: root.tileRadius
-            inset: 0
+            radius: vpx(12)
+            inset: vpx(2)
             opacity: screenshot.opacity
             // Only once the image is decoded: with no texture yet, GL samples
             // solid black, which would flash a black box while art loads.
@@ -477,14 +484,14 @@ id: root
             anchors.fill: parent
             color: screenshot.source == "" ? theme.secondary : "black"
             opacity: screenshot.source == "" ? 1 : selected ? 0.1 : 0.2
-            radius: root.fastArt ? root.tileRadius : 0
+            radius: root.fastArt ? vpx(12) : 0
         }
 
         Rectangle {
         id: regborder
 
             anchors.fill: parent
-            radius: root.fastArt ? root.tileRadius : 0
+            radius: root.fastArt ? vpx(12) : 0
             color: "transparent"
             border.width: vpx(1)
             border.color: "white"
@@ -498,7 +505,7 @@ id: root
     Rectangle {
         id: favBorder
         anchors.fill: container
-        radius: root.tileRadius
+        radius: vpx(12)
         color: "transparent"
         border.width: vpx(2)
         border.color: theme.accent
@@ -517,7 +524,7 @@ id: root
     Component {
     id: border
 
-        ItemBorder { xboxStyle: true; artRadius: root.tileRadius }
+        ItemBorder { }
     }
 
     // (The old faint under-tile title, permanently hidden, is gone: replaced

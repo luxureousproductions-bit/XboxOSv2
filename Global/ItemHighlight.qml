@@ -141,10 +141,12 @@ id: root
         id: videocomponent
 
             anchors.fill: parent
-            // Rounded with the tile (videocontainer's layer), so it fills to the
-            // edge. Fallback, if the rounding shader fails: 3 inside the rounded
-            // plate, its square corners inside the plate's radius-6 curve.
-            anchors.margins: root.roundFailed ? vpx(3) : 0
+            anchors.margins: vpx(3)   // Meets the selection frame's INNER edge exactly:
+                                      // the frame overhangs -3 and is 6 wide, so its inner
+                                      // edge sits +3 in. The video's square corners are then
+                                      // hidden well beneath the ring (over 2 units inside its
+                                      // outer curve) — no gap, and no masking of the
+                                      // VideoOutput (which renders black on weak GPUs).
             source: game.assets.videoList.length ? game.assets.videoList[0] : ""
             fillMode: VideoOutput.PreserveAspectCrop
             muted: !root.allowAudio || !root.playbackActive
@@ -180,25 +182,49 @@ id: root
 
     }
 
+    // Shadow around the playing preview.
+    //
+    // It used to take its shape from videocontainer itself: the playing video
+    // was copied into an offscreen texture and blurred on EVERY video frame,
+    // only to keep its outline. The outline is always the same rectangle, so
+    // the shadow is now drawn from a plain plate of exactly the video's size
+    // (the same vpx(3) inset), blurred once and reused (cached). It shows
+    // while the video is on screen, as before. The video is not touched, and
+    // nothing routes it through a texture any more.
     readonly property bool videoShown: videoPreviewLoader.item
                                        ? videoPreviewLoader.item.opacity > 0 : false
-
-    // Rounded preview video. The game tile's corners are radius 6 and its
-    // frame stands off the art (Xbox style), so the video is rounded to match:
-    // videocontainer goes through a layer while the video is showing, and
-    // RoundedArt fades its corners in one pass. This captures the video into a
-    // texture every frame: fine on current devices, while on weak GPUs a
-    // VideoOutput in a texture can render black (a trade-off accepted for the
-    // look). If the shader ever fails, the video falls back to sitting square
-    // inside the rounded plate below.
-    property bool roundFailed: false
-    Rectangle {
-    id: videoPlate
+    Item {
+    id: shadowShape
 
         anchors.fill: parent
-        radius: vpx(6)
+        visible: false   // only the shadow below draws it
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: vpx(3)   // the video's own inset
+            // Rounded like the selection frame (ItemBorder: radius 15 at -3,
+            // 6 wide, so its inner curve is radius 9 at +3). Square corners
+            // blurred into faint dark corners just past the rounded frame on
+            // light backgrounds.
+            radius: vpx(9)
+            color: "#000000"
+        }
+    }
+
+    DropShadow {
+    id: outershadow
+
+        anchors.fill: shadowShape
+        horizontalOffset: 0
+        verticalOffset: 0
+        radius: 20.0
+        samples: 11
         color: "#000000"
-        visible: root.videoShown && root.roundFailed
+        source: shadowShape
+        cached: true
+        opacity: (selected && root.videoShown) ? 0.5 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 100 } }
+        z: -5
     }
 
     Item {
@@ -206,16 +232,10 @@ id: root
 
         anchors.fill: parent
 
-        // Rounded through a layer while the video shows (see roundFailed above).
-        // Earlier note: rendering this video through a layer once broke its
-        // PreserveAspectCrop fill (thin pillarbox bars). If bars appear, the fix
-        // is to crop by geometry (oversized video, clipped) instead of fillMode.
-        layer.enabled: root.videoShown && !root.roundFailed
-        layer.smooth: true
-        layer.effect: RoundedArt {
-            radius: vpx(6)
-            onFailedChanged: if (failed) root.roundFailed = true
-        }
+        // NOTE: do NOT wrap this in a layer/OpacityMask to round the corners.
+        // A Video/VideoOutput with PreserveAspectCrop is cropped on the GPU, and
+        // rendering it through a layer FBO breaks that fill — the clip falls back
+        // to its native aspect and shows thin pillarbox bars. Keep it unlayered.
 
         // Video
         Loader {

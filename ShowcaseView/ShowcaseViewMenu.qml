@@ -1319,7 +1319,7 @@ id: root
                 }
                 width: topRow.tileSz
                 height: topRow.tileSz
-                radius: vpx(6)   // the game tiles' radius (Xbox style)
+                radius: vpx(12)
                 color: selected ? theme.accent : theme.secondary
                 Behavior on color { ColorAnimation { duration: 180; easing.type: Easing.OutCubic } }
                 // Grow from the bottom edge so the bottom stays put. The first (hero) tile
@@ -1341,23 +1341,28 @@ id: root
                 border.color: "#19FFFFFF"
                 anchors.verticalCenter: parent.verticalCenter
 
-                // Glow for a selected platform WITHOUT a background (the accent
-                // filled tile, no frame): the same tight glow the frame uses, here
-                // around the tile itself. Tiles with a frame get theirs from the
-                // frame (ItemBorder xboxStyle, below).
-                Loader {
-                    active: selected && !(isHero || sysBg.status === Image.Ready)
-                            && settings.TileHalo === "Yes"
+                // Xbox-style focus glow, auto-matched to the current Color Layout accent.
+                // The white PNG supplies only the glow SHAPE (alpha); ColorOverlay recolors
+                // it to theme.accent, so it always matches the selected colour. Only the
+                // selected tile's overlay is visible, so a single shader renders at a time.
+                Image {
+                    id: focusHaloSrc
+                    source: "../assets/images/focus_halo.png"
                     anchors.fill: parent
-                    anchors.margins: -vpx(6)
+                    anchors.margins: -(tile.width * 0.0614)
+                    smooth: true
+                    mipmap: false
+                    visible: false
+                }
+                ColorOverlay {
+                    id: focusHalo
+                    anchors.fill: focusHaloSrc
+                    source: focusHaloSrc
+                    color: theme.accent
                     z: -1
-                    sourceComponent: Component {
-                        GlowRing {
-                            frameRadius: tile.radius
-                            glowSize: vpx(6)
-                            visible: !failed
-                        }
-                    }
+                    opacity: (selected && settings.TileHalo === "Yes") ? 0.95 : 0
+                    visible: opacity > 0
+                    Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                 }
 
                 // ── HERO (index 0): resume / last-played screenshot + title ──
@@ -1445,10 +1450,7 @@ id: root
                         if (status === Image.Error && extIdx < exts.length - 1)
                             extIdx = extIdx + 1;       // try next extension
                     }
-                    // Decodes only; sysBgArt below draws it with rounded corners
-                    // (was a per-tile offscreen OpacityMask). Falls back to drawing
-                    // itself, masked, if the corner shader ever fails.
-                    visible: !isHero && status === Image.Ready && sysBgArt.failed
+                    visible: !isHero && status === Image.Ready
                     anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true; smooth: true
@@ -1459,8 +1461,8 @@ id: root
                     // the change, and only when HQ is on.
                     opacity: (status === Image.Ready) ? (selected ? 0.9 : 0.6) : 0
                     Behavior on opacity { enabled: hqFadeIn; NumberAnimation { duration: 180 } }
-                    // Rounded-corner clip just on the image (fallback only)
-                    layer.enabled: !isHero && sysBgArt.failed
+                    // Rounded-corner clip just on the image
+                    layer.enabled: !isHero
                     layer.smooth: true
                     layer.effect: OpacityMask {
                         maskSource: Rectangle {
@@ -1469,16 +1471,6 @@ id: root
                             radius: tile.radius
                         }
                     }
-                }
-
-                RoundedArt {
-                id: sysBgArt
-                    anchors.fill: parent
-                    source: sysBg
-                    crop: true
-                    radius: tile.radius
-                    opacity: sysBg.opacity
-                    visible: !isHero && sysBg.status === Image.Ready && !failed
                 }
 
                 Image {
@@ -1561,16 +1553,42 @@ id: root
                     }
                 }
 
-                // Accent frame: hero when selected; platform when selected AND system
-                // background loaded (platforms without a background keep the accent-fill
-                // look instead). Xbox style, as on the game tiles: a 2-unit gap, a
-                // 2-unit ring and its glow (ItemBorder > GlowRing); also carries the
-                // AnimateHighlight pulse.
-                ItemBorder {
+                // Accent frame: hero when selected; platform when selected AND system background loaded
+                // (platforms without a background keep the current accent-fill look instead)
+                Rectangle {
+                    // Overhang by a pixel: sharing the tile's exact bounds left
+                    // the tile's antialiased corner peeking outside the frame,
+                    // which reads as the old square-ish corner poking through
+                    // at the larger radius. Radius tracks tile.radius so the
+                    // two can't drift apart again.
                     anchors.fill: parent
+                    anchors.margins: -vpx(3)
                     visible: selected && (isHero || sysBg.status === Image.Ready)
-                    xboxStyle: true
-                    artRadius: tile.radius
+                    color: "transparent"
+                    radius: tile.radius + vpx(3)
+                    border.color: theme.accent
+                    border.width: vpx(5)
+                }
+
+                // Animated highlight — flashes the frame white when the AnimateHighlight setting is on
+                Rectangle {
+                    id: highlightPulse
+                    anchors.fill: parent
+                    anchors.margins: -vpx(3)
+                    visible: selected && settings.AnimateHighlight === "Yes"
+                    color: "transparent"
+                    radius: tile.radius + vpx(3)
+                    border.color: "#ffffff"
+                    border.width: vpx(5)
+                    opacity: 0   // start invisible so it can't pop in at peak brightness
+                    SequentialAnimation on opacity {
+                        running: highlightPulse.visible
+                        loops: Animation.Infinite
+                        PropertyAction { target: highlightPulse; property: "opacity"; value: 0 }
+                        NumberAnimation { to: 1; duration: 200 }
+                        NumberAnimation { to: 0; duration: 500 }
+                        PauseAnimation  { duration: 200 }
+                    }
                 }
 
                 MouseArea {
