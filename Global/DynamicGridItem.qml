@@ -125,6 +125,11 @@ id: root
     // through an offscreen layer + OpacityMask. Imported apps keep the layer —
     // their blurred backdrop needs it — and so does every tile if the shader
     // ever fails to compile. The video preview is not part of this tile.
+    // Corner radius of the tile, as on the Xbox dashboard (was 12). The
+    // selection frame stands off it by a 4-unit gap (ItemBorder xboxStyle).
+    readonly property real tileRadius: vpx(6)
+    // How far the Xbox-style frame's outer edge sits outside the tile.
+    readonly property real frameReach: vpx(8)
     readonly property bool fastArt: !isImportedApp
                                     && !artFx.failed
     readonly property bool previewCovering: selected && playVideo
@@ -169,8 +174,11 @@ id: root
         // wide — with no gap. 1.1228 = 1 + 2*0.0614 keeps the same bleed as the
         // system tiles.
         anchors.centerIn: container
-        width:  container.width  * 1.1228
-        height: container.height * 1.1228
+        // Wrapped around the FRAME now (it stands frameReach off the tile),
+        // so the glow starts at the frame's outer edge, as on the Xbox, and
+        // never lights the see-through gap.
+        width:  (container.width  + 2 * frameReach) * 1.1228
+        height: (container.height + 2 * frameReach) * 1.1228
         source: "../assets/images/focus_halo.png"
         smooth: true
         mipmap: false
@@ -239,7 +247,7 @@ id: root
             maskSource: Rectangle {
                 width: container.width
                 height: container.height
-                radius: vpx(12)
+                radius: root.tileRadius
             }
         }
 
@@ -262,18 +270,18 @@ id: root
             Rectangle {
                 visible: root.fastArt
                 anchors { left: parent.left; right: parent.right; top: parent.top }
-                height: parent.height - vpx(12)
+                height: parent.height - root.tileRadius
                 color: "#99000000"
             }
             Item {
                 visible: root.fastArt
                 clip: true
                 anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                height: vpx(12)
+                height: root.tileRadius
                 Rectangle {
                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                    height: vpx(24)
-                    radius: vpx(12)
+                    height: root.tileRadius * 2
+                    radius: root.tileRadius
                     color: "#99000000"
                 }
             }
@@ -449,7 +457,7 @@ id: root
             anchors.fill: screenshot
             source: screenshot
             crop: true
-            radius: vpx(12)
+            radius: root.tileRadius
             inset: vpx(2)
             opacity: screenshot.opacity
             // Only once the image is decoded: with no texture yet, GL samples
@@ -484,14 +492,14 @@ id: root
             anchors.fill: parent
             color: screenshot.source == "" ? theme.secondary : "black"
             opacity: screenshot.source == "" ? 1 : selected ? 0.1 : 0.2
-            radius: root.fastArt ? vpx(12) : 0
+            radius: root.fastArt ? root.tileRadius : 0
         }
 
         Rectangle {
         id: regborder
 
             anchors.fill: parent
-            radius: root.fastArt ? vpx(12) : 0
+            radius: root.fastArt ? root.tileRadius : 0
             color: "transparent"
             border.width: vpx(1)
             border.color: "white"
@@ -505,7 +513,7 @@ id: root
     Rectangle {
         id: favBorder
         anchors.fill: container
-        radius: vpx(12)
+        radius: root.tileRadius
         color: "transparent"
         border.width: vpx(2)
         border.color: theme.accent
@@ -524,7 +532,7 @@ id: root
     Component {
     id: border
 
-        ItemBorder { }
+        ItemBorder { xboxStyle: true; artRadius: root.tileRadius }
     }
 
     // (The old faint under-tile title, permanently hidden, is gone: replaced

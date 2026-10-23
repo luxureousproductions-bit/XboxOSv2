@@ -141,12 +141,10 @@ id: root
         id: videocomponent
 
             anchors.fill: parent
-            anchors.margins: vpx(3)   // Meets the selection frame's INNER edge exactly:
-                                      // the frame overhangs -3 and is 6 wide, so its inner
-                                      // edge sits +3 in. The video's square corners are then
-                                      // hidden well beneath the ring (over 2 units inside its
-                                      // outer curve) — no gap, and no masking of the
-                                      // VideoOutput (which renders black on weak GPUs).
+            anchors.margins: vpx(3)   // 3 inside the rounded plate (videoPlate below), so
+                                      // its square corners sit inside the plate's radius-6
+                                      // curve. No masking of the VideoOutput (which renders
+                                      // black on weak GPUs).
             source: game.assets.videoList.length ? game.assets.videoList[0] : ""
             fillMode: VideoOutput.PreserveAspectCrop
             muted: !root.allowAudio || !root.playbackActive
@@ -182,49 +180,25 @@ id: root
 
     }
 
-    // Shadow around the playing preview.
-    //
-    // It used to take its shape from videocontainer itself: the playing video
-    // was copied into an offscreen texture and blurred on EVERY video frame,
-    // only to keep its outline. The outline is always the same rectangle, so
-    // the shadow is now drawn from a plain plate of exactly the video's size
-    // (the same vpx(3) inset), blurred once and reused (cached). It shows
-    // while the video is on screen, as before. The video is not touched, and
-    // nothing routes it through a texture any more.
     readonly property bool videoShown: videoPreviewLoader.item
                                        ? videoPreviewLoader.item.opacity > 0 : false
-    Item {
-    id: shadowShape
+
+    // Rounded dark plate behind the playing preview, the shape of the game
+    // tile (radius 6, DynamicGridItem.tileRadius). The game tile's selection
+    // frame now stands off the art with a see-through gap (Xbox style), so it
+    // no longer covers the video's edge, and the video itself can't be
+    // rounded (masking a VideoOutput renders black on weak GPUs). Instead the
+    // video sits 3 units inside this plate: its square corners fall 1.76
+    // units inside the plate's curve, so the corners never show and the plate
+    // reads as a thin bezel. (The old drop shadow here is gone: the frame's
+    // glow replaces it, and a shadow would darken the see-through gap.)
+    Rectangle {
+    id: videoPlate
 
         anchors.fill: parent
-        visible: false   // only the shadow below draws it
-        Rectangle {
-            anchors.fill: parent
-            anchors.margins: vpx(3)   // the video's own inset
-            // Rounded like the selection frame (ItemBorder: radius 15 at -3,
-            // 6 wide, so its inner curve is radius 9 at +3). Square corners
-            // blurred into faint dark corners just past the rounded frame on
-            // light backgrounds.
-            radius: vpx(9)
-            color: "#000000"
-        }
-    }
-
-    DropShadow {
-    id: outershadow
-
-        anchors.fill: shadowShape
-        horizontalOffset: 0
-        verticalOffset: 0
-        radius: 20.0
-        samples: 11
+        radius: vpx(6)
         color: "#000000"
-        source: shadowShape
-        cached: true
-        opacity: (selected && root.videoShown) ? 0.5 : 0
-        visible: opacity > 0
-        Behavior on opacity { NumberAnimation { duration: 100 } }
-        z: -5
+        visible: root.videoShown
     }
 
     Item {
