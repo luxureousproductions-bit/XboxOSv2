@@ -209,21 +209,25 @@ id: root
     Component.onDestruction: storeIndices();
 
     Component.onCompleted: {
-        if (api.memory.has("To Game")) {
+        // One key instead of four: each api.memory.set rewrites the whole
+        // settings file.
+        var saved = api.memory.has("Showcase randoms") ? api.memory.get("Showcase randoms") : null;
+        if (fromGame && saved) {
             // Returning from a game launch — restore saved random values so the
             // lists look exactly as the user left them
-            randoPub    = api.memory.get("Showcase randoPub")    || "";
-            randoDev    = api.memory.get("Showcase randoDev")    || "";
-            randoGenre  = api.memory.get("Showcase randoGenre")  || "";
-            randoGenre2 = api.memory.get("Showcase randoGenre2") || "";
+            randoPub    = saved.pub    || "";
+            randoDev    = saved.dev    || "";
+            randoGenre  = saved.genre  || "";
+            randoGenre2 = saved.genre2 || "";
         } else {
             // Fresh startup — persist the property-initializer values so they
             // survive a game launch and can be restored on the way back
-            api.memory.set("Showcase randoPub",    randoPub);
-            api.memory.set("Showcase randoDev",    randoDev);
-            api.memory.set("Showcase randoGenre",  randoGenre);
-            api.memory.set("Showcase randoGenre2", randoGenre2);
+            api.memory.set("Showcase randoms",
+                { pub: randoPub, dev: randoDev, genre: randoGenre, genre2: randoGenre2 });
         }
+        // The four keys older builds used, removed once
+        ["Showcase randoPub", "Showcase randoDev", "Showcase randoGenre", "Showcase randoGenre2"]
+            .forEach(function(k) { if (api.memory.has(k)) api.memory.unset(k); });
     }
     
     anchors.fill: parent

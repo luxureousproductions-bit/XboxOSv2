@@ -4,7 +4,20 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 1)
+## Unreleased — refresh branch (build 2)
+
+### Coming back from a game
+- The theme now remembers where you were by the game itself (system, ROM file and title), not by its position in the library. A rescan, a late SD card or an import can no longer bring you back to the wrong game. If the game is gone, you land on Home instead of an empty details page.
+- Launching now saves one setting instead of ten. Pegasus rewrites the whole settings file on every save, so this was ten full rewrites right before the game started.
+- With instant return (Pegasus X), the any-button return or a cancelled launch, the return info is now cleared. Before, it stayed saved, and the next cold start (even days later) jumped back to that old screen.
+- A failed launch (no launch command, app not installed) now leaves the splash right away instead of waiting for a button press.
+- Games you'd stepped through before launching (Back history) now come back correctly. They used to be saved in a form that couldn't be restored.
+
+### Smaller settings file
+- RetroAchievements system lists are saved in a compact form, keeping only games that have achievements. A full list could be several MB, and it made every setting change slower. Lists saved by older builds are shrunk the first time they're used.
+- The Home screen's random rows save one setting instead of four.
+
+## Build 1
 
 ### Game details
 - The **RetroAchievements** button only shows when the game has achievements, the same way the **Manual** button only shows when a manual exists. It also hides when RA isn't set up in Settings.

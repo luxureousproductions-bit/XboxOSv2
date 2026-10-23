@@ -580,25 +580,41 @@ id: root
         return u !== "" && k !== "";
     }
 
+    // Keeps only what the lookup uses (ID, title, count) and only games
+    // that have achievements. A full RA console list is up to a few MB, and
+    // it lives in the theme's settings file, which Pegasus rewrites in full
+    // on EVERY setting change, so a big list slowed every save.
     function _storeList(consoleID, list) {
         var arr = Array.isArray(list) ? list
                 : Object.keys(list || {}).map(function(k){ return list[k]; });
-        var counts = {};
+        var compact = [], counts = {};
         for (var i = 0; i < arr.length; i++) {
             var id = parseInt(arr[i].ID) || parseInt(arr[i].GameID) || 0;
-            if (id > 0) counts[id] = (arr[i].NumAchievements === undefined)
-                                     ? 1 : (parseInt(arr[i].NumAchievements) || 0);
+            if (id <= 0) continue;
+            var n = (arr[i].NumAchievements === undefined) ? 1 : (parseInt(arr[i].NumAchievements) || 0);
+            if (n <= 0) continue;
+            compact.push({ ID: id, Title: arr[i].Title || "", NumAchievements: n });
+            counts[id] = n;
         }
-        _lists[consoleID]  = arr;
+        _lists[consoleID]  = compact;
         _counts[consoleID] = counts;
+        return compact;
     }
 
     function _listFor(consoleID) {
         if (_lists[consoleID]) return _lists[consoleID];
         var key = "raList_" + consoleID;
         if (!api.memory.has(key)) return null;
-        try { _storeList(consoleID, JSON.parse(api.memory.get(key))); }
-        catch (e) { return null; }
+        var v = api.memory.get(key);
+        try {
+            if (typeof v === "string") {
+                // Saved by an older build: full list as JSON text. Shrink it
+                // once and save it back in the compact form.
+                api.memory.set(key, _storeList(consoleID, JSON.parse(v)));
+            } else {
+                _storeList(consoleID, v);
+            }
+        } catch (e) { return null; }
         return _lists[consoleID];
     }
 
@@ -645,9 +661,8 @@ id: root
         raRequest("GetGameList", "i=" + consoleID,
             function(resp) {
                 _fetching[consoleID] = false;
-                api.memory.set(cacheKey, JSON.stringify(resp));
+                api.memory.set(cacheKey, _storeList(consoleID, resp));
                 api.memory.set(cacheTime, started.toString());
-                _storeList(consoleID, resp);
                 _hits = ({});
                 listsEpoch++;
             },
@@ -727,12 +742,11 @@ id: root
             "i=" + consoleID,
             function(resp) {
                 lookupInProgress = false;
-                api.memory.set(cacheKey, JSON.stringify(resp));
+                api.memory.set(cacheKey, _storeList(consoleID, resp));
                 api.memory.set(cacheTime, capturedNow.toString());
-                _storeList(consoleID, resp);
                 _hits = ({});
                 listsEpoch++;
-                var found       = findGameInList(capturedTitle, resp);
+                var found       = findGameInList(capturedTitle, _lists[consoleID]);
                 pendingGameID   = found;
                 lookupStatusMsg = found > 0 ? "" : "No Retro Achievements found for this game";
             },

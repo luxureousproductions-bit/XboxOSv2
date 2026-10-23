@@ -1043,36 +1043,85 @@ id: root
         launchDelay.restart();
     }
 
-    // Save current states for returning from game
-    function saveCurrentState(game) {
-        api.memory.set('savedState', root.state);
-        api.memory.set('savedCollection', currentCollectionIndex);
-        api.memory.set('lastState', JSON.stringify(lastState));
-        api.memory.set('lastGame', JSON.stringify(lastGame));
-        api.memory.set('storedHomePrimaryIndex', storedHomePrimaryIndex);
-        api.memory.set('storedHomeSecondaryIndex', storedHomeSecondaryIndex);
-        api.memory.set('storedCollectionIndex', currentCollectionIndex);
-        api.memory.set('storedCollectionGameIndex', storedCollectionGameIndex);
-
-        const savedGameIndex = api.allGames.toVarArray().findIndex(g => g === game);
-        api.memory.set('savedGame', savedGameIndex);
-
-        api.memory.set('To Game', 'True');
+    // ── Return from a game ────────────────────────────────────────────────
+    // Everything needed to come back to the same screen is saved as ONE
+    // memory key, "Resume", written once at launch. It used to be ten keys:
+    // every api.memory.set rewrites the whole settings file, so a launch
+    // cost ten full rewrites right before the game started. Games are saved
+    // by identity (system + ROM path + title), not by their position in the
+    // library, so a rescan, a late SD card or an import can't bring you back
+    // to the wrong game.
+    function gameKey(g) {
+        if (!g) return null;
+        var c = (g.collections && g.collections.count > 0) ? g.collections.get(0).shortName : "";
+        var p = (g.files && g.files.count > 0) ? (g.files.get(0).path || "") : "";
+        return { c: c, p: p, t: g.title || "" };
     }
 
-    // Handle loading settings when returning from a game
-    property bool fromGame: api.memory.has('To Game');
-    function returnedFromGame() {
-        lastState                   = JSON.parse(api.memory.get('lastState'));
-        lastGame                    = JSON.parse(api.memory.get('lastGame'));
-        currentCollectionIndex      = api.memory.get('savedCollection');
-        storedHomePrimaryIndex      = api.memory.get('storedHomePrimaryIndex');
-        storedHomeSecondaryIndex    = api.memory.get('storedHomeSecondaryIndex');
-        currentCollectionIndex      = api.memory.get('storedCollectionIndex');
-        storedCollectionGameIndex   = api.memory.get('storedCollectionGameIndex');
+    // Finds the games for a list of keys in one pass over the library.
+    function resolveGameKeys(keys) {
+        var out = [], want = 0;
+        for (var k = 0; k < keys.length; k++) { out.push(null); if (keys[k]) want++; }
+        for (var i = 0; i < api.allGames.count && want > 0; i++) {
+            var g = api.allGames.get(i);
+            for (var j = 0; j < keys.length; j++) {
+                var key = keys[j];
+                if (!key || out[j] || g.title !== key.t) continue;
+                var gk = gameKey(g);
+                if (gk.p === key.p && gk.c === key.c) { out[j] = g; want--; }
+            }
+        }
+        return out;
+    }
 
-        currentGame                 = api.allGames.get(api.memory.get('savedGame'));
-        root.state                  = api.memory.get('savedState');
+    function saveCurrentState(game, fromDrawer) {
+        api.memory.set('Resume', {
+            v: 1,
+            state: root.state,
+            lastState: lastState.slice(),
+            lastGame: lastGame.map(gameKey),
+            game: gameKey(game),
+            collection: currentCollectionIndex,
+            homePrimary: storedHomePrimaryIndex,
+            homeSecondary: storedHomeSecondaryIndex,
+            collectionGame: storedCollectionGameIndex,
+            fromDrawer: !!fromDrawer
+        });
+    }
+
+    // Pegasus is still running (instant return, the "press any button"
+    // fallback, a cancelled splash or a failed launch): nothing to restore.
+    // Without this the key outlived the session and the NEXT cold start,
+    // possibly days later, jumped back to that old screen.
+    function clearResume() {
+        if (api.memory.has('Resume')) api.memory.unset('Resume');
+    }
+
+    // Read once at startup (api.memory.has isn't a live binding).
+    readonly property bool fromGame: api.memory.has('Resume')
+    function returnedFromGame() {
+        var r = api.memory.get('Resume');
+        api.memory.unset('Resume');
+        if (!r || r.v !== 1) return;
+
+        var keys = [r.game].concat(r.lastGame || []);
+        var games = resolveGameKeys(keys);
+
+        lastState                 = r.lastState || [];
+        lastGame                  = games.slice(1).filter(function(g) { return g !== null; });
+        storedHomePrimaryIndex    = r.homePrimary || 0;
+        storedHomeSecondaryIndex  = r.homeSecondary || 0;
+        currentCollectionIndex    = r.collection || 0;
+        storedCollectionGameIndex = r.collectionGame || 0;
+        if (games[0]) currentGame = games[0];
+        root.state                = r.state || "showcasescreen";
+
+        // The game is gone (removed, or its SD card isn't mounted): don't
+        // land on a details page with no game behind it.
+        if (!games[0] && root.state === "gameviewscreen") {
+            lastState = [];
+            root.state = "showcasescreen";
+        }
 
         // savedState is "launchgamescreen" (the splash was on-screen at launch).
         // On reload-type devices we land back on the splash, so redirect to the
@@ -1087,26 +1136,22 @@ id: root
         }
 
         // Launched from the app drawer: always land on the Showcase, whatever
-        // screen it was opened from. Checked after the redirect above so it
-        // wins over the restored state.
-        if (api.memory.has('From App Drawer')) {
+        // screen it was opened from.
+        if (r.fromDrawer) {
             lastState  = ["showcasescreen"];
             root.state = "showcasescreen";
-            api.memory.unset('From App Drawer');
         }
+    }
 
-        // Remove these from memory so as to not clog it up
-        api.memory.unset('savedState');
-        api.memory.unset('savedGame');
-        api.memory.unset('lastState');
-        api.memory.unset('lastGame');
-        api.memory.unset('storedHomePrimaryIndex');
-        api.memory.unset('storedHomeSecondaryIndex');
-        api.memory.unset('storedCollectionIndex');
-        api.memory.unset('storedCollectionGameIndex');
-
-        // Remove this one so we only have it when we come back from the game and not at Pegasus launch
-        api.memory.unset('To Game');
+    // Older builds saved ten separate keys (and "To Game"). Removed once,
+    // without restoring from them: if they're still here they're stale.
+    function dropLegacyResumeKeys() {
+        if (!api.memory.has('To Game') && !api.memory.has('savedState')) return;
+        ['To Game', 'savedState', 'savedGame', 'savedCollection', 'lastState', 'lastGame',
+         'storedHomePrimaryIndex', 'storedHomeSecondaryIndex', 'storedCollectionIndex',
+         'storedCollectionGameIndex', 'From App Drawer'].forEach(function(k) {
+            if (api.memory.has(k)) api.memory.unset(k);
+        });
     }
 
     // Theme settings
@@ -1670,8 +1715,7 @@ id: root
         // there — the stack emptied and the next cancel had nothing to return
         // to, leaving the launch to go ahead anyway.
         launchGameScreen();
-        saveCurrentState(game);
-        api.memory.set('From App Drawer', 'True');
+        saveCurrentState(game, true);   // comes back to the Showcase
         launchDelay.restart();
     }
 
@@ -1688,10 +1732,10 @@ id: root
 
     function previousScreen() {
         playBack();
-        // A cancelled drawer launch never returns, so clear the flag here or a
-        // later, unrelated return would be redirected to the Showcase.
-        if (api.memory.has('From App Drawer'))
-            api.memory.unset('From App Drawer');
+        // Leaving the launch splash with Pegasus still running (instant
+        // return, any-button fallback, cancelled launch): nothing to resume.
+        if (state === "launchgamescreen")
+            clearResume();
 
         // B on the RA lookup page after an RA search pick. That entry doesn't
         // push onto lastState (see raEntryScreenFromSearch), so popping here
@@ -1756,6 +1800,7 @@ id: root
         rebuildHomeHide();      // first fill, before the Home rows filter
         root.state = "showcasescreen";
 
+        dropLegacyResumeKeys();
         if (fromGame)
             returnedFromGame();
 
@@ -1928,6 +1973,18 @@ id: root
                 root.launchSuspended = false;
                 previousScreen();
             }
+        }
+    }
+
+    // A launch that fails (app not installed, bad launch command) never
+    // leaves Pegasus: drop the resume key and leave the splash. Pegasus
+    // shows its own error dialog on top.
+    Connections {
+        target: api
+        onEventLaunchError: {
+            if (root.state !== "launchgamescreen") return;
+            launchDelay.stop();
+            previousScreen();
         }
     }
 
