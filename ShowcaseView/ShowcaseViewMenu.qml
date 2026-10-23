@@ -499,7 +499,7 @@ id: root
         visible: false
         asynchronous: true
         property string basePath: ""
-        property var exts: [".png", ".jpg", ".jpeg", ".webp"]
+        property var exts: [".webp", ".png", ".jpg", ".jpeg"]
         property int extIdx: 0
         // Pegasus X: a background set for the collection itself (Settings >
         // Edit metadata) is one exact file, no extensions to try
@@ -1339,7 +1339,9 @@ id: root
                 z: selected ? 1 : 0
                 border.width: vpx(1)
                 border.color: "#19FFFFFF"
-                anchors.verticalCenter: parent.verticalCenter
+                // Delegates lose their parent while being recycled; guarded so
+                // that doesn't throw (it threw ~60 times per Home scroll).
+                anchors.verticalCenter: parent ? parent.verticalCenter : undefined
 
                 // Xbox-style focus glow, auto-matched to the current Color Layout accent.
                 // The white PNG supplies only the glow SHAPE (alpha); ColorOverlay recolors
@@ -1443,7 +1445,7 @@ id: root
                 id: sysBg
                     property string basePath: (!isHero && coll)
                         ? "../assets/images/systembackground/" + Utils.processPlatformName(coll.shortName) : ""
-                    property var exts: [".png", ".jpg", ".jpeg", ".webp"]
+                    property var exts: [".webp", ".png", ".jpg", ".jpeg"]
                     property int extIdx: 0
                     onBasePathChanged: extIdx = 0      // reset when tile recycles to a new system
                     onStatusChanged: {
@@ -1454,6 +1456,7 @@ id: root
                     anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true; smooth: true
+                    sourceSize: Qt.size(Math.round(topRow.tileSz * topRow.growScale), Math.round(topRow.tileSz * topRow.growScale))
                     readonly property string customBg: (!isHero && coll) ? customSystemBackground(coll) : ""
                     source: customBg !== "" ? customBg : (basePath !== "" ? basePath + exts[extIdx] : "")
                     // HQ: dissolve in once decoded instead of snapping. The

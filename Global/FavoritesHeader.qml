@@ -276,13 +276,13 @@ id: root
                 id: retryStart
                     interval: 700
                     onTriggered: {
-                        if (!shouldPlay || retries >= 3) return;
-                        retries += 1;
-                        retrying = true;
-                        var src = source;
-                        source = "";
-                        source = src;          // onSourceChanged restarts it
-                        retrying = false;
+                        if (!fallbackVideo.shouldPlay || fallbackVideo.retries >= 3) return;
+                        fallbackVideo.retries += 1;
+                        fallbackVideo.retrying = true;
+                        var src = fallbackVideo.source;
+                        fallbackVideo.source = "";
+                        fallbackVideo.source = src;          // onSourceChanged restarts it
+                        fallbackVideo.retrying = false;
                     }
                 }
                 onErrorChanged: if (error !== MediaPlayer.NoError) retryStart.restart()

@@ -345,7 +345,7 @@ id: root
                     anchors.centerIn: parent
                     width:  parent.width  * 1.4
                     height: parent.height * 1.4
-                    source: root.appIconArt
+                    source: root.isImportedApp ? root.appIconArt : ""
                     // Decoded small: it's about to be blurred past any detail,
                     // and the upscale softens it further.
                     sourceSize { width: hqAppBlurSrcPx; height: hqAppBlurSrcPx }
@@ -403,7 +403,7 @@ id: root
                     // blown past the frame to fill the rounded square.
                     width:  parent.width  * 1.45
                     height: parent.height * 1.45
-                    source: root.appIconArt
+                    source: root.isImportedApp ? root.appIconArt : ""
                     sourceSize { width: hqMode ? 384 : 256; height: hqMode ? 384 : 256 }
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
@@ -436,7 +436,7 @@ id: root
             // above the cap. A 240px grid tile no longer decodes 512/1024px.
             readonly property int decodePx: Math.max(96, Math.min(hqTileArtPx, Math.round(Math.max(root.width, root.height) * hqTileDecodeScale)))
             sourceSize { width: decodePx; height: decodePx }
-            smooth: false
+            smooth: true
             asynchronous: true
             Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 200 } }
         }

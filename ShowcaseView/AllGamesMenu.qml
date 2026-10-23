@@ -611,7 +611,8 @@ id: root
 
     Component.onCompleted: {
         currentHelpbarModel     = allGamesHelpModel;
-        currentCustomCollection = listAllGames.collection;
+        // (A write to the never-declared currentCustomCollection used to sit
+        // here; it threw, so nothing below it ever ran.)
         restoreSelection();   // restore the row we were on (if the model is ready)
         settledGame = currentGame;   // show the persisted game's art right away
     }
@@ -1705,7 +1706,7 @@ id: root
                     if (y < contentY) contentY = Math.min(y, maxY);
                     else if (y + vpx(52) > contentY + height) contentY = Math.min(y + vpx(52) - height, maxY);
                 }
-                Connections { target: root; function onListRowChanged() { rowFlick.keepRowVisible(); } }
+                Connections { target: root; onListRowChanged: rowFlick.keepRowVisible() }
                 onContentHeightChanged: { contentY = 0; keepRowVisible(); }   // row set swapped (view flip)
             Column {
             id: rowCol
@@ -1816,7 +1817,7 @@ id: root
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\uD83D\uDD0D"; font.pixelSize: fpx(15); width: vpx(22)
-                        color: "white"; opacity: onRow ? 1 : 0.6
+                        color: "white"; opacity: parent.onRow ? 1 : 0.6
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
@@ -1824,9 +1825,9 @@ id: root
                               ? (nameFilter === "" ? "Type a name\u2026" : nameFilter)
                               : (nameFilter === "" ? "Name: (no filter)" : "Name: " + nameFilter)
                         color: "white"
-                        opacity: onRow ? 1 : 0.85
+                        opacity: parent.onRow ? 1 : 0.85
                         elide: Text.ElideRight
-                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: onRow
+                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: parent.onRow
                     }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 0; activateSearch(); } }
                 }
@@ -1841,7 +1842,7 @@ id: root
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\u2630"; font.pixelSize: fpx(15); width: vpx(22)
-                        color: "white"; opacity: onRow ? 1 : 0.6
+                        color: "white"; opacity: parent.onRow ? 1 : 0.6
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(46); right: arrow.left; rightMargin: vpx(8); verticalCenter: parent.verticalCenter }
@@ -1849,15 +1850,15 @@ id: root
                              : genreSelected.length === 1 ? "Genre: " + genreSelected[0]
                              : "Genre: " + genreSelected.length + " selected"
                         color: "white"
-                        opacity: onRow ? 1 : 0.85
+                        opacity: parent.onRow ? 1 : 0.85
                         elide: Text.ElideRight
-                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: onRow
+                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: parent.onRow
                     }
                     Text {
                         id: arrow
                         anchors { right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\u25B8"; color: "white"
-                        opacity: onRow ? 1 : 0.6; font.pixelSize: fpx(18)
+                        opacity: parent.onRow ? 1 : 0.6; font.pixelSize: fpx(18)
                     }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 1; openGenrePicker(); } }
                 }
@@ -1904,21 +1905,21 @@ id: root
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\u25A4"; font.pixelSize: fpx(15); width: vpx(22)
-                        color: "white"; opacity: onRow ? 1 : 0.6
+                        color: "white"; opacity: parent.onRow ? 1 : 0.6
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(46); right: sysArrow.left; rightMargin: vpx(8); verticalCenter: parent.verticalCenter }
                         text: systemIndex < 0 ? "System: ALL" : "System: " + systemFilter
                         color: "white"
-                        opacity: onRow ? 1 : 0.85
+                        opacity: parent.onRow ? 1 : 0.85
                         elide: Text.ElideRight
-                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: onRow
+                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: parent.onRow
                     }
                     Text {
                         id: sysArrow
                         anchors { right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\u25B8"; color: "white"
-                        opacity: onRow ? 1 : 0.6; font.pixelSize: fpx(18)
+                        opacity: parent.onRow ? 1 : 0.6; font.pixelSize: fpx(18)
                     }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 2; openSystemPicker(); } }
                 }
@@ -2254,7 +2255,6 @@ id: root
             // Covers focus arriving before the model has populated; once it
             // does, currentIsImportedApp changes and refreshes this again.
             refreshHelpbar();
-            currentCustomCollection = listAllGames.collection;
             // Returning from game details: re-center the list on the current game
             restoreViewTimer.restart();
         }

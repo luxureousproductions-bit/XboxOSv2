@@ -28,6 +28,7 @@ import "GameDetails"
 import "ShowcaseView"
 import "Settings"
 import "utils.js" as Utils
+import "buildinfo.js" as BuildInfo
 
 FocusScope {
 id: root
@@ -1735,6 +1736,15 @@ id: root
 
     // Set default state to the platform screen
     Component.onCompleted: { 
+        // First line in lastrun.log from the theme: which build, and which
+        // Pegasus features it found. Stock Pegasus shows "stock".
+        var fi = (typeof api.frontendInfo !== "undefined" && api.frontendInfo) ? api.frontendInfo : null;
+        console.log("[XboxOSv2] build " + BuildInfo.build + " (" + BuildInfo.branch + ", " + BuildInfo.date + ")"
+            + " | frontend: " + (fi ? (fi.name + " " + (fi.version || "") + (fi.build ? " build " + fi.build : "")) : "stock")
+            + " | pdf: " + (typeof api.pdfPageCount === "function" ? "yes" : "no")
+            + " | findManual: " + (typeof api.findManual === "function" ? "yes" : "no")
+            + " | " + Qt.platform.os + " " + width + "x" + height
+            + " | HQ: " + (hqMode ? "on" : "off"));
         // "Gradient" is no longer a color option. Clear it if it was saved, so
         // Settings shows the default color instead of the last one in the list.
         ["Color Background", "Color Layout"].forEach(function(k) {
@@ -1811,6 +1821,10 @@ id: root
         readonly property bool shown: (root.state === "showcasescreen")
         focus: shown
         opacity: shown ? 1 : 0
+        // Hidden once faded out: the Home screen stays loaded under every
+        // other screen, and while "visible" its pulses, marquees and
+        // bindings kept running (and redrawing) behind them.
+        visible: shown || opacity > 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
@@ -2348,7 +2362,7 @@ id: root
     // caught — but the collection dump is worth one more run to confirm which
     // collection the Android apps provider creates once it's enabled.
     property bool logKeys: false
-    property bool logCollections: true
+    property bool logCollections: false
 
     Keys.onPressed: {
         if (event.isAutoRepeat) return;

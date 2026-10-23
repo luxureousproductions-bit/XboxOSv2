@@ -245,7 +245,7 @@ id: root
             Behavior on opacity { enabled: !reduceMotion && hqFadeIn; NumberAnimation { duration: 180 } }
             source: artArmed ? boxArt(gameData) : ""
             sourceSize { width: root.width; height: root.height }
-            smooth: false
+            smooth: true
             fillMode: Image.PreserveAspectFit
 
             // Rounded corners on the painted box, same radius as the dynamic

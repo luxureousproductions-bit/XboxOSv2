@@ -59,7 +59,7 @@ id: root
             //opacity: selected ? 1 : 0.2
             Behavior on opacity { NumberAnimation { duration: 100 } }
             scale: (selected ? 1.2 : 1) * togglePop
-            Behavior on scale { enabled: !togglePopping; NumberAnimation { duration: 100 } }
+            Behavior on scale { enabled: !buttonicon.togglePopping; NumberAnimation { duration: 100 } }
 
             // Pop bounce whenever the icon itself changes (e.g. favorite pin
             // toggling between outline/filled) — kept as a separate multiplier

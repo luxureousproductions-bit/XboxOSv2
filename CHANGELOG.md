@@ -4,6 +4,27 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
+## Unreleased — refresh branch (build 1)
+
+### Game details
+- The **RetroAchievements** button only shows when the game has achievements, the same way the **Manual** button only shows when a manual exists. It also hides when RA isn't set up in Settings.
+- Manuals are looked up only when Game details opens, and once per game. Before, the lookup ran in the background on every move on the Home screen.
+
+### Fixes
+- All Games now returns to the row you were on, as intended. An error had been stopping that code from running.
+- The Filters panel dims the rows you're not on and bolds the one you are on, as designed.
+- The Home featured video retries if it fails to start. The retry had never worked.
+- Fixed about 60 errors per Home scroll that were written to `lastrun.log`.
+
+### Performance
+- System logos are resized to fit how big they're shown (5.9 MB → 3.2 MB), and the platform page logo loads without blocking.
+- Tile art is smoothed when scaled down, which looks cleaner and costs no extra time.
+- The Home screen stops animating behind other screens.
+- The `lastrun.log` collection dump is off by default.
+
+### Logging
+- The first theme line in `lastrun.log` now shows the theme build number and which Pegasus features were found (Pegasus X or stock, PDF, manual lookup), plus the OS, resolution and HQ mode.
+
 ## October 13, 2026 — Search & App Drawer update
 
 ### New: Library Search

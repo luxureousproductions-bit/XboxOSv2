@@ -561,6 +561,99 @@ id: root
         return 0;
     }
 
+    // ── Quick check for the Game details RA button ────────────────────────
+    // The button only shows when the game really has achievements, the same
+    // way the Manual button only shows when a manual exists. No network on
+    // this path: it answers from the console lists already saved by the RA
+    // lookup, parsed once per session (re-parsing a big console list on
+    // every details open would stall the open).
+    property var _lists: ({})       // consoleID -> parsed game list
+    property var _counts: ({})      // consoleID -> { gameID: achievement count }
+    property var _hits: ({})        // consoleID|title -> gameID (0 = none)
+    property var _fetching: ({})    // consoleID -> true while a list download runs
+    // Bumped when a list arrives, so bindings that asked before re-ask.
+    property int listsEpoch: 0
+
+    function hasCredentials() {
+        var u = api.memory.has("RA Username") ? ("" + api.memory.get("RA Username")) : "";
+        var k = api.memory.has("RA API Key")  ? ("" + api.memory.get("RA API Key"))  : "";
+        return u !== "" && k !== "";
+    }
+
+    function _storeList(consoleID, list) {
+        var arr = Array.isArray(list) ? list
+                : Object.keys(list || {}).map(function(k){ return list[k]; });
+        var counts = {};
+        for (var i = 0; i < arr.length; i++) {
+            var id = parseInt(arr[i].ID) || parseInt(arr[i].GameID) || 0;
+            if (id > 0) counts[id] = (arr[i].NumAchievements === undefined)
+                                     ? 1 : (parseInt(arr[i].NumAchievements) || 0);
+        }
+        _lists[consoleID]  = arr;
+        _counts[consoleID] = counts;
+    }
+
+    function _listFor(consoleID) {
+        if (_lists[consoleID]) return _lists[consoleID];
+        var key = "raList_" + consoleID;
+        if (!api.memory.has(key)) return null;
+        try { _storeList(consoleID, JSON.parse(api.memory.get(key))); }
+        catch (e) { return null; }
+        return _lists[consoleID];
+    }
+
+    // >0: the RA game ID (game has achievements), 0: none or RA not set up,
+    // -1: not known yet (this console's list hasn't been downloaded).
+    function quickGameId(title, shortName) {
+        if (!title || !hasCredentials()) return 0;
+
+        // Recently played on RA: known without any list
+        var normTitle = normalizeTitle(title);
+        for (var r = 0; r < raRecentGames.count; r++) {
+            var entry = raRecentGames.get(r);
+            if (normalizeTitle(entry.Title) === normTitle) return entry.GameID;
+        }
+
+        var consoleID = consoleMappings[(shortName || "").toLowerCase()] || 0;
+        if (!consoleID) return 0;
+        var list = _listFor(consoleID);
+        if (!list) return -1;
+
+        var hitKey = consoleID + "|" + normTitle;
+        if (_hits[hitKey] === undefined) {
+            var id = findGameInList(title, list);
+            _hits[hitKey] = (id > 0 && (_counts[consoleID][id] || 0) > 0) ? id : 0;
+        }
+        return _hits[hitKey];
+    }
+
+    // Downloads a console's list in the background when it's missing or
+    // older than a day, so the button can appear. One download per console
+    // at a time; failures are silent (the button just stays hidden).
+    function prefetchList(shortName) {
+        if (!hasCredentials()) return;
+        var consoleID = consoleMappings[(shortName || "").toLowerCase()] || 0;
+        if (!consoleID || _fetching[consoleID]) return;
+        var cacheKey  = "raList_" + consoleID;
+        var cacheTime = "raListTime_" + consoleID;
+        if (api.memory.has(cacheKey) && api.memory.has(cacheTime)
+                && (Date.now() - parseFloat(api.memory.get(cacheTime))) < 24 * 60 * 60 * 1000)
+            return;
+        if (!raUserName || !raApiKey) reload();
+        _fetching[consoleID] = true;
+        var started = Date.now();
+        raRequest("GetGameList", "i=" + consoleID,
+            function(resp) {
+                _fetching[consoleID] = false;
+                api.memory.set(cacheKey, JSON.stringify(resp));
+                api.memory.set(cacheTime, started.toString());
+                _storeList(consoleID, resp);
+                _hits = ({});
+                listsEpoch++;
+            },
+            function() { _fetching[consoleID] = false; });
+    }
+
     // ── Game lookup (Pegasus game → RA game ID) ───────────────────────────
     // Uses recently-played cache as fast path, then per-console game list
     // (cached in api.memory for 24 hours to minimise Android network traffic).
@@ -613,7 +706,8 @@ id: root
         if (api.memory.has(cacheKey) && api.memory.has(cacheTime)
                 && (now - parseFloat(api.memory.get(cacheTime))) < ttl) {
             try {
-                var cached = JSON.parse(api.memory.get(cacheKey));
+                var cached = _listFor(consoleID);    // parsed once per session
+                if (!cached) throw "bad list";
                 var hit    = findGameInList(title, cached);
                 pendingGameID   = hit;
                 lookupStatusMsg = hit > 0 ? "" : "No Retro Achievements found for this game";
@@ -635,6 +729,9 @@ id: root
                 lookupInProgress = false;
                 api.memory.set(cacheKey, JSON.stringify(resp));
                 api.memory.set(cacheTime, capturedNow.toString());
+                _storeList(consoleID, resp);
+                _hits = ({});
+                listsEpoch++;
                 var found       = findGameInList(capturedTitle, resp);
                 pendingGameID   = found;
                 lookupStatusMsg = found > 0 ? "" : "No Retro Achievements found for this game";

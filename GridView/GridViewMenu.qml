@@ -420,7 +420,8 @@ id: root
             fillMode: Image.PreserveAspectFit
             source: list.collection ? systemLogoSource(list.collection) : ""
             smooth: true
-            asynchronous: false
+            sourceSize.height: Math.round(height * 2)
+            asynchronous: true
             cache: true
             visible: status === Image.Ready
             MouseArea { anchors.fill: parent; onClicked: previousScreen(); }
@@ -1026,7 +1027,7 @@ id: root
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\uD83D\uDD0D"; font.pixelSize: fpx(15); width: vpx(22)
-                        color: "white"; opacity: onRow ? 1 : 0.6
+                        color: "white"; opacity: parent.onRow ? 1 : 0.6
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
@@ -1034,9 +1035,9 @@ id: root
                               ? (searchTerm === "" ? "Type a name\u2026" : searchTerm)
                               : (searchTerm === "" ? "Name: (no filter)" : "Name: " + searchTerm)
                         color: "white"
-                        opacity: onRow ? 1 : 0.85
+                        opacity: parent.onRow ? 1 : 0.85
                         elide: Text.ElideRight
-                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: onRow
+                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: parent.onRow
                     }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 0; activateSearch(); } }
                 }
@@ -1051,7 +1052,7 @@ id: root
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\u2630"; font.pixelSize: fpx(15); width: vpx(22)
-                        color: "white"; opacity: onRow ? 1 : 0.6
+                        color: "white"; opacity: parent.onRow ? 1 : 0.6
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(46); right: gvArrow.left; rightMargin: vpx(8); verticalCenter: parent.verticalCenter }
@@ -1059,15 +1060,15 @@ id: root
                              : genreSelected.length === 1 ? "Genre: " + genreSelected[0]
                              : "Genre: " + genreSelected.length + " selected"
                         color: "white"
-                        opacity: onRow ? 1 : 0.85
+                        opacity: parent.onRow ? 1 : 0.85
                         elide: Text.ElideRight
-                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: onRow
+                        font.family: subtitleFont.name; font.pixelSize: fpx(20); font.bold: parent.onRow
                     }
                     Text {
                         id: gvArrow
                         anchors { right: parent.right; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
                         text: "\u25B8"; color: "white"
-                        opacity: onRow ? 1 : 0.6; font.pixelSize: fpx(18)
+                        opacity: parent.onRow ? 1 : 0.6; font.pixelSize: fpx(18)
                     }
                     MouseArea { anchors.fill: parent; onClicked: { filterRow = 1; openGenrePicker(); } }
                 }

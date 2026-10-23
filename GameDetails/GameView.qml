@@ -184,7 +184,7 @@ id: root
         currentHelpbarModel = gameviewHelpModel;
     }
 
-    onGameChanged: reset();
+    onGameChanged: { reset(); scheduleExtras(); }
 
     // Pre-computed media list for this game; used by both the strip and the full-screen viewer.
     // Binding to `game` means it is computed once per game change instead of twice.
@@ -203,7 +203,47 @@ id: root
     //      subfolder also <folder name>.pdf / <folder name>/<folder name>.pdf
     //   4. <dir>/media/manuals/<game title>.pdf
     // Each step tries media/manuals, media/manual and plain manuals.
-    readonly property string manualPath: game ? findManual(game) : ""
+    //
+    // Only looked up while Game details is on screen, and once per game per
+    // session. This screen stays loaded with `game` following the Home
+    // cursor, so a binding here ran the whole lookup (file opens, often on
+    // the SD card) on every Home move.
+    property string manualPath: ""
+    property var manualCache: ({})
+
+    // RetroAchievements game ID when this game has achievements, else 0 (or
+    // -1 while its console list hasn't been downloaded). Same rule as the
+    // Manual button: no achievements, no button.
+    property int raGameId: 0
+
+    readonly property bool extrasWanted: !!game && gameviewloader.shown
+    onExtrasWantedChanged: scheduleExtras()
+
+    function scheduleExtras() {
+        manualPath = "";
+        raGameId = 0;
+        if (extrasWanted) Qt.callLater(resolveExtras);
+    }
+
+    function resolveExtras() {
+        if (!extrasWanted) return;
+        var files = (game.files && game.files.count > 0) ? (game.files.get(0).path || "") : "";
+        var key = files !== "" ? files : (collectionShortName + "|" + game.title);
+        if (manualCache[key] === undefined) manualCache[key] = findManual(game);
+        manualPath = manualCache[key];
+        refreshRa();
+    }
+
+    function refreshRa() {
+        if (!extrasWanted) return;
+        raGameId = cheevosData.quickGameId(game.title, collectionShortName);
+        if (raGameId < 0) cheevosData.prefetchList(collectionShortName);
+    }
+
+    Connections {
+        target: cheevosData
+        onListsEpochChanged: refreshRa()
+    }
 
     function localPath(url) {
         var p = url ? String(url) : "";
@@ -280,6 +320,10 @@ id: root
             }
         }
 
+        // Pegasus X with findManual: one native call that only checks the
+        // files exist (no PDF parsing)
+        if (typeof api.findManual === "function")
+            return api.findManual(candidates) || "";
         for (var c = 0; c < candidates.length; c++) {
             if (api.pdfPageCount(candidates[c]) > 0) return candidates[c];
         }
@@ -1085,7 +1129,10 @@ id: root
         Button {
         id: button5
 
-            width: height
+            // Only when this game has achievements (see raGameId); hidden
+            // the same way as the Manual button.
+            visible: raGameId > 0
+            width: visible ? height : -menu.spacing
             icon: "../assets/images/trophy.svg"
             iconPadding: vpx(22)
             height: parent.height
@@ -1155,13 +1202,15 @@ id: root
             orientation: ListView.Horizontal
             spacing: vpx(10)
             keyNavigationWraps: true
+            // Hidden buttons (Manual, Achievements) are skipped; a loop, since
+            // both can be hidden side by side.
             Keys.onLeftPressed: {
                 playNav(); decrementCurrentIndex();
-                if (currentItem && !currentItem.visible) decrementCurrentIndex();   // hidden Manual button
+                for (var i = 0; i < count && currentItem && !currentItem.visible; i++) decrementCurrentIndex();
             }
             Keys.onRightPressed: {
                 playNav(); incrementCurrentIndex();
-                if (currentItem && !currentItem.visible) incrementCurrentIndex();
+                for (var j = 0; j < count && currentItem && !currentItem.visible; j++) incrementCurrentIndex();
             }
         }
 
