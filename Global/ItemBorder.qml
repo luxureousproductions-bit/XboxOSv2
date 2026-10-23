@@ -28,17 +28,35 @@ id: root
     //
     // Two looks. Default (xboxStyle false): the original frame, overhanging
     // the tile by 3 and covering its edge. Xbox style (the game tile): the
-    // frame stands OFF the art like the Xbox dashboard's, measured from it —
-    // a 4-unit see-through gap, then a 4-unit accent ring, its curve
-    // concentric with the art's corners (artRadius). Hosts are switched over
-    // one at a time.
+    // frame stands OFF the art like the Xbox dashboard's. Sizes are
+    // Microsoft's focus-visual spec in effective pixels, which vpx() matches:
+    // a 2px accent stroke, with a 1px inner stroke plus a 1px margin making
+    // the 2-unit see-through gap, and a glow outside proportional to the
+    // stroke (GlowRing). The ring's curve is concentric with the art's
+    // corners (artRadius). Hosts are switched over one at a time.
     property bool xboxStyle: false
     property real artRadius: vpx(6)
-    readonly property real gap: vpx(4)
-    readonly property real ringWidth: vpx(4)
+    readonly property real gap: vpx(2)
+    readonly property real ringWidth: vpx(2)
+    readonly property real glowSize: vpx(6)
     readonly property real frameMargin: xboxStyle ? -(gap + ringWidth) : -vpx(3)
     readonly property real frameRadius: xboxStyle ? artRadius + gap + ringWidth : vpx(15)
     readonly property real frameWidth:  xboxStyle ? ringWidth : vpx(6)
+
+    // Xbox style: soft glow just outside the ring, never inside it (the gap
+    // stays clean). Follows the Tile Halo setting.
+    Loader {
+        active: root.xboxStyle && settings.TileHalo === "Yes"
+        anchors.fill: border
+        anchors.margins: -root.glowSize
+        sourceComponent: Component {
+            GlowRing {
+                frameRadius: root.frameRadius
+                glowSize: root.glowSize
+                visible: !failed
+            }
+        }
+    }
 
     Rectangle {
     id: border

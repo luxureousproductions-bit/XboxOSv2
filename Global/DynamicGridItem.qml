@@ -128,8 +128,9 @@ id: root
     // Corner radius of the tile, as on the Xbox dashboard (was 12). The
     // selection frame stands off it by a 4-unit gap (ItemBorder xboxStyle).
     readonly property real tileRadius: vpx(6)
-    // How far the Xbox-style frame's outer edge sits outside the tile.
-    readonly property real frameReach: vpx(8)
+    // How far the Xbox-style frame's outer edge sits outside the tile
+    // (ItemBorder: 2 gap + 2 ring).
+    readonly property real frameReach: vpx(4)
     readonly property bool fastArt: !isImportedApp
                                     && !artFx.failed
     readonly property bool previewCovering: selected && playVideo
@@ -187,28 +188,11 @@ id: root
     // On demand: the effect (a shader plus its own offscreen texture) exists
     // only while it could be seen. It used to be instantiated on EVERY tile —
     // two effects per tile doing nothing on every screen full of tiles.
-    // Not while racing (reduceMotion): it was built and torn down on every
-    // step; it appears as soon as the cursor stops. The accent frame still
-    // follows the cursor throughout.
-    Loader {
-        active: selected && !reduceMotion
-        anchors.fill: tileHaloSrc
-        z: -1
-        sourceComponent: Component {
-        ColorOverlay {
-            id: tileGlow
-            anchors.fill: parent   // the Loader, which already fills tileHaloSrc
-            source: tileHaloSrc
-            color: theme.accent
-            z: -1
-            opacity: (selected && settings.TileHalo === "Yes") ? 0.95 : 0
-            visible: opacity > 0
-            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-        }
-        }
-    }
+    // (The selected-tile halo that sat here is gone for the game tile: the
+    // Xbox-style frame draws its own tight glow, ItemBorder > GlowRing,
+    // following the same Tile Halo setting.)
     // Subtle persistent glow for favorited tiles (not selected — the bright
-    // tileGlow above already covers that case). Same halo asset/accent tint,
+    // selected tile has the frame's own glow). Same halo asset/accent tint,
     // much dimmer, so favorites read as "special" while browsing past them.
     // On demand: the effect (a shader plus its own offscreen texture) exists
     // only while it could be seen. It used to be instantiated on EVERY tile —
