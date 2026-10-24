@@ -470,6 +470,7 @@ id: root
         "Show WiFi Indicator":                       "Yes",
         "Showcase Collections Art":                  "Fanart",
         "Start up chime":                            "Yes",
+        "Startup intro":                             "Yes",
         "System tile titles":                        "On focus",
         "Tile Halo":                                 "Yes",
         "Title Screen":                              "Yes",
@@ -2545,9 +2546,31 @@ id: root
     // Startup chime — plays shortly after the theme loads (delay lets the audio
     // engine come up so the first play isn't dropped). Respects the menu volume.
     Timer {
-        interval: 450; running: true; repeat: false
-        onTriggered: { if (settings.StartupChime !== "No" && sfxVolume > 0) { sfxStartup.stop(); sfxStartup.play(); } }
+        // Not while the startup intro runs: it asks for the chime itself when
+        // it shows the still image, and an intro video brings its own sound.
+        interval: 450; running: !introLoader.active; repeat: false
+        onTriggered: playStartupChime()
     }
+    function playStartupChime() {
+        if (settings.StartupChime !== "No" && sfxVolume > 0) { sfxStartup.stop(); sfxStartup.play(); }
+    }
+
+    // ── Startup intro ─────────────────────────────────────────────────────
+    // Cold start only (never on the way back from a game). Settings > Audio >
+    // Startup intro. See Global/StartupIntro.qml.
+    property bool introDone: false
+    Loader {
+    id: introLoader
+        anchors.fill: parent
+        z: 10000
+        active: !introDone && !fromGame && settingsStore.get("Startup intro") === "Yes"
+        sourceComponent: StartupIntro {
+            volume: sfxVolume
+            onFinished: introDone = true
+            onWantsChime: chimeAfterIntro.start()
+        }
+    }
+    Timer { id: chimeAfterIntro; interval: 450; onTriggered: playStartupChime() }
     SoundEffect {
         id: sfxStartup
         source: "assets/sfx/startup.wav"

@@ -4,7 +4,17 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 7)
+## Unreleased — refresh branch (build 8)
+
+### New: Startup intro
+- When Pegasus starts with XboxOSv2, an Xbox intro covers the moment Pegasus hands over to the theme, then fades into Home. It never plays when you come back from a game.
+- To use your own intro video, put it at `assets/video/intro.mp4` in the theme folder. Without one, the intro shows a still image (`assets/images/intro.jpg`) for a few seconds with the normal startup chime.
+- Turn it off in **Settings → Audio → Startup intro**.
+
+### Home
+- The hero tile (your last-played game) now gets its rounded corners without a mask, like the system tiles in build 7. It looks the same.
+
+## Build 7
 
 ### Home system strip
 - System tile backgrounds now get their rounded corners in a single drawing step, instead of a mask that kept two hidden copies of the image on every tile. They look the same. If a device's graphics can't run that step, the tile shows the background without rounded corners instead of nothing.

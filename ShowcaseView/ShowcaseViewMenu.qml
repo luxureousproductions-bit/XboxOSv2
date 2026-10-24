@@ -1376,21 +1376,14 @@ id: root
                 }
 
                 // ── HERO (index 0): resume / last-played screenshot + title ──
-                // heroBg + title bar share a single OpacityMask so the bar's BOTTOM
-                // corners follow the rounded tile edge while its TOP corners stay square.
+                // Rounded without a mask: the art through RoundedArt (one
+                // shader pass), the title bar from a square band plus a
+                // clipped rounded strip. The old layer + OpacityMask kept
+                // two off-screen copies of the whole hero tile alive.
                 Item {
                     id: heroClipper
                     visible: isHero
                     anchors.fill: parent
-                    layer.enabled: isHero
-                    layer.smooth: true
-                    layer.effect: OpacityMask {
-                        maskSource: Rectangle {
-                            width: heroClipper.width
-                            height: heroClipper.height
-                            radius: tile.radius
-                        }
-                    }
 
                     Image {
                         id: heroBg
@@ -1401,6 +1394,17 @@ id: root
                         asynchronous: true; smooth: true
                         source: heroArtSource(platformlist.resumeGame)
                         opacity: selected ? 1 : 0.5
+                        // Drawn by heroBgFx; shown directly only if the shader can't run
+                        visible: heroBgFx.failed
+                    }
+                    RoundedArt {
+                    id: heroBgFx
+                        anchors.fill: heroBg
+                        source: heroBg
+                        crop: true
+                        radius: tile.radius
+                        opacity: heroBg.opacity
+                        visible: heroBg.status === Image.Ready && !failed
                     }
 
                     // Game logo overlay — only for the Screenshot / Fanart hero art modes.
@@ -1423,13 +1427,30 @@ id: root
 
                     Rectangle {
                         // Full-width bar across the bottom — shown only on highlight now.
-                        // No radius — the parent OpacityMask clips the bottom corners to
-                        // match tile.radius automatically.
+                        // Square top, bottom corners following tile.radius.
+                    id: heroBar
                         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                        height: Math.max(vpx(36), topRow.tileSz * 0.16, heroBarText.contentHeight + vpx(16)); color: "#99000000"
+                        height: Math.max(vpx(36), topRow.tileSz * 0.16, heroBarText.contentHeight + vpx(16)); color: "transparent"
                         opacity: gameTitleMode === "Never" ? 0 : ((selected || gameTitleMode === "Always") ? 1 : 0)
                         visible: opacity > 0
                         Behavior on opacity { NumberAnimation { duration: 120 } }
+                        readonly property real r: Math.min(tile.radius, height)
+                        Rectangle {
+                            anchors { left: parent.left; right: parent.right; top: parent.top }
+                            height: parent.height - parent.r
+                            color: "#99000000"
+                        }
+                        Item {
+                            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                            height: heroBar.r
+                            clip: true
+                            Rectangle {
+                                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                                height: heroBar.r * 2
+                                radius: heroBar.r
+                                color: "#99000000"
+                            }
+                        }
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
                             id: heroBarText
