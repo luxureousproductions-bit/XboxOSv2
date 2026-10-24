@@ -292,14 +292,14 @@ id: root
     readonly property bool perSystemOn: settings.PerSystemTiles === "Yes"
     function sysOverride() {
         var e = sysEpoch;                        // dependency for re-evaluation
-        return perSystemOn && sysKey !== "" && api.memory.has(sysKey + " - Use theme settings")
-               && api.memory.get(sysKey + " - Use theme settings") === "No";
+        return perSystemOn && sysKey !== "" && settingsStore.has(sysKey + " - Use theme settings")
+               && settingsStore.get(sysKey + " - Use theme settings") === "No";
     }
     function sysPref(row, globalValue) {
         var e = sysEpoch;
         if (!sysOverride()) return globalValue;
         var k = sysKey + " - " + row;
-        return api.memory.has(k) ? api.memory.get(k) : globalValue;
+        return settingsStore.get(k, globalValue);
     }
     readonly property string tileShape:   sysPref("Tile shape",        settings.GridThumbnail)
     readonly property string tileRatio:   sysPref("Tile ratio",        settings.GridRatio)
@@ -854,7 +854,7 @@ id: root
     }
     function sysValue(row) {
         var r = sysRows[row], k = sysKey + " - " + r.key;
-        return api.memory.has(k) ? api.memory.get(k) : String(r.dflt);
+        return settingsStore.get(k, String(r.dflt));
     }
     function sysRowDisabled(row) {
         if (row === 0) return false;
@@ -869,9 +869,9 @@ id: root
         var r = sysRows[row], opts = r.opts, cur = sysValue(row);
         var i = opts.indexOf(cur); if (i < 0) i = 0;
         var v = opts[(i + dir + opts.length) % opts.length];
-        api.memory.set(sysKey + " - " + r.key, v);   // (per-system keys have no Settings row; no Index needed)
+        settingsStore.set(sysKey + " - " + r.key, v);   // (per-system keys have no Settings row; no Index needed)
         // Same rule as the Settings page: box-front art turns the logo off.
-        if (r.key === "Tile art" && v === "Boxfront") api.memory.set(sysKey + " - Show logo on tile", "No");
+        if (r.key === "Tile art" && v === "Boxfront") settingsStore.set(sysKey + " - Show logo on tile", "No");
         sysEpoch++;
         playNav();
     }

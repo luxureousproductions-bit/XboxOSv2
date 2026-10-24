@@ -52,14 +52,18 @@ id: root
     // safer than making the whole object reactive, which would invalidate all
     // 224 settings.* bindings at once — including several that walk the full
     // game list.
-    property int settingsEpoch: 0
+    property alias settingsEpoch: settingsStore.epoch
+
+    SettingsStore {
+    id: settingsStore
+        defaults: settingDefaults
+    }
 
     // Live copy of the featured box mode. Read by ShowcaseViewMenu's carousel
     // and by FavoritesHeader, so switching it applies without a reload.
     readonly property string featuredBoxContent: {
         var e = settingsEpoch;
-        return api.memory.has("Featured Box Content")
-             ? api.memory.get("Featured Box Content") : "Favorites";
+        return settingsStore.get("Featured Box Content");
     }
 
     // ── Home "hide" sets: apps and emulators kept SEPARATE ────────────────
@@ -222,19 +226,17 @@ id: root
     // featuredBoxContent above).
     readonly property bool omitAppsLive: {
         var e = settingsEpoch;
-        return (api.memory.has("Omit genre: Application from Showcase")
-              ? api.memory.get("Omit genre: Application from Showcase") : "No") === "Yes";
+        return (settingsStore.get("Omit genre: Application from Showcase", "No")) === "Yes";
     }
     readonly property bool omitEmulatorsLive: {
         var e = settingsEpoch;
-        return (api.memory.has("Omit genre: Emulator from Showcase")
-              ? api.memory.get("Omit genre: Emulator from Showcase") : "No") === "Yes";
+        return (settingsStore.get("Omit genre: Emulator from Showcase", "No")) === "Yes";
     }
 
     // Frame rate counter (Settings > Appearance > Diagnostics). Live.
     readonly property bool frameCounterLive: {
         var e = settingsEpoch;
-        return (api.memory.has("Frame counter") ? api.memory.get("Frame counter") : "No") === "Yes";
+        return (settingsStore.get("Frame counter", "No")) === "Yes";
     }
 
     // ── What the Home rows hide, as ONE list ──────────────────────────────
@@ -388,121 +390,179 @@ id: root
         "UI Scale":                                  "1.0",
         "Video thumbnail audio":                     "Yes",
         "Xbox Logo":                                 "Logo1",
+        // ── Added with SettingsStore: every remaining setting, same values as
+        //    the settings object's fallbacks, so this is the complete schema.
+        "2D Box":                                    "Yes",
+        "Added App Launch":                          "Instant",
+        "All Games View":                            "List",
+        "AllGames Blur Background":                  "No",
+        "AllGames Hide box art on video":            "No",
+        "AllGames Hide logo on video":               "No",
+        "AllGames Items per row":                    "5",
+        "AllGames Match Platform":                   "No",
+        "AllGames Show scanlines":                   "No",
+        "AllGames Tile Art":                         "Fanart",
+        "AllGames Tile Logo":                        "Yes",
+        "AllGames Tile Ratio":                       "0.66",
+        "AllGames Tile Style":                       "Wide",
+        "AllGames Video preview":                    "Yes",
+        "Always show titles":                        "No",
+        "Animate highlight":                         "No",
+        "Back Box":                                  "Yes",
+        "Blur Background":                           "No",
+        "Cartridge":                                 "Yes",
+        "Collection 3 - Ratio":                      "0.66",
+        "Collection 4 - Ratio":                      "0.66",
+        "Collection 4 - Thumbnail":                  "Tall",
+        "Collection 5 - Thumbnail":                  "Wide",
+        "Collection 6 - Ratio":                      "0.66",
+        "Default to full details":                   "No",
+        "Enable mouse hover":                        "No",
+        "Fanart":                                    "Yes",
+        "Featured Box":                              "Yes",
+        "Featured collection":                       "Favorites",
+        "Game Counter":                              "Yes",
+        "Game Logo":                                 "Show",
+        "Game View":                                 "Grid",
+        "Grid Game Logo":                            "Yes",
+        "Grid Ratio":                                "0.66",
+        "Grid art":                                  "Fanart",
+        "Grid background dimming":                   "Light",
+        "Hero box art":                              "Fanart",
+        "Hide button help":                          "No",
+        "LB/RB Function":                            "Cycle Platforms",
+        "Logo":                                      "Yes",
+        "Logo Color Match":                          "No",
+        "Menu Volume":                               "1.0",
+        "Menu sounds":                               "Yes",
+        "Miximage":                                  "Yes",
+        "Per-system tile settings":                  "No",
+        "Screenshots":                               "Yes",
+        "Show Battery Percentage":                   "Battery Only",
+        "Show Clock":                                "12hr",
+        "Show WiFi Indicator":                       "Yes",
+        "Showcase Collections Art":                  "Fanart",
+        "Start up chime":                            "Yes",
+        "System tile titles":                        "On focus",
+        "Tile Halo":                                 "Yes",
+        "Title Screen":                              "Yes",
+        "Video":                                     "Yes",
+        "Video preview":                             "Yes",
     })
 
     property var settings: {
         return {
-            PlatformView:                  api.memory.has("Game View") ? api.memory.get("Game View") : "Grid",
-            GridThumbnail:                 api.memory.has("Grid Thumbnail") ? api.memory.get("Grid Thumbnail") : "Square",
-            GridArt:                       api.memory.has("Grid art") ? api.memory.get("Grid art") : "Fanart",
-            GridGameLogo:                  api.memory.has("Grid Game Logo") ? api.memory.get("Grid Game Logo") : "Yes",
-            GridColumns:                   api.memory.has("Number of columns") ? api.memory.get("Number of columns") : "3",
-            GameBackground:                api.memory.has("Game Background") ? api.memory.get("Game Background") : "Fanart",
-            GameLogo:                      api.memory.has("Game Logo") ? api.memory.get("Game Logo") : "Show",
-            GameBlurBackground:            api.memory.has("Blur Background") ? api.memory.get("Blur Background") : "No",
-            VideoPreview:                  api.memory.has("Video preview") ? api.memory.get("Video preview") : "Yes",
-            AllowThumbVideo:               api.memory.has("Allow video thumbnails") ? api.memory.get("Allow video thumbnails") : "Yes",
-            AllowThumbVideoAudio:          api.memory.has("Video thumbnail audio") ? api.memory.get("Video thumbnail audio") : "Yes",
-            HideLogo:                      api.memory.has("Hide logo when thumbnail video plays") ? api.memory.get("Hide logo when thumbnail video plays") : "Yes",
-            HideButtonHelp:                api.memory.has("Hide button help") ? api.memory.get("Hide button help") : "No",
+            PlatformView:                  settingsStore.get("Game View", "Grid"),
+            GridThumbnail:                 settingsStore.get("Grid Thumbnail", "Square"),
+            GridArt:                       settingsStore.get("Grid art", "Fanart"),
+            GridGameLogo:                  settingsStore.get("Grid Game Logo", "Yes"),
+            GridColumns:                   settingsStore.get("Number of columns", "3"),
+            GameBackground:                settingsStore.get("Game Background", "Fanart"),
+            GameLogo:                      settingsStore.get("Game Logo", "Show"),
+            GameBlurBackground:            settingsStore.get("Blur Background", "No"),
+            VideoPreview:                  settingsStore.get("Video preview", "Yes"),
+            AllowThumbVideo:               settingsStore.get("Allow video thumbnails", "Yes"),
+            AllowThumbVideoAudio:          settingsStore.get("Video thumbnail audio", "Yes"),
+            HideLogo:                      settingsStore.get("Hide logo when thumbnail video plays", "Yes"),
+            HideButtonHelp:                settingsStore.get("Hide button help", "No"),
             // "Gradient" was removed as an option; a stale saved value falls back to the default.
             ColorLayout:                   (api.memory.has("Color Layout") && api.memory.get("Color Layout") !== "Gradient") ? api.memory.get("Color Layout") : "Lime",
-            MouseHover:                    api.memory.has("Enable mouse hover") ? api.memory.get("Enable mouse hover") : "No",
-            AlwaysShowTitles:              api.memory.has("Always show titles") ? api.memory.get("Always show titles") : "No",
-            AnimateHighlight:              api.memory.has("Animate highlight") ? api.memory.get("Animate highlight") : "No",
-            AllowVideoPreviewAudio:        api.memory.has("Game details video preview audio") ? api.memory.get("Game details video preview audio") : "Yes",
-            ShowScanlines:                 api.memory.has("Show scanlines") ? api.memory.get("Show scanlines") : "No",
-            DetailsDefault:                api.memory.has("Default to full details") ? api.memory.get("Default to full details") : "No",
-            LaunchScreenDelay:             api.memory.has("Launch screen delay") ? api.memory.get("Launch screen delay") : "2.5",
-            FeaturedBox:                   api.memory.has("Featured Box") ? api.memory.get("Featured Box") : "Yes",
-            FeaturedBoxCollection:         api.memory.has("Pins to collection") ? api.memory.get("Pins to collection") : "2",
-            UiScale:                       api.memory.has("UI Scale") ? api.memory.get("UI Scale") : "1.0",
-            FavoritedTileAccent:           api.memory.has("Favorited Tile Accent") ? api.memory.get("Favorited Tile Accent") : "Yes",
-            FeaturedBoxContent:            api.memory.has("Featured Box Content") ? api.memory.get("Featured Box Content") : "Fanart Slideshow",
-            ShowcaseBackgroundArt:          api.memory.has("Showcase Background Art") ? api.memory.get("Showcase Background Art") : "Yes",
-            RandomizeSystemTileFanart:      api.memory.has("Randomize System Tile Fanart") ? api.memory.get("Randomize System Tile Fanart") : "No",
-            CustomBackground:               api.memory.has("Custom Background") ? api.memory.get("Custom Background") : "Yes",
-            ShowcaseBackgroundOpacity:     api.memory.has("Showcase Background Opacity") ? api.memory.get("Showcase Background Opacity") : "1.00",
-            ShowcaseArt:                   api.memory.has("Showcase Collections Art") ? api.memory.get("Showcase Collections Art") : "Fanart",
-            HeroBoxArt:                    api.memory.has("Hero box art") ? api.memory.get("Hero box art") : "Fanart",
-            TileHalo:                      api.memory.has("Tile Halo") ? api.memory.get("Tile Halo") : "Yes",
-            SystemSort:                    api.memory.has("System sort") ? api.memory.get("System sort") : "Release year (oldest)",
-            ShowcaseColumns:               api.memory.has("Number of games showcased") ? api.memory.get("Number of games showcased") : "20",
-            ShowcaseFeaturedCollection:    api.memory.has("Featured collection") ? api.memory.get("Featured collection") : "Favorites",
-            ShowcaseCollection1:           api.memory.has("Collection 1") ? api.memory.get("Collection 1") : "Recommended",
-            ShowcaseCollection1_Thumbnail: api.memory.has("Collection 1 - Thumbnail") ? api.memory.get("Collection 1 - Thumbnail") : "Wide",
-            ShowcaseCollection1_Size:      api.memory.has("Collection 1 - Size") ? api.memory.get("Collection 1 - Size") : "Small",
-            ShowcaseCollection1_Ratio:     api.memory.has("Collection 1 - Ratio") ? api.memory.get("Collection 1 - Ratio") : "0.66",
-            ShowcaseCollection2:           api.memory.has("Collection 2") ? api.memory.get("Collection 2") : "Recently Played",
-            ShowcaseCollection2_Thumbnail: api.memory.has("Collection 2 - Thumbnail") ? api.memory.get("Collection 2 - Thumbnail") : "Tall",
-            ShowcaseCollection2_Size:      api.memory.has("Collection 2 - Size") ? api.memory.get("Collection 2 - Size") : "Medium",
-            ShowcaseCollection2_Ratio:     api.memory.has("Collection 2 - Ratio") ? api.memory.get("Collection 2 - Ratio") : "0.55",
-            ShowcaseCollection3:           api.memory.has("Collection 3") ? api.memory.get("Collection 3") : "Top by Genre",
-            ShowcaseCollection3_Thumbnail: api.memory.has("Collection 3 - Thumbnail") ? api.memory.get("Collection 3 - Thumbnail") : "Square",
-            ShowcaseCollection3_Size:      api.memory.has("Collection 3 - Size") ? api.memory.get("Collection 3 - Size") : "Medium",
-            ShowcaseCollection3_Ratio:     api.memory.has("Collection 3 - Ratio") ? api.memory.get("Collection 3 - Ratio") : "0.66",
-            ShowcaseCollection4:           api.memory.has("Collection 4") ? api.memory.get("Collection 4") : "Top by Publisher",
-            ShowcaseCollection4_Thumbnail: api.memory.has("Collection 4 - Thumbnail") ? api.memory.get("Collection 4 - Thumbnail") : "Tall",
-            ShowcaseCollection4_Size:      api.memory.has("Collection 4 - Size") ? api.memory.get("Collection 4 - Size") : "Medium",
-            ShowcaseCollection4_Ratio:     api.memory.has("Collection 4 - Ratio") ? api.memory.get("Collection 4 - Ratio") : "0.66",
-            ShowcaseCollection5:           api.memory.has("Collection 5") ? api.memory.get("Collection 5") : "Top by Genre 2",
-            ShowcaseCollection5_Thumbnail: api.memory.has("Collection 5 - Thumbnail") ? api.memory.get("Collection 5 - Thumbnail") : "Wide",
-            ShowcaseCollection5_Size:      api.memory.has("Collection 5 - Size") ? api.memory.get("Collection 5 - Size") : "Large",
-            ShowcaseCollection5_Ratio:     api.memory.has("Collection 5 - Ratio") ? api.memory.get("Collection 5 - Ratio") : "0.55",
-            ShowcaseCollection6:           api.memory.has("Collection 6") ? api.memory.get("Collection 6") : "Top by Developer",
-            ShowcaseCollection6_Thumbnail: api.memory.has("Collection 6 - Thumbnail") ? api.memory.get("Collection 6 - Thumbnail") : "Square",
-            ShowcaseCollection6_Size:      api.memory.has("Collection 6 - Size") ? api.memory.get("Collection 6 - Size") : "Large",
-            ShowcaseCollection6_Ratio:     api.memory.has("Collection 6 - Ratio") ? api.memory.get("Collection 6 - Ratio") : "0.66",
-            GridRatio:                     api.memory.has("Grid Ratio") ? api.memory.get("Grid Ratio") : "0.66",
+            MouseHover:                    settingsStore.get("Enable mouse hover", "No"),
+            AlwaysShowTitles:              settingsStore.get("Always show titles", "No"),
+            AnimateHighlight:              settingsStore.get("Animate highlight", "No"),
+            AllowVideoPreviewAudio:        settingsStore.get("Game details video preview audio", "Yes"),
+            ShowScanlines:                 settingsStore.get("Show scanlines", "No"),
+            DetailsDefault:                settingsStore.get("Default to full details", "No"),
+            LaunchScreenDelay:             settingsStore.get("Launch screen delay", "2.5"),
+            FeaturedBox:                   settingsStore.get("Featured Box", "Yes"),
+            FeaturedBoxCollection:         settingsStore.get("Pins to collection", "2"),
+            UiScale:                       settingsStore.get("UI Scale", "1.0"),
+            FavoritedTileAccent:           settingsStore.get("Favorited Tile Accent", "Yes"),
+            FeaturedBoxContent:            settingsStore.get("Featured Box Content", "Fanart Slideshow"),
+            ShowcaseBackgroundArt:          settingsStore.get("Showcase Background Art", "Yes"),
+            RandomizeSystemTileFanart:      settingsStore.get("Randomize System Tile Fanart", "No"),
+            CustomBackground:               settingsStore.get("Custom Background", "Yes"),
+            ShowcaseBackgroundOpacity:     settingsStore.get("Showcase Background Opacity", "1.00"),
+            ShowcaseArt:                   settingsStore.get("Showcase Collections Art", "Fanart"),
+            HeroBoxArt:                    settingsStore.get("Hero box art", "Fanart"),
+            TileHalo:                      settingsStore.get("Tile Halo", "Yes"),
+            SystemSort:                    settingsStore.get("System sort", "Release year (oldest)"),
+            ShowcaseColumns:               settingsStore.get("Number of games showcased", "20"),
+            ShowcaseFeaturedCollection:    settingsStore.get("Featured collection", "Favorites"),
+            ShowcaseCollection1:           settingsStore.get("Collection 1", "Recommended"),
+            ShowcaseCollection1_Thumbnail: settingsStore.get("Collection 1 - Thumbnail", "Wide"),
+            ShowcaseCollection1_Size:      settingsStore.get("Collection 1 - Size", "Small"),
+            ShowcaseCollection1_Ratio:     settingsStore.get("Collection 1 - Ratio", "0.66"),
+            ShowcaseCollection2:           settingsStore.get("Collection 2", "Recently Played"),
+            ShowcaseCollection2_Thumbnail: settingsStore.get("Collection 2 - Thumbnail", "Tall"),
+            ShowcaseCollection2_Size:      settingsStore.get("Collection 2 - Size", "Medium"),
+            ShowcaseCollection2_Ratio:     settingsStore.get("Collection 2 - Ratio", "0.55"),
+            ShowcaseCollection3:           settingsStore.get("Collection 3", "Top by Genre"),
+            ShowcaseCollection3_Thumbnail: settingsStore.get("Collection 3 - Thumbnail", "Square"),
+            ShowcaseCollection3_Size:      settingsStore.get("Collection 3 - Size", "Medium"),
+            ShowcaseCollection3_Ratio:     settingsStore.get("Collection 3 - Ratio", "0.66"),
+            ShowcaseCollection4:           settingsStore.get("Collection 4", "Top by Publisher"),
+            ShowcaseCollection4_Thumbnail: settingsStore.get("Collection 4 - Thumbnail", "Tall"),
+            ShowcaseCollection4_Size:      settingsStore.get("Collection 4 - Size", "Medium"),
+            ShowcaseCollection4_Ratio:     settingsStore.get("Collection 4 - Ratio", "0.66"),
+            ShowcaseCollection5:           settingsStore.get("Collection 5", "Top by Genre 2"),
+            ShowcaseCollection5_Thumbnail: settingsStore.get("Collection 5 - Thumbnail", "Wide"),
+            ShowcaseCollection5_Size:      settingsStore.get("Collection 5 - Size", "Large"),
+            ShowcaseCollection5_Ratio:     settingsStore.get("Collection 5 - Ratio", "0.55"),
+            ShowcaseCollection6:           settingsStore.get("Collection 6", "Top by Developer"),
+            ShowcaseCollection6_Thumbnail: settingsStore.get("Collection 6 - Thumbnail", "Square"),
+            ShowcaseCollection6_Size:      settingsStore.get("Collection 6 - Size", "Large"),
+            ShowcaseCollection6_Ratio:     settingsStore.get("Collection 6 - Ratio", "0.66"),
+            GridRatio:                     settingsStore.get("Grid Ratio", "0.66"),
             ColorBackground:               (api.memory.has("Color Background") && api.memory.get("Color Background") !== "Gradient") ? api.memory.get("Color Background") : "Black",
-            XboxLogo:                      api.memory.has("Xbox Logo") ? api.memory.get("Xbox Logo") : "Logo1",
-            LogoColorMatch:                api.memory.has("Logo Color Match") ? api.memory.get("Logo Color Match") : "No",
-            BoxArtStyle:                   api.memory.has("Box Art") ? api.memory.get("Box Art") : "3D",
-            GameCounter:                   api.memory.has("Game Counter") ? api.memory.get("Game Counter") : "Yes",
-            CarouselVideo:                 api.memory.has("Video") ? api.memory.get("Video") : "Yes",
-            CarouselScreenshots:           api.memory.has("Screenshots") ? api.memory.get("Screenshots") : "Yes",
-            CarouselTitleScreen:           api.memory.has("Title Screen") ? api.memory.get("Title Screen") : "Yes",
-            CarouselFanart:                api.memory.has("Fanart") ? api.memory.get("Fanart") : "Yes",
-            Carousel3DBox:                 api.memory.has("3D Box") ? api.memory.get("3D Box") : "Yes",
-            Carousel2DBox:                 api.memory.has("2D Box") ? api.memory.get("2D Box") : "Yes",
-            CarouselBackBox:               api.memory.has("Back Box") ? api.memory.get("Back Box") : "Yes",
-            CarouselCartridge:             api.memory.has("Cartridge") ? api.memory.get("Cartridge") : "Yes",
-            CarouselMiximage:              api.memory.has("Miximage") ? api.memory.get("Miximage") : "Yes",
-            CarouselWheel:                 api.memory.has("Logo") ? api.memory.get("Logo") : "Yes",
-            OmitApplicationFromShowcase:   api.memory.has("Omit genre: Application from Showcase") ? api.memory.get("Omit genre: Application from Showcase") : "No",
-            OmitEmulatorFromShowcase:      api.memory.has("Omit genre: Emulator from Showcase") ? api.memory.get("Omit genre: Emulator from Showcase") : "No",
-            HighQualityMode:               api.memory.has("High Quality Mode") ? api.memory.get("High Quality Mode") : "No",
-            PlatformShoulderButtons:       api.memory.has("LB/RB Function") ? api.memory.get("LB/RB Function") : "Cycle Platforms",
-            DynamicBackground:             api.memory.has("Dynamic Background") ? api.memory.get("Dynamic Background") : "No",
-            ScreenshotFallback:            api.memory.has("Screenshot Fallback") ? api.memory.get("Screenshot Fallback") : "No",
-            AddedAppLaunch:                api.memory.has("Added App Launch") ? api.memory.get("Added App Launch") : "Instant",
-            HideAndroidSystemTile:         api.memory.has("Hide Android System Tile") ? api.memory.get("Hide Android System Tile") : "Yes",
-            HideAndroidGamesSystemTile:    api.memory.has("Hide Android Games System Tile") ? api.memory.get("Hide Android Games System Tile") : "No",
-            MoreByGenreDisplay:            api.memory.has("More by Genre Display") ? api.memory.get("More by Genre Display") : "Full",
-            AllowDiscoverVideoAudio:         api.memory.has("Discover video audio") ? api.memory.get("Discover video audio") : "Yes",
-            MenuSounds:                      api.memory.has("Menu sounds") ? api.memory.get("Menu sounds") : "Yes",
-            MenuVolume:                      api.memory.has("Menu Volume") ? api.memory.get("Menu Volume") : "1.0",
-            StartupChime:                    api.memory.has("Start up chime") ? api.memory.get("Start up chime") : "Yes",
-            AllGamesVideoPreview:            api.memory.has("AllGames Video preview") ? api.memory.get("AllGames Video preview") : "Yes",
-            AllGamesView:                  api.memory.has("All Games View") ? api.memory.get("All Games View") : "List",
-            AllGamesTileStyle:             api.memory.has("AllGames Tile Style") ? api.memory.get("AllGames Tile Style") : "Wide",
-            AllGamesTileRatio:             api.memory.has("AllGames Tile Ratio") ? api.memory.get("AllGames Tile Ratio") : "0.66",
-            AllGamesTileArt:               api.memory.has("AllGames Tile Art") ? api.memory.get("AllGames Tile Art") : "Fanart",
-            AllGamesTileLogo:              api.memory.has("AllGames Tile Logo") ? api.memory.get("AllGames Tile Logo") : "Yes",
-            AllGamesColumns:               api.memory.has("AllGames Items per row") ? api.memory.get("AllGames Items per row") : "5",
-            AllGamesMatchPlatform:         api.memory.has("AllGames Match Platform") ? api.memory.get("AllGames Match Platform") : "No",
-            SystemTileTitles:              api.memory.has("System tile titles") ? api.memory.get("System tile titles") : "On focus",
-            PerSystemTiles:                api.memory.has("Per-system tile settings") ? api.memory.get("Per-system tile settings") : "No",
-            GridDimming:                   api.memory.has("Grid background dimming") ? api.memory.get("Grid background dimming") : "Light",
-            GridFade:                      api.memory.has("Bottom fade") ? api.memory.get("Bottom fade") : "Strong",
-            AllGamesHideBoxOnVideo:          api.memory.has("AllGames Hide box art on video") ? api.memory.get("AllGames Hide box art on video") : "No",
-            AllGamesHideLogoOnVideo:         api.memory.has("AllGames Hide logo on video") ? api.memory.get("AllGames Hide logo on video") : "No",
-            AllGamesBlurBackground:          api.memory.has("AllGames Blur Background") ? api.memory.get("AllGames Blur Background") : "No",
-            AllGamesScanlines:               api.memory.has("AllGames Show scanlines") ? api.memory.get("AllGames Show scanlines") : "No",
-            AllGamesVideoAudio:              api.memory.has("All games menu video audio") ? api.memory.get("All games menu video audio") : "Yes",
-            ShowWifi:                      api.memory.has("Show WiFi Indicator")     ? api.memory.get("Show WiFi Indicator")     : "Yes",
-            ShowBattery:                   api.memory.has("Show Battery Percentage") ? api.memory.get("Show Battery Percentage") : "Battery Only",
-            ShowClock:                     api.memory.has("Show Clock")              ? api.memory.get("Show Clock")              : "12hr"
+            XboxLogo:                      settingsStore.get("Xbox Logo", "Logo1"),
+            LogoColorMatch:                settingsStore.get("Logo Color Match", "No"),
+            BoxArtStyle:                   settingsStore.get("Box Art", "3D"),
+            GameCounter:                   settingsStore.get("Game Counter", "Yes"),
+            CarouselVideo:                 settingsStore.get("Video", "Yes"),
+            CarouselScreenshots:           settingsStore.get("Screenshots", "Yes"),
+            CarouselTitleScreen:           settingsStore.get("Title Screen", "Yes"),
+            CarouselFanart:                settingsStore.get("Fanart", "Yes"),
+            Carousel3DBox:                 settingsStore.get("3D Box", "Yes"),
+            Carousel2DBox:                 settingsStore.get("2D Box", "Yes"),
+            CarouselBackBox:               settingsStore.get("Back Box", "Yes"),
+            CarouselCartridge:             settingsStore.get("Cartridge", "Yes"),
+            CarouselMiximage:              settingsStore.get("Miximage", "Yes"),
+            CarouselWheel:                 settingsStore.get("Logo", "Yes"),
+            OmitApplicationFromShowcase:   settingsStore.get("Omit genre: Application from Showcase", "No"),
+            OmitEmulatorFromShowcase:      settingsStore.get("Omit genre: Emulator from Showcase", "No"),
+            HighQualityMode:               settingsStore.get("High Quality Mode", "No"),
+            PlatformShoulderButtons:       settingsStore.get("LB/RB Function", "Cycle Platforms"),
+            DynamicBackground:             settingsStore.get("Dynamic Background", "No"),
+            ScreenshotFallback:            settingsStore.get("Screenshot Fallback", "No"),
+            AddedAppLaunch:                settingsStore.get("Added App Launch", "Instant"),
+            HideAndroidSystemTile:         settingsStore.get("Hide Android System Tile", "Yes"),
+            HideAndroidGamesSystemTile:    settingsStore.get("Hide Android Games System Tile", "No"),
+            MoreByGenreDisplay:            settingsStore.get("More by Genre Display", "Full"),
+            AllowDiscoverVideoAudio:         settingsStore.get("Discover video audio", "Yes"),
+            MenuSounds:                      settingsStore.get("Menu sounds", "Yes"),
+            MenuVolume:                      settingsStore.get("Menu Volume", "1.0"),
+            StartupChime:                    settingsStore.get("Start up chime", "Yes"),
+            AllGamesVideoPreview:            settingsStore.get("AllGames Video preview", "Yes"),
+            AllGamesView:                  settingsStore.get("All Games View", "List"),
+            AllGamesTileStyle:             settingsStore.get("AllGames Tile Style", "Wide"),
+            AllGamesTileRatio:             settingsStore.get("AllGames Tile Ratio", "0.66"),
+            AllGamesTileArt:               settingsStore.get("AllGames Tile Art", "Fanart"),
+            AllGamesTileLogo:              settingsStore.get("AllGames Tile Logo", "Yes"),
+            AllGamesColumns:               settingsStore.get("AllGames Items per row", "5"),
+            AllGamesMatchPlatform:         settingsStore.get("AllGames Match Platform", "No"),
+            SystemTileTitles:              settingsStore.get("System tile titles", "On focus"),
+            PerSystemTiles:                settingsStore.get("Per-system tile settings", "No"),
+            GridDimming:                   settingsStore.get("Grid background dimming", "Light"),
+            GridFade:                      settingsStore.get("Bottom fade", "Strong"),
+            AllGamesHideBoxOnVideo:          settingsStore.get("AllGames Hide box art on video", "No"),
+            AllGamesHideLogoOnVideo:         settingsStore.get("AllGames Hide logo on video", "No"),
+            AllGamesBlurBackground:          settingsStore.get("AllGames Blur Background", "No"),
+            AllGamesScanlines:               settingsStore.get("AllGames Show scanlines", "No"),
+            AllGamesVideoAudio:              settingsStore.get("All games menu video audio", "Yes"),
+            ShowWifi:                      settingsStore.get("Show WiFi Indicator", "Yes"),
+            ShowBattery:                   settingsStore.get("Show Battery Percentage", "Battery Only"),
+            ShowClock:                     settingsStore.get("Show Clock", "12hr")
         }
     }
 
@@ -1075,6 +1135,7 @@ id: root
     }
 
     function saveCurrentState(game, fromDrawer) {
+        settingsStore.flush();          // pending settings reach disk before the game runs
         api.memory.set('Resume', {
             v: 1,
             state: root.state,
@@ -1616,7 +1677,7 @@ id: root
     // every Settings save, so changing it no longer needs a reload.
     readonly property string addedAppLaunchLive: {
         var e = settingsEpoch;
-        return api.memory.has("Added App Launch") ? api.memory.get("Added App Launch") : "Instant";
+        return settingsStore.get("Added App Launch", "Instant");
     }
     // Apps Pegasus imported on its own have a file path of "android:<package>"
     // and no metadata at all. Apps the user wrote a metadata entry for point at
@@ -1720,6 +1781,7 @@ id: root
     }
 
     onStateChanged: {
+        settingsStore.flush();          // e.g. leaving Settings: write what was changed
         if (state !== "gameviewscreen") forceFullDetails = false;
     }
 
@@ -1966,6 +2028,8 @@ id: root
     Connections {
         target: Qt.application
         function onStateChanged() {
+            // Android may kill a backgrounded Pegasus without warning
+            if (Qt.application.state !== Qt.ApplicationActive) settingsStore.flush();
             if (root.state !== "launchgamescreen") return;
             if (Qt.application.state !== Qt.ApplicationActive)
                 root.launchSuspended = true;

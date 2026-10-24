@@ -1215,7 +1215,7 @@ id: root
     function openEditor(name, masked) {
         editSettingName = name;
         editMasked = masked;
-        editText = api.memory.has(name) ? api.memory.get(name) : "";
+        editText = settingsStore.get(name, "");
         kbOpen = true;
         credsKb.page = 0;          // always start on the letters page
         credsKb.shifted = false;
@@ -1539,14 +1539,14 @@ id: root
                     return i >= 0 ? i : 0;
                 }
                 property int savedIndex: Math.min(
-                    api.memory.has(settingName + 'Index') ? (api.memory.get(settingName + 'Index') || 0) : defaultIndex(),
+                    settingsStore.has(settingName + 'Index') ? (settingsStore.get(settingName + 'Index') || 0) : defaultIndex(),
                     settingList.length - 1)
 
                 Connections {
                     target: settingsList
                     onSettingsVersionChanged: {
                         savedIndex = Math.min(
-                            api.memory.has(settingName + 'Index') ? (api.memory.get(settingName + 'Index') || 0) : defaultIndex(),
+                            settingsStore.has(settingName + 'Index') ? (settingsStore.get(settingName + 'Index') || 0) : defaultIndex(),
                             settingList.length - 1);
                     }
                 }
@@ -1572,8 +1572,7 @@ id: root
                     // Both depend on the fanart background being shown at all.
                     // All Games: list rows are inert in Grid, grid rows in List.
                     // "All Games View" and "Video preview" apply to both.
-                    var agGrid = (api.memory.has("All Games View")
-                                ? api.memory.get("All Games View") : "List") === "Grid";
+                    var agGrid = (settingsStore.get("All Games View", "List")) === "Grid";
                     if (["AllGames Hide box art on video", "AllGames Hide logo on video",
                          "AllGames Blur Background", "AllGames Show scanlines"].indexOf(settingName) !== -1)
                         return agGrid;
@@ -1582,23 +1581,22 @@ id: root
                     if (settingName.indexOf("AllGames Tile") === 0
                         || settingName === "AllGames Items per row") {
                         if (!agGrid) return true;
-                        if ((api.memory.has("AllGames Match Platform")
-                             ? api.memory.get("AllGames Match Platform") : "No") === "Yes") return true;
+                        if ((settingsStore.get("AllGames Match Platform", "No")) === "Yes") return true;
                         // Shape-dependent rows (this used to sit after a return above
                         // and never ran): Box Art greys art + logo; Square greys ratio.
-                        var agShape = api.memory.has("AllGames Tile Style") ? api.memory.get("AllGames Tile Style") : "Wide";
+                        var agShape = settingsStore.get("AllGames Tile Style", "Wide");
                         if (settingName === "AllGames Tile Art" || settingName === "AllGames Tile Logo") return agShape === "Box Art" || agShape === "3D Box";
                         if (settingName === "AllGames Tile Ratio") return agShape === "Square";
                         return false;
                     }
 
                     if (settingName === "Randomize System Tile Fanart" || settingName === "Screenshot Fallback") {
-                        var bgArt  = api.memory.has("Showcase Background Art") ? api.memory.get("Showcase Background Art") : "Yes";
+                        var bgArt  = settingsStore.get("Showcase Background Art", "Yes");
                         return bgArt === "No";
                     }
 
                     // Small helper: current value of another row, with its default.
-                    function mem(k, d) { return api.memory.has(k) ? api.memory.get(k) : d; }
+                    function mem(k, d) { return settingsStore.get(k, d); }
 
                     // Dynamic Background moves whichever background is showing — fanart
                     // or the custom image — so it's only inert when neither is.
@@ -1643,12 +1641,12 @@ id: root
                     // A collection's Ratio row is inert when its shape is Square
                     if (settingName.indexOf("Collection ") === 0 && settingName.indexOf(" - Ratio") !== -1) {
                         var coll = settingName.replace(" - Ratio", "");
-                        var shp = api.memory.has(coll + " - Thumbnail") ? api.memory.get(coll + " - Thumbnail") : "Wide";
+                        var shp = settingsStore.get(coll + " - Thumbnail", "Wide");
                         return shp === "Square";
                     }
                     // Ratio is inert only for Square; Box Art scales with it on both grids.
                     if (settingName === "Grid Ratio") {
-                        var gth = api.memory.has("Grid Thumbnail") ? api.memory.get("Grid Thumbnail") : "Wide";
+                        var gth = settingsStore.get("Grid Thumbnail");
                         return gth === "Square";
                     }
                     // Grid art / Grid Game Logo only apply to the Wide/Tall/Square
@@ -1657,28 +1655,28 @@ id: root
                     // Box Art shape shows the box itself, so the art-source and logo
                     // rows have nothing to act on. Ratio and tiles-per-row stay live.
                     if (settingName === "Grid art" || settingName === "Grid Game Logo") {
-                        var gth2 = api.memory.has("Grid Thumbnail") ? api.memory.get("Grid Thumbnail") : "Wide";
+                        var gth2 = settingsStore.get("Grid Thumbnail");
                         return gth2 === "Box Art" || gth2 === "3D Box";
                     }
                     return false;
                 }
 
                 // Text-input rows (RA credentials) skip the cycling logic
-                property bool isTextInput: inputType === "text"
+                property bool isTextInput: model.inputType === "text"   // optional role: model.x is undefined, bare x throws
                 property bool isEditing:   false
                 property string originalText: ""
 
                 // Writes another row's value AND its index, so the settings
                 // screen displays it correctly on the next visit.
                 function setOther(key, value, list) {
-                    api.memory.set(key, value);
+                    settingsStore.set(key, value);
                     var i = list.indexOf(value);
-                    if (i >= 0) api.memory.set(key + 'Index', i);
+                    if (i >= 0) settingsStore.set(key + 'Index', i);
                 }
                 function saveSetting() {
                     if (isTextInput || rowDisabled || isTip) return;
-                    api.memory.set(settingName + 'Index', savedIndex);
-                    api.memory.set(settingName, settingList[savedIndex]);
+                    settingsStore.set(settingName + 'Index', savedIndex);
+                    settingsStore.set(settingName, settingList[savedIndex]);
                     // Box-front art already carries the game's name, so a logo on
                     // top is clutter: choosing it turns that grid's logo row off.
                     if (settingName === "Grid art" && settingList[savedIndex] === "Boxfront")
@@ -1841,7 +1839,7 @@ id: root
                         anchors { fill: parent; margins: vpx(8) }
                         property string storedVal: {
                             var _r = root.memRevision;   // refresh after edits
-                            return api.memory.has(settingName) ? api.memory.get(settingName) : "";
+                            return settingsStore.get(settingName, "");
                         }
                         text: storedVal === ""
                               ? "(press A to set)"

@@ -4,7 +4,18 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 2)
+## Unreleased — refresh branch (build 3)
+
+### Settings
+- Settings are now saved once you stop changing them, instead of on every press. Holding left or right to scroll through a row's options used to rewrite the whole settings file about 100 times; now it's about 5. Changes still apply immediately.
+- Saving is guaranteed before anything that could end the session: launching a game, leaving Settings, or Pegasus going to the background.
+- All screens now share one list of default values. Two places disagreed with the Settings page:
+  - On a fresh install, the featured box behaved as **Favorites** while Settings said **Fanart Slideshow**. It now follows Settings.
+  - Some locked rows on the Settings page assumed the wrong default tile shape.
+- Settings shows the actual default for every row on a fresh install, not just the first option in the list.
+- Fixed an error the Settings page wrote to the log for every row.
+
+## Build 2
 
 ### Coming back from a game
 - The theme now remembers where you were by the game itself (system, ROM file and title), not by its position in the library. A rescan, a late SD card or an import can no longer bring you back to the wrong game. If the game is gone, you land on Home instead of an empty details page.

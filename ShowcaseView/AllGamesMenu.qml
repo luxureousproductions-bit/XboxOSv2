@@ -211,7 +211,7 @@ id: root
     // The Y panel writes these keys directly; the theme's settings object
     // only re-reads on reload, so the list reads them here with an epoch.
     property int listEpoch: 0
-    function lv(key, fallback) { var e = listEpoch; return api.memory.has(key) ? api.memory.get(key) : fallback; }
+    function lv(key, fallback) { var e = listEpoch; return settingsStore.get(key, fallback); }
     readonly property string lvView:      lv("All Games View",                settings.AllGamesView)
     readonly property string lvVideo:     lv("AllGames Video preview",        settings.AllGamesVideoPreview)
     readonly property string lvHideBox:   lv("AllGames Hide box art on video", settings.AllGamesHideBoxOnVideo)
@@ -1626,8 +1626,8 @@ id: root
         { key: "AllGames Items per row",  label: "Tiles per row",       opts: ["3","4","5","6","7","8"], order: "3,4,5,6,7,8", dflt: settings.AllGamesColumns }
     ]
     readonly property var panelRows: gridMode ? gridRows : listRows
-    function listValue(row) { var e = listEpoch; var k = panelRows[row].key; return api.memory.has(k) ? api.memory.get(k) : String(panelRows[row].dflt); }
-    function panelKeyValue(key, dflt) { var e = listEpoch; return api.memory.has(key) ? api.memory.get(key) : String(dflt); }
+    function listValue(row) { var e = listEpoch; var k = panelRows[row].key; return settingsStore.get(k, String(panelRows[row].dflt)); }
+    function panelKeyValue(key, dflt) { var e = listEpoch; return settingsStore.get(key, String(dflt)); }
     // Mirrors the Settings page's greying so the two never disagree about
     // what is in play.
     function listRowDisabled(row) {
@@ -1644,9 +1644,9 @@ id: root
     }
     // Writes the value AND the index the Settings page draws its row from.
     function panelWrite(key, v, order) {
-        api.memory.set(key, v);
+        settingsStore.set(key, v);
         var oi = order.split(",").indexOf(String(v));
-        if (oi >= 0) api.memory.set(key + "Index", oi);
+        if (oi >= 0) settingsStore.set(key + "Index", oi);
     }
     function listCycle(row, dir) {
         if (listRowDisabled(row)) return;

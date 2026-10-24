@@ -190,10 +190,7 @@ id: root
         randoDev = dev;
         randoGenre = genre;
         randoGenre2 = genre2;
-        api.memory.set("Showcase randoPub", pub);
-        api.memory.set("Showcase randoDev", dev);
-        api.memory.set("Showcase randoGenre", genre);
-        api.memory.set("Showcase randoGenre2", genre2);
+        api.memory.set("Showcase randoms", { pub: pub, dev: dev, genre: genre, genre2: genre2 });
         listRecommended.refresh();
         listRandomSystem.refresh();
         currentHelpbarModel = gridviewHelpModel;
