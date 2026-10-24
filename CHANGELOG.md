@@ -4,7 +4,12 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 3)
+## Unreleased — refresh branch (build 4)
+
+### Home rows
+- What Home hides (hidden apps, hidden emulators, hidden titles, duplicate imports) is now worked out once for the whole library, instead of separately by each of the seven Home rows for every game. Rows rebuild faster at startup and when you change a Hide option.
+
+## Build 3
 
 ### Settings
 - Settings are now saved once you stop changing them, instead of on every press. Holding left or right to scroll through a row's options used to rewrite the whole settings file about 100 times; now it's about 5. Changes still apply immediately.

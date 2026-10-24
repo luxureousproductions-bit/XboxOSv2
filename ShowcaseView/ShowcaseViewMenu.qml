@@ -40,15 +40,15 @@ id: root
     // every favorited game (unlike the "Favorites" collection category above,
     // which is deliberately capped to a normal row's worth of tiles).
     ListFavorites   { id: listFavoritesAll }
-    ListLastPlayed  { id: listLastPlayed;  max: settings.ShowcaseColumns; omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
-    ListMostPlayed  { id: listMostPlayed;  max: settings.ShowcaseColumns; omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
-    ListRecommended { id: listRecommended; active: true; max: settings.ShowcaseColumns; omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
+    ListLastPlayed  { id: listLastPlayed;  max: settings.ShowcaseColumns; omitApplication: false; omitEmulator: false; hideTitles: noHideTitles; hideRows: homeHideRows }
+    ListMostPlayed  { id: listMostPlayed;  max: settings.ShowcaseColumns; omitApplication: false; omitEmulator: false; hideTitles: noHideTitles; hideRows: homeHideRows }
+    ListRecommended { id: listRecommended; active: true; max: settings.ShowcaseColumns; omitApplication: false; omitEmulator: false; hideTitles: noHideTitles; hideRows: homeHideRows }
     // "Play Something New For <System>": one random system, a few of its games.
     ListRandomSystem { id: listRandomSystem; active: true; max: settings.ShowcaseColumns }
-    ListPublisher   { id: listPublisher;   max: settings.ShowcaseColumns; publisher: randoPub;   omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
-    ListDeveloper   { id: listDeveloper;   max: settings.ShowcaseColumns; developer: randoDev;   omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
-    ListGenre       { id: listGenre;       max: settings.ShowcaseColumns; genre: randoGenre;     omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
-    ListGenre       { id: listGenre2;      max: settings.ShowcaseColumns; genre: randoGenre2;    omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
+    ListPublisher   { id: listPublisher;   max: settings.ShowcaseColumns; publisher: randoPub;   omitApplication: false; omitEmulator: false; hideTitles: noHideTitles; hideRows: homeHideRows }
+    ListDeveloper   { id: listDeveloper;   max: settings.ShowcaseColumns; developer: randoDev;   omitApplication: false; omitEmulator: false; hideTitles: noHideTitles; hideRows: homeHideRows }
+    ListGenre       { id: listGenre;       max: settings.ShowcaseColumns; genre: randoGenre;     omitApplication: false; omitEmulator: false; hideTitles: noHideTitles; hideRows: homeHideRows }
+    ListGenre       { id: listGenre2;      max: settings.ShowcaseColumns; genre: randoGenre2;    omitApplication: false; omitEmulator: false; hideTitles: noHideTitles; hideRows: homeHideRows }
 
     property var highlightedGame: null
 

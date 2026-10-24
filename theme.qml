@@ -197,6 +197,33 @@ id: root
             if (libraryHides(all.get(k), mine, lib, libOn)) rows[k] = true;
         return rows;
     }
+    // ── Home rows: everything they hide, as ONE row set ───────────────────
+    // Each Home row used to re-check, for every one of ~4.4k games, the
+    // hidden rows, the hidden titles AND the game's genre tags (apps,
+    // emulators) — seven rows doing the same work on every re-filter. This
+    // does it once per change of its inputs; the rows then only look up
+    // their row number here.
+    readonly property var homeHideRows: {
+        var base = libraryHideRows, titles = homeHideTitles;
+        var omitApp = omitAppsLive, omitEmu = omitEmulatorsLive;
+        var rows = {};
+        for (var r in base) rows[r] = true;
+        var all = api.allGames;
+        for (var k = 0; k < all.count; k++) {
+            if (rows[k]) continue;
+            var g = all.get(k);
+            if (titles[g.title] === true) { rows[k] = true; continue; }
+            if (!omitApp && !omitEmu) continue;
+            var genres = g.genreList;
+            for (var i = 0; i < genres.length; i++) {
+                var gl = genres[i].toLowerCase();
+                if ((omitApp && gl === "application") || (omitEmu && gl === "emulator")) { rows[k] = true; break; }
+            }
+        }
+        return rows;
+    }
+    readonly property var noHideTitles: ({})
+
     readonly property var androidHideRows: {
         var mine = myAndroidTitles;
         var lib = libraryHiddenLive;
