@@ -1460,7 +1460,10 @@ id: root
                         if (status === Image.Error && extIdx < exts.length - 1)
                             extIdx = extIdx + 1;       // try next extension
                     }
-                    visible: !isHero && status === Image.Ready
+                    // Drawn by sysBgFx below (rounded in one pass); shown
+                    // directly only if that shader can't run on this GPU.
+                    readonly property bool shown: !isHero && status === Image.Ready
+                    visible: shown && sysBgFx.failed
                     anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true; smooth: true
@@ -1472,16 +1475,18 @@ id: root
                     // the change, and only when HQ is on.
                     opacity: (status === Image.Ready) ? (selected ? 0.9 : 0.6) : 0
                     Behavior on opacity { enabled: hqFadeIn; NumberAnimation { duration: 180 } }
-                    // Rounded-corner clip just on the image
-                    layer.enabled: !isHero
-                    layer.smooth: true
-                    layer.effect: OpacityMask {
-                        maskSource: Rectangle {
-                            width: sysBg.width
-                            height: sysBg.height
-                            radius: tile.radius
-                        }
-                    }
+                }
+                // Rounded corners in one shader pass, reading the image's own
+                // texture. Replaces a layer + OpacityMask that kept two
+                // off-screen images alive on EVERY system tile.
+                RoundedArt {
+                id: sysBgFx
+                    anchors.fill: sysBg
+                    source: sysBg
+                    crop: true
+                    radius: tile.radius
+                    opacity: sysBg.opacity
+                    visible: sysBg.shown && !failed
                 }
 
                 Image {

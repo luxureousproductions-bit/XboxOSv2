@@ -4,7 +4,12 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 6)
+## Unreleased — refresh branch (build 7)
+
+### Home system strip
+- System tile backgrounds now get their rounded corners in a single drawing step, instead of a mask that kept two hidden copies of the image on every tile. They look the same. If a device's graphics can't run that step, the tile shows the background without rounded corners instead of nothing.
+
+## Build 6
 
 ### Home system strip
 - The name bar on the selected system tile now gets its rounded bottom corners from simple shapes, instead of a mask that built two hidden off-screen images every time you moved to a new tile. It looks the same.
