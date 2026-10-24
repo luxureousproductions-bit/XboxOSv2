@@ -1,7 +1,7 @@
 // XboxOSv2 – startup intro.
 // Covers the first moments after Pegasus hands over to the theme (cold start
 // only, never when coming back from a game). Plays assets/video/intro.mp4 if
-// that file is there, otherwise shows assets/images/intro.jpg (the theme's startup chime plays as it fades into Home). It takes no
+// that file is there, otherwise shows assets/images/intro.jpg (the startup chime plays when the theme appears, as without the intro). It takes no
 // focus and needs no input; it fades out on its own.
 import QtQuick 2.15
 import QtMultimedia 5.15

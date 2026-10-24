@@ -625,6 +625,7 @@ id: root
     property bool windowSeenActive: false
     onActiveFocusChanged: {
         if (Window.active) windowSeenActive = true;
+        if (activeFocus && !themeSeenFocused) startupChimeTimer.start();   // theme just appeared
         if (activeFocus) themeSeenFocused = true;   // see appActive
     }
     Connections {
@@ -2546,12 +2547,22 @@ id: root
     // Startup chime — plays shortly after the theme loads (delay lets the audio
     // engine come up so the first play isn't dropped). Respects the menu volume.
     Timer {
-        // Runs once at startup. With the intro on, the chime waits for the
-        // intro to start fading into Home instead (onRevealing below).
-        interval: 450; running: true; repeat: false
-        onTriggered: if (!introLoader.active) playStartupChime()
+        // Started the first time the theme gets focus: that is when Pegasus
+        // hides its own splash and the theme appears. Starting at load (as
+        // before) fired while Pegasus' splash was still on screen.
+        id: startupChimeTimer
+        interval: 150; running: false; repeat: false
+        onTriggered: playStartupChime()
     }
+    // Safety net: a platform that never reports focus still gets its chime.
+    Timer {
+        interval: 5000; running: true; repeat: false
+        onTriggered: playStartupChime()
+    }
+    property bool startupChimeDone: false
     function playStartupChime() {
+        if (startupChimeDone) return;
+        startupChimeDone = true;
         if (settings.StartupChime !== "No" && sfxVolume > 0) { sfxStartup.stop(); sfxStartup.play(); }
     }
 
@@ -2567,7 +2578,6 @@ id: root
         sourceComponent: StartupIntro {
             volume: sfxVolume
             onFinished: introDone = true
-            onRevealing: playStartupChime()
         }
     }
     SoundEffect {
