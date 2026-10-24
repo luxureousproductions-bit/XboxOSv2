@@ -14,8 +14,14 @@ id: intro
     signal revealing()
 
     property real volume: 1.0
-    readonly property int stillMs: 2500     // still image on screen
+    readonly property int stillMs: 1500     // still image on screen at least this long
     readonly property int maxVideoMs: 8000  // safety cap for a long or stuck video
+    readonly property int maxWaitMs: 15000  // never cover the theme longer than this
+    // Home is built in the background while the intro shows (theme.qml), so
+    // the intro is also the loading screen: it stays until Home is ready.
+    property bool homeReady: true
+    property bool minShown: false
+    onHomeReadyChanged: if (homeReady && minShown) close()
 
     property bool videoFailed: false
     property bool closing: false
@@ -48,7 +54,7 @@ id: intro
         visible: position > 0
         onErrorChanged: if (error !== MediaPlayer.NoError) intro.useStill()
         onStatusChanged: {
-            if (status === MediaPlayer.EndOfMedia) intro.close();
+            if (status === MediaPlayer.EndOfMedia) { intro.minShown = true; if (intro.homeReady) intro.close(); }
             else if (status === MediaPlayer.InvalidMedia) intro.useStill();
         }
     }
@@ -65,8 +71,13 @@ id: intro
         interval: 1000; running: true
         onTriggered: if (video.position <= 0) intro.useStill()
     }
-    Timer { id: stillTimer; interval: intro.stillMs; onTriggered: intro.close() }
-    Timer { interval: intro.maxVideoMs; running: true; onTriggered: intro.close() }
+    Timer {
+    id: stillTimer
+        interval: intro.stillMs
+        onTriggered: { intro.minShown = true; if (intro.homeReady) intro.close(); }
+    }
+    Timer { interval: intro.maxVideoMs; running: true; onTriggered: if (intro.homeReady) intro.close(); else intro.useStill() }
+    Timer { interval: intro.maxWaitMs; running: true; onTriggered: intro.close() }
 
     NumberAnimation {
     id: fadeOut

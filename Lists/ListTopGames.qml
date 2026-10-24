@@ -47,7 +47,7 @@ id: root
     SortFilterProxyModel {
     id: gamesFiltered
 
-        sourceModel: api.allGames
+        sourceModel: homeDataReady ? api.allGames : null   // theme.qml homeDataReady
         sorters: RoleSorter { roleName: "rating"; sortOrder: Qt.DescendingOrder; }
     }
 

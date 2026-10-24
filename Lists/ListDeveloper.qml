@@ -40,7 +40,7 @@ id: root
     SortFilterProxyModel {
     id: developerGames
 
-        sourceModel: api.allGames
+        sourceModel: homeDataReady ? api.allGames : null   // theme.qml homeDataReady
         filters: [
             RegExpFilter { roleName: "developer"; pattern: Utils.escapeRegExp(developer); caseSensitivity: Qt.CaseInsensitive },
             ExpressionFilter {

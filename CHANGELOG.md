@@ -4,7 +4,14 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 13)
+## Unreleased — refresh branch (build 14)
+
+### Faster hand-off from Pegasus
+- Pegasus's loading screen now disappears about 2 seconds sooner (about 5.2 s → 3.2 s on the test machine). Pegasus keeps its screen up until the theme has finished building, and the theme was building all of Home first, including its game rows, which sort and filter the whole library.
+- With the startup intro on, Home now builds behind the intro, and the intro stays up until Home is ready (at least 1.5 seconds, never more than 15), then fades into it.
+- With the intro off, or when coming back from a game, nothing changes: Home is ready before the theme appears.
+
+## Build 13
 
 ### New: Startup intro
 - When Pegasus starts with XboxOSv2, an Xbox intro covers the moment Pegasus hands over to the theme, then fades into Home. It never plays when you come back from a game.

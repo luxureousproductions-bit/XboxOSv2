@@ -38,7 +38,7 @@ id: root
     SortFilterProxyModel {
     id: lastPlayedGames
 
-        sourceModel: api.allGames
+        sourceModel: homeDataReady ? api.allGames : null   // theme.qml homeDataReady
         sorters: RoleSorter { roleName: "lastPlayed"; sortOrder: Qt.DescendingOrder }
         filters: ExpressionFilter {
             expression: {

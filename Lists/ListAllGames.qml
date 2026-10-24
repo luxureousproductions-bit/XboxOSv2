@@ -38,7 +38,7 @@ id: root
     SortFilterProxyModel {
     id: dedupedGames
 
-        sourceModel: api.allGames
+        sourceModel: homeDataReady ? api.allGames : null   // theme.qml homeDataReady
         // Off (no per-row JS at all) when there's nothing to hide.
         filters: ExpressionFilter {
             enabled: root.hasHideRows

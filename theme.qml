@@ -625,7 +625,7 @@ id: root
     property bool windowSeenActive: false
     onActiveFocusChanged: {
         if (Window.active) windowSeenActive = true;
-        if (activeFocus && !themeSeenFocused) startupChimeTimer.start();   // theme just appeared
+        if (activeFocus && !themeSeenFocused) { startupChimeTimer.start(); homeDataTimer.start(); }   // theme just appeared
         if (activeFocus) themeSeenFocused = true;   // see appActive
     }
     Connections {
@@ -1891,6 +1891,7 @@ id: root
         rebuildHomeHide();      // first fill, before the Home rows filter
         root.state = "showcasescreen";
 
+        if (!introLoader.active) homeDataReady = true;   // no intro: lists build now, before the theme shows
         dropLegacyResumeKeys();
         if (fromGame)
             returnedFromGame();
@@ -1965,6 +1966,12 @@ id: root
 
         anchors.fill: parent
         sourceComponent: showcaseview
+        // Built in the background when the startup intro covers it. Pegasus
+        // keeps its own splash up until everything the theme builds
+        // synchronously is done, so a synchronous Home held the Pegasus logo
+        // on screen for seconds. Without the intro (setting off, or coming
+        // back from a game) Home is still built before the theme shows.
+        asynchronous: introLoader.active
     }
 
     Loader {
@@ -2558,7 +2565,7 @@ id: root
     // Safety net: a platform that never reports focus still gets its chime.
     Timer {
         interval: 5000; running: true; repeat: false
-        onTriggered: if (!introLoader.active) playStartupChime()
+        onTriggered: { homeDataReady = true; if (!introLoader.active) playStartupChime(); }
     }
     property bool startupChimeDone: false
     function playStartupChime() {
@@ -2571,6 +2578,13 @@ id: root
     // Cold start only (never on the way back from a game). Settings > Audio >
     // Startup intro. See Global/StartupIntro.qml.
     property bool introDone: false
+    // The game lists behind the Home rows (Lists/*.qml) filter and sort the
+    // whole library, ~1.5 s on the test machine, and all of it ran before
+    // Pegasus would hide its splash. With the intro on, they start right
+    // after the theme appears, behind the intro, which waits for them.
+    // Without the intro they start at load, as before.
+    property bool homeDataReady: false
+    Timer { id: homeDataTimer; interval: 50; onTriggered: homeDataReady = true }
     Loader {
     id: introLoader
         anchors.fill: parent
@@ -2578,6 +2592,7 @@ id: root
         active: !introDone && !fromGame && settingsStore.get("Startup intro") === "Yes"
         sourceComponent: StartupIntro {
             volume: sfxVolume
+            homeReady: showcaseLoader.status === Loader.Ready && homeDataReady
             onFinished: introDone = true
             onRevealing: playStartupChime()     // chime as the intro fades into Home
         }

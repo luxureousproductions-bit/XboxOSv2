@@ -46,7 +46,7 @@ id: root
     SortFilterProxyModel {
     id: genreGames
 
-        sourceModel: api.allGames
+        sourceModel: homeDataReady ? api.allGames : null   // theme.qml homeDataReady
         filters: [
             ExpressionFilter {
                 expression: {

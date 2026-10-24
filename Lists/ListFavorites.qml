@@ -27,7 +27,7 @@ id: root
     SortFilterProxyModel {
     id: lastplayedFavorites
 
-        sourceModel: api.allGames
+        sourceModel: homeDataReady ? api.allGames : null   // theme.qml homeDataReady
         filters: ValueFilter { roleName: "favorite"; value: true }
         sorters: RoleSorter { roleName: "lastPlayed"; sortOrder: Qt.DescendingOrder; }
     }

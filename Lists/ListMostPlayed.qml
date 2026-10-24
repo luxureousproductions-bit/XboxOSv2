@@ -38,7 +38,7 @@ id: root
     SortFilterProxyModel {
     id: mostPlayedGames
 
-        sourceModel: api.allGames
+        sourceModel: homeDataReady ? api.allGames : null   // theme.qml homeDataReady
         // Primary: total time played (seconds), most first.
         // Tie-break: number of launches, most first (covers games with equal or
         // zero playTime so they still order sensibly).
