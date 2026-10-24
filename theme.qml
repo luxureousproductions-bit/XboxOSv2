@@ -1912,8 +1912,22 @@ id: root
                 root.launchSuspended = true;
             else if (root.launchSuspended) {
                 root.launchSuspended = false;
+                // Back without a reload (Pegasus X keeps the theme loaded):
+                // the "returning from a game" flag has done its job. Left set,
+                // the next theme load (Reload all games, a theme switch) would
+                // "return" to this game instead of starting on Home.
+                api.memory.unset('To Game');
                 previousScreen();
             }
+        }
+    }
+
+    // A launch that failed (app or emulator missing, bad command): nothing to
+    // return from, so the next load starts on Home
+    Connections {
+        target: api
+        function onEventLaunchError(msg) {
+            api.memory.unset('To Game');
         }
     }
 
