@@ -99,10 +99,6 @@ id: root
             setting: "Yes,No"
         }
         ListElement {
-            settingName: "Startup intro"
-            setting: "Yes,No"
-        }
-        ListElement {
             settingName: "Menu Volume"
             setting: "1.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9"
         }
@@ -170,6 +166,10 @@ id: root
             settingName: "Show Clock"
             label: "Clock"
             setting: "12hr,24hr,No"
+        }
+        ListElement {
+            settingName: "Startup intro"
+            setting: "Yes,No"
         }
     }
 
