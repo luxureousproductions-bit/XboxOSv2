@@ -2552,12 +2552,13 @@ id: root
         // before) fired while Pegasus' splash was still on screen.
         id: startupChimeTimer
         interval: 150; running: false; repeat: false
-        onTriggered: playStartupChime()
+        // With the intro on, the chime waits for the fade into Home (onRevealing)
+        onTriggered: if (!introLoader.active) playStartupChime()
     }
     // Safety net: a platform that never reports focus still gets its chime.
     Timer {
         interval: 5000; running: true; repeat: false
-        onTriggered: playStartupChime()
+        onTriggered: if (!introLoader.active) playStartupChime()
     }
     property bool startupChimeDone: false
     function playStartupChime() {
@@ -2578,6 +2579,7 @@ id: root
         sourceComponent: StartupIntro {
             volume: sfxVolume
             onFinished: introDone = true
+            onRevealing: playStartupChime()     // chime as the intro fades into Home
         }
     }
     SoundEffect {
