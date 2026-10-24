@@ -499,6 +499,13 @@ id: root
     id: sysBgResolver
         visible: false
         asynchronous: true
+        // Only a probe: it finds WHICH file exists, then the fanart layer
+        // does the real decode at its own size. It used to decode every
+        // system's background at full size (a second, full-resolution
+        // decode on each step along the system strip). Tiny, and kept out
+        // of the image cache so it never shares an entry with the real one.
+        sourceSize: Qt.size(32, 18)
+        cache: false
         property string basePath: ""
         property var exts: [".webp", ".png", ".jpg", ".jpeg"]
         property int extIdx: 0
