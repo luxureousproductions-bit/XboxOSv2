@@ -4,7 +4,12 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 5)
+## Unreleased — refresh branch (build 6)
+
+### Home system strip
+- The name bar on the selected system tile now gets its rounded bottom corners from simple shapes, instead of a mask that built two hidden off-screen images every time you moved to a new tile. It looks the same.
+
+## Build 5
 
 ### Home system strip
 - Each step along the system strip decoded that system's background image twice at full resolution: once only to check the file exists, then again to show it. The check now uses a tiny thumbnail, so each step does one full decode instead of two. Backgrounds look the same.

@@ -1529,22 +1529,37 @@ id: root
 
                     anchors.fill: parent
                     visible: !isHero && sysNameBar.opacity > 0
-                    // Only pay for the FBO while the bar is actually showing.
-                    layer.enabled: visible
-                    layer.effect: OpacityMask {
-                        maskSource: Rectangle {
-                            width: tile.width
-                            height: tile.height
-                            radius: tile.radius
-                        }
-                    }
+                    // Square top, rounded bottom WITHOUT a mask: a plain square
+                    // band, plus a strip clipped to the bottom corner radius
+                    // holding a rounded rectangle. Clipping a plain rectangle
+                    // is free; the OpacityMask it replaces allocated two
+                    // offscreen buffers on every step along the strip (the
+                    // newly selected tile turned its layer on each time).
 
-                    Rectangle {
+                    Item {
                     id: sysNameBar
 
                         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                         height: Math.max(vpx(36), topRow.tileSz * 0.16, sysBarText.contentHeight + vpx(16))   // grows for 2-line names
-                        color: "#99000000"
+                        readonly property color barColor: "#99000000"
+                        readonly property real r: Math.min(tile.radius, height)
+
+                        Rectangle {
+                            anchors { left: parent.left; right: parent.right; top: parent.top }
+                            height: parent.height - parent.r
+                            color: parent.barColor
+                        }
+                        Item {
+                            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                            height: parent.r
+                            clip: true
+                            Rectangle {
+                                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                                height: sysNameBar.r * 2
+                                radius: sysNameBar.r
+                                color: sysNameBar.barColor
+                            }
+                        }
                         // System tile titles: its own setting, separate from game tiles.
                         opacity: (isHero || systemTitleMode === "Never") ? 0
                                : ((selected || systemTitleMode === "Always") ? 1 : 0)
