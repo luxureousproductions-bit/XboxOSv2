@@ -4,11 +4,11 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 8)
+## Unreleased — refresh branch (build 9)
 
 ### New: Startup intro
 - When Pegasus starts with XboxOSv2, an Xbox intro covers the moment Pegasus hands over to the theme, then fades into Home. It never plays when you come back from a game.
-- To use your own intro video, put it at `assets/video/intro.mp4` in the theme folder. Without one, the intro shows a still image (`assets/images/intro.jpg`) for a few seconds with the normal startup chime.
+- To use your own intro video, put it at `assets/video/intro.mp4` in the theme folder. Without one, the intro shows a still image (`assets/images/intro.jpg`) for a few seconds. The startup chime doesn't play while the intro is on.
 - Turn it off in **Settings → Audio → Startup intro**.
 
 ### Home

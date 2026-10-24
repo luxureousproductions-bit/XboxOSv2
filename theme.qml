@@ -2546,10 +2546,11 @@ id: root
     // Startup chime — plays shortly after the theme loads (delay lets the audio
     // engine come up so the first play isn't dropped). Respects the menu volume.
     Timer {
-        // Not while the startup intro runs: it asks for the chime itself when
-        // it shows the still image, and an intro video brings its own sound.
-        interval: 450; running: !introLoader.active; repeat: false
-        onTriggered: playStartupChime()
+        // Runs once at startup. Skipped when the startup intro plays: the
+        // intro has no chime. (It used to be bound to the intro, so it
+        // started again when the intro ended and the chime played twice.)
+        interval: 450; running: true; repeat: false
+        onTriggered: if (!introLoader.active) playStartupChime()
     }
     function playStartupChime() {
         if (settings.StartupChime !== "No" && sfxVolume > 0) { sfxStartup.stop(); sfxStartup.play(); }
@@ -2567,10 +2568,8 @@ id: root
         sourceComponent: StartupIntro {
             volume: sfxVolume
             onFinished: introDone = true
-            onWantsChime: chimeAfterIntro.start()
         }
     }
-    Timer { id: chimeAfterIntro; interval: 450; onTriggered: playStartupChime() }
     SoundEffect {
         id: sfxStartup
         source: "assets/sfx/startup.wav"
