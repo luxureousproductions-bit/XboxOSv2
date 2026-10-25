@@ -48,6 +48,11 @@ id: root
     signal unhighlighted
 
     property bool selected
+    // Xbox-style frame (Global/FocusFrame.qml) instead of the classic border
+    // and halo. Set by the Platform page from Settings > Tiles > Tile frame.
+    property bool xboxFrame: false
+    // One corner radius for every rounded piece of the tile.
+    readonly property real artRadius: xboxFrame ? vpx(6) : vpx(12)
     property var gameData: modelData
 
     // Apps imported by Pegasus, matched on file path — "android:<package>".
@@ -183,7 +188,7 @@ id: root
     // step; it appears as soon as the cursor stops. The accent frame still
     // follows the cursor throughout.
     Loader {
-        active: selected && !reduceMotion
+        active: selected && !reduceMotion && !xboxFrame   // the Xbox frame has its own glow
         anchors.fill: tileHaloSrc
         z: -1
         sourceComponent: Component {
@@ -239,7 +244,7 @@ id: root
             maskSource: Rectangle {
                 width: container.width
                 height: container.height
-                radius: vpx(12)
+                radius: root.artRadius
             }
         }
 
@@ -262,18 +267,18 @@ id: root
             Rectangle {
                 visible: root.fastArt
                 anchors { left: parent.left; right: parent.right; top: parent.top }
-                height: parent.height - vpx(12)
+                height: parent.height - root.artRadius
                 color: "#99000000"
             }
             Item {
                 visible: root.fastArt
                 clip: true
                 anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                height: vpx(12)
+                height: root.artRadius
                 Rectangle {
                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                    height: vpx(24)
-                    radius: vpx(12)
+                    height: root.artRadius * 2
+                    radius: root.artRadius
                     color: "#99000000"
                 }
             }
@@ -449,8 +454,8 @@ id: root
             anchors.fill: screenshot
             source: screenshot
             crop: true
-            radius: vpx(12)
-            inset: vpx(2)
+            radius: root.artRadius
+            inset: root.xboxFrame ? 0 : vpx(2)
             opacity: screenshot.opacity
             // Only once the image is decoded: with no texture yet, GL samples
             // solid black, which would flash a black box while art loads.
@@ -484,14 +489,14 @@ id: root
             anchors.fill: parent
             color: screenshot.source == "" ? theme.secondary : "black"
             opacity: screenshot.source == "" ? 1 : selected ? 0.1 : 0.2
-            radius: root.fastArt ? vpx(12) : 0
+            radius: root.fastArt ? root.artRadius : 0
         }
 
         Rectangle {
         id: regborder
 
             anchors.fill: parent
-            radius: root.fastArt ? vpx(12) : 0
+            radius: root.fastArt ? root.artRadius : 0
             color: "transparent"
             border.width: vpx(1)
             border.color: "white"
@@ -505,7 +510,7 @@ id: root
     Rectangle {
         id: favBorder
         anchors.fill: container
-        radius: vpx(12)
+        radius: root.artRadius
         color: "transparent"
         border.width: vpx(2)
         border.color: theme.accent
@@ -517,8 +522,21 @@ id: root
 
         active: selected
         anchors.fill: parent
-        sourceComponent: border
+        sourceComponent: root.xboxFrame ? xboxBorder : border
         asynchronous: true
+    }
+
+    Component {
+    id: xboxBorder
+
+        // Wrapped: the Loader sizes its item to itself, which would undo the
+        // frame's negative margins (it reaches past the tile on every side).
+        Item {
+            FocusFrame {
+                anchors.fill: parent
+                artRadius: root.artRadius
+            }
+        }
     }
 
     Component {

@@ -4,7 +4,15 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 14)
+## Unreleased — refresh branch (build 16)
+
+### New: Xbox-style tile frame (Platform page, trial)
+- **Settings → Tiles → Tile frame (Platform page)**: **Classic** (unchanged) or **Xbox**. It applies straight away, so you can switch back and forth to compare.
+- **Xbox:** small rounded corners on the art, a thin see-through gap, a thin accent ring and a short soft glow, like the Xbox dashboard's focus frame. The video preview fills the art area and gets the same rounded corners.
+- **Built to stay fast:** the frame is drawn in one step, and only on the selected tile. The art uses the same one-step rounding as before, and the video adds one extra layer only while a preview plays. It replaces the old glow image on that page.
+- For now only the Platform page uses it. Home, All Games and the system tiles follow once the look is settled.
+
+## Build 14
 
 ### Faster hand-off from Pegasus
 - Pegasus's loading screen now disappears about 2 seconds sooner (about 5.2 s → 3.2 s on the test machine). Pegasus keeps its screen up until the theme has finished building, and the theme was building all of Home first, including its game rows, which sort and filter the whole library.

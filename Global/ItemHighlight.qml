@@ -24,6 +24,10 @@ id: root
     property var game
     property bool selected
     property bool boxArt
+    // Xbox-style frame (see DynamicGridItem.xboxFrame): the preview fills the
+    // art rectangle and gets the art's small rounded corners.
+    property bool xboxFrame: false
+    readonly property real artRadius: vpx(6)
     property bool playVideo: (settings.AllowThumbVideo === "Yes") && !boxArt
 
     onGameChanged: {
@@ -141,7 +145,7 @@ id: root
         id: videocomponent
 
             anchors.fill: parent
-            anchors.margins: vpx(3)   // Meets the selection frame's INNER edge exactly:
+            anchors.margins: root.xboxFrame ? 0 : vpx(3)   // classic: meets the selection frame's INNER edge exactly:
                                       // the frame overhangs -3 and is 6 wide, so its inner
                                       // edge sits +3 in. The video's square corners are then
                                       // hidden well beneath the ring (over 2 units inside its
@@ -149,6 +153,10 @@ id: root
                                       // VideoOutput (which renders black on weak GPUs).
             source: game.assets.videoList.length ? game.assets.videoList[0] : ""
             fillMode: VideoOutput.PreserveAspectCrop
+            // Xbox frame: rounded corners in one shader pass over the video's
+            // own layer (one offscreen buffer, only while this preview exists).
+            layer.enabled: root.xboxFrame
+            layer.effect: RoundedArt { radius: root.artRadius }
             muted: !root.allowAudio || !root.playbackActive
             loops: MediaPlayer.Infinite
 
@@ -200,12 +208,12 @@ id: root
         visible: false   // only the shadow below draws it
         Rectangle {
             anchors.fill: parent
-            anchors.margins: vpx(3)   // the video's own inset
+            anchors.margins: root.xboxFrame ? 0 : vpx(3)   // the video's own inset
             // Rounded like the selection frame (ItemBorder: radius 15 at -3,
             // 6 wide, so its inner curve is radius 9 at +3). Square corners
             // blurred into faint dark corners just past the rounded frame on
             // light backgrounds.
-            radius: vpx(9)
+            radius: root.xboxFrame ? root.artRadius : vpx(9)
             color: "#000000"
         }
     }

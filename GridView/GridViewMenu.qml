@@ -303,6 +303,9 @@ id: root
     }
     readonly property string tileShape:   sysPref("Tile shape",        settings.GridThumbnail)
     readonly property string tileRatio:   sysPref("Tile ratio",        settings.GridRatio)
+    // Settings > Tiles > Tile frame. Live, so Classic/Xbox can be compared
+    // without a reload.
+    readonly property bool xboxFrame: { var e = settingsEpoch; return settingsStore.get("Tile frame") === "Xbox"; }
     readonly property string tileArt:     sysPref("Tile art",          settings.GridArt)
     readonly property string tileLogo:    sysPref("Show logo on tile", settings.GridGameLogo)
     readonly property string tileColumns: sysPref("Tiles per row",     settings.GridColumns)
@@ -741,6 +744,7 @@ id: root
                 GridView.onReused: resetForReuse()
 
                     selected: GridView.isCurrentItem && gamegrid.focus
+                    xboxFrame: root.xboxFrame
                     artMode: tileArt
                 titleMode: tileTitles
                     showLogo: tileLogo === "Yes"
@@ -771,6 +775,7 @@ id: root
                     game: list.currentGame(gamegrid.currentIndex)
                     selected: gamegrid.focus
                     boxArt: showBoxes
+                    xboxFrame: root.xboxFrame
                 }
             }
 

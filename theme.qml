@@ -471,6 +471,7 @@ id: root
         "Showcase Collections Art":                  "Fanart",
         "Start up chime":                            "Yes",
         "Startup intro":                             "Yes",
+        "Tile frame":                                "Classic",
         "System tile titles":                        "On focus",
         "Tile Halo":                                 "Yes",
         "Title Screen":                              "Yes",
