@@ -19,7 +19,8 @@ id: fx
     property real ring: vpx(2.5)
     property real glow: vpx(6)
     property color accent: theme.accent
-    property real glowStrength: 0.55
+    // Off when Settings > Tiles > Tile Halo is off (ring and gap stay)
+    property real glowStrength: tileHaloLive ? 0.55 : 0
 
     // The effect extends past the art by the whole frame on every side.
     readonly property real reach: gap + ring + glow + 1

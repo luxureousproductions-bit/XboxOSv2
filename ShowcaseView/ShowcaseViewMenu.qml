@@ -1370,7 +1370,7 @@ id: root
                     source: focusHaloSrc
                     color: theme.accent
                     z: -1
-                    opacity: (selected && settings.TileHalo === "Yes" && !xboxFrameLive) ? 0.95 : 0
+                    opacity: (selected && tileHaloLive && !xboxFrameLive) ? 0.95 : 0
                     visible: opacity > 0
                     Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                 }

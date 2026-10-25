@@ -2582,6 +2582,10 @@ id: root
     // Live, so the two can be compared without a reload.
     readonly property bool xboxFrameLive: { var e = settingsEpoch; return settingsStore.get("Tile frame") === "Xbox"; }
 
+    // Settings > Tiles > Tile Halo, live. In Xbox mode it switches the
+    // frame's glow (Global/FocusFrame.qml); in Classic, the halo image.
+    readonly property bool tileHaloLive: { var e = settingsEpoch; return settingsStore.get("Tile Halo") === "Yes"; }
+
     property bool introDone: false
     // The game lists behind the Home rows (Lists/*.qml) filter and sort the
     // whole library, ~1.5 s on the test machine, and all of it ran before

@@ -198,7 +198,7 @@ id: root
             source: tileHaloSrc
             color: theme.accent
             z: -1
-            opacity: (selected && settings.TileHalo === "Yes") ? 0.95 : 0
+            opacity: (selected && tileHaloLive) ? 0.95 : 0
             visible: opacity > 0
             Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
         }
