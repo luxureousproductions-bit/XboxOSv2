@@ -4,7 +4,12 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 20)
+## Unreleased — refresh branch (build 21)
+
+### Fixed
+- **3D Box tiles:** the glow on the selected box no longer draws a blocky accent patch beside it. 3D renders often include nearly see-through pixels (a soft drop shadow, leftover transparency). The glow traced those too, and the tighter Xbox glow made them solid. The glow now follows only the box itself, and the box's own shadow is kept. This also fixes a faint version of the same patch in **Classic**.
+
+## Build 20
 
 ### Xbox tile frame
 - The ring is 0.5 px thicker everywhere.

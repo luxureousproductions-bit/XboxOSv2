@@ -291,13 +291,37 @@ id: root
             }
             Component {
             id: accentTrace
-                Glow {
-                    // Xbox frame: a thin, tight trace instead of the wide glow
-                    radius: root.xboxFrame ? vpx(4) : vpx(10)
-                    samples: root.xboxFrame ? 17 : 25
-                    spread: root.xboxFrame ? 0.85 : 0.6
-                    color: theme.accent
-                    transparentBorder: true
+                // 3D renders often carry near-invisible pixels (a faint drop
+                // shadow, leftover alpha) around the box. A glow straight off
+                // the image traced those too and drew a blocky accent patch
+                // beside the box. The glow now traces a thresholded copy (only
+                // what's clearly the box), and the untouched image is drawn
+                // back on top, soft shadow included.
+                Item {
+                    property variant source
+                    ThresholdMask {
+                    id: solidBox
+                        anchors.fill: parent
+                        source: parent.source
+                        maskSource: parent.source
+                        threshold: 0.75   // only solid box pixels; drop shadows sit below this
+                        spread: 0.1
+                        visible: false
+                    }
+                    Glow {
+                        anchors.fill: solidBox
+                        source: solidBox
+                        // Xbox frame: a thin, tight trace instead of the wide glow
+                        radius: root.xboxFrame ? vpx(4) : vpx(10)
+                        samples: root.xboxFrame ? 17 : 25
+                        spread: root.xboxFrame ? 0.85 : 0.6
+                        color: theme.accent
+                        transparentBorder: true
+                    }
+                    ShaderEffect {
+                        anchors.fill: parent
+                        property variant source: parent.source
+                    }
                 }
             }
             anchors.horizontalCenter: parent.horizontalCenter
