@@ -1125,8 +1125,8 @@ id: root
     function launchGameFromRA(game) {
         if (askDisc(game, "ra")) return;
         launchingGame = (game !== null) ? game : currentGame;
-        launchGameScreen();             // pushes the RA screen onto lastState
-        lastState = ["showcasescreen"];  // ...replaced: return to the Showcase
+        launchGameScreen();             // pushes the RA screen onto the history
+        navigator.setStack(["showcasescreen"]);  // ...replaced: return to the Showcase
         searchReturnDepth = -1;          // stack rewritten: no search to return to
         raSearchReturn = false;
         saveCurrentState(launchingGame);
@@ -1166,11 +1166,12 @@ id: root
 
     function saveCurrentState(game, fromDrawer) {
         settingsStore.flush();          // pending settings reach disk before the game runs
+        var nav = navigator.serialize(gameKey);
         api.memory.set('Resume', {
             v: 1,
-            state: root.state,
-            lastState: lastState.slice(),
-            lastGame: lastGame.map(gameKey),
+            state: nav.state,
+            lastState: nav.lastState,
+            lastGame: nav.lastGame,
             game: gameKey(game),
             collection: currentCollectionIndex,
             homePrimary: storedHomePrimaryIndex,
@@ -1198,40 +1199,24 @@ id: root
         var keys = [r.game].concat(r.lastGame || []);
         var games = resolveGameKeys(keys);
 
-        lastState                 = r.lastState || [];
-        lastGame                  = games.slice(1).filter(function(g) { return g !== null; });
         storedHomePrimaryIndex    = r.homePrimary || 0;
         storedHomeSecondaryIndex  = r.homeSecondary || 0;
         currentCollectionIndex    = r.collection || 0;
         storedCollectionGameIndex = r.collectionGame || 0;
         if (games[0]) currentGame = games[0];
-        root.state                = r.state || "showcasescreen";
 
+        var screen = r.state || "showcasescreen";
+        var stack  = r.lastState || [];
         // The game is gone (removed, or its SD card isn't mounted): don't
         // land on a details page with no game behind it.
-        if (!games[0] && root.state === "gameviewscreen") {
-            lastState = [];
-            root.state = "showcasescreen";
-        }
+        if (!games[0] && screen === "gameviewscreen") { screen = "showcasescreen"; stack = []; }
+        // Saved while the launch splash was up (the normal case): land on the
+        // page the game was launched from instead of the splash.
+        if (screen === "launchgamescreen") screen = stack.length ? stack.pop() : "showcasescreen";
+        // Launched from the app drawer: always land on Home.
+        if (r.fromDrawer) { screen = "showcasescreen"; stack = []; }
 
-        // savedState is "launchgamescreen" (the splash was on-screen at launch).
-        // On reload-type devices we land back on the splash, so redirect to the
-        // page we launched from (top of lastState) and drop it from the stack.
-        if (root.state === "launchgamescreen") {
-            if (lastState.length > 0) {
-                root.state = lastState[lastState.length - 1];
-                lastState.pop();
-            } else {
-                root.state = "showcasescreen";
-            }
-        }
-
-        // Launched from the app drawer: always land on the Showcase, whatever
-        // screen it was opened from.
-        if (r.fromDrawer) {
-            lastState  = ["showcasescreen"];
-            root.state = "showcasescreen";
-        }
+        navigator.restore(screen, stack, games.slice(1).filter(function(g) { return g !== null; }));
     }
 
     // Older builds saved ten separate keys (and "To Game"). Removed once,
@@ -1553,35 +1538,30 @@ id: root
         }
     ]
 
-    property var lastState: []
-    property var lastGame: []
+    // All screen changes and the Back history live here (Global/Navigator.qml).
+    // root.state follows navigator.current; the screen Loaders key on root.state.
+    Navigator {
+    id: navigator
+        onCurrentChanged: root.state = current
+    }
 
     // Screen switching functions
     function softwareScreen() {
         playAccept();
-        lastState.push(state);
         searchTerm = "";
         searchMode = "Title";
         genreSelected = [];
-        switch(settings.PlatformView) {
-            case "Grid":
-                root.state = "softwaregridscreen";
-                break;
-            default:
-                root.state = "softwarescreen";
-        }
+        navigator.go(settings.PlatformView === "Grid" ? "softwaregridscreen" : "softwarescreen");
     }
 
     function showcaseScreen() {
         playAccept();
-        lastState.push(state);
-        root.state = "showcasescreen";
+        navigator.go("showcasescreen");
     }
 
     function allGamesScreen() {
         playAccept();
-        lastState.push(state);
-        root.state = "allgamesscreen";
+        navigator.go("allgamesscreen");
     }
 
     function gameDetails(game) {
@@ -1597,28 +1577,24 @@ id: root
         }
 
         // As long as there is a state history, save the last game
-        if (lastState.length != 0)
-            lastGame.push(currentGame);
+        if (navigator.depth > 0)
+            navigator.pushGame(currentGame);
 
         // Push the new game
         if (game !== null)
             currentGame = game;
 
-        // Save the state before pushing the new one
-        lastState.push(state);
-        root.state = "gameviewscreen";
+        navigator.go("gameviewscreen");
     }
 
     function settingsScreen() {
         playAccept();
-        lastState.push(state);
-        root.state = "settingsscreen";
+        navigator.go("settingsscreen");
     }
 
     function achievementsScreen() {
         playAccept();
-        lastState.push(state);
-        root.state = "achievementsscreen";
+        navigator.go("achievementsscreen");
     }
 
     // Navigate to RA overview without pushing onto lastState.
@@ -1626,7 +1602,7 @@ id: root
     // from RAGameEntryView) so B exits RA in one press.
     function achievementsScreenFromGame() {
         playAccept();
-        root.state = "achievementsscreen";
+        navigator.jump("achievementsscreen");
         // Back on the overview after opening an RA search result: show the
         // results again (B from the game's achievements lands here).
         if (raSearchReturn) {
@@ -1636,27 +1612,25 @@ id: root
     }
 
     function gameAchievementsScreen() {
-        lastState.push(state);
-        root.state = "gameachievementsscreen";
+        navigator.go("gameachievementsscreen");
     }
 
     // Navigate to game achievements from the RA overview without pushing.
     // Called by AchievementsView so that B always exits RA in one press
     // regardless of whether RA was entered from GameView or Showcase.
     function gameAchievementsScreenFromOverview() {
-        root.state = "gameachievementsscreen";
+        navigator.jump("gameachievementsscreen");
     }
 
     // Navigate to GameAchievementsView without pushing onto lastState.
     // Called by RAGameEntryView when a game is found so pressing Back
     // returns directly to wherever RA was entered from.
     function gameAchievementsScreenFromEntry() {
-        root.state = "gameachievementsscreen";
+        navigator.jump("gameachievementsscreen");
     }
 
     function raEntryScreen() {
-        lastState.push(state);
-        root.state = "raentryscreen";
+        navigator.go("raentryscreen");
     }
 
     // RA entry from the achievements search overlay. Deliberately does NOT
@@ -1666,7 +1640,7 @@ id: root
     // next B popped back onto the page you were already on and appeared to do
     // nothing until a third press.
     function raEntryScreenFromSearch() {
-        root.state = "raentryscreen";
+        navigator.jump("raentryscreen");
     }
 
     // Optional 'collection' scopes Discover to a single system (passed from
@@ -1676,8 +1650,7 @@ id: root
     function discoverScreen(collection) {
         playAccept();
         discoverContext = collection || null;
-        lastState.push(state);
-        root.state = "discoverscreen";
+        navigator.go("discoverscreen");
     }
 
     // Navigate to game details without pushing "discoverscreen" onto lastState.
@@ -1772,11 +1745,11 @@ id: root
 
     function gameDetailsFromDiscover(game) {
         playAccept();
-        if (lastState.length != 0)
-            lastGame.push(currentGame);
+        if (navigator.depth > 0)
+            navigator.pushGame(currentGame);
         if (game !== null)
             currentGame = game;
-        root.state = "gameviewscreen";
+        navigator.jump("gameviewscreen");
     }
 
     // Launch a game from DiscoverView without pushing "discoverscreen" onto
@@ -1787,7 +1760,7 @@ id: root
             playAccept();
             launchingGame = game;
             launchSuspended = false;
-            root.state = "launchgamescreen";
+            navigator.jump("launchgamescreen");
             saveCurrentState(game);
             launchDelay.restart();      // hold the splash, then launch (see launchDelay)
         }
@@ -1818,8 +1791,7 @@ id: root
     function launchGameScreen() {
         playAccept();
         launchSuspended = false;
-        lastState.push(state);
-        root.state = "launchgamescreen";
+        navigator.go("launchgamescreen");
     }
 
     function previousScreen() {
@@ -1834,7 +1806,7 @@ id: root
         // would leave RA altogether — go back to the overview's results.
         if (raSearchReturn && state === "raentryscreen") {
             raSearchReturn = false;
-            root.state = "achievementsscreen";
+            navigator.jump("achievementsscreen");
             reopenLibrarySearch();
             return;
         }
@@ -1842,32 +1814,25 @@ id: root
 
         // Guard against an empty stack. Reading past the end sets state to
         // undefined, which leaves the screen stuck exactly where it was.
-        if (lastState.length === 0) {
+        // Details opened from details: the game swaps back as the screen does.
+        if (!navigator.back(function(g) { currentGame = g; })) {
             searchReturnDepth = -1;
-            state = "showcasescreen";
+            navigator.home("showcasescreen");
             return;
         }
 
-        if (state == lastState[lastState.length-1])
-            popLastGame();
-
-        state = lastState[lastState.length - 1];
-        lastState.pop();
-
         // Back at the screen the global search was opened from: show its
         // results again. Anything shallower means the stack was cut past it.
-        if (searchReturnDepth >= 0 && lastState.length <= searchReturnDepth) {
-            var reopen = (lastState.length === searchReturnDepth);
+        if (searchReturnDepth >= 0 && navigator.depth <= searchReturnDepth) {
+            var reopen = (navigator.depth === searchReturnDepth);
             searchReturnDepth = -1;
             if (reopen) reopenLibrarySearch();
         }
     }
 
     function popLastGame() {
-        if (lastGame.length) {
-            currentGame = lastGame[lastGame.length-1];
-            lastGame.pop();
-        }
+        var g = navigator.popGame();
+        if (g) currentGame = g;
     }
 
     // Set default state to the platform screen
@@ -1890,7 +1855,7 @@ id: root
             }
         });
         rebuildHomeHide();      // first fill, before the Home rows filter
-        root.state = "showcasescreen";
+        navigator.home("showcasescreen");
 
         if (!introLoader.active) homeDataReady = true;   // no intro: lists build now, before the theme shows
         dropLegacyResumeKeys();
@@ -2414,10 +2379,9 @@ id: root
         onNavHome: {
             if (root.state === "showcasescreen") return;
             playAccept();
-            lastState = ["showcasescreen"];
-            searchReturnDepth = -1;     // stack rewritten: no search to return to
+            navigator.home("showcasescreen");
+            searchReturnDepth = -1;     // history cleared: no search to return to
             raSearchReturn = false;
-            root.state = "showcasescreen";
         }
         // Library pushes normally, so Back returns where you came from.
         onNavLibrary: {
@@ -2503,7 +2467,7 @@ id: root
             // From Game Details itself the page just swaps games (gameDetails
             // doesn't push), so there's no separate screen to come back to.
             if (root.state !== "gameviewscreen")
-                searchReturnDepth = lastState.length;
+                searchReturnDepth = navigator.depth;
             openGame(game);
         }
     }

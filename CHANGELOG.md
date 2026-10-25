@@ -4,7 +4,12 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 22)
+## Unreleased — refresh branch (build 23)
+
+### Under the hood: one place for screen changes
+- Every screen change and the Back history now go through one component (`Global/Navigator.qml`). Before, a dozen functions in `theme.qml` each pushed, popped or rewrote two bare lists in slightly different ways, which is where most Back oddities came from. Nothing should look different; Back and returning from a game use the same code paths as before, just in one place. Saved return info from builds 2–22 still restores.
+
+## Build 22
 
 ### Fixed
 - **Tile Halo** works again. In Xbox mode it switches the frame's glow on or off (the ring stays). In Classic it switches the halo image. It now applies straight away instead of after a reload.
