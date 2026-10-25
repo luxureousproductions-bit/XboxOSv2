@@ -305,7 +305,7 @@ id: root
     readonly property string tileRatio:   sysPref("Tile ratio",        settings.GridRatio)
     // Settings > Tiles > Tile frame. Live, so Classic/Xbox can be compared
     // without a reload.
-    readonly property bool xboxFrame: { var e = settingsEpoch; return settingsStore.get("Tile frame") === "Xbox"; }
+    readonly property bool xboxFrame: xboxFrameLive
     readonly property string tileArt:     sysPref("Tile art",          settings.GridArt)
     readonly property string tileLogo:    sysPref("Show logo on tile", settings.GridGameLogo)
     readonly property string tileColumns: sysPref("Tiles per row",     settings.GridColumns)

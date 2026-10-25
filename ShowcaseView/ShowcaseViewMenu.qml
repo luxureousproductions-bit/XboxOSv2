@@ -1327,7 +1327,7 @@ id: root
                 }
                 width: topRow.tileSz
                 height: topRow.tileSz
-                radius: vpx(12)
+                radius: xboxFrameLive ? vpx(6) : vpx(12)   // Settings > Tiles > Tile frame
                 color: selected ? theme.accent : theme.secondary
                 Behavior on color { ColorAnimation { duration: 180; easing.type: Easing.OutCubic } }
                 // Grow from the bottom edge so the bottom stays put. The first (hero) tile
@@ -1370,7 +1370,7 @@ id: root
                     source: focusHaloSrc
                     color: theme.accent
                     z: -1
-                    opacity: (selected && settings.TileHalo === "Yes") ? 0.95 : 0
+                    opacity: (selected && settings.TileHalo === "Yes" && !xboxFrameLive) ? 0.95 : 0
                     visible: opacity > 0
                     Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                 }
@@ -1615,11 +1615,28 @@ id: root
                     // two can't drift apart again.
                     anchors.fill: parent
                     anchors.margins: -vpx(3)
-                    visible: selected && (isHero || sysBg.status === Image.Ready)
+                    visible: selected && (isHero || sysBg.status === Image.Ready) && !xboxFrameLive
                     color: "transparent"
                     radius: tile.radius + vpx(3)
                     border.color: theme.accent
                     border.width: vpx(5)
+                }
+
+                // Xbox tile frame: gap, ring and glow in one pass, on the
+                // selected tile only. Sized against the tile's grow-on-focus
+                // scale so the ring is as thin as on the game tiles.
+                Loader {
+                    anchors.fill: parent
+                    active: xboxFrameLive && selected && (isHero || sysBg.status === Image.Ready)
+                    sourceComponent: Item {
+                        FocusFrame {
+                            anchors.fill: parent
+                            artRadius: tile.radius
+                            gap: vpx(2) / topRow.growScale
+                            ring: vpx(2) / topRow.growScale
+                            glow: vpx(6) / topRow.growScale
+                        }
+                    }
                 }
 
                 // Animated highlight — flashes the frame white when the AnimateHighlight setting is on
@@ -1627,7 +1644,7 @@ id: root
                     id: highlightPulse
                     anchors.fill: parent
                     anchors.margins: -vpx(3)
-                    visible: selected && settings.AnimateHighlight === "Yes"
+                    visible: selected && settings.AnimateHighlight === "Yes" && !xboxFrameLive
                     color: "transparent"
                     radius: tile.radius + vpx(3)
                     border.color: "#ffffff"

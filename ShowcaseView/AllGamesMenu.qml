@@ -1460,10 +1460,11 @@ id: root
             ItemHighlight {
                 ownScreen: "allgamesscreen"
                 width: gamegrid.cellWidth
-                height: gamegrid.cellHeight
+                height: gamegrid.cellHeight - gridTitleMargin   // the tile's own height
                 game: currentGame
                 selected: gamegrid.focus
                 boxArt: gridBoxArt
+                xboxFrame: xboxFrameLive
                 playVideo: lvVideo !== "No" && !boxArt
                 allowAudio: lv("All games menu video audio", settings.AllGamesVideoAudio) === "Yes"   // this page's audio row, live from the Y panel
             }
@@ -1521,6 +1522,7 @@ id: root
         id: dynamicTileDelegate
             DynamicGridItem {
                 selected: GridView.isCurrentItem && gamegrid.focus
+                xboxFrame: xboxFrameLive
                 gameData: modelData
                 artMode: tileArt
                 showLogo: tileLogo === "Yes"

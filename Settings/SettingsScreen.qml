@@ -431,7 +431,7 @@ id: root
         ListElement { settingName: "Appearance"; setting: ""; header: true }
         ListElement {
             settingName: "Tile frame"
-            label: "Tile frame (Platform page)"
+            label: "Tile frame"
             setting: "Classic,Xbox"
         }
         ListElement {

@@ -151,7 +151,7 @@ id: root
                                       // hidden well beneath the ring (over 2 units inside its
                                       // outer curve) — no gap, and no masking of the
                                       // VideoOutput (which renders black on weak GPUs).
-            source: game.assets.videoList.length ? game.assets.videoList[0] : ""
+            source: (game && game.assets.videoList.length) ? game.assets.videoList[0] : ""   // game can go null while the row changes
             fillMode: VideoOutput.PreserveAspectCrop
             // Xbox frame: rounded corners in one shader pass over the video's
             // own layer (one offscreen buffer, only while this preview exists).

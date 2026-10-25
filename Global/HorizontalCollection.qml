@@ -207,6 +207,7 @@ id: root
         id: dynamicDelegate
             DynamicGridItem {
                 selected: ListView.isCurrentItem && collectionList.focus && !collectionList.onFavoritesHeader
+                xboxFrame: xboxFrameLive
                 width: itemWidth
                 height: itemHeight
                 // Same relay the highlight gets, so the tile knows when its
@@ -269,6 +270,7 @@ id: root
                 game: search ? search.currentGame(collectionList.currentIndex) : ""
                 selected: collectionList.focus && !collectionList.onFavoritesHeader
                 boxArt: root.boxArt          // no video preview on box-art rows
+                xboxFrame: xboxFrameLive
                 // Relayed from whichever screen owns this row, so a preview
                 // stops when THAT screen is left — the Showcase and GameView
                 // both use this component and must not keep each other alive.

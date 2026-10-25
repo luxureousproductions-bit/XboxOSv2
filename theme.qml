@@ -2578,6 +2578,10 @@ id: root
     // ── Startup intro ─────────────────────────────────────────────────────
     // Cold start only (never on the way back from a game). Settings > Audio >
     // Startup intro. See Global/StartupIntro.qml.
+    // Settings > Tiles > Tile frame: Classic or Xbox (Global/FocusFrame.qml).
+    // Live, so the two can be compared without a reload.
+    readonly property bool xboxFrameLive: { var e = settingsEpoch; return settingsStore.get("Tile frame") === "Xbox"; }
+
     property bool introDone: false
     // The game lists behind the Home rows (Lists/*.qml) filter and sort the
     // whole library, ~1.5 s on the test machine, and all of it ran before

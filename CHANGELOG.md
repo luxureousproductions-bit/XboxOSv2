@@ -4,7 +4,16 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 18)
+## Unreleased — refresh branch (build 19)
+
+### Xbox tile frame everywhere
+- **Settings → Tiles → Tile frame** now applies to the whole theme: the Platform page, All Games, the Home rows, the "more like this" rows in Game details, and the system and hero tiles on the Home strip. It still switches live, and **Classic** is unchanged.
+- In Xbox mode, the system and hero tiles use the same small corners, gap, ring and glow, in place of the thick accent border, the glow image and the animated highlight.
+- The All Games video preview now stops at the bottom of the tile when titles are set to **Always**, like the Platform page.
+- Box Art and 3D Box tiles keep their own look for now.
+- Fixed an error the video preview could log when a row changed.
+
+## Build 18
 
 ### Pegasus X: 3D boxes and manuals
 - On Pegasus X (build 2124+), the theme uses Pegasus X's own list of a game's 3D box renders. Any folder spelling now counts ("3D Boxes", "3d_box", "box-3d" and so on), for the 3D Box tiles, the All Games box panel, the media carousel and its "3D Box" label. The flat cover is the first box art that isn't 3D. On stock Pegasus the file-name check works as before.
