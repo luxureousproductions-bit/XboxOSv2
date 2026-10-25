@@ -294,9 +294,7 @@ id: root
     // it covers every wide system rather than a named list (this used to
     // match "snes" / "n64" in the collection name). 2D art is never rotated.
     function is3dPath(path) {
-        if (!path) return false;
-        var p = path.toLowerCase();
-        return p.includes("box3d") || p.includes("box_3d") || p.includes("3dbox");
+        return Utils.is3dFor(settledGame, path);   // Pegasus X list first, then file name
     }
     // Decided from a tiny hidden probe of the same file, NOT from artBoxImg:
     // that image decodes at its own width/height, which swap with this flag,

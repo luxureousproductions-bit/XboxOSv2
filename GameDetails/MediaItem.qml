@@ -170,6 +170,14 @@ id: root
                     if (m.includes("background") || m.includes("fanart")) return "Fanart";
                     if (m.includes("titlescreen") || m.includes("screenshottitle")) return "Title Screen";
                     if (m.includes("box3d") || m.includes("box_3d") || m.includes("3dbox")) return "3D Box";
+                    // Pegasus X: the game's 3D boxes by any folder spelling
+                    // ("3D Boxes", "3d_box", ...), from extra.box3d
+                    var b3 = (currentGame && currentGame.extra) ? currentGame.extra.box3d : null;
+                    if (b3) {
+                        if (typeof b3 === "string") b3 = [b3];
+                        for (var bi = 0; bi < b3.length; bi++)
+                            if (String(b3[bi]) === String(mediaItem)) return "3D Box";
+                    }
                     if (m.includes("box2dfront") || m.includes("box2d_front")) return "Box Art";
                     if (m.includes("boxfront") || m.includes("box_front")) return "Box Art";
                     if (m.includes("box2dback") || m.includes("box2d_back")) return "Back Box";

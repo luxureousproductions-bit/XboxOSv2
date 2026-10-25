@@ -28,10 +28,24 @@ id: root
     function steamBoxArt(gameData) {
         return steamAppID(gameData) + '/library_600x900_2x.jpg';
     }
+    // Pegasus X lists the game's 3D boxes in extra.box3d; the file-name test
+    // is the fallback (same rule as utils.js is3dFor, inlined: see NOTE above).
     function is3dPath(path) {
         if (!path) return false;
-        var p = path.toLowerCase();
+        var l = (gameData && gameData.extra) ? gameData.extra.box3d : null;
+        if (l) {
+            if (typeof l === "string") l = [l];
+            var k = urlKey(path);
+            for (var i = 0; i < l.length; i++) if (urlKey(l[i]) === k) return true;
+        }
+        var p = String(path).toLowerCase();
         return p.includes("box3d") || p.includes("box_3d") || p.includes("3dbox");
+    }
+    function urlKey(u) {
+        var s = String(u || "");
+        if (s.indexOf("file://") === 0) s = s.substring(7);
+        try { s = decodeURIComponent(s); } catch (e) {}
+        return s;
     }
     function boxArt(data) {
         if (data != null) {

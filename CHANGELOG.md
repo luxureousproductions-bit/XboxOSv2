@@ -4,7 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 17)
+## Unreleased — refresh branch (build 18)
+
+### Pegasus X: 3D boxes and manuals
+- On Pegasus X (build 2124+), the theme uses Pegasus X's own list of a game's 3D box renders. Any folder spelling now counts ("3D Boxes", "3d_box", "box-3d" and so on), for the 3D Box tiles, the All Games box panel, the media carousel and its "3D Box" label. The flat cover is the first box art that isn't 3D. On stock Pegasus the file-name check works as before.
+- Manuals: Pegasus X tells the theme which PDF belongs to each game (x-manual, media/manual(s) in any case, media/<game>/manual.pdf, ES-DE's manuals folder). The theme's own search is still the fallback.
+
+## Build 17
 
 ### New: Xbox-style tile frame (Platform page, trial)
 - **Settings → Tiles → Tile frame (Platform page)**: **Classic** (unchanged) or **Xbox**. It applies straight away, so you can switch back and forth to compare.

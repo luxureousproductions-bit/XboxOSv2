@@ -100,9 +100,12 @@ id: root
                 mediaList.push(art3d);
             // In Pegasus, ALL box images (box3d, box2dFront, etc.) are stored in boxFrontList.
             // Push every 2D entry that wasn't already added as the 3D art above.
+            // Pegasus X marks every 3D box (extra.box3d), so the others are
+            // left out of the 2D list too.
             if (settings.Carousel2DBox === "Yes" && game.assets.boxFrontList) {
+                var known3d = Utils.box3dList(game).length > 0;
                 game.assets.boxFrontList.forEach(function(url) {
-                    if (url && url !== art3d) mediaList.push(url);
+                    if (url && url !== art3d && !(known3d && Utils.is3dFor(game, url))) mediaList.push(url);
                 });
             }
             if (settings.CarouselBackBox === "Yes" && game.assets.boxBack)
@@ -259,6 +262,14 @@ id: root
 
     function findManual(g) {
         if (typeof api.pdfPageCount !== "function") return "";
+
+        // Pegasus X (build 2124+) finds the manual itself: x-manual, media/
+        // manual(s) in any case, media/<game>/manual.pdf, ES-DE's manuals.
+        var pm = g.extra ? g.extra.manual : null;
+        if (pm) {
+            var first = (typeof pm === "string") ? pm : (pm.length ? pm[0] : "");
+            if (first) return first;
+        }
 
         var candidates = [];
         var seen = {};

@@ -389,8 +389,34 @@ function is3dPath(path) {
   return p.includes("box3d") || p.includes("box_3d") || p.includes("3dbox");
 }
 
+// Pegasus X (build 2124+) lists a game's 3D box renders in extra.box3d
+// (file:/// URLs), decided from folder/file names in any spelling. Stock
+// Pegasus doesn't, so the file-name test above stays as the fallback.
+function urlKey(u) {
+  var s = String(u || "");
+  if (s.indexOf("file://") === 0) s = s.substring(7);
+  try { s = decodeURIComponent(s); } catch (e) {}
+  return s;
+}
+function box3dList(game) {
+  var l = (game && game.extra) ? game.extra.box3d : null;
+  if (!l) return [];
+  return (typeof l === "string") ? [l] : l;
+}
+function is3dFor(game, path) {
+  if (!path) return false;
+  var l = box3dList(game);
+  if (l.length) {
+    var k = urlKey(path);
+    for (var i = 0; i < l.length; i++) if (urlKey(l[i]) === k) return true;
+  }
+  return is3dPath(String(path));
+}
+
 function get3dBoxArt(data) {
   if (data != null) {
+    var px = box3dList(data);
+    if (px.length) return px[0];             // Pegasus X: known 3D box
     // In Pegasus, box3d and box2dFront are NOT separate QML properties — both are stored in
     // the single BOX_FRONT slot. boxFrontList holds ALL box images for this game.
     // Scan the list for the first entry whose file path identifies it as 3D box art
@@ -398,11 +424,11 @@ function get3dBoxArt(data) {
     var list = data.assets.boxFrontList;
     if (list) {
       for (var i = 0; i < list.length; i++) {
-        if (is3dPath(list[i])) return list[i];
+        if (is3dFor(data, list[i])) return list[i];
       }
     }
     // No 3D art found in the list.
-    if (is3dPath(data.assets.boxFront)) return data.assets.boxFront;
+    if (is3dFor(data, data.assets.boxFront)) return data.assets.boxFront;
   }
   return "";
 }
