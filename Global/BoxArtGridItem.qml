@@ -95,6 +95,10 @@ id: root
     }
 
     property bool selected
+    // Xbox-style frame (Settings > Tiles > Tile frame): small corners and
+    // Global/FocusFrame.qml around a 2D box; a thin, tight trace around a 3D box.
+    property bool xboxFrame: xboxFrameLive
+    readonly property real artRadius: xboxFrame ? vpx(6) : vpx(12)
     // HQ: eased pop into the highlight instead of a linear ramp.
     Behavior on scale { enabled: !reduceMotion;
         NumberAnimation {
@@ -188,7 +192,7 @@ id: root
             source: tileHaloSrc
             color: theme.accent
             z: -1
-            opacity: (selected && !is3d && settings.TileHalo === "Yes") ? 0.95 : 0
+            opacity: (selected && !is3d && !xboxFrame && settings.TileHalo === "Yes") ? 0.95 : 0
             visible: opacity > 0
             Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
         }
@@ -280,7 +284,7 @@ id: root
                         Rectangle {
                             anchors.centerIn: parent
                             width: screenshot.paintedWidth; height: screenshot.paintedHeight
-                            radius: vpx(12)
+                            radius: root.artRadius
                         }
                     }
                 }
@@ -288,9 +292,10 @@ id: root
             Component {
             id: accentTrace
                 Glow {
-                    radius: vpx(10)
-                    samples: 25
-                    spread: 0.6
+                    // Xbox frame: a thin, tight trace instead of the wide glow
+                    radius: root.xboxFrame ? vpx(4) : vpx(10)
+                    samples: root.xboxFrame ? 17 : 25
+                    spread: root.xboxFrame ? 0.85 : 0.6
                     color: theme.accent
                     transparentBorder: true
                 }
@@ -311,7 +316,7 @@ id: root
             height: screenshot.paintedHeight
             source: screenshot
             crop: false
-            radius: vpx(12)
+            radius: root.artRadius
             opacity: screenshot.opacity
             // Only once the image is decoded: with no texture yet, GL samples
             // solid black, which would flash a black box while art loads.
@@ -405,17 +410,17 @@ id: root
                 color: "transparent"
                 Rectangle {
                     anchors { left: parent.left; right: parent.right; top: parent.top }
-                    height: parent.height - vpx(12)
+                    height: parent.height - root.artRadius
                     color: "#99000000"
                 }
                 Item {
                     clip: true
                     anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                    height: vpx(12)
+                    height: root.artRadius
                     Rectangle {
                         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                        height: vpx(24)
-                        radius: vpx(12)
+                        height: root.artRadius * 2
+                        radius: root.artRadius
                         color: "#99000000"
                     }
                 }
@@ -457,7 +462,7 @@ id: root
         id: favBorder
         anchors.fill: artBounds
         color: "transparent"
-        radius: vpx(12)                   // follows the art's rounded corners
+        radius: root.artRadius                   // follows the art's rounded corners
         border.width: vpx(2)
         border.color: theme.accent
         visible: gameData && gameData.favorite && !is3d && settings.FavoritedTileAccent !== "No"
@@ -466,8 +471,26 @@ id: root
     Loader {
         active: selected && !is3d
         anchors.fill: artBounds
-        sourceComponent: border
+        sourceComponent: root.xboxFrame ? xboxBorder : border
         asynchronous: true
+    }
+
+    Component {
+    id: xboxBorder
+
+        // Wrapped: the Loader sizes its item to itself, which would undo the
+        // frame's negative margins.
+        Item {
+            FocusFrame {
+                anchors.fill: parent
+                artRadius: root.artRadius
+                // This tile grows 1.1x on focus; the frame is sized against
+                // that so its ring matches the other tiles'.
+                gap: vpx(2) / 1.1
+                ring: vpx(2.5) / 1.1
+                glow: vpx(6) / 1.1
+            }
+        }
     }
 
     Component {

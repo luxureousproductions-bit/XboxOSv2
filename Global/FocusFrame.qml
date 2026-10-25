@@ -16,7 +16,7 @@ id: fx
 
     property real artRadius: vpx(6)
     property real gap: vpx(2)
-    property real ring: vpx(2)
+    property real ring: vpx(2.5)
     property real glow: vpx(6)
     property color accent: theme.accent
     property real glowStrength: 0.55

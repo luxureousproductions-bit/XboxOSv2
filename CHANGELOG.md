@@ -4,7 +4,15 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 19)
+## Unreleased — refresh branch (build 20)
+
+### Xbox tile frame
+- The ring is 0.5 px thicker everywhere.
+- **Box Art tiles:** small corners and the same gap, ring and glow, sized for the box's 1.1x focus zoom so the ring matches the other tiles.
+- **3D Box tiles:** the glow that traces the box's outline is thinner and tighter.
+- The favorite outline follows the smaller corners.
+
+## Build 19
 
 ### Xbox tile frame everywhere
 - **Settings → Tiles → Tile frame** now applies to the whole theme: the Platform page, All Games, the Home rows, the "more like this" rows in Game details, and the system and hero tiles on the Home strip. It still switches live, and **Classic** is unchanged.

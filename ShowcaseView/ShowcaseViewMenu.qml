@@ -1633,7 +1633,7 @@ id: root
                             anchors.fill: parent
                             artRadius: tile.radius
                             gap: vpx(2) / topRow.growScale
-                            ring: vpx(2) / topRow.growScale
+                            ring: vpx(2.5) / topRow.growScale
                             glow: vpx(6) / topRow.growScale
                         }
                     }
