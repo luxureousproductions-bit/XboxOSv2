@@ -177,7 +177,12 @@ id: root
             // tile art, so it's hidden anyway until the art fades. Fading it
             // in at the same time as the art faded out left a midpoint where
             // neither was opaque and the Showcase background showed through.
-            opacity: playbackState === MediaPlayer.PlayingState ? 1 : 0
+            // Xbox frame: shown from the first real frame and faded in over the
+            // same 200 ms the tile's art fades out, so the two cross exactly.
+            // Switching it on at full strength showed the video along the
+            // art's anti-aliased edge a few frames before the fade began.
+            opacity: (root.xboxFrame ? framesFlowing : playbackState === MediaPlayer.PlayingState) ? 1 : 0
+            Behavior on opacity { enabled: root.xboxFrame; NumberAnimation { duration: 200 } }
 
             // Report "on screen" only once frames are actually flowing, not on
             // PlayingState — that fires before the first frame is painted, and

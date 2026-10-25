@@ -771,7 +771,9 @@ id: root
                 // Stops this grid's preview when the grid isn't the screen showing.
                 ownScreen: "softwaregridscreen"
                     width: gamegrid.cellWidth
-                    height: gamegrid.cellHeight
+                    // The tile's own height (titles set to Always leave room
+                    // below it), so the preview never runs past the tile.
+                    height: gamegrid.cellHeight - titleMargin
                     game: list.currentGame(gamegrid.currentIndex)
                     selected: gamegrid.focus
                     boxArt: showBoxes

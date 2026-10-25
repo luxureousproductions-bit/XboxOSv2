@@ -4,12 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 16)
+## Unreleased — refresh branch (build 17)
 
 ### New: Xbox-style tile frame (Platform page, trial)
 - **Settings → Tiles → Tile frame (Platform page)**: **Classic** (unchanged) or **Xbox**. It applies straight away, so you can switch back and forth to compare.
 - **Xbox:** small rounded corners on the art, a thin see-through gap, a thin accent ring and a short soft glow, like the Xbox dashboard's focus frame. The video preview fills the art area and gets the same rounded corners.
 - **Built to stay fast:** the frame is drawn in one step, and only on the selected tile. The art uses the same one-step rounding as before, and the video adds one extra layer only while a preview plays. It replaces the old glow image on that page.
+- The video preview now fades in as the art fades out, so its edge no longer shows a moment before the transition. It also stops at the bottom of the tile when titles are set to **Always**.
 - For now only the Platform page uses it. Home, All Games and the system tiles follow once the look is settled.
 
 ## Build 14
