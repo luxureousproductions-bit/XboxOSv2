@@ -4,7 +4,20 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 36)
+## Unreleased — refresh branch (build 37)
+
+### Images decoded at the size they're shown
+- Game details media strip: each thumbnail was decoded at the file's full size (a 1080p–4K screenshot or fanart is 8–33 MB of texture) for a ~300 px tile. Now 1.5x the tile. The film-glyph images only load on video tiles.
+- Home system strip: logos decoded at the grown tile's size instead of 512 px; the hero art and hero logo likewise. A custom `background.png` is decoded at screen size (a 4K one was a 33 MB texture).
+- Home system strip: the hero tile's block (art, rounding shader, logo, title bar) is only built for the hero. Every system tile used to carry it invisibly.
+
+### Effects drawn once, not every frame
+- 16 blurs and drop shadows (Home nav buttons, row titles, Game details buttons and logo, the background blurs on Game details and the Library list, the launch screen, app-icon shadows) now cache their result. Without it they re-ran their blur passes on every frame the screen redrew — continuous on Home while the dynamic background, a marquee or a video is moving.
+- Library list: the screenshot is rounded in one shader pass (as the tiles are) instead of an offscreen layer plus mask on every art change. The scanlines overlay no longer keeps an offscreen layer while scanlines are off.
+
+On the test machine: Game details at rest 42 → 60 fps; leaving it 55 → 60 fps; memory at the end of the standard run 646 → 533 MB.
+
+## Build 36
 
 ### One focus frame
 - The Xbox-style frame is now the only tile frame, and its ring is 0.5 px thicker (3 px; 2.7 px on the box-art tiles, which grow 1.1x on focus, so they read the same). **Settings > Tiles > Tile frame** is gone, and with it the Classic accent border, the Classic halo image on selected tiles and system tiles, and `Global/ItemBorder.qml`.

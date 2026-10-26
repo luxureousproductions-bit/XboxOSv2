@@ -566,6 +566,7 @@ id: root
         readonly property real blurOpacity: screenshot.opacity
         sourceComponent: Component {
             FastBlur {
+                cached: true   // static: blur once, not every frame
                 anchors.fill: parent
                 source: blurLoader.blurSource
                 radius: 64
@@ -635,6 +636,7 @@ id: root
         readonly property real shadowOpacity: logoAtTop ? 0.4 : 0
         sourceComponent: Component {
             DropShadow {
+                cached: true   // static: blur once, not every frame
                 anchors.fill: parent
                 horizontalOffset: 0
                 verticalOffset: 0
@@ -900,6 +902,7 @@ id: root
             opacity: focus ? 1 : 0.6
             layer.enabled: true
             layer.effect: DropShadow {
+                cached: true   // static: blur once, not every frame
                 transparentBorder: true
                 horizontalOffset: 0
                 verticalOffset: 0
@@ -942,6 +945,7 @@ id: root
             opacity: focus ? 1 : 0.6
             layer.enabled: true
             layer.effect: DropShadow {
+                cached: true   // static: blur once, not every frame
                 transparentBorder: true
                 horizontalOffset: 0
                 verticalOffset: 0
@@ -986,6 +990,7 @@ id: root
             opacity: focus ? 1 : 0.6
             layer.enabled: true
             layer.effect: DropShadow {
+                cached: true   // static: blur once, not every frame
                 transparentBorder: true
                 horizontalOffset: 0
                 verticalOffset: 0

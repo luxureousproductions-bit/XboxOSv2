@@ -85,6 +85,7 @@ id: root
         // Shadow so the title stays legible over bright fanart
         layer.enabled: true
         layer.effect: DropShadow {
+            cached: true   // static: blur once, not every frame
             transparentBorder: true
             horizontalOffset: 0
             verticalOffset: vpx(1)

@@ -401,7 +401,7 @@ id: root
                 radius: appRound.cornerRadius
                 color: "#000000"; opacity: hqMode ? 0.55 : 0.35
                 layer.enabled: hqMode
-                layer.effect: FastBlur { radius: 24; transparentBorder: true }
+                layer.effect: FastBlur { radius: 24; transparentBorder: true; cached: true }
             }
 
             // Rounded-square icon, sized off the SHORTER side so it stays

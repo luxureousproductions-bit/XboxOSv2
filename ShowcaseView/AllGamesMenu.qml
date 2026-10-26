@@ -759,6 +759,7 @@ id: root
             readonly property Item blurSrc: bgArtImg
             sourceComponent: Component {
                 FastBlur {
+                    cached: true   // static: blur once, not every frame
                     anchors.fill: parent
                     source: bgBlurLoader.blurSrc
                     radius: 64
@@ -790,12 +791,20 @@ id: root
                 source: artScreenshot
                 fillMode: Image.PreserveAspectCrop   // crop to a clean square
                 smooth: true
-                visible: status === Image.Ready && !appIconMode
-                layer.enabled: true
-                layer.smooth: true
-                layer.effect: OpacityMask {
-                    maskSource: Rectangle { width: artScreenshotImg.width; height: artScreenshotImg.height; radius: vpx(10) }
-                }
+                // Decoded and shown: the screenshot is up.
+                readonly property bool shown: status === Image.Ready && !appIconMode
+                // Drawn by artShotFx below (rounded in one shader pass, no
+                // offscreen layer + mask per settle); shown directly only if
+                // the shader can't run.
+                visible: shown && artShotFx.failed
+            }
+            RoundedArt {
+            id: artShotFx
+                anchors.fill: artScreenshotImg
+                source: artScreenshotImg
+                crop: true
+                radius: vpx(10)
+                visible: artScreenshotImg.shown && !failed
             }
 
             // Imported app icon, filling the square.
@@ -815,7 +824,7 @@ id: root
                 radius: appIconWrap.cornerRadius
                 color: "#000000"; opacity: hqMode ? 0.55 : 0.35
                 layer.enabled: hqMode
-                layer.effect: FastBlur { radius: 32; transparentBorder: true }
+                layer.effect: FastBlur { radius: 32; transparentBorder: true; cached: true }
             }
             Item {
             id: appIconWrap
@@ -848,7 +857,7 @@ id: root
             }
             Rectangle {   // fallback fill when no screenshot (games only — apps have the icon treatment)
                 anchors.fill: parent
-                visible: !artScreenshotImg.visible && !appIconMode
+                visible: !artScreenshotImg.shown && !appIconMode
                 radius: vpx(10)
                 color: Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.14)
             }
@@ -896,7 +905,7 @@ id: root
                 asynchronous: true
                 opacity: 0.2
                 visible: lvScanlines === "Yes"
-                layer.enabled: true
+                layer.enabled: visible   // no dormant offscreen layer when off
                 layer.smooth: true
                 layer.effect: OpacityMask {
                     maskSource: Rectangle { width: scanlinesOverlay.width; height: scanlinesOverlay.height; radius: vpx(10) }

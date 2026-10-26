@@ -234,6 +234,10 @@ id: root
         anchors.fill: parent
         anchors.margins: vpx(4)
         source: isVideo ? "" : mediaItem
+        // Decoded at the tile's size (1.5x for the focus growth), not the
+        // file's: a strip of 1080p-4K fanart and screenshots was 8-33 MB of
+        // texture per tile for a ~300 px thumbnail.
+        sourceSize: Qt.size(Math.max(64, Math.round(width * 1.5)), Math.max(64, Math.round(height * 1.5)))
         // Fit, not Crop. Crop scaled every image up to fill the tile and cut
         // off whatever didn't match its aspect — a clear logo or a round disc
         // lost its edges and read as a bigger, cropped square. Fit keeps the
@@ -261,7 +265,8 @@ id: root
         id: iconFill
 
             anchors.fill: parent
-            source: "../assets/images/colorspng/" + mapLayoutImage(settings.ColorLayout) + ".png"
+            // Only video tiles draw the film glyph; others load nothing.
+            source: isVideo ? "../assets/images/colorspng/" + mapLayoutImage(settings.ColorLayout) + ".png" : ""
             fillMode: Image.PreserveAspectCrop
             visible: false
             asynchronous: true
@@ -270,7 +275,7 @@ id: root
         Image {
         id: mask
 
-            source: "../assets/images/icon_mediaplayer.svg"
+            source: isVideo ? "../assets/images/icon_mediaplayer.svg" : ""
             anchors.centerIn: parent
             width: vpx(150); height: width
             sourceSize: Qt.size(parent.width, parent.height)

@@ -138,7 +138,7 @@ id: root
                 color: "#000000"; opacity: hqMode ? 0.55 : 0.35
                 scale: fallbackIcon.scale
                 layer.enabled: hqMode
-                layer.effect: FastBlur { radius: 40; transparentBorder: true }
+                layer.effect: FastBlur { radius: 40; transparentBorder: true; cached: true }
             }
 
             // Rounded-square icon, cropped the same way the drawer tiles and the
@@ -250,6 +250,7 @@ id: root
     }
 
     DropShadow {
+        cached: true   // static: blur once, not every frame
     id: logoshadow
 
         anchors.fill: logo

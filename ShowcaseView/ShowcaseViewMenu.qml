@@ -246,6 +246,8 @@ id: root
         smooth: true
         z: -1
         source: (settings.CustomBackground === "Yes") ? "../assets/images/backgrounds/background.png" : ""
+        // Screen size: a 4K background.png was a 33 MB texture.
+        sourceSize: Qt.size(root.width, root.height)
         // Shown only while NO fanart is on screen. Two images never overlap, so
         // fanart blends with the theme colour beneath rather than with this —
         // which is what caused the colour shift and the flash between fades.
@@ -836,6 +838,7 @@ id: root
             opacity: focus ? 1 : 0.6
             layer.enabled: true
             layer.effect: DropShadow {
+                cached: true   // static: blur once, not every frame
                 transparentBorder: true
                 horizontalOffset: 0
                 verticalOffset: 0
@@ -885,6 +888,7 @@ id: root
             opacity: focus ? 1 : 0.6
             layer.enabled: true
             layer.effect: DropShadow {
+                cached: true   // static: blur once, not every frame
                 transparentBorder: true
                 horizontalOffset: 0
                 verticalOffset: 0
@@ -932,6 +936,7 @@ id: root
             opacity: focus ? 1 : 0.6
             layer.enabled: true
             layer.effect: DropShadow {
+                cached: true   // static: blur once, not every frame
                 transparentBorder: true
                 horizontalOffset: 0
                 verticalOffset: 0
@@ -983,6 +988,7 @@ id: root
             opacity: focus ? 1 : 0.6
             layer.enabled: true
             layer.effect: DropShadow {
+                cached: true   // static: blur once, not every frame
                 transparentBorder: true
                 horizontalOffset: 0
                 verticalOffset: 0
@@ -1029,6 +1035,7 @@ id: root
             opacity: focus ? 1 : 0.6
             layer.enabled: true
             layer.effect: DropShadow {
+                cached: true   // static: blur once, not every frame
                 transparentBorder: true
                 horizontalOffset: 0
                 verticalOffset: 0
@@ -1334,9 +1341,14 @@ id: root
                 // shader pass), the title bar from a square band plus a
                 // clipped rounded strip. The old layer + OpacityMask kept
                 // two off-screen copies of the whole hero tile alive.
+                // Built for the hero tile only: every system tile used to carry
+                // this whole block (art, shader, logo, title bar) invisibly.
+                Loader {
+                    anchors.fill: parent
+                    active: isHero
+                    sourceComponent: Component {
                 Item {
                     id: heroClipper
-                    visible: isHero
                     anchors.fill: parent
 
                     Image {
@@ -1347,7 +1359,9 @@ id: root
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true; smooth: true
                         source: heroArtSource(platformlist.resumeGame)
-                        opacity: selected ? 1 : 0.5
+                        // Decoded at the grown tile's size, not the file's.
+                        sourceSize: Qt.size(Math.round(topRow.tileSz * topRow.growScale), Math.round(topRow.tileSz * topRow.growScale))
+                        opacity: tile.selected ? 1 : 0.5
                         // Drawn by heroBgFx; shown directly only if the shader can't run
                         visible: heroBgFx.failed
                     }
@@ -1374,9 +1388,10 @@ id: root
                         asynchronous: true; smooth: true
                         source: (platformlist.resumeGame && platformlist.resumeGame.assets.logo)
                                 ? platformlist.resumeGame.assets.logo : ""
+                        sourceSize: Qt.size(Math.round(topRow.tileSz * topRow.growScale), Math.round(topRow.tileSz * topRow.growScale))
                         visible: source != ""
                                  && (settings.HeroBoxArt === "Screenshot" || settings.HeroBoxArt === "Fanart")
-                        opacity: selected ? 1 : 0.5
+                        opacity: tile.selected ? 1 : 0.5
                     }
 
                     Rectangle {
@@ -1385,7 +1400,7 @@ id: root
                     id: heroBar
                         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                         height: Math.max(vpx(36), topRow.tileSz * 0.16, heroBarText.contentHeight + vpx(16)); color: "transparent"
-                        opacity: gameTitleMode === "Never" ? 0 : ((selected || gameTitleMode === "Always") ? 1 : 0)
+                        opacity: gameTitleMode === "Never" ? 0 : ((tile.selected || gameTitleMode === "Always") ? 1 : 0)
                         visible: opacity > 0
                         Behavior on opacity { NumberAnimation { duration: 120 } }
                         readonly property real r: Math.min(tile.radius, height)
@@ -1418,6 +1433,8 @@ id: root
                         }
                     }
                 }
+                    }   // Component
+                }   // hero Loader
 
                 // ── PLATFORM (index >= 1): system background + logo ──
 
@@ -1471,7 +1488,9 @@ id: root
                     anchors.margins: vpx(15)
                     source: (!isHero && coll)
                         ? systemLogoSource(coll) : ""
-                    sourceSize { width: 512; height: 512 }
+                    // The grown tile's size: 512 px was twice what a 244 px
+                    // tile (366 grown) can show, for every logo in the strip.
+                    sourceSize: Qt.size(Math.round(topRow.tileSz * topRow.growScale), Math.round(topRow.tileSz * topRow.growScale))
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                     smooth: true
