@@ -1612,13 +1612,20 @@ id: root
     }
 
     function gameAchievementsScreen() {
+        raFromDetails = false;
         navigator.go("gameachievementsscreen");
     }
 
     // Navigate to game achievements from the RA overview without pushing.
     // Called by AchievementsView so that B always exits RA in one press
     // regardless of whether RA was entered from GameView or Showcase.
+    // Set when a game's achievements page was opened straight from Game
+    // details (the RA button), so one Back there returns to the details page.
+    // Opened from the RA overview instead, Back returns to the overview and a
+    // second Back leaves RA.
+    property bool raFromDetails: false
     function gameAchievementsScreenFromOverview() {
+        raFromDetails = false;
         navigator.jump("gameachievementsscreen");
     }
 
@@ -1626,6 +1633,9 @@ id: root
     // Called by RAGameEntryView when a game is found so pressing Back
     // returns directly to wherever RA was entered from.
     function gameAchievementsScreenFromEntry() {
+        // Via an RA search pick the entry page was reached from the overview,
+        // so Back must return to the search results, not to a details page.
+        raFromDetails = !raSearchReturn;
         navigator.jump("gameachievementsscreen");
     }
 

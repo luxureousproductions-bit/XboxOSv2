@@ -245,12 +245,15 @@ Item {
             triggeredOnStart: true
             onTriggered: {
                 var xhr = new XMLHttpRequest();
+                // The screen holding this cluster can be unloaded while the
+                // request is in flight (RA entry page, Settings); the indicator
+                // is null by the time the reply lands, so both callbacks check.
                 xhr.onreadystatechange = function() {
-                    if (xhr.readyState === XMLHttpRequest.DONE) {
+                    if (xhr.readyState === XMLHttpRequest.DONE && wifiIndicator) {
                         wifiIndicator.online = xhr.status >= 200 && xhr.status < 300;
                     }
                 };
-                xhr.onerror = function() { wifiIndicator.online = false; };
+                xhr.onerror = function() { if (wifiIndicator) wifiIndicator.online = false; };
                 xhr.open("HEAD", "https://1.1.1.1", true);
                 xhr.timeout = 5000;
                 xhr.send();

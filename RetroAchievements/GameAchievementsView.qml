@@ -777,14 +777,19 @@ id: root
         currentIndex = 0;
     }
 
-    // Mouse back button: same as B.
-    function mouseBack() { achievementsScreenFromGame(); }
+    // B / mouse back. Opened from Game details (the RA button): straight back
+    // to the details page. Opened from the RA overview: back to the overview,
+    // and a second B leaves RA.
+    function goBack() {
+        if (raFromDetails) previousScreen();
+        else achievementsScreenFromGame();
+    }
+    function mouseBack() { goBack(); }
 
     Keys.onPressed: {
-        // B — back to the RA overview. A second B there exits RA entirely.
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            achievementsScreenFromGame();
+            goBack();
         }
         // LB — cycle filter backward
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {

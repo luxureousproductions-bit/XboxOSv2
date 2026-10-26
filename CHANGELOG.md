@@ -4,7 +4,16 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 24)
+## Unreleased — refresh branch (build 25)
+
+### RetroAchievements: Back from a game's achievements
+- Opened from **Game details** (the RA button): one Back now returns straight to the details page. Before, it went to the RA overview first.
+- Opened from the RA overview (after entering RA from Home, the Platform page or the app drawer): Back returns to the overview, and a second Back leaves RA, as before. Picks from RA Search still return to the search results.
+
+### Fixed
+- Two errors the WiFi indicator could log when a screen closed while its connection check was still running.
+
+## Build 24
 
 ### App drawer built on first open
 - The drawer's screen (about 1,700 lines of QML) is now created the first time you open it, instead of at startup, and kept from then on. Memory after startup is about 90 MB lower on the test machine (about 490 MB → 400 MB).
