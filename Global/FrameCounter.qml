@@ -50,6 +50,11 @@ id: counter
             counter.idle = counter.frames <= 2;
             counter.fpsShown = counter.frames;
             counter.worstShown = counter.worstMs;
+            // Into lastrun.log too, so a stutter can be read back later
+            // against what the log says was happening. Only while the
+            // counter is on, and never for a still screen.
+            if (!counter.idle)
+                console.log("[perf]", Qt.formatTime(new Date(), "hh:mm:ss"), "fps", counter.frames, "worst", Math.round(counter.worstMs));
             counter.frames = 0;
             counter.worstMs = 0;
         }

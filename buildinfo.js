@@ -3,5 +3,5 @@
 // exactly which theme build it came from. Bumped with every pushed change
 // (tools/bump_build.py does it: build +1, today's date).
 var branch = "refresh";
-var build  = 32;
-var date   = "2026-10-25";
+var build  = 33;
+var date   = "2026-10-26";

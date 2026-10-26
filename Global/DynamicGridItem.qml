@@ -111,27 +111,26 @@ id: root
     // A tile that already has its art is never affected — the latch only
     // starts false when the tile is born mid-race.
     property bool deferArt: false
-    // Starts as a BINDING so the very first evaluation of every image
-    // `source` below already sees the right answer. It used to start true
-    // and be cleared in Component.onCompleted — too late: by then the art
-    // and logo sources had been evaluated and their loads requested, so a
-    // grid racing through new tiles decoded (or churned through
-    // request-then-cancel) every one of them. That was most of the
-    // fast-scroll lag with logos on. Once complete it becomes a plain value
-    // (the latch), so a tile that already has its art keeps it through
-    // later races.
-    property bool artArmed: !deferArt
-    Component.onCompleted: artArmed = artArmed   // binding -> plain value (latch)
-    onDeferArtChanged: if (!deferArt) artArmed = true
-    // Item reuse: a grid with reuseItems recycles tiles instead of destroying
-    // them, so a recycled tile must start exactly like a new one. Its host
-    // calls this from GridView.onReused. The art latch follows the host's
-    // current deferArt (as onCompleted does for a new tile), and the art is
-    // made fully visible again in case the tile was fading under a preview.
-    // A recycled tile skips the HQ dissolve: its new art may come straight
-    // from the image cache, with no status change to trigger the fade-in.
+    // Show the name bar while the art is held back or decoding (the Library
+    // grid sets it; Home rows keep their plain fade-in).
+    property bool titleWhilePending: false
+    // The game whose art this tile is showing. ASSIGNED, never bound: the
+    // image sources below follow artGame, so they only ever change when
+    // this tile decides — when it gets a game (born, or recycled with a new
+    // index) while the grid is at rest, or when a race ends. A source bound
+    // to gameData directly re-evaluated the moment a recycled tile's index
+    // changed, before any reset could run, and requested a decode the reset
+    // then cancelled: every step of a race churned through that.
+    property var artGame: null
+    readonly property bool artArmed: artGame !== null
+    function takeGame() { artGame = (deferArt || !gameData) ? null : gameData; }
+    Component.onCompleted: takeGame()
+    onGameDataChanged: takeGame()
+    onDeferArtChanged: if (!deferArt && artGame === null) takeGame()
+    // Recycled (reuseItems): back to how a new tile starts. The art is made
+    // fully visible again in case it was fading under a preview.
     function resetForReuse() {
-        artArmed = !deferArt;
+        takeGame();
         restoreArt();
     }
     // Fast corners: the art rounds
@@ -266,7 +265,13 @@ id: root
             height: Math.max(vpx(44), container.height * 0.16, container.width * 0.16, nameBarText.contentHeight + vpx(16))   // scales with tile size; wide tiles use width factor
             color: root.fastArt ? "transparent" : "#99000000"   // ~60% black; text stays full-opacity
             // Game tile titles: Never hides it even on focus; Always keeps it up.
-            opacity: titleMode === "Never" ? 0 : ((selected || titleMode === "Always") ? 1 : 0)
+            // Also up while the tile has no art to show yet — held back by a
+            // race, or still decoding after one — so a tile scrolling past is
+            // a dark card with its name rather than a blank. The text is
+            // already laid out, so this costs nothing extra.
+            readonly property bool artPending: root.titleWhilePending && (!artArmed
+                || (screenshot.source != "" && screenshot.status !== Image.Ready && screenshot.status !== Image.Error))
+            opacity: titleMode === "Never" ? 0 : ((selected || titleMode === "Always" || artPending) ? 1 : 0)
             visible: opacity > 0
             Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 120 } }
             // Fast corners: without the tile's mask the bar rounds its own
@@ -299,7 +304,7 @@ id: root
                     verticalCenter: parent.verticalCenter
                 }
                 id: nameBarText
-                text: modelData ? modelData.title : ""
+                text: gameData ? gameData.title : ""
                 color: "white"; font.family: subtitleFont.name
                 font.pixelSize: Math.max(fpx(13), container.height * 0.05, container.width * 0.05); font.bold: true
                 wrapMode: Text.WordWrap
@@ -338,13 +343,19 @@ id: root
         //
         // Detected by file path ("android:<package>"), so a ROM or a
         // hand-written .app entry can't match.
-        Item {
+        // Only built for an imported app: a blur, two layers and three
+        // images that every ROM tile used to carry around invisibly.
+        Loader {
         id: appTile
-
             anchors.fill: parent
             anchors.margins: vpx(2)
-            visible: root.isImportedApp && appTileArt.status === Image.Ready
+            active: root.isImportedApp
+            readonly property bool ready: item ? item.ready : false
+            visible: ready
             z: 5
+            sourceComponent: Component {
+        Item {
+            readonly property bool ready: appTileArt.status === Image.Ready
 
             // Blurred backdrop. Oversized INSIDE this clipping item rather than
             // scaled: the effect maps its source's bounds onto its own, so
@@ -425,6 +436,8 @@ id: root
                 }
             }
         }
+            }   // Component
+        }   // appTile Loader
 
         Image {
         id: screenshot
@@ -440,10 +453,11 @@ id: root
             // is a dissolve in HQ and (starting at 1) a no-op otherwise.
             opacity: hqFadeIn ? 0 : 1
             onStatusChanged: if (status === Image.Ready && hqFadeIn && !root.videoShowing) opacity = 1
-            source: (modelData && artArmed) ? (
-                      artMode === "Screenshot" ? (modelData.assets.screenshots[0] || modelData.assets.background || "")
-                    : artMode === "Boxfront"   ? (modelData.assets.boxFront || modelData.assets.background || modelData.assets.screenshots[0] || "")
-                    :                            (modelData.assets.background || modelData.assets.screenshots[0] || "")
+            // Follows artGame (assigned), never gameData: see artGame above.
+            source: artGame ? (
+                      artMode === "Screenshot" ? (artGame.assets.screenshots[0] || artGame.assets.background || "")
+                    : artMode === "Boxfront"   ? (artGame.assets.boxFront || artGame.assets.background || artGame.assets.screenshots[0] || "")
+                    :                            (artGame.assets.background || artGame.assets.screenshots[0] || "")
                   ) : ""
             fillMode: Image.PreserveAspectCrop
             // Decode at the tile's own size (plus room for the focus pop), never
@@ -490,8 +504,8 @@ id: root
             }
             // No decode at all when the logo isn't shown — an invisible Image
             // still loads its source, which was a wasted decode per tile.
-            // Held back while the grid races (artArmed), like the art.
-            source: (showLogo && modelData && artArmed) ? (logoFor(gameData) || "") : ""
+            // Held back while the grid races, like the art (artGame).
+            source: (showLogo && artGame) ? (logoFor(artGame) || "") : ""
             sourceSize { width: 200; height: 150 }
             fillMode: Image.PreserveAspectFit
             asynchronous: true
@@ -578,7 +592,7 @@ id: root
 
         readonly property bool wanted: showLogo && !appTile.visible && !reduceMotion && artArmed
                                        && (favelogo.source == "" || favelogo.status === Image.Error)
-        text: wanted && modelData ? modelData.title : ""
+        text: wanted && gameData ? gameData.title : ""
         anchors { fill: parent; margins: vpx(10) }
         color: "white"
         scale: selected ? 1.1 : 1

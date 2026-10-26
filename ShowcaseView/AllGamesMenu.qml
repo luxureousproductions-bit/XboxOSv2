@@ -1484,7 +1484,11 @@ id: root
 
     // ── Grid view ─────────────────────────────────────────────────────────
     // Full page: no preview panel. Same model and index as the list above.
-    GridView {
+    // A ListView of rows (Global/RowGrid), not a GridView: Qt 5.15's GridView
+    // never recycles tiles, so a held D-pad built and destroyed a row of them
+    // per step. Rows recycle; their tiles only rebind. currentIndex and
+    // count are still the flat GAME index and count.
+    RowGrid {
     id: gamegrid
 
         visible: gridMode
@@ -1496,45 +1500,25 @@ id: root
             bottom: parent.bottom; bottomMargin: globalMargin + helpMargin
         }
         model: (gridMode && !gridFlushing) ? displayModel : 0
+        resolve: getCurrentGame
         currentIndex: currentGameIndex
+        columns: gridColumns
         cellWidth:  gridCellW
         cellHeight: gridCellH
+        titleMargin: gridTitleMargin
         // Tiles fade in when the page opens, as on the Platform grid. HQ a
         // little longer and eased; base matches the Platform grid exactly.
-        populate: Transition {
-            NumberAnimation { property: "opacity"; from: 0; to: 1.0
-                              duration: hqMode ? 260 : 200
-                              easing.type: hqMode ? Easing.OutQuad : Easing.Linear }
-        }
-        // No clip: the focus halo bleeds past the cell by design, and clipping
-        // cut it off at the grid's edges. The platform grid does the same and
-        // uses display margins so rows scrolling out are still painted.
-        // Paint margin only needs to cover the halo bleed (~10% of a cell),
-        // not a whole row; and keep half a row built ahead (a full row in HQ).
-        // A full row painted AND two rows built past each edge was ~30 tiles
-        // of decode and GPU buffers for nothing on screen.
-        displayMarginBeginning: gridCellH * 0.15
-        displayMarginEnd: gridCellH * 0.15
-        // Look-ahead rows. Qt builds tiles inside the cacheBuffer in the
-        // BACKGROUND, a few per frame; tiles that are already on screen are
-        // built in ONE frame. Dropping it to 0 while racing (the old way) made
-        // every new row land in a single frame, and tore the ready rows down
-        // and rebuilt them each time a race started and stopped. Tiles born
-        // mid-race already hold off loading their art (deferArt), so keeping
+        populateDuration: hqMode ? 260 : 200
+        populateEasing: hqMode ? Easing.OutQuad : Easing.Linear
+        // Look-ahead rows, built in the background a few per frame. Tiles
+        // born mid-race hold off loading their art (deferArt), so keeping
         // the look-ahead costs no decoding.
         cacheBuffer: gridCellH * (hqMode ? 1.0 : 0.5)
-        // Recycle tiles that scroll away instead of destroying them and
-        // building new ones (Qt 5.15). Far less to build per row, and far less
-        // garbage piling up until the JS engine pauses to clean it — the
-        // likely cause of dips that grow the longer you scroll. Each tile
-        // resets itself on reuse (resetForReuse).
-        reuseItems: true
+        highlightMoveDuration: root.fastScrolling ? 0 : 200   // snap while racing; matches the Platform grid at rest
 
         // Video previews live in the highlight, exactly as on the platform
         // grid. Follows the All Games video setting and the coordinator.
-        highlight: allGamesHighlight
-        Component {
-        id: allGamesHighlight
+        highlightItem: Component {
             ItemHighlight {
                 ownScreen: "allgamesscreen"
                 width: gamegrid.cellWidth
@@ -1547,10 +1531,6 @@ id: root
                 allowAudio: lv("All games menu video audio", settings.AllGamesVideoAudio) === "Yes"   // this page's audio row, live from the Y panel
             }
         }
-        highlightMoveDuration: root.fastScrolling ? 0 : 200   // snap while racing; matches the Platform grid at rest
-        preferredHighlightBegin: 0
-        preferredHighlightEnd: height
-        highlightRangeMode: GridView.ApplyRange
 
         // Everything the list does on an index change. currentGame is NOT
         // derived from the index — the list assigns it here — so the grid must
@@ -1567,42 +1547,48 @@ id: root
             }
         }
 
-        // Two whole components, swapped by tile style — the same structure the
-        // Platform grid uses. The tile IS the delegate root, so
-        // GridView.isCurrentItem resolves (it's an attached property that only
-        // exists on the root) and GridView.view supplies the cell size.
-        // Wrapping them in a Loader broke both: nothing highlighted, and the
-        // tiles never learned they were selected.
-        delegate: gridBoxArt ? boxTileDelegate : dynamicTileDelegate
+        // Two tile components, swapped by tile style — the same structure the
+        // Platform grid used. Each is created by the row's Repeater: `index`
+        // is the COLUMN, `parent` the row (parent.rowIndex); the flat index
+        // and the game come from those. The tile is not the view's delegate
+        // any more, so nothing here uses GridView attached properties.
+        tile: gridBoxArt ? boxTileDelegate : dynamicTileDelegate
 
         Component {
         id: boxTileDelegate
             BoxArtGridItem {
-                selected: GridView.isCurrentItem && gamegrid.focus
-                gameData: modelData
+                readonly property int flatIndex: (parent ? parent.rowIndex : 0) * gridColumns + index
+                x: index * gridCellW
+                width:  gridCellW
+                height: gridCellH - gridTitleMargin
+                gameData: gamegrid.gameAt(flatIndex)
+                // A row's last cells past the end of the games are empty.
+                visible: !!gameData
+                selected: flatIndex === gamegrid.currentIndex && gamegrid.focus
                 reduceMotion: root.fastScrolling
                 deferArt: root.fastScrolling
-                GridView.onReused: resetForReuse()
                 columns: gridColumns
                 artStyle: tileStyle
                 titleMode: tileTitles
-                width:  GridView.view.cellWidth
-                height: GridView.view.cellHeight - gridTitleMargin
-                // The view gives focus to the current tile, and the tile's own
-                // Keys handler consumes A and emits this. Unconnected, the
-                // press simply died here. Same wiring as the platform grid.
+                // The tile's own Keys handler consumes A (when it has focus)
+                // and emits this; the page's Keys.onPressed covers the rest.
                 onActivate: {
                     if (selected) activateCurrent();
-                    else          gamegrid.currentIndex = index;   // mouse/touch on another tile
+                    else          gamegrid.currentIndex = flatIndex;   // mouse/touch on another tile
                 }
             }
         }
         Component {
         id: dynamicTileDelegate
             DynamicGridItem {
-                selected: GridView.isCurrentItem && gamegrid.focus
+                readonly property int flatIndex: (parent ? parent.rowIndex : 0) * gridColumns + index
+                x: index * gridCellW
+                width:  gridCellW
+                height: gridCellH - gridTitleMargin
+                gameData: gamegrid.gameAt(flatIndex)
+                visible: !!gameData
+                selected: flatIndex === gamegrid.currentIndex && gamegrid.focus
                 xboxFrame: xboxFrameLive
-                gameData: modelData
                 titleMode: tileTitles
                 artMode: tileArt
                 showLogo: tileLogo === "Yes"
@@ -1611,12 +1597,10 @@ id: root
                 ownScreen: "allgamesscreen"
                 reduceMotion: root.fastScrolling
                 deferArt: root.fastScrolling
-                GridView.onReused: resetForReuse()
-                width:  GridView.view.cellWidth
-                height: GridView.view.cellHeight - gridTitleMargin
+                titleWhilePending: true
                 onActivated: {
                     if (selected) activateCurrent();
-                    else          gamegrid.currentIndex = index;
+                    else          gamegrid.currentIndex = flatIndex;
                 }
             }
         }
@@ -1641,7 +1625,7 @@ id: root
             // wrap to the first row in the same column; otherwise step down.
             var lastRowStart = Math.floor((count - 1) / gridColumns) * gridColumns;
             if (currentIndex >= lastRowStart) currentIndex = currentIndex % gridColumns;
-            else moveCurrentIndexDown();
+            else currentIndex = Math.min(count - 1, currentIndex + gridColumns);
         }
         Keys.onLeftPressed: {
             if (count === 0) return;

@@ -122,19 +122,15 @@ id: root
     // A tile that already has its art is never affected — the latch only
     // starts false when the tile is born mid-race.
     property bool deferArt: false
-    // A binding at first so the art's `source` sees it on its very first
-    // evaluation (see DynamicGridItem); a plain value from then on.
-    property bool artArmed: !deferArt
-    Component.onCompleted: artArmed = artArmed
-    onDeferArtChanged: if (!deferArt) artArmed = true
-    // Item reuse: a grid with reuseItems recycles tiles instead of destroying
-    // them. Its host calls this from GridView.onReused so a recycled tile
-    // starts like a new one: the art latch follows the host's current
-    // deferArt, as onCompleted does for a new tile. Everything else here is
-    // a binding and follows the new game by itself.
-    function resetForReuse() {
-        artArmed = !deferArt;
-    }
+    // The game whose art is shown — ASSIGNED, never bound, so the art's
+    // source only changes when the tile decides (see DynamicGridItem.artGame).
+    property var artGame: null
+    readonly property bool artArmed: artGame !== null
+    function takeGame() { artGame = (deferArt || !gameData) ? null : gameData; }
+    Component.onCompleted: takeGame()
+    onGameDataChanged: takeGame()
+    onDeferArtChanged: if (!deferArt && artGame === null) takeGame()
+    function resetForReuse() { takeGame(); }
 
     scale: selected ? 1.1 : 1
     z: selected ? 10 : 1
@@ -263,7 +259,7 @@ id: root
             // HQ: dissolve in on load instead of snapping.
             opacity: hqFadeIn ? (status === Image.Ready ? 1 : 0) : 1
             Behavior on opacity { enabled: !reduceMotion && hqFadeIn; NumberAnimation { duration: 180 } }
-            source: artArmed ? boxArt(gameData) : ""
+            source: artGame ? boxArt(artGame) : ""
             sourceSize { width: root.width; height: root.height }
             smooth: true
             fillMode: Image.PreserveAspectFit
@@ -458,7 +454,7 @@ id: root
                         rightMargin: (gameData && gameData.favorite) ? (barPin.width + vpx(14)) : vpx(6)
                         verticalCenter: parent.verticalCenter
                     }
-                    text: modelData ? modelData.title : ""
+                    text: gameData ? gameData.title : ""
                     color: "white"; font.family: subtitleFont.name
                     font.pixelSize: Math.max(fpx(13), parent.parent.height * 0.05, parent.parent.width * 0.05); font.bold: true
                     wrapMode: Text.WordWrap; maximumLineCount: 2; elide: Text.ElideRight
@@ -540,7 +536,7 @@ id: root
     Text {
     id: title
 
-        text: modelData ? modelData.title : ''
+        text: gameData ? gameData.title : ''
         // Always light: the pill behind it (#B3000000) is dark whatever the
         // page background colour is, so theme.text's White-mode flip is wrong here.
         color: "#ebebeb"
@@ -570,7 +566,7 @@ id: root
     Text {
     id: platformname
 
-        text: modelData.title
+        text: gameData ? gameData.title : ""
         anchors { fill: parent; margins: vpx(10) }
         color: "white"
         scale: selected ? 1.1 : 1

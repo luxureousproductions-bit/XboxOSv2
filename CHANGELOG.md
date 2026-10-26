@@ -4,7 +4,19 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 32)
+## Unreleased — refresh branch (build 33)
+
+### Library grid rebuilt on recycled rows (the fast-scroll fix, properly)
+- The grid was a Qt GridView, and in Pegasus's Qt (5.15) a GridView **never recycles its tiles** — `reuseItems` is accepted and ignored (its `removeItem()` releases every tile as NotReusable). So a held D-pad built a full row of tiles on every step and destroyed the row that left: each tile is several images, texts, loaders and a shader, and the destroyed ones piled up until the JavaScript engine paused to collect them. That is why scrolling got slower the longer the key was held (58 → 23 → 6 fps on the Odin 2 in the build 32 video) — and why build 32's art hold-off made it look worse: with nothing left to show, the per-step rebuild was all that remained.
+- The grid is now a ListView of **rows** (`Global/RowGrid.qml`), which does recycle: a row that scrolls out comes back in at the other edge with a new index, and its tiles only rebind. During a 12-second race on the test machine, 69 tiles are built in total and none destroyed (build 32: ~125 built and destroyed per second), 60 fps throughout with a worst frame of 22–34 ms, and no art decoded until the scroll stops. The flat game index, Back, letter jumps, the wheel, the restore, the highlight video, per-system tiles and the box-art style are unchanged on the outside.
+- A tile's art now follows a game it is **given** (`artGame`) rather than a binding on its model data, so a recycled tile can never request a decode that is cancelled a moment later.
+- While the grid races, a passing tile is a dark card with its name bar instead of a blank, and the bar stays up until that tile's art has decoded. No extra text layout: the bar's title was always set.
+- The imported-app treatment (blurred icon backdrop, two offscreen layers, three images) is only built for imported apps; every ROM tile used to carry it invisibly.
+
+### Diagnostics
+- With the frame-rate counter on, the counter also writes its once-a-second reading (`[perf] hh:mm:ss fps N worst M`) to `lastrun.log`, so a stutter in a report can be read against what the log says was happening.
+
+## Build 32
 
 ### Fast scrolling with logos on
 - Tiles created while the grid races are meant to hold off loading their art and logo until the scroll stops. That only ever worked for recycled tiles: a brand-new tile requested its images before the hold-off kicked in, then cancelled them. With logos on, a 6-second race requested about 700 logos it never showed. New tiles now hold off from their first instant. On the test machine the race went from about 42 fps / 90 ms stalls to about 56 fps / 55 ms, close to logos-off.
