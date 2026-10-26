@@ -21,7 +21,6 @@ import SortFilterProxyModel 0.2
 import QtQml.Models 2.15
 import QtMultimedia 5.15
 import "../Global"
-import "../GridView"
 import "../Lists"
 import "../utils.js" as Utils
 

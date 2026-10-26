@@ -114,11 +114,10 @@ id: root
     readonly property var gamesView: gridMode ? gamegrid : gamelist
 
     // ── Library: one screen for All Games AND a single system ─────────────
-    // Opening a system from Home lands here scoped to it (Settings > Platform
-    // page > Library screen: Merged). Scoped, the tiles follow the Platform
-    // page's settings, with that system's own overrides on top when
-    // "Per-system tile settings" is on — exactly what the Platform page did.
-    // The All view keeps the All Games settings.
+    // Opening a system from Home lands here scoped to it. Scoped, the tiles
+    // follow Settings > Library > Tiles - System view, with that system's own
+    // overrides on top when Per-system overrides is on. The All view uses
+    // Tiles - All view.
     readonly property bool scoped: systemIndex >= 0
     readonly property var  scopedColl: scoped ? api.collections.get(systemIndex) : null
     readonly property string sysKey: scopedColl ? (scopedColl.shortName || "") : ""

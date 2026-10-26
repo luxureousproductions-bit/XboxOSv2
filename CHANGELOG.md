@@ -4,7 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 28)
+## Unreleased — refresh branch (build 29)
+
+### Old Platform page removed
+- The separate Platform page (and its **Library screen: Separate** option) is gone; the Library is the one screen for All Games and every system. About 1,600 lines of QML removed. Your Platform page settings live on as **Tiles – System view**, and per-system overrides are untouched.
+- Settings help text and tips now talk about the Library instead of the Platform page.
+
+## Build 28
 
 ### Fixed
 - Back from Game details now returns to the system you were browsing, not to All. The Library screen is unloaded while hidden to save memory, and the rebuilt one forgot its system.

@@ -496,11 +496,6 @@ id: root
 
         ListElement { settingName: "Layout"; setting: ""; header: true }
         ListElement {
-            settingName: "Library screen"
-            label: "Library screen"
-            setting: "Merged,Separate"
-        }
-        ListElement {
             settingName: "All Games View"
             label: "View"
             setting: "List,Grid"
@@ -750,7 +745,7 @@ id: root
     id: tipsSettingsModel
 
         ListElement { settingName: "Navigation"; setting: ""; header: true; tip: false }
-        ListElement { settingName: "Discover follows the Platform page"; setting: ""; header: false; tip: true }
+        ListElement { settingName: "Discover follows the system"; setting: ""; header: false; tip: true }
         ListElement { settingName: "Jump by letter"; setting: ""; header: false; tip: true }
         ListElement { settingName: "Shortcut to the nav bar"; setting: ""; header: false; tip: true }
         ListElement { settingName: "Skipping in Discover"; setting: ""; header: false; tip: true }
@@ -868,7 +863,7 @@ id: root
             return "Transparency of home page background art";
         }
         if (name === "Always show titles") {
-            return "When a game's name shows on its tile, on the Home page, Platform page and All Games grid\n"
+            return "When a game's name shows on its tile, on the Home page and in the Library\n"
                  + "\n"
                  + "ON FOCUS shows the name only on the tile you're on\n"
                  + "\n"
@@ -903,10 +898,10 @@ id: root
                  + "At 60 fps each frame has about 17 ms; a worst well past that is a visible stutter";
         }
         if (name === "Allow video thumbnails") {
-            return "Plays a short preview video on the highlighted tile (Home & Platform page)";
+            return "Plays a short preview video on the highlighted tile on the Home page";
         }
         if (name === "Hide logo when thumbnail video plays") {
-            return "While a tile's preview video plays, hides the game's logo so it doesn't cover the video (Home & Platform page)";
+            return "While a tile's preview video plays on the Home page, hides the game's logo so it doesn't cover the video";
         }
         if (name === "Featured Box") {
             return "The large featured tile on the Home page. Turn it off to remove it";
@@ -918,14 +913,14 @@ id: root
             return "What the featured tile shows: your Favorites, Discover videos, or a slideshow of fanart";
         }
         if (name === "All Games View") {
-            return "How the All Games menu is shown\n"
+            return "How the Library is shown, for All Games and for every system\n"
                  + "\n"
                  + "LIST is a scrolling list with a preview panel and details\n"
                  + "\n"
-                 + "GRID fills the page with tiles \u2014 no preview panel. Its own tile style, ratio, art and items-per-row are below, separate from the Platform page";
+                 + "GRID fills the page with tiles \u2014 no preview panel. A system can have its own View with Per-system overrides";
         }
         if (name === "AllGames Video preview") {
-            return "Plays a short preview video for the highlighted game in the All Games menu (List & Grid mode)";
+            return "Plays a short preview video for the highlighted game in the Library (List & Grid)";
         }
         if (name === "AllGames Hide box art on video") {
             return "In the All Games list, hides the box art in the preview panel while the video plays";
@@ -939,46 +934,44 @@ id: root
         if (name === "AllGames Show scanlines") {
             return "In the All Games list, draws faint scanlines over the preview for a retro look";
         }
-        if (name === "AllGames Match Platform") {
-            return "Use the Platform page's grid look for All Games Menu\n"
+        if (name === "Library system tiles follow All") {
+            return "Systems use the All view's tile settings above\n"
                  + "\n"
-                 + "While this is on, the tile rows below follow the Platform page \u2014 change it there and All Games changes with it. The rows grey out because they aren't in use\n"
-                 + "\n"
-                 + "Turn it off and All Games goes back to its own settings, exactly as you had them";
+                 + "While this is on, the System view rows below are not in use and grey out. A system's own Per-system overrides still apply on top";
         }
         if (name === "AllGames Tile Style") {
-            return "The shape of each tile in the All Games grid";
+            return "The shape of each tile when viewing All Games";
         }
         if (name === "AllGames Tile Ratio") {
-            return "How wide or tall All Games grid tiles are, as a proportion";
+            return "How wide or tall All Games tiles are, as a proportion";
         }
         if (name === "AllGames Tile Art") {
-            return "The picture used on All Games grid tiles";
+            return "The picture used on All Games tiles";
         }
         if (name === "AllGames Tile Logo") {
-            return "Shows the game's logo on each All Games grid tile";
+            return "Shows the game's logo on each All Games tile";
         }
         if (name === "AllGames Items per row") {
-            return "How many tiles fit across the All Games grid. Fewer means bigger tiles";
+            return "How many tiles fit across when viewing All Games. Fewer means bigger tiles";
         }
         if (name === "Grid Thumbnail") {
-            return "The shape of each tile on the Platform page";
+            return "The shape of each tile when viewing one system";
         }
         if (name === "Grid Ratio") {
-            return "How wide or tall Platform page tiles are, as a proportion";
+            return "How wide or tall a system's tiles are, as a proportion";
         }
         if (name === "Grid art") {
-            return "The picture used on Platform page tiles";
+            return "The picture used on a system's tiles";
         }
         if (name === "Grid Game Logo") {
-            return "Shows the game's logo on each Platform page tile";
+            return "Shows the game's logo on each of a system's tiles";
         }
         if (name === "Number of columns") {
-            return "How many tiles fit across the Platform page\n"
+            return "How many tiles fit across when viewing one system\n"
                  + "Fewer means bigger tiles";
         }
         if (name === "LB/RB Function") {
-            return "What the shoulder buttons do on the Platform page\n"
+            return "What the shoulder buttons do while viewing one system\n"
                  + "\n"
                  + "CYCLE PLATFORMS moves to the previous or next system\n"
                  + "\n"
@@ -1009,7 +1002,7 @@ id: root
             return "In Games details, draws faint scanlines over the preview for a retro look";
         }
         if (name === "Video thumbnail audio") {
-            return "Audio played from preview videos in the Home and Platform pages";
+            return "Audio played from preview videos on the Home page";
         }
         if (name === "Discover video audio") {
             return "Only affects Discover page; Audio for Discover videos in Featured box is controlled by \u201cVideo thumbnail audio\u201d";
@@ -1031,21 +1024,21 @@ id: root
                  + "Apps Pegasus found on its own follow the App Drawer: anything in its Emulators section is hidden, including apps you moved there yourself. For ones you added yourself, give them the genre tag \u201cEmulator\u201d in their metadata and they'll be hidden too";
         }
         if (name === "Per-system tile settings") {
-            return "Give each system its own tile look on the Platform page.\n\n"
-                 + "When on, press Y on a Platform page to set that system's tile "
+            return "Give each system its own look.\n\n"
+                 + "When on, press Y while viewing a system to set its own view, tile "
                  + "shape, ratio, art, logo, tiles per row and titles. Systems you "
-                 + "don't change keep following this page.";
+                 + "don't change keep following the System view rows above.";
         }
         if (name === "Grid background dimming") {
-            return "Slightly darkens the area below the header on the Platform "
-                 + "page, All Games, Game Details and the Achievements pages, so "
+            return "Slightly darkens the area below the header in the "
+                 + "Library, Game Details and the Achievements pages, so "
                  + "tiles, text and lists stand out.\n\n"
                  + "OFF leaves it as is. Turn it up if things blend into the "
                  + "background.";
         }
         if (name === "Bottom fade") {
             return "How strongly the last row fades out above the button "
-                 + "prompts at the bottom of the Platform page, All Games, "
+                 + "prompts at the bottom of the Library, "
                  + "Game Details and the Achievements pages.\n\n"
                  + "OFF removes the fade. STRONG is the full fade, so the "
                  + "prompts always sit on a clean background.";
@@ -1099,10 +1092,10 @@ id: root
     // infoText() falls back to this, and hasInfo() checks it, so tips use the
     // same More info panel as settings.
     readonly property var tipTexts: ({
-        "Discover follows the Platform page":
+        "Discover follows the system":
             "Open Discover while viewing one system in the Library and it only plays that system's games\nOpen it from anywhere else and it covers your whole library",
         "Jump by letter":
-            "On the Platform page and in search results, LT and RT jump to the previous or next letter",
+            "In the Library and in search results, LT and RT jump to the previous or next letter",
         "Shortcut to the nav bar":
             "On the Home page and Game details, LB or RB jumps straight up to the nav bar along the top\nOn the Home page, coming back down returns you to the row you were on",
         "Skipping in Discover":

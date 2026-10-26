@@ -21,8 +21,6 @@ import QtQuick.Layouts 1.15
 import SortFilterProxyModel 0.2
 import QtMultimedia 5.15
 import "RetroAchievements"
-import "VerticalList"
-import "GridView"
 import "Global"
 import "GameDetails"
 import "ShowcaseView"
@@ -450,7 +448,6 @@ id: root
         "Featured collection":                       "Favorites",
         "Game Counter":                              "Yes",
         "Game Logo":                                 "Show",
-        "Game View":                                 "Grid",
         "Grid Game Logo":                            "Yes",
         "Grid Ratio":                                "0.66",
         "Grid art":                                  "Fanart",
@@ -472,7 +469,6 @@ id: root
         "Start up chime":                            "Yes",
         "Startup intro":                             "Yes",
         "Tile frame":                                "Classic",
-        "Library screen":                            "Merged",
         "Library system tiles follow All":           "No",
         "System tile titles":                        "On focus",
         "Tile Halo":                                 "Yes",
@@ -483,7 +479,6 @@ id: root
 
     property var settings: {
         return {
-            PlatformView:                  settingsStore.get("Game View", "Grid"),
             GridThumbnail:                 settingsStore.get("Grid Thumbnail", "Square"),
             GridArt:                       settingsStore.get("Grid art", "Fanart"),
             GridGameLogo:                  settingsStore.get("Grid Game Logo", "Yes"),
@@ -741,8 +736,6 @@ id: root
         switch (state) {
         case "showcasescreen":        return showcaseLoader;
         case "allgamesscreen":        return allgamesloader;
-        case "softwaregridscreen":    return gridviewloader;
-        case "softwarescreen":        return listviewloader;
         case "gameviewscreen":        return gameviewloader;
         case "settingsscreen":        return settingsloader;
         case "achievementsscreen":    return achievementsloader;
@@ -1510,12 +1503,6 @@ id: root
     // State settings
     states: [
         State {
-            name: "softwarescreen";
-        },
-        State {
-            name: "softwaregridscreen";
-        },
-        State {
             name: "showcasescreen";
         },
         State {
@@ -1552,11 +1539,9 @@ id: root
     }
 
     // ── Library screen ────────────────────────────────────────────────────
-    // Settings > Platform page > Library screen. Merged: opening a system
-    // from Home goes to All Games scoped to that system (one screen, the
-    // Platform page's settings and per-system overrides apply there).
-    // Separate: the old Platform page.
-    readonly property bool libraryMerged: { var e = settingsEpoch; return settingsStore.get("Library screen") === "Merged"; }
+    // One screen (AllGamesMenu) for All Games and for a single system:
+    // opening a system from Home scopes it to that system. The old Platform
+    // page (GridView/, VerticalList/) was removed in build 29.
     // What All Games should show next: a collection index, -1 for All,
     // -2 for "leave it as it is". Bumping the serial makes it look.
     property int libraryScopePending: -2
@@ -1573,8 +1558,8 @@ id: root
         searchTerm = "";
         searchMode = "Title";
         genreSelected = [];
-        if (libraryMerged) { requestLibraryScope(currentCollectionIndex); navigator.go("allgamesscreen"); return; }
-        navigator.go(settings.PlatformView === "Grid" ? "softwaregridscreen" : "softwarescreen");
+        requestLibraryScope(currentCollectionIndex);
+        navigator.go("allgamesscreen");
     }
 
     function showcaseScreen() {
@@ -1990,34 +1975,6 @@ id: root
     }
 
     Loader  {
-    id: gridviewloader
-
-        readonly property bool shown: (root.state === "softwaregridscreen")
-        focus: shown
-        active: opacity !== 0
-        opacity: shown ? 1 : 0
-        Behavior on opacity { PropertyAnimation { duration: transitionTime } }
-
-        anchors.fill: parent
-        sourceComponent: gridview
-        asynchronous: true
-    }
-
-    Loader  {
-    id: listviewloader
-
-        readonly property bool shown: (root.state === "softwarescreen")
-        focus: shown
-        active: opacity !== 0
-        opacity: shown ? 1 : 0
-        Behavior on opacity { PropertyAnimation { duration: transitionTime } }
-
-        anchors.fill: parent
-        sourceComponent: listview
-        asynchronous: true
-    }
-
-    Loader  {
     id: gameviewloader
 
         readonly property bool shown: (root.state === "gameviewscreen")
@@ -2170,17 +2127,6 @@ id: root
         ShowcaseViewMenu { focus: true }
     }
 
-    Component {
-    id: gridview
-
-        GridViewMenu { focus: true }
-    }
-
-    Component {
-    id: listview
-
-        SoftwareListMenu { focus: true }
-    }
 
     Component {
     id: allgamesview
@@ -2450,7 +2396,6 @@ id: root
         }
         // Library pushes normally, so Back returns where you came from.
         onNavLibrary: {
-            if (root.state === "allgamesscreen" && !libraryMerged) return;
             allGamesScreen();
         }
         // Action tiles. Each pushes onto the back stack the same way the rest
