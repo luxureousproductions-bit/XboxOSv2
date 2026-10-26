@@ -33,7 +33,8 @@ id: root
     // share currentGameIndex, so currentGame — and everything derived from it
     // (audio, video preview, imported-app handling, the helpbar) — is
     // unchanged. Only the layout differs; there is no second screen.
-    readonly property bool gridMode: lvView === "Grid"
+    // Scoped to a system, View can be that system's own (per-system override).
+    readonly property bool gridMode: (scoped ? sysPref("View", lvView) : lvView) === "Grid"
     // The header buttons hand focus back to "the games". That used to be
     // gamelist unconditionally — in grid mode that focused the hidden list,
     // so the grid never received input.
@@ -112,13 +113,6 @@ id: root
     // The view currently showing the games; the letter jumps drive this.
     readonly property var gamesView: gridMode ? gamegrid : gamelist
 
-    // "Match Platform Page": read the Platform page's grid values instead of
-    // this page's own. The All Games values are left untouched, so turning it
-    // back off restores whatever was set here before.
-    // Own values go through lv() so the Y panel's writes apply live; the
-    // Platform values are only changed from Settings, so plain reads are fine.
-    readonly property bool gridMatch: lv("AllGames Match Platform", settings.AllGamesMatchPlatform) === "Yes"
-
     // ── Library: one screen for All Games AND a single system ─────────────
     // Opening a system from Home lands here scoped to it (Settings > Platform
     // page > Library screen: Merged). Scoped, the tiles follow the Platform
@@ -138,16 +132,20 @@ id: root
         var e = listEpoch;
         return sysOverride() ? settingsStore.get(sysKey + " - " + row, globalValue) : globalValue;
     }
-    readonly property string tileStyle:   scoped ? sysPref("Tile shape",        lv("Grid Thumbnail",    settings.GridThumbnail))
-                                        : gridMatch ? settings.GridThumbnail : lv("AllGames Tile Style",    settings.AllGamesTileStyle)
-    readonly property string tileRatioStr:scoped ? sysPref("Tile ratio",        lv("Grid Ratio",        settings.GridRatio))
-                                        : gridMatch ? settings.GridRatio     : lv("AllGames Tile Ratio",    settings.AllGamesTileRatio)
-    readonly property string tileArt:     scoped ? sysPref("Tile art",          lv("Grid art",          settings.GridArt))
-                                        : gridMatch ? settings.GridArt       : lv("AllGames Tile Art",      settings.AllGamesTileArt)
-    readonly property string tileLogo:    scoped ? sysPref("Show logo on tile", lv("Grid Game Logo",    settings.GridGameLogo))
-                                        : gridMatch ? settings.GridGameLogo  : lv("AllGames Tile Logo",     settings.AllGamesTileLogo)
-    readonly property string tileColumns: scoped ? sysPref("Tiles per row",     lv("Number of columns", settings.GridColumns))
-                                        : gridMatch ? settings.GridColumns   : lv("AllGames Items per row", settings.AllGamesColumns)
+    // Settings > Library. The All view has its own tile rows; the System view
+    // has its own too, or follows the All view ("Same as All view"); a
+    // system's per-system overrides sit on top of either.
+    readonly property bool sysFollowAll: lv("Library system tiles follow All", "No") === "Yes"
+    readonly property string allStyle:   lv("AllGames Tile Style",    settings.AllGamesTileStyle)
+    readonly property string allRatio:   lv("AllGames Tile Ratio",    settings.AllGamesTileRatio)
+    readonly property string allArt:     lv("AllGames Tile Art",      settings.AllGamesTileArt)
+    readonly property string allLogo:    lv("AllGames Tile Logo",     settings.AllGamesTileLogo)
+    readonly property string allColumns: lv("AllGames Items per row", settings.AllGamesColumns)
+    readonly property string tileStyle:   scoped ? sysPref("Tile shape",        sysFollowAll ? allStyle   : lv("Grid Thumbnail",    settings.GridThumbnail)) : allStyle
+    readonly property string tileRatioStr:scoped ? sysPref("Tile ratio",        sysFollowAll ? allRatio   : lv("Grid Ratio",        settings.GridRatio))     : allRatio
+    readonly property string tileArt:     scoped ? sysPref("Tile art",          sysFollowAll ? allArt     : lv("Grid art",          settings.GridArt))       : allArt
+    readonly property string tileLogo:    scoped ? sysPref("Show logo on tile", sysFollowAll ? allLogo    : lv("Grid Game Logo",    settings.GridGameLogo))  : allLogo
+    readonly property string tileColumns: scoped ? sysPref("Tiles per row",     sysFollowAll ? allColumns : lv("Number of columns", settings.GridColumns))   : allColumns
     readonly property string tileTitles:  scoped ? sysPref("Game tile titles",  gameTitleMode) : gameTitleMode
 
     // The scope the theme asked for (Home system tile, Library button,
@@ -162,9 +160,14 @@ id: root
     }
     function applyScope(collIdx) {
         if (systemOptions.length === 0) buildSystemOptions();
+        var opt = { name: "ALL", index: -1 };
         for (var i = 0; i < systemOptions.length; i++)
-            if (systemOptions[i].index === collIdx) { selectSystem(systemOptions[i]); return; }
-        selectSystem({ name: "ALL", index: -1 });
+            if (systemOptions[i].index === collIdx) { opt = systemOptions[i]; break; }
+        selectSystem(opt);
+        // The new scope may flip List/Grid (per-system View); the incoming
+        // view's focus binding and the outgoing one's can leave neither
+        // focused, so hand focus to whichever is showing once that settles.
+        if (focus) Qt.callLater(focusGames);
     }
     // LB/RB on a scoped view: previous / next system in Home's order.
     function cycleScope(dir) {
@@ -265,8 +268,7 @@ id: root
     property int listEpoch: 0
     function lv(key, fallback) { var e = listEpoch; return settingsStore.get(key, fallback); }
     readonly property string lvView:      lv("All Games View",                settings.AllGamesView)
-    readonly property string lvVideo:     scoped ? lv("Allow video thumbnails", settings.AllowThumbVideo)
-                                                 : lv("AllGames Video preview",   settings.AllGamesVideoPreview)
+    readonly property string lvVideo:     lv("AllGames Video preview",        settings.AllGamesVideoPreview)
     readonly property string lvHideBox:   lv("AllGames Hide box art on video", settings.AllGamesHideBoxOnVideo)
     readonly property string lvHideLogo:  lv("AllGames Hide logo on video",    settings.AllGamesHideLogoOnVideo)
     readonly property string lvBlur:      lv("AllGames Blur Background",       settings.AllGamesBlurBackground)
@@ -1677,7 +1679,6 @@ id: root
         { key: "All Games View",          label: "View",                opts: ["List","Grid"], order: "List,Grid", dflt: settings.AllGamesView },
         { key: "AllGames Video preview",  label: "Video previews",      opts: ["Yes","No"], order: "Yes,No", dflt: settings.AllGamesVideoPreview },
         { key: "All games menu video audio", label: "Video audio",       opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesVideoAudio },
-        { key: "AllGames Match Platform", label: "Match Platform page", opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesMatchPlatform },
         { key: "AllGames Tile Style",     label: "Tile shape",          opts: ["Wide","Tall","Square","Box Art","3D Box"], order: "Wide,Tall,Square,Box Art,3D Box", dflt: settings.AllGamesTileStyle },
         { key: "AllGames Tile Ratio",     label: "Tile ratio",          opts: ratioOpts, order: ratioOrder, dflt: settings.AllGamesTileRatio },
         { key: "AllGames Tile Art",       label: "Tile art",            opts: ["Fanart","Screenshot","Boxfront"], order: "Fanart,Screenshot,Boxfront", dflt: settings.AllGamesTileArt },
@@ -1688,6 +1689,7 @@ id: root
     // rows when "Per-system tile settings" is on (what the Platform page's Y
     // panel edited). Per-system keys have no Settings row, so no Index.
     readonly property var platformRows: [
+        { key: "All Games View",    label: "View",              opts: ["List","Grid"], order: "List,Grid", dflt: settings.AllGamesView },
         { key: "Grid Thumbnail",    label: "Tile shape",        opts: ["Wide","Tall","Square","Box Art","3D Box"], order: "Wide,Tall,Square,Box Art,3D Box", dflt: settings.GridThumbnail },
         { key: "Grid Ratio",        label: "Tile ratio",        opts: ratioOpts, order: ratioOrder, dflt: settings.GridRatio },
         { key: "Grid art",          label: "Tile art",          opts: ["Fanart","Screenshot","Boxfront"], order: "Fanart,Screenshot,Boxfront", dflt: settings.GridArt },
@@ -1696,6 +1698,7 @@ id: root
     ]
     readonly property var sysPanelRows: [
         { key: sysKey + " - Use theme settings", label: "Use theme settings", opts: ["Yes","No"], order: null, dflt: "Yes" },
+        { key: sysKey + " - View",               label: "View",               opts: ["List","Grid"], order: null, dflt: settings.AllGamesView },
         { key: sysKey + " - Tile shape",         label: "Tile shape",         opts: ["Wide","Tall","Square","Box Art","3D Box"], order: null, dflt: settings.GridThumbnail },
         { key: sysKey + " - Tile ratio",         label: "Tile ratio",         opts: ratioOpts, order: null, dflt: settings.GridRatio },
         { key: sysKey + " - Tile art",           label: "Tile art",           opts: ["Fanart","Screenshot","Boxfront"], order: null, dflt: settings.GridArt },
@@ -1720,6 +1723,9 @@ id: root
                 if (k === sysKey + " - Tile ratio" && ss === "Square") return true;
                 return false;
             }
+            if (k.indexOf("Grid") === 0 || k === "Number of columns") {
+                if (panelKeyValue("Library system tiles follow All", "No") === "Yes") return true;
+            }
             var gs = panelKeyValue("Grid Thumbnail", settings.GridThumbnail);
             if ((k === "Grid art" || k === "Grid Game Logo") && (gs === "Box Art" || gs === "3D Box")) return true;
             if (k === "Grid Ratio" && gs === "Square") return true;
@@ -1728,7 +1734,6 @@ id: root
         if (k === "AllGames Hide box art on video" || k === "AllGames Hide logo on video" || k === "All games menu video audio")
             return panelKeyValue("AllGames Video preview", settings.AllGamesVideoPreview) === "No";
         if (k.indexOf("AllGames Tile") === 0 || k === "AllGames Items per row") {
-            if (panelKeyValue("AllGames Match Platform", settings.AllGamesMatchPlatform) === "Yes") return true;
             var shape = panelKeyValue("AllGames Tile Style", settings.AllGamesTileStyle);
             if (k === "AllGames Tile Art" || k === "AllGames Tile Logo") return shape === "Box Art" || shape === "3D Box";
             if (k === "AllGames Tile Ratio") return shape === "Square";
@@ -1757,7 +1762,11 @@ id: root
         // stays on the View row, which is row 0 in both sets. The incoming
         // view's `focus: gridMode` binding grabs focus as it appears, so take
         // it back — otherwise the panel is showing but the grid/list is live.
-        if (r.key === "All Games View") { listRow = 0; listPanel.forceActiveFocus(); }
+        if (r.key === "All Games View" || r.key === sysKey + " - View") {
+            var vr = 0;
+            for (var pi = 0; pi < panelRows.length; pi++) if (panelRows[pi].key === r.key) { vr = pi; break; }
+            listRow = vr; listPanel.forceActiveFocus();
+        }
     }
     function listStep(dir) {
         var n = panelRows.length, i = listRow, tries = 0;

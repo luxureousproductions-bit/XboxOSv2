@@ -473,6 +473,7 @@ id: root
         "Startup intro":                             "Yes",
         "Tile frame":                                "Classic",
         "Library screen":                            "Merged",
+        "Library system tiles follow All":           "No",
         "System tile titles":                        "On focus",
         "Tile Halo":                                 "Yes",
         "Title Screen":                              "Yes",

@@ -488,13 +488,85 @@ id: root
         }
     }
 
+    // ── Library: All Games and every system, one screen ──────────────────
+    // Same keys as the old Platform page / All Games menu sections, so saved
+    // values and per-system overrides carry over; only the grouping is new.
     ListModel {
-    id: gridSettingsModel
+    id: librarySettingsModel
 
+        ListElement { settingName: "Layout"; setting: ""; header: true }
         ListElement {
             settingName: "Library screen"
             label: "Library screen"
             setting: "Merged,Separate"
+        }
+        ListElement {
+            settingName: "All Games View"
+            label: "View"
+            setting: "List,Grid"
+        }
+        ListElement {
+            settingName: "LB/RB Function"
+            label: "LB/RB on a system"
+            setting: "Cycle Platforms,Nav Bar"
+        }
+        ListElement { settingName: "Video"; setting: ""; header: true }
+        ListElement {
+            settingName: "AllGames Video preview"
+            label: "Video previews"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "AllGames Hide box art on video"
+            label: "Hide box art when preview plays"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "AllGames Hide logo on video"
+            label: "Hide logo when preview plays"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "AllGames Blur Background"
+            label: "Blur background (list view)"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "AllGames Show scanlines"
+            label: "Show scanlines (list view)"
+            setting: "No,Yes"
+        }
+        ListElement { settingName: "Tiles - All view"; setting: ""; header: true }
+        ListElement {
+            settingName: "AllGames Tile Style"
+            label: "Tile shape"
+            setting: "Wide,Tall,Square,Box Art,3D Box"
+        }
+        ListElement {
+            settingName: "AllGames Tile Ratio"
+            label: "Tile ratio"
+            setting: "0.66,0.67,0.68,0.69,0.70,0.71,0.72,0.73,0.74,0.75,0.76,0.77,0.78,0.79,0.80,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88,0.89,0.90,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,0.25,0.26,0.27,0.28,0.29,0.30,0.31,0.32,0.33,0.34,0.35,0.36,0.37,0.38,0.39,0.40,0.41,0.42,0.43,0.44,0.45,0.46,0.47,0.48,0.49,0.50,0.51,0.52,0.53,0.54,0.55,0.56,0.57,0.58,0.59,0.60,0.61,0.62,0.63,0.64,0.65"
+        }
+        ListElement {
+            settingName: "AllGames Tile Art"
+            label: "Tile art"
+            setting: "Fanart,Screenshot,Boxfront"
+        }
+        ListElement {
+            settingName: "AllGames Tile Logo"
+            label: "Show logo on tile"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "AllGames Items per row"
+            label: "Tiles per row"
+            setting: "3,4,5,6,7,8"
+        }
+        ListElement { settingName: "Tiles - System view"; setting: ""; header: true }
+        ListElement {
+            settingName: "Library system tiles follow All"
+            label: "Same as All view"
+            setting: "No,Yes"
         }
         ListElement {
             settingName: "Grid Thumbnail"
@@ -522,19 +594,16 @@ id: root
             setting: "3,4,5,6,7,8"
         }
         ListElement {
-            settingName: "LB/RB Function"
-            setting: "Cycle Platforms,Nav Bar"
-        }
-        ListElement {
             settingName: "Per-system tile settings"
+            label: "Per-system overrides"
             setting: "No,Yes"
         }
     }
 
-    property var gridPage: {
+    property var libraryPage: {
         return {
-            pageName: "Platform page",
-            listmodel: gridSettingsModel
+            pageName: "Library",
+            listmodel: librarySettingsModel
         }
     }
 
@@ -588,78 +657,6 @@ id: root
         }
     }
 
-    ListModel {
-    id: allGamesSettingsModel
-
-        ListElement {
-            settingName: "All Games View"
-            setting: "List,Grid"
-        }
-        ListElement {
-            settingName: "AllGames Video preview"
-            label: "Video previews"
-            setting: "Yes,No"
-        }
-        ListElement { settingName: "List view"; setting: ""; header: true }
-        ListElement {
-            settingName: "AllGames Hide box art on video"
-            label: "Hide box art when preview plays"
-            setting: "No,Yes"
-        }
-        ListElement {
-            settingName: "AllGames Hide logo on video"
-            label: "Hide logo when preview plays"
-            setting: "No,Yes"
-        }
-        ListElement {
-            settingName: "AllGames Blur Background"
-            label: "Blur background"
-            setting: "No,Yes"
-        }
-        ListElement {
-            settingName: "AllGames Show scanlines"
-            label: "Show scanlines"
-            setting: "No,Yes"
-        }
-        ListElement { settingName: "Grid view"; setting: ""; header: true }
-        ListElement {
-            settingName: "AllGames Match Platform"
-            label: "Match Platform page"
-            setting: "No,Yes"
-        }
-        ListElement {
-            settingName: "AllGames Tile Style"
-            label: "Tile shape"
-            setting: "Wide,Tall,Square,Box Art,3D Box"
-        }
-        ListElement {
-            settingName: "AllGames Tile Ratio"
-            label: "Tile ratio"
-            setting: "0.66,0.67,0.68,0.69,0.70,0.71,0.72,0.73,0.74,0.75,0.76,0.77,0.78,0.79,0.80,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88,0.89,0.90,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,0.25,0.26,0.27,0.28,0.29,0.30,0.31,0.32,0.33,0.34,0.35,0.36,0.37,0.38,0.39,0.40,0.41,0.42,0.43,0.44,0.45,0.46,0.47,0.48,0.49,0.50,0.51,0.52,0.53,0.54,0.55,0.56,0.57,0.58,0.59,0.60,0.61,0.62,0.63,0.64,0.65"
-        }
-        ListElement {
-            settingName: "AllGames Tile Art"
-            label: "Tile art"
-            setting: "Fanart,Screenshot,Boxfront"
-        }
-        ListElement {
-            settingName: "AllGames Tile Logo"
-            label: "Show logo on tile"
-            setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "AllGames Items per row"
-            label: "Tiles per row"
-            setting: "3,4,5,6,7,8"
-        }
-    }
-
-    property var allGamesPage: {
-        return {
-            pageName: "All Games Menu",
-            listmodel: allGamesSettingsModel
-        }
-    }
 
     ListModel {
     id: mediaCarouselSettingsModel
@@ -762,7 +759,7 @@ id: root
         ListElement { settingName: "The hero tile"; setting: ""; header: false; tip: true }
         ListElement { settingName: "Featured box and Discover"; setting: ""; header: false; tip: true }
         ListElement { settingName: "Random rows stay put"; setting: ""; header: false; tip: true }
-        ListElement { settingName: "Platform page"; setting: ""; header: true; tip: false }
+        ListElement { settingName: "Library"; setting: ""; header: true; tip: false }
         ListElement { settingName: "Per-system tiles"; setting: ""; header: false; tip: true }
         ListElement { settingName: "Search"; setting: ""; header: true; tip: false }
         ListElement { settingName: "Forgiving search"; setting: ""; header: false; tip: true }
@@ -781,7 +778,7 @@ id: root
         }
     }
 
-    property var settingsArr: [generalPage, showcasePage, collectionsPage, tilesPage, gridPage, allGamesPage, gamePage, mediaCarouselPage, audioPage, raPage, advancedPage, tipsPage]
+    property var settingsArr: [generalPage, showcasePage, collectionsPage, tilesPage, libraryPage, gamePage, mediaCarouselPage, audioPage, raPage, advancedPage, tipsPage]
 
     // ── Help text ─────────────────────────────────────────────────────────
     // In a function, not on the ListElements: a ListElement only accepts
@@ -1103,7 +1100,7 @@ id: root
     // same More info panel as settings.
     readonly property var tipTexts: ({
         "Discover follows the Platform page":
-            "Open Discover from a system's Platform page and it only plays that system's games\nOpen it from anywhere else and it covers your whole library",
+            "Open Discover while viewing one system in the Library and it only plays that system's games\nOpen it from anywhere else and it covers your whole library",
         "Jump by letter":
             "On the Platform page and in search results, LT and RT jump to the previous or next letter",
         "Shortcut to the nav bar":
@@ -1119,7 +1116,7 @@ id: root
         "Random rows stay put":
             "Rows like Recommended and Top by Genre keep their picks until you press Refresh (X) on the Home page\nTwo rows set to System always pick different systems",
         "Per-system tiles":
-            "With Per-system tile settings on (Platform page settings), Y on a Platform page opens that system's own tile settings instead of the main Settings",
+            "With Per-system overrides on (Library settings), Y while viewing a system opens that system's own view and tile settings, kept separately from the rest",
         "Forgiving search":
             "Search ignores capitals, punctuation and region tags like (USA)\nIt also finds \u201cLegend of Zelda, The\u201d when you type \u201cThe Legend of Zelda\u201d",
         "The Hidden tab":
@@ -1590,12 +1587,10 @@ id: root
                     if (["AllGames Hide box art on video", "AllGames Hide logo on video",
                          "AllGames Blur Background", "AllGames Show scanlines"].indexOf(settingName) !== -1)
                         return agGrid;
-                    if (settingName === "AllGames Match Platform") return !agGrid;
-                    // The five tile rows are inert while matching the Platform page.
+                    // The All view's tile rows are inert in List view.
                     if (settingName.indexOf("AllGames Tile") === 0
                         || settingName === "AllGames Items per row") {
                         if (!agGrid) return true;
-                        if ((settingsStore.get("AllGames Match Platform", "No")) === "Yes") return true;
                         // Shape-dependent rows (this used to sit after a return above
                         // and never ran): Box Art greys art + logo; Square greys ratio.
                         var agShape = settingsStore.get("AllGames Tile Style", "Wide");
@@ -1658,6 +1653,10 @@ id: root
                         var shp = settingsStore.get(coll + " - Thumbnail", "Wide");
                         return shp === "Square";
                     }
+                    // System view tiles: all inert while following the All view.
+                    if (["Grid Thumbnail", "Grid Ratio", "Grid art", "Grid Game Logo", "Number of columns"].indexOf(settingName) !== -1
+                        && settingsStore.get("Library system tiles follow All", "No") === "Yes")
+                        return true;
                     // Ratio is inert only for Square; Box Art scales with it on both grids.
                     if (settingName === "Grid Ratio") {
                         var gth = settingsStore.get("Grid Thumbnail");
@@ -1707,7 +1706,7 @@ id: root
                                    "Omit genre: Application from Showcase", "Menu sounds", "Xbox Logo",
                                    "Allow video thumbnails", "Video preview", "AllGames Video preview",
                                    "Featured Box", "Grid Thumbnail", "All Games View",
-                                   "AllGames Match Platform", "AllGames Tile Style"];
+                                   "Library system tiles follow All", "AllGames Tile Style"];
                     if (parents.indexOf(settingName) !== -1 || /^Collection \d$/.test(settingName)
                         || /^Collection \d - Thumbnail$/.test(settingName))
                         settingsList.settingsVersion++;

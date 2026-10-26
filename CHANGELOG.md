@@ -4,7 +4,19 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 26)
+## Unreleased — refresh branch (build 27)
+
+### Settings → Library
+- The **Platform page** and **All Games menu** sections are now one **Library** section, grouped by what you see: **Layout** (Library screen, View, LB/RB on a system), **Video**, **Tiles – All view** and **Tiles – System view**. Same settings underneath, so nothing you've set changes.
+- **Same as All view** (System view) makes systems use the All view's tile settings. It replaces the old **Match Platform page**, which pointed the other way.
+- **View** can now be set per system: with **Per-system overrides** on, Y while viewing a system has a **View** row (List/Grid) alongside its tile rows. A system can be a list while All is a grid.
+- Tips updated for the merged Library.
+
+### Fixed
+- Changing a system's View from its Y panel no longer drops focus out of the panel (Back then left the Library).
+- LB/RB between a list-view system and a grid-view system no longer loses focus.
+
+## Build 26
 
 ### One Library screen (All Games + Platform page)
 - Opening a system from Home now lands on All Games scoped to that system: same screen, same filters, list and grid views and quick settings. **Settings → Platform page → Library screen** switches between **Merged** (new, default) and **Separate** (the old Platform page).
