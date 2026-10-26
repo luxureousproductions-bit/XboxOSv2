@@ -111,8 +111,17 @@ id: root
     // A tile that already has its art is never affected — the latch only
     // starts false when the tile is born mid-race.
     property bool deferArt: false
-    property bool artArmed: true
-    Component.onCompleted: if (deferArt) artArmed = false
+    // Starts as a BINDING so the very first evaluation of every image
+    // `source` below already sees the right answer. It used to start true
+    // and be cleared in Component.onCompleted — too late: by then the art
+    // and logo sources had been evaluated and their loads requested, so a
+    // grid racing through new tiles decoded (or churned through
+    // request-then-cancel) every one of them. That was most of the
+    // fast-scroll lag with logos on. Once complete it becomes a plain value
+    // (the latch), so a tile that already has its art keeps it through
+    // later races.
+    property bool artArmed: !deferArt
+    Component.onCompleted: artArmed = artArmed   // binding -> plain value (latch)
     onDeferArtChanged: if (!deferArt) artArmed = true
     // Item reuse: a grid with reuseItems recycles tiles instead of destroying
     // them, so a recycled tile must start exactly like a new one. Its host
@@ -466,14 +475,23 @@ id: root
         Image {
         id: favelogo
 
-            visible: showLogo && !appTile.visible
+            // Nothing to draw until the logo is decoded (an Image with no
+            // texture still costs a node per tile).
+            visible: showLogo && !appTile.visible && status === Image.Ready
             anchors.fill: parent
             anchors.centerIn: parent
             anchors.margins: root.width/10
-            property var logoImage: (gameData && gameData.collections.get(0).shortName === "retropie") ? gameData.assets.boxFront : (gameData.collections.get(0).shortName === "steam") ? logo(gameData) : gameData.assets.logo
+            function logoFor(g) {
+                if (!g) return "";
+                var sn = g.collections.count > 0 ? g.collections.get(0).shortName : "";
+                if (sn === "retropie") return g.assets.boxFront;
+                if (sn === "steam") return logo(g);
+                return g.assets.logo;
+            }
             // No decode at all when the logo isn't shown — an invisible Image
             // still loads its source, which was a wasted decode per tile.
-            source: (showLogo && modelData && artArmed) ? (logoImage || "") : ""
+            // Held back while the grid races (artArmed), like the art.
+            source: (showLogo && modelData && artArmed) ? (logoFor(gameData) || "") : ""
             sourceSize { width: 200; height: 150 }
             fillMode: Image.PreserveAspectFit
             asynchronous: true
@@ -548,10 +566,19 @@ id: root
     // (The old faint under-tile title, permanently hidden, is gone: replaced
     // long ago by the on-tile name bar, but every tile still built it.)
 
+    // Title in the tile's centre when there's no logo to show. This text is
+    // the single most expensive thing a tile can draw (outlined, wrapped,
+    // elided), and a Text lays itself out whenever its text changes even
+    // while invisible — so it only GETS text when it's about to be shown:
+    // never while the grid races, and only once the logo is known to be
+    // missing. Racing with logos on used to lay this out on every recycled
+    // tile, which halved the frame rate.
     Text {
     id: platformname
 
-        text: modelData.title
+        readonly property bool wanted: showLogo && !appTile.visible && !reduceMotion && artArmed
+                                       && (favelogo.source == "" || favelogo.status === Image.Error)
+        text: wanted && modelData ? modelData.title : ""
         anchors { fill: parent; margins: vpx(10) }
         color: "white"
         scale: selected ? 1.1 : 1
@@ -560,7 +587,7 @@ id: root
         font.family: subtitleFont.name
         font.bold: true
         style: Text.Outline; styleColor: theme.main
-        visible: showLogo && (favelogo.status === Image.Null || favelogo.status === Image.Error)
+        visible: wanted && text !== ""
         anchors.centerIn: parent
         elide: Text.ElideRight
         wrapMode: Text.WordWrap

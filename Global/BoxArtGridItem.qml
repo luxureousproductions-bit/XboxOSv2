@@ -122,8 +122,10 @@ id: root
     // A tile that already has its art is never affected — the latch only
     // starts false when the tile is born mid-race.
     property bool deferArt: false
-    property bool artArmed: true
-    Component.onCompleted: if (deferArt) artArmed = false
+    // A binding at first so the art's `source` sees it on its very first
+    // evaluation (see DynamicGridItem); a plain value from then on.
+    property bool artArmed: !deferArt
+    Component.onCompleted: artArmed = artArmed
     onDeferArtChanged: if (!deferArt) artArmed = true
     // Item reuse: a grid with reuseItems recycles tiles instead of destroying
     // them. Its host calls this from GridView.onReused so a recycled tile

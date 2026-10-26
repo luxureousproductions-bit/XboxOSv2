@@ -4,7 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 31)
+## Unreleased — refresh branch (build 32)
+
+### Fast scrolling with logos on
+- Tiles created while the grid races are meant to hold off loading their art and logo until the scroll stops. That only ever worked for recycled tiles: a brand-new tile requested its images before the hold-off kicked in, then cancelled them. With logos on, a 6-second race requested about 700 logos it never showed. New tiles now hold off from their first instant. On the test machine the race went from about 42 fps / 90 ms stalls to about 56 fps / 55 ms, close to logos-off.
+- The game title that a tile shows in place of a missing logo was being laid out for every passing tile even when invisible (outlined, wrapped text is the most expensive thing a tile draws). It now only exists when it's about to be shown, and never during a fast scroll.
+
+## Build 31
 
 ### Smaller download
 - Removed about 2.2 MB of files nothing used: four unused fonts, an unused 1.2 MB Xbox logo, three old scanline images, the keyboard key images (80 files), an unused CRT shader and two stray icons. Nothing on screen changes.
