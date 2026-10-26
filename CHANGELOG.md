@@ -4,7 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 23)
+## Unreleased — refresh branch (build 24)
+
+### App drawer built on first open
+- The drawer's screen (about 1,700 lines of QML) is now created the first time you open it, instead of at startup, and kept from then on. Memory after startup is about 90 MB lower on the test machine (about 490 MB → 400 MB).
+- The drawer's data (the app list, categories, favourites, hidden apps) still loads at startup, in a new `Global/AppLibrary.qml`, because Home and the library use it to know what to hide. Everything you've favourited, hidden or re-categorised is unchanged.
+
+## Build 23
 
 ### Under the hood: one place for screen changes
 - Every screen change and the Back history now go through one component (`Global/Navigator.qml`). Before, a dozen functions in `theme.qml` each pushed, popped or rewrote two bare lists in slightly different ways, which is where most Back oddities came from. Nothing should look different; Back and returning from a game use the same code paths as before, just in one place. Saved return info from builds 2–22 still restores.

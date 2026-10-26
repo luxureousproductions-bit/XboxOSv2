@@ -111,8 +111,8 @@ id: root
     }
     readonly property var emulatorTitleSet: {
         var set = {};
-        var idx = appDrawer.appIndex;
-        var cat = appDrawer.categoryMap;
+        var idx = appLib.appIndex;
+        var cat = appLib.categoryMap;
         for (var i = 0; i < idx.length; i++) {
             var e = idx[i];
             if (!e.title) continue;
@@ -127,8 +127,8 @@ id: root
     // on Home. A genre tag of "Application" still makes it an app.
     readonly property var drawerGameTitleSet: {
         var set = {};
-        var idx = appDrawer.appIndex;
-        var cat = appDrawer.categoryMap;
+        var idx = appLib.appIndex;
+        var cat = appLib.categoryMap;
         for (var i = 0; i < idx.length; i++) {
             var e = idx[i];
             if (!e.title) continue;
@@ -180,7 +180,7 @@ id: root
     //                      list } for every Android collection (platform page,
     //                      All Games with one system chosen)
     function drawerKeyOf(g) {
-        var p = appDrawer.packageOf(g);
+        var p = appLib.packageOf(g);
         return p !== "" ? p : "title:" + (g.title || "");
     }
     function libraryHides(g, mine, lib, libOn) {
@@ -288,12 +288,12 @@ id: root
     property var    libraryHiddenLive: ({})
     property string libraryHiddenSig: ""
     function rebuildHomeHide() {
-        if (appDrawer.open) { homeHidePending = true; return; }
+        if (drawerOpen) { homeHidePending = true; return; }
         homeHidePending = false;
-        var libSig = Object.keys(appDrawer.libraryHiddenPkgs).sort().join("\n");
+        var libSig = Object.keys(appLib.libraryHiddenPkgs).sort().join("\n");
         if (libSig !== libraryHiddenSig) {
             libraryHiddenSig = libSig;
-            libraryHiddenLive = appDrawer.libraryHiddenPkgs;
+            libraryHiddenLive = appLib.libraryHiddenPkgs;
         }
         var set = {};
         if (omitAppsLive)      { var a = homeAppTitleSet;  for (var t in a) set[t] = true; }
@@ -308,7 +308,7 @@ id: root
     onOmitAppsLiveChanged:      Qt.callLater(rebuildHomeHide)
     onOmitEmulatorsLiveChanged: Qt.callLater(rebuildHomeHide)
     Connections {
-        target: appDrawer
+        target: appLib
         onLibraryHiddenPkgsChanged: Qt.callLater(rebuildHomeHide)
     }
     // After the drawer's slide-out, so the one re-filter doesn't land on it.
@@ -642,7 +642,7 @@ id: root
     readonly property bool appActive: Qt.application.state === Qt.ApplicationActive
                                       && (!windowSeenActive || Window.active)
                                       && (!themeSeenFocused || activeFocus)
-                                      && !appDrawer.open
+                                      && !drawerOpen
 
     // ── Playback coordinator ──────────────────────────────────────────────
     // Names the ONE screen whose video players are allowed to run right now,
@@ -2240,7 +2240,7 @@ id: root
         // when a screen has cleared the helpbar entirely — Discover's X toggle
         // nulls the model to hide its UI, and this prompt has to go with it
         // rather than sitting there alone.
-        leftPromptText: (appDrawer.open || hideAppsPrompt) ? "" : "Apps"
+        leftPromptText: (drawerOpen || hideAppsPrompt) ? "" : "Apps"
         // Path is relative to ButtonHelpBar.qml, NOT this file: the string is
         // converted to a url by the `source:` binding inside that component, so
         // it resolves against that component's folder. Same "../" the delegate
@@ -2272,7 +2272,7 @@ id: root
             else                              librarySearch.closeSearch();
             return;
         }
-        if (appDrawer.open) { appDrawer.closeDrawer(); return; }
+        if (drawerOpen) { closeAppDrawer(); return; }
         if (state === "launchgamescreen") { previousScreen(); return; }
         // Otherwise hand it to the screen showing, if it knows what B means.
         var scr = activeScreenItem ? activeScreenItem.item : null;
@@ -2308,8 +2308,8 @@ id: root
         z: 499
         active: hqDrawerBlur
         sourceComponent: Item {
-            visible: appDrawer.slide > 0.001
-            opacity: appDrawer.slide
+            visible: drawerSlide > 0.001
+            opacity: drawerSlide
             ShaderEffectSource {
             id: drawerSnap
                 anchors.fill: parent
@@ -2321,7 +2321,7 @@ id: root
                 // the snapshot held an empty tile for as long as the drawer
                 // stayed open. The slide is longer than the art's 200ms
                 // restore, so by the time this freezes the tile is whole.
-                live: appDrawer.open && appDrawer.slide < 1
+                live: drawerOpen && drawerSlide < 1
                 hideSource: false
                 visible: false
             }
@@ -2334,18 +2334,19 @@ id: root
             // Capture the instant the drawer starts opening, before it slides
             // over the screen. live:false means this is the only capture.
             Connections {
-                target: appDrawer
-                function onOpenChanged() { if (appDrawer.open) drawerSnap.scheduleUpdate(); }
+                target: root
+                onDrawerOpenChanged: if (drawerOpen) drawerSnap.scheduleUpdate()
             }
         }
     }
 
     // One instance at the top level so it overlays every screen. z sits above
     // launchgameloader (z: 100) and the help bar so nothing draws over it.
-    AppDrawer {
-    id: appDrawer
-
-        z: 500
+    // The drawer's DATA (app index, categories, favourites, hidden lists) is
+    // always here: the Home and library hide sets are built from it at
+    // startup. Global/AppLibrary.qml.
+    AppLibrary {
+    id: appLib
         // Same constant the system-row filter uses, so the collection the
         // drawer shows is exactly the one hidden from the row — they can't
         // drift apart.
@@ -2354,6 +2355,35 @@ id: root
         // androidgames collections. An explicit list wins over collectionMatch,
         // which stays only as the fallback when none of them exist.
         collections: drawerCollections
+    }
+
+    // The drawer's SCREEN is created the first time it's opened (it used to be
+    // built at startup, 1,700 lines of QML nobody sees until they press the
+    // button) and kept from then on. Everything that used to read appDrawer
+    // reads these instead; they're safe before the first open.
+    readonly property bool drawerOpen:  appDrawerLoader.item ? appDrawerLoader.item.open  : false
+    readonly property real drawerSlide: appDrawerLoader.item ? appDrawerLoader.item.slide : 0
+    function openAppDrawer() {
+        if (!appDrawerLoader.active) appDrawerLoader.active = true;   // built synchronously
+        appDrawerLoader.item.openDrawer();
+    }
+    function closeAppDrawer() {
+        if (appDrawerLoader.item) appDrawerLoader.item.closeDrawer();
+    }
+
+    Loader {
+    id: appDrawerLoader
+        anchors.fill: parent
+        z: 500
+        active: false
+        sourceComponent: appDrawerComponent
+    }
+
+    Component {
+    id: appDrawerComponent
+
+    AppDrawer {
+        lib: appLib
         title: "My games & apps"
 
         // Reuses the Discover launch path, which deliberately does NOT push
@@ -2414,6 +2444,7 @@ id: root
             root.state = "";
             root.state = s;
         }
+    }
     }
 
     // Disc picker for multi-disc games, shown before the launch splash (see
@@ -2495,12 +2526,12 @@ id: root
         if (appDrawerKeys.indexOf(event.key) === -1) return;
         event.accepted = true;
         if (librarySearch.open) return;   // no drawer over an open search
-        if (appDrawer.open) {
-            appDrawer.closeDrawer();
+        if (drawerOpen) {
+            closeAppDrawer();
         } else {
             playAccept();
             drawerOpenChime.restart();    // tabRight follows once accept has sounded
-            appDrawer.openDrawer();
+            openAppDrawer();
         }
     }
 
