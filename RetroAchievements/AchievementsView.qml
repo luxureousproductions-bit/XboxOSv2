@@ -465,7 +465,7 @@ id: root
         anchors.fill: gameList
         view: gameList
         columns: 1
-        active: !librarySearch.open
+        active: !searchOpen
         onStepped: function() { playNav(); }
     }
 
@@ -542,12 +542,12 @@ id: root
     // these only ever run for the recently-played list underneath.
     Keys.onUpPressed: {
         event.accepted = true;
-        if (librarySearch.open) return;
+        if (searchOpen) return;
         if (gameList.currentIndex > 0) gameList.currentIndex--;
     }
     Keys.onDownPressed: {
         event.accepted = true;
-        if (librarySearch.open) return;
+        if (searchOpen) return;
         if (gameList.currentIndex < cheevosData.raRecentGames.count - 1)
             gameList.currentIndex++;
     }

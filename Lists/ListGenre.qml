@@ -32,6 +32,9 @@ id: root
         if (!g) return "";
         return g.toLowerCase().split(/\s*[\/,]\s*/).map(function(p) { return p.trim(); }).join(" / ");
     }
+    // The wanted genre, normalised ONCE: the filter below used to rebuild it
+    // (a regex split, map and join) for every one of ~4,400 rows.
+    readonly property string wantNorm: normGenre(genre)
     property bool omitApplication: true
     property bool omitEmulator: true
     // Titles Home should hide, already combined by the theme for the
@@ -50,23 +53,24 @@ id: root
         filters: [
             ExpressionFilter {
                 expression: {
+                    // root.wantNorm, explicitly: inside an ExpressionFilter the
+                    // model's roles are exposed as bare names, so a bare `genre`
+                    // here is each GAME's own genre — every game then matched
+                    // itself and the row filled with the library's top-rated titles.
+                    var want = root.wantNorm;
+                    if (want === "") return false;      // no genre picked: an empty row
                     if (root.hideRows[index] === true) return false;
                     if (root.hideTitles[model.title] === true) return false;
                     var genres = model.genreList;
-                    // root.genre, explicitly: inside an ExpressionFilter the model's
-                    // roles are exposed as bare names, so a bare `genre` here is
-                    // each GAME's own genre — every game then matched itself and
-                    // the row filled with the library's top-rated titles.
-                    var want = root.normGenre(root.genre);
                     var hit = false;
                     for (var i = 0; i < genres.length; i++) {
                         var raw = genres[i];
                         var g = raw.toLowerCase();
                         if (root.omitApplication && g === "application") return false;
                         if (root.omitEmulator && g === "emulator") return false;
-                        if (!hit && want !== "") {
+                        if (!hit) {
                             // Match with the SAME rule the picker uses to build its pool
-                            // (utils.genrePools): the whole entry, or either half of a
+                            // (utils.homePools): the whole entry, or either half of a
                             // "Parent / Sub" entry. It used to be a regex on the "genre"
                             // role — a different field split a different way — so the
                             // picker could name "Bowling" (the sub half of

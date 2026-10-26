@@ -1190,12 +1190,13 @@ id: root
         editSettingName = name;
         editMasked = masked;
         editText = settingsStore.get(name, "");
-        kbOpen = true;
-        credsKb.page = 0;          // always start on the letters page
-        credsKb.shifted = false;
-        credsKb.row = 0;
-        credsKb.col = 0;
-        credsKb.forceActiveFocus();
+        kbOpen = true;             // builds the keyboard (credsKbLoader)
+        var kb = credsKbLoader.item;
+        kb.page = 0;               // always start on the letters page
+        kb.shifted = false;
+        kb.row = 0;
+        kb.col = 0;
+        kb.forceActiveFocus();
     }
     // Resolve a controller action to its glyph file (assets/images/controller/<hex>.png)
     function fpBtnArt(action) {
@@ -1996,13 +1997,15 @@ id: root
 
         MouseArea { anchors.fill: parent; onClicked: closeEditor(); }
 
+        // Built only while open: an 890-line keyboard used to be created
+        // with every visit to Settings for the two RA text fields.
+        Loader {
+        id: credsKbLoader
+            anchors.centerIn: parent
+            active: kbOpen
+            focus: kbOpen
+            sourceComponent: Component {
         VirtualKeyboard {
-        id: credsKb
-
-            anchors {
-                horizontalCenter: parent.horizontalCenter
-                verticalCenter: parent.verticalCenter
-            }
             focus: kbOpen
             title: editSettingName
             text: editText
@@ -2018,6 +2021,8 @@ id: root
             }
             onCancelled:   closeEditor()
         }
+            }   // Component
+        }   // credsKbLoader
     }
 
     // Helpbar buttons

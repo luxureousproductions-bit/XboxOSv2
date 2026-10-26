@@ -57,6 +57,7 @@ id: root
                 if (!(model.playCount > 0)) return false;
                 if (root.hideRows[index] === true) return false;
                 if (root.hideTitles[model.title] === true) return false;
+                if (!root.omitApplication && !root.omitEmulator) return true;   // no genre walk needed
                 var genres = model.genreList;
                 for (var i = 0; i < genres.length; i++) {
                     var g = genres[i].toLowerCase();

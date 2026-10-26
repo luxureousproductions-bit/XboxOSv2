@@ -166,26 +166,30 @@ id: root
     readonly property bool poolOmitApp: omitAppsLive
     readonly property bool poolOmitEmu: omitEmulatorsLive
 
-    property string randoPub:    Utils.returnRandom(Utils.uniqueValuesArray('publisher', poolOmitApp, poolOmitEmu)) || ''
-    property string randoDev:    Utils.returnRandom(Utils.uniqueValuesArray('developer', poolOmitApp, poolOmitEmu)) || ''
-    property string randoGenre:  Utils.returnRandom(Utils.uniqueGenreValues(poolOmitEmu)) || ''
-    property string randoGenre2: Utils.returnRandom(Utils.uniqueGenreValues(poolOmitEmu)) || ''
+    // Picked in Component.onCompleted (restored from the last session when
+    // returning from a game, so no library pass at all then), again on X
+    // (refreshLists), and when either hide option changes.
+    property string randoPub:    ''
+    property string randoDev:    ''
+    property string randoGenre:  ''
+    property string randoGenre2: ''
+    onPoolOmitAppChanged: pickRandoms()
+    onPoolOmitEmuChanged: pickRandoms()
+
+    function pickRandoms() {
+        var pools = Utils.homePools(poolOmitApp, poolOmitEmu);
+        var genres = pools.genres;
+        var genre = Utils.returnRandom(genres) || '';
+        var others = genres.filter(function(g) { return g !== genre; });
+        randoPub    = Utils.returnRandom(pools.publishers) || '';
+        randoDev    = Utils.returnRandom(pools.developers) || '';
+        randoGenre  = genre;
+        randoGenre2 = Utils.returnRandom(others.length > 0 ? others : genres) || '';
+        api.memory.set("Showcase randoms", { pub: randoPub, dev: randoDev, genre: randoGenre, genre2: randoGenre2 });
+    }
 
     function refreshLists() {
-        var omitEmu = omitEmulatorsLive;
-        var omitApp = omitAppsLive;
-        var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher', omitApp, omitEmu)) || '';
-        var dev = Utils.returnRandom(Utils.uniqueValuesArray('developer', omitApp, omitEmu)) || '';
-        var genres = Utils.uniqueGenreValues(omitEmu);
-        var genre = Utils.returnRandom(genres) || '';
-        var filtered = genres.filter(function(g) { return g !== genre; });
-        var pick = filtered.length > 0 ? filtered : genres;
-        var genre2 = Utils.returnRandom(pick) || '';
-        randoPub = pub;
-        randoDev = dev;
-        randoGenre = genre;
-        randoGenre2 = genre2;
-        api.memory.set("Showcase randoms", { pub: pub, dev: dev, genre: genre, genre2: genre2 });
+        pickRandoms();
         listRecommended.refresh();
         listRandomSystem.refresh();
         currentHelpbarModel = gridviewHelpModel;
@@ -212,10 +216,8 @@ id: root
             randoGenre  = saved.genre  || "";
             randoGenre2 = saved.genre2 || "";
         } else {
-            // Fresh startup — persist the property-initializer values so they
-            // survive a game launch and can be restored on the way back
-            api.memory.set("Showcase randoms",
-                { pub: randoPub, dev: randoDev, genre: randoGenre, genre2: randoGenre2 });
+            // Fresh startup: pick, and persist so a game launch can restore them
+            pickRandoms();
         }
         // The four keys older builds used, removed once
         ["Showcase randoPub", "Showcase randoDev", "Showcase randoGenre", "Showcase randoGenre2"]

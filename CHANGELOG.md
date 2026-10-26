@@ -4,7 +4,18 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 37)
+## Unreleased — refresh branch (build 38)
+
+### Less work before the theme appears
+- Home's random rows (publisher, developer, two genres) were picked by four separate passes, each first copying the whole library into a JS array — four copies of ~4,400 games before the first frame. Now one pass, reading each game in place (`Utils.homePools`). Returning from a game restores the saved picks without any pass at all. The four old helpers are gone.
+- The library search and its on-screen keyboard (about 1,500 lines of QML) are built 5 s after start, when their index warm-up began anyway, or the moment search is first opened — no longer before the first frame.
+- The RA username / API-key keyboard in Settings is built only while it is open, not on every visit to Settings.
+- Home rows: the genre rows normalised the wanted genre for every one of ~4,400 games on each re-filter; now once. Jump Back In and Most Played skip their per-game genre check when neither Hide option is on (the default).
+
+### Home rows recycle their tiles
+- The Home rows now recycle tiles that scroll off (as the Library grid's rows do) instead of destroying and rebuilding them, and while Left/Right is held tiles skip their animations and take their art once they've kept their game for 100 ms, like the Library grid.
+
+## Build 37
 
 ### Images decoded at the size they're shown
 - Game details media strip: each thumbnail was decoded at the file's full size (a 1080p–4K screenshot or fanart is 8–33 MB of texture) for a ~300 px tile. Now 1.5x the tile. The film-glyph images only load on video tiles.

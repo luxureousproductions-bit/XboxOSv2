@@ -1737,6 +1737,12 @@ id: root
     // competes with the first Showcase load; opening sooner builds on demand.
     property bool searchWarmupGo: false
     Timer { interval: 5000; running: true; repeat: false; onTriggered: searchWarmupGo = true }
+    // The search (and its 890-line keyboard) is built 5 s after start, when
+    // its index warm-up would begin anyway, or the moment it's first asked
+    // for — not before the theme's first frame, as it used to be.
+    property bool searchWanted: false
+    readonly property var librarySearch: librarySearchLoader.item
+    readonly property bool searchOpen: librarySearch ? librarySearch.open : false
 
     // mode "ra": opened from the RA overview (X). Results go to the RA
     // lookup instead of Game Details, and coming back to the overview
@@ -1749,10 +1755,12 @@ id: root
         searchReturnDepth = -1;
         raSearchReturn = false;
         searchPrevFocus = Window.activeFocusItem;
+        searchWanted = true;            // builds it now if it isn't yet
         librarySearch.openSearch();
     }
     function reopenLibrarySearch() {
         searchPrevFocus = Window.activeFocusItem;
+        searchWanted = true;
         librarySearch.reopenResults();
     }
 
@@ -2259,7 +2267,7 @@ id: root
 
     function mouseBack() {
         // Global search mirrors B: results -> back to the keyboard, keyboard -> close.
-        if (librarySearch.open) {
+        if (searchOpen) {
             playBack();
             if (librarySearch.showingResults) librarySearch.resetSearch();
             else                              librarySearch.closeSearch();
@@ -2462,10 +2470,14 @@ id: root
     // can be opened from a drawer tile; below the mouse-back catcher (1000).
     // Focus goes back to whatever had it, the same way the drawer does it,
     // with the same state re-apply as the fallback.
-    LibrarySearch {
-    id: librarySearch
-
+    Loader {
+    id: librarySearchLoader
+        anchors.fill: parent
         z: 600
+        active: searchWarmupGo || searchWanted
+        sourceComponent: Component {
+    LibrarySearch {
+
         title: librarySearchMode === "ra" ? "RA SEARCH" : "SEARCH LIBRARY"
         warmup: searchWarmupGo
         onClosed: {
@@ -2494,6 +2506,8 @@ id: root
             openGame(game);
         }
     }
+        }   // Component
+    }   // librarySearchLoader
 
     // Trigger. Screens accept the keys they use, so anything they ignore
     // bubbles up to here — which is why this works from any screen without
@@ -2517,7 +2531,7 @@ id: root
 
         if (appDrawerKeys.indexOf(event.key) === -1) return;
         event.accepted = true;
-        if (librarySearch.open) return;   // no drawer over an open search
+        if (searchOpen) return;   // no drawer over an open search
         if (drawerOpen) {
             closeAppDrawer();
         } else {

@@ -555,46 +555,51 @@ function shuffle(model){
   return model;
 }
 
-function uniqueGameValues(fieldName) {
-  const set = new Set();
-  api.allGames.toVarArray().forEach(game => {
-      game[fieldName].forEach(v => set.add(v));
-  });
-  return [...set.values()].sort();
-}
-
-// Distinct, non-empty values for a field.
-//
-// This used to push one entry per GAME — empties and duplicates included — so a
-// random pick was usually blank ("Top Games by ") on a library where most games
-// carry no publisher, and was weighted by how many games shared a value.
-//
-// omitApplication / omitEmulator skip games the Showcase filters out anyway;
-// without that a value can be picked whose every game is then filtered away,
-// producing an empty row.
-function uniqueValuesArray(fieldName, omitApplication, omitEmulator) {
-  const seen = new Set();
-  const allGames = api.allGames.toVarArray();
-  for (let i = 0; i < allGames.length; i++) {
-    const game = allGames[i];
-
+// The Home rows' random candidates — publishers, developers and genres — in
+// ONE pass over the library, reading each game in place. The rows used to
+// call uniqueValuesArray twice and uniqueGenreValues twice, and each copied
+// the whole library to a JS array first (toVarArray): four copies of ~4,400
+// games before the theme could appear. Same rules as those two functions.
+function homePools(omitApplication, omitEmulator) {
+  const pubs = new Set(), devs = new Set(), genres = new Set();
+  const okGenre = (v) => {
+    if (!v) return false;
+    const l = v.toLowerCase();
+    return l !== "application" && !(omitEmulator && l === "emulator");
+  };
+  const all = api.allGames;
+  const n = all.count;
+  for (let i = 0; i < n; i++) {
+    const game = all.get(i);
+    const gl = game.genreList || [];
+    // Genre pool: every game but apps (and emulators when hidden).
+    for (let j = 0; j < gl.length; j++) {
+      const g = gl[j];
+      if (!okGenre(g)) continue;
+      genres.add(g);
+      const m = g.match(/\s*[/,]\s*/);
+      if (m) {
+        const p = g.substring(0, m.index).trim();
+        const q = g.substring(m.index + m[0].length).trim();
+        if (okGenre(p)) genres.add(p);
+        if (okGenre(q)) genres.add(q);
+      }
+    }
+    // Publisher / developer pools skip games the rows filter out.
     if (omitApplication || omitEmulator) {
-      const genres = game['genreList'] || [];
       let skip = false;
-      for (let j = 0; j < genres.length; j++) {
-        const g = (genres[j] || "").toLowerCase();
-        if (omitApplication && g === "application") { skip = true; break; }
-        if (omitEmulator    && g === "emulator")    { skip = true; break; }
+      for (let j = 0; j < gl.length; j++) {
+        const l = (gl[j] || "").toLowerCase();
+        if ((omitApplication && l === "application") || (omitEmulator && l === "emulator")) { skip = true; break; }
       }
       if (skip) continue;
     }
-
-    const v = game[fieldName];
-    if (!v) continue;                  // drops "" and undefined
-    const trimmed = String(v).trim();
-    if (trimmed) seen.add(trimmed);
+    const pub = game.publisher ? String(game.publisher).trim() : "";
+    const dev = game.developer ? String(game.developer).trim() : "";
+    if (pub) pubs.add(pub);
+    if (dev) devs.add(dev);
   }
-  return [...seen].sort();
+  return { publishers: [...pubs].sort(), developers: [...devs].sort(), genres: [...genres].sort() };
 }
 
 // Escapes a string for literal use in a RegExp. Genre and publisher names carry
@@ -628,89 +633,3 @@ function returnRandom(array) {
   return array[Math.floor(Math.random() * array.length)];
 }
 
-// Genre candidates split by KIND — the full "genre / sub" strings, the parent
-// halves, and the sub halves — each deduplicated. Same splitting rules as
-// uniqueGenreValues below (either separator, any surrounding whitespace).
-//
-// Kept separate so the pick can be weighted by kind. In one flat pool the full
-// strings outnumber the parts on a typical library (every compound tag adds a
-// full entry, but shared parents like "Action" collapse to one), which made
-// "Top Action / Platformer Games" rows far more common than "Top Action Games".
-function genrePools(omitEmulator) {
-  const full = new Set(), parent = new Set(), sub = new Set();
-  const allGames = api.allGames.toVarArray();
-  const ok = (v) => {
-    const l = v.toLowerCase();
-    return v && l !== "application" && !(omitEmulator && l === "emulator");
-  };
-  for (let i = 0; i < allGames.length; i++) {
-    const genres = allGames[i]['genreList'];
-    if (!genres) continue;
-    for (let j = 0; j < genres.length; j++) {
-      const g = genres[j];
-      if (!g || !ok(g)) continue;
-      const m = g.match(/\s*[/,]\s*/);
-      if (!m) { parent.add(g.trim()); continue; }     // a plain genre is a parent
-      full.add(g);
-      const p = g.substring(0, m.index).trim();
-      const q = g.substring(m.index + m[0].length).trim();
-      if (ok(p)) parent.add(p);
-      if (ok(q)) sub.add(q);
-    }
-  }
-  return { full: [...full], parent: [...parent], sub: [...sub] };
-}
-
-// Weighted pick: 40% a parent genre, 40% a sub-genre, 20% a full compound.
-// `exclude` keeps a second row from landing on the first row's genre. If the
-// chosen kind has nothing left, falls through to whichever kinds do.
-function pickGenre(pools, exclude) {
-  const kinds = [["parent", 0.40], ["sub", 0.40], ["full", 0.20]];
-  const avail = (k) => pools[k].filter(g => g !== exclude);
-  let r = Math.random(), chosen = null;
-  for (const [k, w] of kinds) { if (r < w) { chosen = k; break; } r -= w; }
-  let list = avail(chosen);
-  if (list.length === 0)
-    for (const [k] of kinds) { list = avail(k); if (list.length) break; }
-  if (list.length === 0 && exclude) list = pools.parent.concat(pools.sub, pools.full);
-  return list.length ? returnRandom(list) : "";
-}
-
-// Returns a flat, deduplicated, sorted array of all genre strings found across
-// all games.  For compound entries separated by "/" or "," (with any surrounding
-// whitespace) the full string is kept AND each individual part is also added as
-// a standalone entry so that either can be used to match games by genre or
-// sub-genre alone.
-function uniqueGenreValues(omitEmulator) {
-  const seen = new Set();
-  const allGames = api.allGames.toVarArray();
-  for (let i = 0; i < allGames.length; i++) {
-    const genres = allGames[i]['genreList'];
-    if (!genres) continue;
-    for (let j = 0; j < genres.length; j++) {
-      const g = genres[j];
-      if (!g) continue;
-      const gl = g.toLowerCase();
-      if (gl === "application") continue;
-      if (omitEmulator && gl === "emulator") continue;
-      seen.add(g);
-      // Split on either "/" or "," handling any surrounding whitespace.
-      const separatorIdx = g.search(/\s*[/,]\s*/);
-      if (separatorIdx !== -1) {
-        const separatorMatch = g.match(/\s*[/,]\s*/);
-        // The parts get the same test as the whole. "Emulator / Utility"
-        // otherwise contributed a selectable "Emulator" genre whose games the
-        // list then filtered away, leaving an empty row.
-        const parentGenre = g.substring(0, separatorIdx).trim();
-        const pl = parentGenre.toLowerCase();
-        if (parentGenre && pl !== "application" && !(omitEmulator && pl === "emulator"))
-          seen.add(parentGenre);
-        const subgenre = g.substring(separatorIdx + separatorMatch[0].length).trim();
-        const sl = subgenre.toLowerCase();
-        if (subgenre && sl !== "application" && !(omitEmulator && sl === "emulator"))
-          seen.add(subgenre);
-      }
-    }
-  }
-  return [...seen].sort();
-}

@@ -115,6 +115,9 @@ id: root
         highlight: highlightcomponent
         displayMarginEnd: itemWidth
         cacheBuffer: itemWidth * hqCacheTiles
+        // Recycle tiles that scroll off instead of destroying them and
+        // building new ones (ListView honours this; GridView doesn't).
+        reuseItems: true
         keyNavigationWraps: true
         
         property int savedIndex: 0
@@ -140,6 +143,11 @@ id: root
         id: dynamicDelegate
             DynamicGridItem {
                 selected: ListView.isCurrentItem && collectionList.focus
+                ListView.onReused: resetForReuse()
+                // While Left/Right is held: no tile animations, and art only
+                // for tiles that keep their game a moment (raceArtMs).
+                reduceMotion: root.held
+                deferArt: root.held
                 width: itemWidth
                 height: itemHeight
                 // Same relay the highlight gets, so the tile knows when its
@@ -166,6 +174,9 @@ id: root
         id: boxArtDelegate
             BoxArtGridItem {
                 selected: ListView.isCurrentItem && collectionList.focus
+                ListView.onReused: resetForReuse()
+                reduceMotion: root.held
+                deferArt: root.held
                 // Unlike the dynamic tile, this one has no default for gameData —
                 // without it the art has no game to draw (the title still showed,
                 // as it reads modelData directly).
