@@ -103,12 +103,6 @@ id: root
         stepPendingSafety.restart();
         return false;
     }
-    // The list: a held key counts as racing too (same release), so the
-    // preview is neither warmed nor started while the cursor is flying.
-    function noteListNav(event) {
-        if (event.isAutoRepeat) fastScrolling = true;
-        noteGridNav();
-    }
     function noteGridNav() {
         var now = Date.now();
         if (now - lastNavMs < 180) fastScrolling = true;
@@ -418,6 +412,18 @@ id: root
         else artDebounce.restart();   // the race is over: let the art catch up
     }
     readonly property var logoGame: fastScrolling ? logoHeld : currentGame
+    // While racing, the header logo and the list's preview art still move,
+    // just not on every step: they follow the cursor four times a second.
+    // At most four decodes per quarter second, instead of a frozen preview
+    // for the whole hold (which read as the list being less lively).
+    Timer {
+        interval: 250; repeat: true
+        running: root.fastScrolling
+        onTriggered: {
+            root.logoHeld = currentGame;
+            if (!gridMode) settledGame = currentGame;
+        }
+    }
     Timer {
     id: artDebounce
         interval: hqAllGamesArtMs; repeat: false      // HQ: art follows the cursor more closely
@@ -1325,7 +1331,8 @@ id: root
 
         Keys.onUpPressed: {
             event.accepted = true;
-            playNav(); noteListNav(event);
+            if (gridRepeatBlocked(event)) return;   // same frame pacing as the grid
+            playNav(); noteGridNav();
             if (currentIndex !== 0) currentIndex--;
             else homebutton.focus = true;
         }
@@ -1335,13 +1342,15 @@ id: root
         // built-in navigation from double-moving.
         Keys.onDownPressed: {
             event.accepted = true;
-            playNav(); noteListNav(event);
+            if (gridRepeatBlocked(event)) return;   // same frame pacing as the grid
+            playNav(); noteGridNav();
             if (currentIndex !== count - 1) currentIndex++;
             else currentIndex = 0;
         }
         Keys.onLeftPressed: {
             event.accepted = true;
-            playNav(); noteListNav(event);
+            if (gridRepeatBlocked(event)) return;   // same frame pacing as the grid
+            playNav(); noteGridNav();
             // Page up by skipnum, but wrap to the END of the list when already
             // sitting on the first game (Up still reaches the nav buttons).
             if (currentIndex === 0) currentIndex = count - 1;
@@ -1349,7 +1358,8 @@ id: root
         }
         Keys.onRightPressed: {
             event.accepted = true;
-            playNav(); noteListNav(event);
+            if (gridRepeatBlocked(event)) return;   // same frame pacing as the grid
+            playNav(); noteGridNav();
             currentIndex = Math.min(count - 1, currentIndex + skipnum);
         }
 
@@ -1580,6 +1590,7 @@ id: root
                 selected: flatIndex === gamegrid.currentIndex && gamegrid.focus
                 reduceMotion: root.fastScrolling
                 deferArt: root.fastScrolling
+                onScreen: parent ? parent.onScreen === true : true
                 columns: gridColumns
                 artStyle: tileStyle
                 titleMode: tileTitles
@@ -1610,6 +1621,7 @@ id: root
                 ownScreen: "allgamesscreen"
                 reduceMotion: root.fastScrolling
                 deferArt: root.fastScrolling
+                onScreen: parent ? parent.onScreen === true : true
                 titleWhilePending: true
                 onActivated: {
                     if (selected) activateCurrent();

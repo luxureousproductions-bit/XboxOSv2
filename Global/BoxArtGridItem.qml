@@ -126,10 +126,26 @@ id: root
     // source only changes when the tile decides (see DynamicGridItem.artGame).
     property var artGame: null
     readonly property bool artArmed: artGame !== null
-    function takeGame() { artGame = (deferArt || !gameData) ? null : gameData; }
+    // Art while racing, once the tile has kept its game this long (see
+    // DynamicGridItem.raceArtMs). 0 = no art until the race ends.
+    property int raceArtMs: 100
+    // Set by a host that knows; a tile in a look-ahead row waits until its
+    // row is actually on screen, so no decode is spent on rows never seen.
+    property bool onScreen: true
+    Timer {
+    id: raceArm
+        interval: Math.max(1, root.raceArtMs)
+        onTriggered: if (root.deferArt && root.gameData && root.onScreen) root.artGame = root.gameData
+    }
+    onOnScreenChanged: if (onScreen && deferArt && gameData && artGame === null && raceArtMs > 0) raceArm.restart()
+    function takeGame() {
+        raceArm.stop();
+        artGame = (deferArt || !gameData) ? null : gameData;
+        if (deferArt && gameData && raceArtMs > 0) raceArm.restart();
+    }
     Component.onCompleted: takeGame()
     onGameDataChanged: takeGame()
-    onDeferArtChanged: if (!deferArt && artGame === null) takeGame()
+    onDeferArtChanged: if (!deferArt && gameData && artGame !== gameData) { raceArm.stop(); artGame = gameData; }
     function resetForReuse() { takeGame(); }
 
     scale: selected ? 1.1 : 1

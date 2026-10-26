@@ -122,11 +122,42 @@ id: root
     // changed, before any reset could run, and requested a decode the reset
     // then cancelled: every step of a race churned through that.
     property var artGame: null
+    // The logo has its own: it waits for the race to end, the art doesn't.
+    property var logoGame: null
     readonly property bool artArmed: artGame !== null
-    function takeGame() { artGame = (deferArt || !gameData) ? null : gameData; }
+    // Art while racing. A tile given a game mid-race takes its art once it
+    // has kept that game for raceArtMs. The grid's rows only change game at
+    // the screen edges, so a row scrolling up the screen keeps its game and
+    // gets its art partway; a tile flashing past at the edge never asks.
+    // That bounds the decodes to the rows actually seen, with no
+    // request-then-cancel. 0 = no art until the race ends.
+    property int raceArtMs: 100
+    // Set by a host that knows; a tile in a look-ahead row waits until its
+    // row is actually on screen, so no decode is spent on rows never seen.
+    property bool onScreen: true
+    Timer {
+    id: raceArm
+        interval: Math.max(1, root.raceArtMs)
+        onTriggered: if (root.deferArt && root.gameData && root.onScreen) root.artGame = root.gameData
+    }
+    onOnScreenChanged: if (onScreen && deferArt && gameData && artGame === null && raceArtMs > 0) raceArm.restart()
+    function takeGame() {
+        raceArm.stop();
+        if (!gameData)  { artGame = null; logoGame = null; return; }
+        if (!deferArt)  { artGame = gameData; logoGame = gameData; return; }
+        artGame = null; logoGame = null;
+        if (raceArtMs > 0) raceArm.restart();
+    }
     Component.onCompleted: takeGame()
     onGameDataChanged: takeGame()
-    onDeferArtChanged: if (!deferArt && artGame === null) takeGame()
+    // Race over: whatever this tile is still missing (art, logo) catches up.
+    // A tile that kept its art through the race is left alone.
+    onDeferArtChanged: {
+        if (deferArt || !gameData) return;
+        raceArm.stop();
+        if (artGame !== gameData)  artGame  = gameData;
+        if (logoGame !== gameData) logoGame = gameData;
+    }
     // Recycled (reuseItems): back to how a new tile starts. The art is made
     // fully visible again in case it was fading under a preview.
     function resetForReuse() {
@@ -504,8 +535,8 @@ id: root
             }
             // No decode at all when the logo isn't shown — an invisible Image
             // still loads its source, which was a wasted decode per tile.
-            // Held back while the grid races, like the art (artGame).
-            source: (showLogo && artGame) ? (logoFor(artGame) || "") : ""
+            // Held back until the race ends (logoGame; the art may come sooner).
+            source: (showLogo && logoGame) ? (logoFor(logoGame) || "") : ""
             sourceSize { width: 200; height: 150 }
             fillMode: Image.PreserveAspectFit
             asynchronous: true

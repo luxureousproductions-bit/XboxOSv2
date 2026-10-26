@@ -4,7 +4,23 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 34)
+## Unreleased — refresh branch (build 35)
+
+### Fanart while fast-scrolling the grid
+- Tiles no longer stay blank for the whole hold. A tile that keeps the same game for 100 ms while its row is on screen takes its art mid-race; the grid's rows only change game at the screen edges, so art fills in about a row behind the cursor. Tiles that flash past at the edge, and look-ahead rows off screen, never ask, so there is no request-then-cancel. Logos still wait for the release. (Test machine, 10 steps a second: 60 fps throughout, ~40 art loads a second.)
+
+### Work nobody sees, removed
+- **Game details no longer follows the Library cursor while hidden.** It stays loaded after the first visit, and was bound to the current game, so every step through the Library re-ran the hidden page: two 4,400-game walks, the media list, a full-screen fanart decode. It now follows only while it is the screen and catches up when shown. On the test machine the Library race after visiting details went from ~41 to ~55–58 fps. This is also most of why the list felt heavier after the refresh.
+- The full-screen media viewer decodes nothing until it is opened (it was decoding 1–3 full-screen images per game change, unseen).
+- A Home row set to None held the whole library: `max: 0` became `IndexFilter { maximumIndex: -1 }`, which means "up to the last row". The hidden row built tiles and decoded art over all 4,400 games. It now has no source at all.
+- One Wi-Fi check for the whole theme, only while the theme is in front and the indicator is shown. Each status bar ran its own 30-second request, on hidden screens too and with the indicator off.
+- The library and Home hide lists skip their 4,400-game walk when there is nothing to hide (always on desktop).
+
+### Library list
+- Held keys are frame-paced like the grid's, so the list stops when you let go instead of draining queued repeats.
+- While racing, the preview art and the header system logo follow the cursor four times a second instead of freezing for the whole hold. The video still waits for the race to end.
+
+## Build 34
 
 ### No video preview is warmed while scrolling (the Odin stall)
 - Build 33's log from the Odin 2 showed the grid at 4–9 fps with 160–250 ms frames during a hold, and twice the UI thread froze for 2–3 s — with no tiles being built any more. The cause is the preview video. In HQ the highlight starts **warming** the preview after 300 ms on a tile (play at 1.5 s, decoder warm-up 1.2 s ahead). One slow step past 300 ms creates the Video for a tile the cursor is already leaving; the next step tears it down. On Android a MediaPlayer built and released on the UI thread — reading from the SD card — is a 100–300 ms stall, which trips the warm-up again on the next tile, and so on until the key is released. It also explains why turning video previews off made scrolling smooth.

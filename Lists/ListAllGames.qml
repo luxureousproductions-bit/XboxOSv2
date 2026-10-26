@@ -38,7 +38,10 @@ id: root
     SortFilterProxyModel {
     id: dedupedGames
 
-        sourceModel: homeDataReady ? api.allGames : null   // theme.qml homeDataReady
+        // max 0 (a Home row set to None) must mean NO games: IndexFilter
+        // reads maximumIndex -1 as "the last row", so it passed all 4,400,
+        // and the hidden row built tiles and decoded art over the library.
+        sourceModel: (homeDataReady && root.max > 0) ? api.allGames : null   // theme.qml homeDataReady
         // Off (no per-row JS at all) when there's nothing to hide.
         filters: ExpressionFilter {
             enabled: root.hasHideRows

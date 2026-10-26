@@ -121,7 +121,10 @@ id: root
 
             width: root.width
             height: root.height
-            source: modelData.includes(".mp4") || modelData.includes(".webm") ? "" : modelData
+            // Nothing decodes until the viewer is open: the list exists
+            // (and builds delegates) with the details page, and these are
+            // full-screen images.
+            source: (!root.visible || modelData.includes(".mp4") || modelData.includes(".webm")) ? "" : modelData
             sourceSize { width: root.width; height: root.height }
             smooth: true
             fillMode: Image.PreserveAspectFit

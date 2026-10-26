@@ -142,6 +142,9 @@ id: grid
         delegate: Item {
         id: row
             readonly property int rowIndex: index
+            // Inside the visible area (not a look-ahead row in the cache
+            // buffer). Tiles use it to take art mid-race only where it's seen.
+            readonly property bool onScreen: y + height > list.contentY && y < list.contentY + list.height
             width: list.width
             height: grid.cellHeight
             // A selected tile pops above its row-mates by its own z, but its

@@ -15,6 +15,7 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import QtQuick 2.15
+import QtQml 2.15            // Binding.restoreMode (Game details follows the cursor only while shown)
 import QtQuick.Window 2.15   // Window.active — second signal for app-switch detection
 import QtGraphicalEffects 1.15   // FastBlur, for the HQ drawer backdrop
 import QtQuick.Layouts 1.15
@@ -203,6 +204,8 @@ id: root
         var mine = myAndroidTitles;
         var lib = libraryHiddenLive;
         var libOn = Object.keys(lib).length > 0;
+        // Nothing hidden (always so on desktop, often on Android): no walk.
+        if (!libOn && Object.keys(mine).length === 0) return noHideTitles;
         var rows = {};
         var all = api.allGames;
         for (var k = 0; k < all.count; k++)
@@ -218,6 +221,8 @@ id: root
     readonly property var homeHideRows: {
         var base = libraryHideRows, titles = homeHideTitles;
         var omitApp = omitAppsLive, omitEmu = omitEmulatorsLive;
+        // Nothing to add to the library's own hides: reuse that set, no walk.
+        if (!omitApp && !omitEmu && Object.keys(titles).length === 0) return base;
         var rows = {};
         for (var r in base) rows[r] = true;
         var all = api.allGames;
@@ -240,6 +245,7 @@ id: root
         var mine = myAndroidTitles;
         var lib = libraryHiddenLive;
         var libOn = Object.keys(lib).length > 0;
+        if (!libOn && Object.keys(mine).length === 0) return noHideRows;
         var out = {};
         var n = api.collections.count;
         for (var i = 0; i < n; i++) {
@@ -654,6 +660,26 @@ id: root
                                       && (!windowSeenActive || Window.active)
                                       && (!themeSeenFocused || activeFocus)
                                       && !drawerOpen
+    // Connectivity for the status bar's Wi-Fi arcs: ONE HEAD request every
+    // 30 s, only while the theme is in front and the indicator is shown.
+    property bool netOnline: false
+    Timer {
+        interval: 30000
+        repeat: true
+        triggeredOnStart: true
+        running: appActive && settings.ShowWifi !== "No"
+        onTriggered: {
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === XMLHttpRequest.DONE)
+                    root.netOnline = xhr.status >= 200 && xhr.status < 300;
+            };
+            xhr.onerror = function() { root.netOnline = false; };
+            xhr.open("HEAD", "https://1.1.1.1", true);
+            xhr.timeout = 5000;
+            xhr.send();
+        }
+    }
 
     // ── Playback coordinator ──────────────────────────────────────────────
     // Names the ONE screen whose video players are allowed to run right now,
@@ -2152,7 +2178,19 @@ id: root
 
         GameView {
             focus: true
-            game: currentGame
+            // Follows currentGame ONLY while Game details is the screen.
+            // The page stays loaded after its first visit, and the Library
+            // and Home assign currentGame on every cursor step, so a plain
+            // binding re-ran the hidden page for every game passed: two
+            // 4,400-game walks, the media list and a full-screen fanart
+            // decode, a few hundred ms per step on an Odin, all unseen.
+            // While hidden it keeps the game it showed (the fade-out stays
+            // correct); it catches up the moment the screen is shown.
+            Binding on game {
+                value: currentGame
+                when: gameviewloader.shown
+                restoreMode: Binding.RestoreNone
+            }
         }
     }
 
