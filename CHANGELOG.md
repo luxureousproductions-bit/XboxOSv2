@@ -4,7 +4,17 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 29)
+## Unreleased — refresh branch (build 30)
+
+### New: Settings → Diagnostics
+- Shows the theme build, which Pegasus you're on (stock or Pegasus X, with its features), your display and UI scale, HQ mode, tile frame and library size. **A** on any row opens the full list.
+- **Write diagnostics to log** writes those lines to `lastrun.log`, so a tester can send one file with a report.
+- The **Frame rate counter** switch moved here from Tiles.
+
+### Under the hood
+- One `Platform` object answers "which OS, which Pegasus, which features" for the whole theme, in place of checks scattered through the code.
+
+## Build 29
 
 ### Old Platform page removed
 - The separate Platform page (and its **Library screen: Separate** option) is gone; the Library is the one screen for All Games and every system. About 1,600 lines of QML removed. Your Platform page settings live on as **Tiles – System view**, and per-system overrides are untouched.

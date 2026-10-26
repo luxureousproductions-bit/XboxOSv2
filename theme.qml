@@ -57,6 +57,20 @@ id: root
         defaults: settingDefaults
     }
 
+    // OS and Pegasus X feature checks, in one place (Global/Platform.qml).
+    Platform { id: platform }
+
+    // What the Diagnostics page shows and "Write diagnostics to log" writes.
+    function diagnosticsText() {
+        return "XboxOSv2 build " + BuildInfo.build + " (" + BuildInfo.branch + ", " + BuildInfo.date + ")"
+            + "\nFrontend: " + platform.frontendLine
+            + "\nFeatures: " + platform.featureLine
+            + "\nPDF manuals: " + (platform.hasPdf ? "yes" : "no") + "  |  Manual lookup: " + (platform.hasFindManual ? "native" : "theme")
+            + "\nOS: " + platform.os + "  |  Screen: " + width + "x" + height + "  |  UI scale: " + settings.UiScale
+            + "\nHQ mode: " + (hqMode ? "on" : "off") + "  |  Tile frame: " + (xboxFrameLive ? "Xbox" : "Classic")
+            + "\nLibrary: " + api.allGames.count + " games, " + api.collections.count + " collections";
+    }
+
     // Live copy of the featured box mode. Read by ShowcaseViewMenu's carousel
     // and by FavoritesHeader, so switching it applies without a reload.
     readonly property string featuredBoxContent: {
@@ -1859,12 +1873,11 @@ id: root
     Component.onCompleted: { 
         // First line in lastrun.log from the theme: which build, and which
         // Pegasus features it found. Stock Pegasus shows "stock".
-        var fi = (typeof api.frontendInfo !== "undefined" && api.frontendInfo) ? api.frontendInfo : null;
         console.log("[XboxOSv2] build " + BuildInfo.build + " (" + BuildInfo.branch + ", " + BuildInfo.date + ")"
-            + " | frontend: " + (fi ? (fi.name + " " + (fi.version || "") + (fi.build ? " build " + fi.build : "")) : "stock")
-            + " | pdf: " + (typeof api.pdfPageCount === "function" ? "yes" : "no")
-            + " | findManual: " + (typeof api.findManual === "function" ? "yes" : "no")
-            + " | " + Qt.platform.os + " " + width + "x" + height
+            + " | frontend: " + platform.frontendLine
+            + " | pdf: " + (platform.hasPdf ? "yes" : "no")
+            + " | findManual: " + (platform.hasFindManual ? "yes" : "no")
+            + " | " + platform.os + " " + width + "x" + height
             + " | HQ: " + (hqMode ? "on" : "off"));
         // "Gradient" is no longer a color option. Clear it if it was saved, so
         // Settings shows the default color instead of the last one in the list.

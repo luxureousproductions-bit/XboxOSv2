@@ -260,7 +260,7 @@ id: root
     }
 
     function findManual(g) {
-        if (typeof api.pdfPageCount !== "function") return "";
+        if (!platform.hasPdf) return "";
 
         // Pegasus X (build 2124+) finds the manual itself: x-manual, media/
         // manual(s) in any case, media/<game>/manual.pdf, ES-DE's manuals.
@@ -332,7 +332,7 @@ id: root
 
         // Pegasus X with findManual: one native call that only checks the
         // files exist (no PDF parsing)
-        if (typeof api.findManual === "function")
+        if (platform.hasFindManual)
             return api.findManual(candidates) || "";
         for (var c = 0; c < candidates.length; c++) {
             if (api.pdfPageCount(candidates[c]) > 0) return candidates[c];

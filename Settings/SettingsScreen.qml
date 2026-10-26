@@ -18,6 +18,7 @@ import QtQuick 2.15
 import QtQuick.Layouts 1.15
 import "../Global"
 import "../utils.js" as Utils
+import "../buildinfo.js" as BuildInfo
 
 FocusScope {
 id: root
@@ -453,12 +454,6 @@ id: root
             label: "Show game count"
             setting: "Yes,No"
         }
-        ListElement { settingName: "Diagnostics"; setting: ""; header: true }
-        ListElement {
-            settingName: "Frame counter"
-            label: "Frame rate counter"
-            setting: "No,Yes"
-        }
 
         ListElement { settingName: "Video"; setting: ""; header: true }
         ListElement {
@@ -773,7 +768,44 @@ id: root
         }
     }
 
-    property var settingsArr: [generalPage, showcasePage, collectionsPage, tilesPage, libraryPage, gamePage, mediaCarouselPage, audioPage, raPage, advancedPage, tipsPage]
+    // ── Diagnostics: for testers' reports ────────────────────────────────
+    // `diag` rows show a live value as their label (diagLabel) and A opens
+    // the long form; "Write diagnostics to log" writes it to lastrun.log.
+    ListModel {
+    id: diagnosticsSettingsModel
+
+        ListElement { settingName: "This build"; setting: ""; header: true }
+        ListElement { settingName: "Theme build";   setting: ""; tip: true; diag: true }
+        ListElement { settingName: "Frontend";      setting: ""; tip: true; diag: true }
+        ListElement { settingName: "Features";      setting: ""; tip: true; diag: true }
+        ListElement { settingName: "Display";       setting: ""; tip: true; diag: true }
+        ListElement { settingName: "Library size";  setting: ""; tip: true; diag: true }
+        ListElement { settingName: "Tools"; setting: ""; header: true }
+        ListElement {
+            settingName: "Frame counter"
+            label: "Frame rate counter"
+            setting: "No,Yes"
+        }
+        ListElement { settingName: "Write diagnostics to log"; setting: ""; tip: true }
+    }
+    property var diagnosticsPage: {
+        return {
+            pageName:  "Diagnostics",
+            listmodel: diagnosticsSettingsModel
+        }
+    }
+    function diagLabel(name) {
+        switch (name) {
+        case "Theme build":  return "Theme build " + BuildInfo.build + " (" + BuildInfo.branch + ", " + BuildInfo.date + ")";
+        case "Frontend":     return "Frontend: " + platform.frontendLine;
+        case "Features":     return "Features: " + platform.featureLine;
+        case "Display":      return "Display: " + platform.os + ", " + Math.round(root.width) + "x" + Math.round(root.height) + ", UI scale " + settings.UiScale + ", HQ " + (hqMode ? "on" : "off");
+        case "Library size": return "Library: " + api.allGames.count + " games, " + api.collections.count + " collections";
+        }
+        return name;
+    }
+
+    property var settingsArr: [generalPage, showcasePage, collectionsPage, tilesPage, libraryPage, gamePage, mediaCarouselPage, audioPage, raPage, advancedPage, diagnosticsPage, tipsPage]
 
     // ── Help text ─────────────────────────────────────────────────────────
     // In a function, not on the ListElements: a ListElement only accepts
@@ -1085,6 +1117,10 @@ id: root
         if (name === "Show Clock") {
             return "The clock in the top corner: 12-hour, 24-hour, or off";
         }
+        if (name === "Theme build" || name === "Frontend" || name === "Features" || name === "Display" || name === "Library size")
+            return diagnosticsText();
+        if (name === "Write diagnostics to log")
+            return "Writes the lines above to lastrun.log so you can send them with a bug report";
         return tipTexts.hasOwnProperty(name) ? tipTexts[name] : "";
     }
 
@@ -1133,6 +1169,8 @@ id: root
 
     function hasInfo(name) {
         return name === "Grid background dimming"
+            || name === "Theme build" || name === "Frontend" || name === "Features"
+            || name === "Display" || name === "Library size" || name === "Write diagnostics to log"
             || name === "Bottom fade"
             || name === "UI Scale"
             || name === "High Quality Mode"
@@ -1556,7 +1594,9 @@ id: root
                 }
                 property string itemNote: (typeof note !== 'undefined') ? note : ""
                 // Optional friendly display label; storage key remains settingName
-                property string displayLabel: (typeof label !== 'undefined' && label !== "") ? label : settingName
+                readonly property bool isDiag: (typeof diag !== 'undefined') && diag === true
+                property string displayLabel: isDiag ? root.diagLabel(settingName)
+                                            : (typeof label !== 'undefined' && label !== "") ? label : settingName
                 // Section header rows: a label with a rule beneath, never
                 // selectable. Declared with `header: true` in the page model.
                 readonly property bool isHeader: (typeof header !== 'undefined') && header === true
@@ -1914,7 +1954,12 @@ id: root
                     // Accept
                     if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                         event.accepted = true;
-                        if (isTip) {
+                        if (settingName === "Write diagnostics to log") {
+                            playAccept();
+                            var dtext = diagnosticsText();
+                            console.log("[XboxOSv2 diagnostics]\n" + dtext);
+                            root.openInfo("Written to lastrun.log", dtext + "\n\nSend lastrun.log (in the Pegasus folder) with your report.");
+                        } else if (isTip) {
                             playToggle();
                             root.openInfo(displayLabel, root.infoText(settingName));
                         } else if (isTextInput) {
