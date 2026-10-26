@@ -103,6 +103,12 @@ id: root
         stepPendingSafety.restart();
         return false;
     }
+    // The list: a held key counts as racing too (same release), so the
+    // preview is neither warmed nor started while the cursor is flying.
+    function noteListNav(event) {
+        if (event.isAutoRepeat) fastScrolling = true;
+        noteGridNav();
+    }
     function noteGridNav() {
         var now = Date.now();
         if (now - lastNavMs < 180) fastScrolling = true;
@@ -407,12 +413,18 @@ id: root
     // captured when a race starts, and the binding returns to currentGame
     // when it ends.)
     property var logoHeld: null
-    onFastScrollingChanged: if (fastScrolling) logoHeld = currentGame
+    onFastScrollingChanged: {
+        if (fastScrolling) logoHeld = currentGame;
+        else artDebounce.restart();   // the race is over: let the art catch up
+    }
     readonly property var logoGame: fastScrolling ? logoHeld : currentGame
     Timer {
     id: artDebounce
         interval: hqAllGamesArtMs; repeat: false      // HQ: art follows the cursor more closely
-        onTriggered: settledGame = currentGame
+        // Not while racing: with a slow step the 60 ms rest elapsed between
+        // steps and the four preview images were decoded for every row the
+        // cursor flew past. They swap once when the race ends.
+        onTriggered: if (!fastScrolling) settledGame = currentGame
     }
 
     function activateSearch() {
@@ -849,8 +861,8 @@ id: root
                 // Warm only once the cursor has rested (art debounce fired on
                 // THIS game), not on every move — otherwise fast scrolling
                 // would open and close a decoder per row.
-                readonly property bool warm: hqAllGamesWarm && settledGame === currentGame
-                source: (lvVideo !== "No" && (videoArmed || warm)
+                readonly property bool warm: hqAllGamesWarm && settledGame === currentGame && !root.fastScrolling
+                source: (lvVideo !== "No" && (videoArmed || warm) && !root.fastScrolling
                          && videoSource !== "" && playbackOwner === "allgamesscreen" && !gridMode)
                         ? videoSource : ""
                 fillMode: VideoOutput.PreserveAspectCrop
@@ -1313,7 +1325,7 @@ id: root
 
         Keys.onUpPressed: {
             event.accepted = true;
-            playNav();
+            playNav(); noteListNav(event);
             if (currentIndex !== 0) currentIndex--;
             else homebutton.focus = true;
         }
@@ -1323,13 +1335,13 @@ id: root
         // built-in navigation from double-moving.
         Keys.onDownPressed: {
             event.accepted = true;
-            playNav();
+            playNav(); noteListNav(event);
             if (currentIndex !== count - 1) currentIndex++;
             else currentIndex = 0;
         }
         Keys.onLeftPressed: {
             event.accepted = true;
-            playNav();
+            playNav(); noteListNav(event);
             // Page up by skipnum, but wrap to the END of the list when already
             // sitting on the first game (Up still reaches the nav buttons).
             if (currentIndex === 0) currentIndex = count - 1;
@@ -1337,7 +1349,7 @@ id: root
         }
         Keys.onRightPressed: {
             event.accepted = true;
-            playNav();
+            playNav(); noteListNav(event);
             currentIndex = Math.min(count - 1, currentIndex + skipnum);
         }
 
@@ -1528,6 +1540,7 @@ id: root
                 boxArt: gridBoxArt
                 xboxFrame: xboxFrameLive
                 playVideo: lvVideo !== "No" && !boxArt
+                racing: root.fastScrolling
                 allowAudio: lv("All games menu video audio", settings.AllGamesVideoAudio) === "Yes"   // this page's audio row, live from the Y panel
             }
         }

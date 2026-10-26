@@ -4,7 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 33)
+## Unreleased — refresh branch (build 34)
+
+### No video preview is warmed while scrolling (the Odin stall)
+- Build 33's log from the Odin 2 showed the grid at 4–9 fps with 160–250 ms frames during a hold, and twice the UI thread froze for 2–3 s — with no tiles being built any more. The cause is the preview video. In HQ the highlight starts **warming** the preview after 300 ms on a tile (play at 1.5 s, decoder warm-up 1.2 s ahead). One slow step past 300 ms creates the Video for a tile the cursor is already leaving; the next step tears it down. On Android a MediaPlayer built and released on the UI thread — reading from the SD card — is a 100–300 ms stall, which trips the warm-up again on the next tile, and so on until the key is released. It also explains why turning video previews off made scrolling smooth.
+- The highlight now has a `racing` flag from its host: no preview is warmed or created while a key is held (Library grid, Library list and the Home rows), and the normal rest-then-play resumes when the race ends. The list view's preview art (backdrop, screenshot, box, logo) likewise waits for the race to end instead of swapping on every slow step.
+
+## Build 33
 
 ### Library grid rebuilt on recycled rows (the fast-scroll fix, properly)
 - The grid was a Qt GridView, and in Pegasus's Qt (5.15) a GridView **never recycles its tiles** — `reuseItems` is accepted and ignored (its `removeItem()` releases every tile as NotReusable). So a held D-pad built a full row of tiles on every step and destroyed the row that left: each tile is several images, texts, loaders and a shader, and the destroyed ones piled up until the JavaScript engine paused to collect them. That is why scrolling got slower the longer the key was held (58 → 23 → 6 fps on the Odin 2 in the build 32 video) — and why build 32's art hold-off made it look worse: with nothing left to show, the per-step rebuild was all that remained.

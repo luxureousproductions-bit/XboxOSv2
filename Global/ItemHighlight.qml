@@ -30,8 +30,22 @@ id: root
     readonly property real artRadius: vpx(6)
     property bool playVideo: (settings.AllowThumbVideo === "Yes") && !boxArt
 
+    // The host is scrolling fast (a held key). No preview is warmed or
+    // created while this holds, however long a step takes. Without it, one
+    // slow step (> the 300 ms warm-up rest in HQ) created the Video for a
+    // tile the cursor was already leaving; the next step tore it down, and
+    // on Android a MediaPlayer built and released on the UI thread is a
+    // 100–300 ms stall — long enough to trip the warm-up again on the next
+    // tile. The grid sat at 4–6 fps until the key was released. Previews
+    // resume, with their normal rest, the moment the race ends.
+    property bool racing: false
+    onRacingChanged: {
+        if (racing) unloadPreview();
+        else if (playVideo && selected && playbackActive) beginPreview();
+    }
+
     onGameChanged: {
-        if (playVideo && selected && playbackActive) beginPreview();
+        if (playVideo && selected && playbackActive && !racing) beginPreview();
         else unloadPreview();
     }
 
@@ -89,6 +103,7 @@ id: root
     }
     // Start warming immediately; the delay now only gates the reveal.
     function beginPreview() {
+        if (racing) return;
         armed = false;
         warmupDelay.restart();
         videoDelay.restart();

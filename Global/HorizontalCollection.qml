@@ -84,6 +84,12 @@ id: root
       || featuredBoxContent === "Fanart Slideshow") ? 0 : favCount
     onFavCountChanged: { if (favIndex >= favCount) favIndex = Math.max(0, favCount - 1); }
 
+    // A held Left/Right: the highlight skips its preview warm-up while this
+    // holds (see ItemHighlight.racing). Released 200 ms after the last repeat.
+    property bool held: false
+    function noteHeld(event) { if (event.isAutoRepeat) { held = true; heldRelease.restart(); } }
+    Timer { id: heldRelease; interval: 200; onTriggered: root.held = false }
+
     // Cycles the favourites automatically whenever the carousel isn't the
     // thing being browsed, so it reads as a slideshow at rest. Paused the
     // moment focus lands on it so it can't move under the user's input.
@@ -275,6 +281,7 @@ id: root
                 // stops when THAT screen is left — the Showcase and GameView
                 // both use this component and must not keep each other alive.
                 ownScreen: root.ownScreen
+                racing: root.held
             }
         }
 
@@ -312,7 +319,7 @@ id: root
         }
 
         Keys.onLeftPressed: {
-            playNav();
+            playNav(); noteHeld(event);
             if (onFavoritesHeader) {
                 // Already on the carousel: page through favorites, then wrap
                 // around to the LAST tile in the row once past the first one.
@@ -330,7 +337,7 @@ id: root
             }
         }
         Keys.onRightPressed: {
-            playNav();
+            playNav(); noteHeld(event);
             if (onFavoritesHeader) {
                 // Page forward through favorites, then hand off to the row's
                 // first real tile once past the last one.
