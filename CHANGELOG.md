@@ -4,7 +4,14 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 27)
+## Unreleased — refresh branch (build 28)
+
+### Fixed
+- Back from Game details now returns to the system you were browsing, not to All. The Library screen is unloaded while hidden to save memory, and the rebuilt one forgot its system.
+- Stepping between systems with different **Tiles per row** no longer leaves old-sized tiles overlapping the new grid. The grid now rebuilds its tiles on a system change, after the new system's games are sorted.
+- Coming back from a game now restores the system too, even when the game was launched from Game details.
+
+## Build 27
 
 ### Settings → Library
 - The **Platform page** and **All Games menu** sections are now one **Library** section, grouped by what you see: **Layout** (Library screen, View, LB/RB on a system), **Video**, **Tiles – All view** and **Tiles – System view**. Same settings underneath, so nothing you've set changes.

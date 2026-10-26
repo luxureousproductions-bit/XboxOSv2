@@ -1177,7 +1177,7 @@ id: root
             game: gameKey(game),
             collection: currentCollectionIndex,
             homePrimary: storedHomePrimaryIndex,
-            libScope: allgamesloader.item ? allgamesloader.item.systemIndex : -2,
+            libScope: libraryScope,
             libIndex: storedAllGamesIndex,
             homeSecondary: storedHomeSecondaryIndex,
             collectionGame: storedCollectionGameIndex,
@@ -1208,7 +1208,7 @@ id: root
         currentCollectionIndex    = r.collection || 0;
         storedCollectionGameIndex = r.collectionGame || 0;
         if (r.libIndex !== undefined) storedAllGamesIndex = r.libIndex;
-        if (r.libScope !== undefined && r.libScope !== -2) requestLibraryScope(r.libScope);
+        if (r.libScope !== undefined && r.libScope !== -2) libraryScope = r.libScope;
         if (games[0]) currentGame = games[0];
 
         var screen = r.state || "showcasescreen";
@@ -1561,6 +1561,10 @@ id: root
     // -2 for "leave it as it is". Bumping the serial makes it look.
     property int libraryScopePending: -2
     property int libraryScopeSerial: 0
+    // The scope the Library is showing (-1 = All). Kept here because the
+    // All Games screen is unloaded while hidden and rebuilt on return, and
+    // the rebuilt one must come back on the same system.
+    property int libraryScope: -1
     function requestLibraryScope(idx) { libraryScopePending = idx; libraryScopeSerial++; }
 
     // Screen switching functions

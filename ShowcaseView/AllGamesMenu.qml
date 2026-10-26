@@ -153,10 +153,28 @@ id: root
     readonly property int scopeSerial: libraryScopeSerial
     onScopeSerialChanged: applyPendingScope()
     function applyPendingScope() {
-        if (libraryScopePending === -2) return;
+        if (libraryScopePending === -2) {
+            // Nothing asked for: show what the Library was showing (this
+            // screen is rebuilt on every return from Game details).
+            if (libraryScope !== systemIndex) applyScope(libraryScope);
+            return;
+        }
         var want = libraryScopePending;
         libraryScopePending = -2;
         applyScope(want);
+    }
+    // Rebuilds the grid's tiles on a scope change. Recycled tiles (reuseItems)
+    // kept the previous system's cell size when the tiles-per-row differed,
+    // and overlapped the new layout for a moment.
+    // The grid rebinds a moment later, after the proxy has re-sorted the
+    // new system (its sort is queued); rebinding in the same event showed
+    // the games in file order.
+    property bool gridFlushing: false
+    function flushGrid() { gridFlushing = true; gridFlushTimer.restart(); }
+    Timer {
+    id: gridFlushTimer
+        interval: 60
+        onTriggered: { gridFlushing = false; gamegrid.forceLayout(); }
     }
     function applyScope(collIdx) {
         if (systemOptions.length === 0) buildSystemOptions();
@@ -511,7 +529,9 @@ id: root
     }
     function selectSystem(opt) {
         systemFilter = (opt.index < 0) ? "" : opt.name;
+        if (opt.index !== systemIndex) flushGrid();
         systemIndex  = opt.index;
+        libraryScope = opt.index;
         gamesView.currentIndex = 0;
         systemPickerOpen = false;
     }
@@ -1476,7 +1496,7 @@ id: root
             right: parent.right; rightMargin: globalMargin
             bottom: parent.bottom; bottomMargin: globalMargin + helpMargin
         }
-        model: gridMode ? displayModel : 0
+        model: (gridMode && !gridFlushing) ? displayModel : 0
         currentIndex: currentGameIndex
         cellWidth:  gridCellW
         cellHeight: gridCellH
