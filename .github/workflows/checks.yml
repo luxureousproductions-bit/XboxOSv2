@@ -1,0 +1,31 @@
+# Runs the theme's own checks on every push and pull request, so a broken
+# edit never reaches a tester:
+#   balance.py    braces/parens/brackets balance in every QML/JS file
+#   dupprops.py   no duplicate properties in one object
+#   scopecheck.py no bare identifiers that only resolve by luck (ReferenceError)
+#   assetcheck.py every asset path the code names exists
+name: checks
+on: [push, pull_request]
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.x" }
+      - name: Balance
+        run: python3 tools/balance.py $(git ls-files '*.qml' '*.js')
+      - name: Duplicate properties
+        run: python3 tools/dupprops.py $(git ls-files '*.qml')
+      - name: Scope
+        run: |
+          python3 tools/scopecheck.py . | tee scope.txt
+          test "$(tail -1 scope.txt)" = "TOTAL 0"
+      - name: Assets
+        run: python3 tools/assetcheck.py
+      - name: Build number bumped
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          if git diff --quiet origin/${{ github.base_ref }} -- buildinfo.js; then
+            echo "::warning::buildinfo.js not bumped (run python3 tools/bump_build.py)"; fi

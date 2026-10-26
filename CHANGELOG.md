@@ -4,7 +4,15 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 30)
+## Unreleased — refresh branch (build 31)
+
+### Smaller download
+- Removed about 2.2 MB of files nothing used: four unused fonts, an unused 1.2 MB Xbox logo, three old scanline images, the keyboard key images (80 files), an unused CRT shader and two stray icons. Nothing on screen changes.
+
+### Checks on every push
+- The repo now runs its own checks on GitHub for every push and pull request (`.github/workflows/checks.yml`): bracket balance, duplicate properties, the scope check and an asset check that every image or font the code names exists. The scripts live in `tools/` so they can be run locally too.
+
+## Build 30
 
 ### New: Settings → Diagnostics
 - Shows the theme build, which Pegasus you're on (stock or Pegasus X, with its features), your display and UI scale, HQ mode, tile frame and library size. **A** on any row opens the full list.
