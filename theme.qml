@@ -472,6 +472,7 @@ id: root
         "Start up chime":                            "Yes",
         "Startup intro":                             "Yes",
         "Tile frame":                                "Classic",
+        "Library screen":                            "Merged",
         "System tile titles":                        "On focus",
         "Tile Halo":                                 "Yes",
         "Title Screen":                              "Yes",
@@ -1175,6 +1176,8 @@ id: root
             game: gameKey(game),
             collection: currentCollectionIndex,
             homePrimary: storedHomePrimaryIndex,
+            libScope: allgamesloader.item ? allgamesloader.item.systemIndex : -2,
+            libIndex: storedAllGamesIndex,
             homeSecondary: storedHomeSecondaryIndex,
             collectionGame: storedCollectionGameIndex,
             fromDrawer: !!fromDrawer
@@ -1203,6 +1206,8 @@ id: root
         storedHomeSecondaryIndex  = r.homeSecondary || 0;
         currentCollectionIndex    = r.collection || 0;
         storedCollectionGameIndex = r.collectionGame || 0;
+        if (r.libIndex !== undefined) storedAllGamesIndex = r.libIndex;
+        if (r.libScope !== undefined && r.libScope !== -2) requestLibraryScope(r.libScope);
         if (games[0]) currentGame = games[0];
 
         var screen = r.state || "showcasescreen";
@@ -1545,12 +1550,25 @@ id: root
         onCurrentChanged: root.state = current
     }
 
+    // ── Library screen ────────────────────────────────────────────────────
+    // Settings > Platform page > Library screen. Merged: opening a system
+    // from Home goes to All Games scoped to that system (one screen, the
+    // Platform page's settings and per-system overrides apply there).
+    // Separate: the old Platform page.
+    readonly property bool libraryMerged: { var e = settingsEpoch; return settingsStore.get("Library screen") === "Merged"; }
+    // What All Games should show next: a collection index, -1 for All,
+    // -2 for "leave it as it is". Bumping the serial makes it look.
+    property int libraryScopePending: -2
+    property int libraryScopeSerial: 0
+    function requestLibraryScope(idx) { libraryScopePending = idx; libraryScopeSerial++; }
+
     // Screen switching functions
     function softwareScreen() {
         playAccept();
         searchTerm = "";
         searchMode = "Title";
         genreSelected = [];
+        if (libraryMerged) { requestLibraryScope(currentCollectionIndex); navigator.go("allgamesscreen"); return; }
         navigator.go(settings.PlatformView === "Grid" ? "softwaregridscreen" : "softwarescreen");
     }
 
@@ -1561,6 +1579,8 @@ id: root
 
     function allGamesScreen() {
         playAccept();
+        requestLibraryScope(-1);                 // the Library button means All
+        if (root.state === "allgamesscreen") return;
         navigator.go("allgamesscreen");
     }
 
@@ -2425,7 +2445,7 @@ id: root
         }
         // Library pushes normally, so Back returns where you came from.
         onNavLibrary: {
-            if (root.state === "allgamesscreen") return;
+            if (root.state === "allgamesscreen" && !libraryMerged) return;
             allGamesScreen();
         }
         // Action tiles. Each pushes onto the back stack the same way the rest

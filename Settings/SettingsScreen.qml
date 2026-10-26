@@ -492,6 +492,11 @@ id: root
     id: gridSettingsModel
 
         ListElement {
+            settingName: "Library screen"
+            label: "Library screen"
+            setting: "Merged,Separate"
+        }
+        ListElement {
             settingName: "Grid Thumbnail"
             label: "Tile shape"
             setting: "Wide,Tall,Square,Box Art,3D Box"

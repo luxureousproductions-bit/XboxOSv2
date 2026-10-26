@@ -4,7 +4,20 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 25)
+## Unreleased — refresh branch (build 26)
+
+### One Library screen (All Games + Platform page)
+- Opening a system from Home now lands on All Games scoped to that system: same screen, same filters, list and grid views and quick settings. **Settings → Platform page → Library screen** switches between **Merged** (new, default) and **Separate** (the old Platform page).
+- Scoped to a system, the tiles follow the **Platform page** settings, with that system's own **per-system tile settings** on top when that option is on, exactly as before. The All view keeps the All Games settings.
+- **Y** on a scoped view opens that system's own tile settings (or the Platform page's when per-system settings are off). Changes apply as you make them.
+- **LB/RB** on a scoped view step to the previous/next system in Home's order (when LB/RB Function is Cycle Platforms). The **Library** button and nav icon always show All.
+- **Discover** from a scoped view is scoped to that system, as on the Platform page.
+- Coming back from a game returns to the same system and row.
+
+### Fixed
+- In grid view the button bar now reads **A Select** from the start; it used to show the list view's **A Launch** until something refreshed it.
+
+## Build 25
 
 ### RetroAchievements: Back from a game's achievements
 - Opened from **Game details** (the RA button): one Back now returns straight to the details page. Before, it went to the RA overview first.
