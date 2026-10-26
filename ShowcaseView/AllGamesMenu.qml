@@ -1548,7 +1548,6 @@ id: root
                 game: currentGame
                 selected: gamegrid.focus
                 boxArt: gridBoxArt
-                xboxFrame: xboxFrameLive
                 playVideo: lvVideo !== "No" && !boxArt
                 racing: root.fastScrolling
                 allowAudio: lv("All games menu video audio", settings.AllGamesVideoAudio) === "Yes"   // this page's audio row, live from the Y panel
@@ -1612,7 +1611,6 @@ id: root
                 gameData: gamegrid.gameAt(flatIndex)
                 visible: !!gameData
                 selected: flatIndex === gamegrid.currentIndex && gamegrid.focus
-                xboxFrame: xboxFrameLive
                 titleMode: tileTitles
                 artMode: tileArt
                 showLogo: tileLogo === "Yes"

@@ -83,36 +83,14 @@ id: root
         currentIndex = newIndex;
     }
 
-    // Position to apply once the resumed media has loaded (seeking earlier is
-    // dropped by the backend).
-    property int pendingSeek: -1
-
-    function indexOfGame(g) {
-        if (!g) return -1;
-        var i = gameList.indexOf(g);
-        if (i >= 0) return i;
-        // Fall back to title in case the two lists hold different wrappers.
-        for (var k = 0; k < gameList.length; k++)
-            if (gameList[k].title === g.title) return k;
-        return -1;
-    }
     function pickInitial() {
-        // Resume from the Showcase featured box if it was showing a Discover
-        // video, so the two feel like one stream. Otherwise start randomly.
-        var idx = indexOfGame(takeHandoff());
-        if (idx >= 0) {
-            pendingSeek = handoffPosition;
-            currentIndex = idx;
-        } else if (gameList.length > 0) {
+        if (gameList.length > 0) {
             currentIndex = Math.floor(Math.random() * gameList.length);
         }
     }
     Component.onCompleted: {
         buildList();
-        // Deferred one tick: the featured box publishes its handoff during the
-        // same state-change cascade that creates this screen, and QML doesn't
-        // guarantee which runs first. By the next tick it's certainly there.
-        Qt.callLater(pickInitial);
+        pickInitial();
     }
 
     // Black background
@@ -154,7 +132,6 @@ id: root
                 return;
             }
             if (status === MediaPlayer.Loaded || status === MediaPlayer.Buffered) {
-                if (pendingSeek >= 0) { seek(pendingSeek); pendingSeek = -1; }
                 // A play() issued before the media loaded is dropped; retry now.
                 if (shouldPlay && playbackState !== MediaPlayer.PlayingState) play();
             }
@@ -298,15 +275,11 @@ id: root
     // Mouse back button: the same exit B performs — hand the game and
     // position back so the featured box resumes here, and clear the prompt.
     function mouseBack() {
-        event.accepted = true;
+        // (No `event` here: the mouse Back button calls this directly. The
+        // old `event.accepted = true` threw, so mouse Back never left Discover.)
         // Clear on the way out, or leaving with the UI hidden would keep
         // the Apps prompt suppressed on every other screen.
         hideAppsPrompt = false;
-        // Hand our game and position back so the featured box resumes here.
-        if (currentGame) {
-            handoffGame = currentGame;
-            handoffPosition = videoPlayer.position;
-        }
         previousScreen();
             }
 
@@ -323,11 +296,6 @@ id: root
             // Clear on the way out, or leaving with the UI hidden would keep
             // the Apps prompt suppressed on every other screen.
             hideAppsPrompt = false;
-            // Hand our game and position back so the featured box resumes here.
-            if (currentGame) {
-                handoffGame = currentGame;
-                handoffPosition = videoPlayer.position;
-            }
             previousScreen();
         }
         // Details (X) – toggle info overlay

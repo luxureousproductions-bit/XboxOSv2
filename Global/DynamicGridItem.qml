@@ -48,11 +48,9 @@ id: root
     signal unhighlighted
 
     property bool selected
-    // Xbox-style frame (Global/FocusFrame.qml) instead of the classic border
-    // and halo. Set by the Platform page from Settings > Tiles > Tile frame.
-    property bool xboxFrame: false
-    // One corner radius for every rounded piece of the tile.
-    readonly property real artRadius: xboxFrame ? vpx(6) : vpx(12)
+    // One corner radius for every rounded piece of the tile; the focus
+    // frame (Global/FocusFrame.qml) is drawn concentric with it.
+    readonly property real artRadius: vpx(6)
     property var gameData: modelData
 
     // Apps imported by Pegasus, matched on file path — "android:<package>".
@@ -202,16 +200,11 @@ id: root
     // (The old 3s fadescreenshot Timer is gone: nothing started it any more —
     // the reveal is driven by videoShowing — but every tile still built it.)
 
-    // Focus glow — same asset, tint, and technique as the system tiles so it
-    // matches their look. The white PNG (transparent centre) gives the glow
-    // shape; ColorOverlay recolors it to the Color Layout accent. The
-    // transparent centre means it never tints a video playing behind the tile.
+    // Halo image for the favourite glow below. The white PNG (transparent
+    // centre) gives the glow shape; ColorOverlay tints it to the accent.
+    // Sized per dimension so the transparent centre matches any tile shape.
     Image {
         id: tileHaloSrc
-        // Size per-dimension (not a uniform width-based margin) so the glow's
-        // transparent centre matches the tile on ANY aspect — square, tall, or
-        // wide — with no gap. 1.1228 = 1 + 2*0.0614 keeps the same bleed as the
-        // system tiles.
         anchors.centerIn: container
         width:  container.width  * 1.1228
         height: container.height * 1.1228
@@ -220,32 +213,9 @@ id: root
         mipmap: false
         visible: false
     }
-    // On demand: the effect (a shader plus its own offscreen texture) exists
-    // only while it could be seen. It used to be instantiated on EVERY tile —
-    // two effects per tile doing nothing on every screen full of tiles.
-    // Not while racing (reduceMotion): it was built and torn down on every
-    // step; it appears as soon as the cursor stops. The accent frame still
-    // follows the cursor throughout.
-    Loader {
-        active: selected && !reduceMotion && !xboxFrame   // the Xbox frame has its own glow
-        anchors.fill: tileHaloSrc
-        z: -1
-        sourceComponent: Component {
-        ColorOverlay {
-            id: tileGlow
-            anchors.fill: parent   // the Loader, which already fills tileHaloSrc
-            source: tileHaloSrc
-            color: theme.accent
-            z: -1
-            opacity: (selected && tileHaloLive) ? 0.95 : 0
-            visible: opacity > 0
-            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-        }
-        }
-    }
-    // Subtle persistent glow for favorited tiles (not selected — the bright
-    // tileGlow above already covers that case). Same halo asset/accent tint,
-    // much dimmer, so favorites read as "special" while browsing past them.
+    // Subtle persistent glow for favorited tiles (not selected — the focus
+    // frame covers that case), so favourites read as "special" while
+    // browsing past them.
     // On demand: the effect (a shader plus its own offscreen texture) exists
     // only while it could be seen. It used to be instantiated on EVERY tile —
     // two effects per tile doing nothing on every screen full of tiles.
@@ -509,7 +479,7 @@ id: root
             source: screenshot
             crop: true
             radius: root.artRadius
-            inset: root.xboxFrame ? 0 : vpx(2)
+            inset: 0
             opacity: screenshot.opacity
             // Only once the image is decoded: with no texture yet, GL samples
             // solid black, which would flash a black box while art loads.
@@ -585,7 +555,7 @@ id: root
 
         active: selected
         anchors.fill: parent
-        sourceComponent: root.xboxFrame ? xboxBorder : border
+        sourceComponent: xboxBorder
         asynchronous: true
     }
 
@@ -600,12 +570,6 @@ id: root
                 artRadius: root.artRadius
             }
         }
-    }
-
-    Component {
-    id: border
-
-        ItemBorder { }
     }
 
     // (The old faint under-tile title, permanently hidden, is gone: replaced

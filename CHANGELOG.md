@@ -4,7 +4,26 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 35)
+## Unreleased — refresh branch (build 36)
+
+### One focus frame
+- The Xbox-style frame is now the only tile frame, and its ring is 0.5 px thicker (3 px; 2.7 px on the box-art tiles, which grow 1.1x on focus, so they read the same). **Settings > Tiles > Tile frame** is gone, and with it the Classic accent border, the Classic halo image on selected tiles and system tiles, and `Global/ItemBorder.qml`.
+- **Tile Halo** is now labelled **Frame glow** (same setting, same saved value): the soft glow outside the frame.
+- **Highlight animation** is gone. It only ever pulsed the Classic frame.
+- Favourite tiles keep their accent edge and soft glow.
+
+### Featured box removed
+- The large featured tile on Home (Favorites / Discover videos / fanart slideshow) and its three settings are gone, along with `Global/FavoritesHeader.qml`. Home rows are plain rows again: Left/Right wrap end to end, and moving between rows lands on the nearest column with no carousel slot in the way.
+- Also removes what it cost at rest: a full-resolution fanart decode every 8 seconds for the slideshow, a video drawn through an offscreen mask for Discover mode, and the "row preview yields to the box" bookkeeping. Discover always starts on a random video now (it used to resume the box's).
+
+### Cleanup
+- Saved values for the removed rows, and two keys no row ever used (`Featured collection`, `AllGames Match Platform`), are cleared from the settings file once at startup.
+- Game details and the launch screen read a "random background" option that never existed; they always showed the first screenshot/fanart, and still do, without the dead branch.
+- Removed orphans: `Global/HeaderBar.qml` (unused since the Platform page went), `Global/GridSpacer.qml` and the details page's unused sizing box, and two images only HeaderBar used.
+- Fixed: the mouse Back button on Discover threw an error instead of going back.
+- Help texts no longer mention the Platform page or the Featured box.
+
+## Build 35
 
 ### Fanart while fast-scrolling the grid
 - Tiles no longer stay blank for the whole hold. A tile that keeps the same game for 100 ms while its row is on screen takes its art mid-race; the grid's rows only change game at the screen edges, so art fills in about a row behind the cursor. Tiles that flash past at the edge, and look-ahead rows off screen, never ask, so there is no request-then-cancel. Logos still wait for the release. (Test machine, 10 steps a second: 60 fps throughout, ~40 art loads a second.)

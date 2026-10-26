@@ -31,21 +31,10 @@ id: root
 
         anchors.fill: parent
         asynchronous: true
-        property int randoScreenshotNumber: {
-            if (game && settings.GameRandomBackground === "Yes")
-                return Math.floor(Math.random() * game.assets.screenshotList.length);
-            else
-                return 0;
-        }
-        property int randoFanartNumber: {
-            if (game && settings.GameRandomBackground === "Yes")
-                return Math.floor(Math.random() * game.assets.backgroundList.length);
-            else
-                return 0;
-        }
-
-        property var randoScreenshot: game ? game.assets.screenshotList[randoScreenshotNumber] : ""
-        property var randoFanart: game ? game.assets.backgroundList[randoFanartNumber] : ""
+        // First screenshot / fanart. (A "random background" option was read
+        // here but never existed as a setting, so it was always the first.)
+        property var randoScreenshot: game ? game.assets.screenshotList[0] : ""
+        property var randoFanart: game ? game.assets.backgroundList[0] : ""
         property var actualBackground: (settings.GameBackground === "Screenshot") ? randoScreenshot : Utils.fanArt(game) || randoFanart;
         source: root.useAppFallback ? "" : (actualBackground || "")
         sourceSize: Qt.size(root.width, root.height)

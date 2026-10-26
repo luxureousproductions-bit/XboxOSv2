@@ -24,9 +24,8 @@ id: root
     property var game
     property bool selected
     property bool boxArt
-    // Xbox-style frame (see DynamicGridItem.xboxFrame): the preview fills the
-    // art rectangle and gets the art's small rounded corners.
-    property bool xboxFrame: false
+    // The preview fills the art rectangle and gets the art's small rounded
+    // corners, under the Xbox focus frame.
     readonly property real artRadius: vpx(6)
     property bool playVideo: (settings.AllowThumbVideo === "Yes") && !boxArt
 
@@ -68,19 +67,6 @@ id: root
     // thumbnail-audio row; a host with its own row (All Games) overrides it.
     property bool allowAudio: settings.AllowThumbVideoAudio !== "No"
 
-    // Reports to the coordinator whenever this preview is actually loaded.
-    // Derived from the Loader's own state rather than the six places that set
-    // it, so it cannot drift from what's really on screen. Showcase only: the
-    // featured box is the only thing that yields, and it lives there.
-    readonly property bool previewLoaded: videoPreviewLoader.sourceComponent !== undefined
-    onPreviewLoadedChanged: {
-        if (ownScreen !== "showcasescreen") return;
-        showcaseRowPreviews += previewLoaded ? 1 : -1;
-    }
-    // If destroyed while loaded, release the count so the box isn't left paused.
-    Component.onDestruction: {
-        if (ownScreen === "showcasescreen" && previewLoaded) showcaseRowPreviews -= 1;
-    }
     property bool playbackActive: ownScreen === "" || playbackOwner === ownScreen
 
     // True once the reveal delay has elapsed. The Video is created earlier
@@ -88,10 +74,7 @@ id: root
     property bool armed: false
 
     // How long a tile must stay highlighted before its preview plays, and how
-    // far ahead of that the decoder starts warming. Warming is deliberately
-    // NOT from t=0: the featured box yields while a preview is loaded, so an
-    // early warm-up would freeze it for the whole wait. One second is ample
-    // for the decoder to reach ready, and keeps the box's pause short.
+    // far ahead of that the decoder starts warming.
     property int previewDelay:  hqPreviewDelay
     property int previewWarmup: hqPreviewWarmup
     function unloadPreview() {
@@ -160,17 +143,11 @@ id: root
         id: videocomponent
 
             anchors.fill: parent
-            anchors.margins: root.xboxFrame ? 0 : vpx(3)   // classic: meets the selection frame's INNER edge exactly:
-                                      // the frame overhangs -3 and is 6 wide, so its inner
-                                      // edge sits +3 in. The video's square corners are then
-                                      // hidden well beneath the ring (over 2 units inside its
-                                      // outer curve) — no gap, and no masking of the
-                                      // VideoOutput (which renders black on weak GPUs).
             source: (game && game.assets.videoList.length) ? game.assets.videoList[0] : ""   // game can go null while the row changes
             fillMode: VideoOutput.PreserveAspectCrop
-            // Xbox frame: rounded corners in one shader pass over the video's
-            // own layer (one offscreen buffer, only while this preview exists).
-            layer.enabled: root.xboxFrame
+            // Rounded corners in one shader pass over the video's own layer
+            // (one offscreen buffer, only while this preview exists).
+            layer.enabled: true
             layer.effect: RoundedArt { radius: root.artRadius }
             muted: !root.allowAudio || !root.playbackActive
             loops: MediaPlayer.Infinite
@@ -187,17 +164,13 @@ id: root
             onGoChanged: if (go && playbackState !== MediaPlayer.PlayingState) play()
             onReadyChanged: if (go && playbackState !== MediaPlayer.PlayingState) play()
 
-            // Invisible until playing; a loaded-but-idle VideoOutput paints
-            // black. Snaps to opaque rather than fading: this sits UNDER the
-            // tile art, so it's hidden anyway until the art fades. Fading it
-            // in at the same time as the art faded out left a midpoint where
-            // neither was opaque and the Showcase background showed through.
-            // Xbox frame: shown from the first real frame and faded in over the
-            // same 200 ms the tile's art fades out, so the two cross exactly.
-            // Switching it on at full strength showed the video along the
-            // art's anti-aliased edge a few frames before the fade began.
-            opacity: (root.xboxFrame ? framesFlowing : playbackState === MediaPlayer.PlayingState) ? 1 : 0
-            Behavior on opacity { enabled: root.xboxFrame; NumberAnimation { duration: 200 } }
+            // Invisible until playing (a loaded-but-idle VideoOutput paints
+            // black). Shown from the first real frame and faded in over the
+            // same 200 ms the tile's art fades out, so the two cross exactly;
+            // at full strength at once, the video showed along the art's
+            // anti-aliased edge a few frames before the fade began.
+            opacity: framesFlowing ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 200 } }
 
             // Report "on screen" only once frames are actually flowing, not on
             // PlayingState — that fires before the first frame is painted, and
@@ -228,12 +201,9 @@ id: root
         visible: false   // only the shadow below draws it
         Rectangle {
             anchors.fill: parent
-            anchors.margins: root.xboxFrame ? 0 : vpx(3)   // the video's own inset
-            // Rounded like the selection frame (ItemBorder: radius 15 at -3,
-            // 6 wide, so its inner curve is radius 9 at +3). Square corners
-            // blurred into faint dark corners just past the rounded frame on
-            // light backgrounds.
-            radius: root.xboxFrame ? root.artRadius : vpx(9)
+            // Rounded like the art; square corners blurred into faint dark
+            // corners just past the frame on light backgrounds.
+            radius: root.artRadius
             color: "#000000"
         }
     }

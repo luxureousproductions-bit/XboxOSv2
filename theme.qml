@@ -68,15 +68,8 @@ id: root
             + "\nFeatures: " + platform.featureLine
             + "\nPDF manuals: " + (platform.hasPdf ? "yes" : "no") + "  |  Manual lookup: " + (platform.hasFindManual ? "native" : "theme")
             + "\nOS: " + platform.os + "  |  Screen: " + width + "x" + height + "  |  UI scale: " + settings.UiScale
-            + "\nHQ mode: " + (hqMode ? "on" : "off") + "  |  Tile frame: " + (xboxFrameLive ? "Xbox" : "Classic")
+            + "\nHQ mode: " + (hqMode ? "on" : "off")
             + "\nLibrary: " + api.allGames.count + " games, " + api.collections.count + " collections";
-    }
-
-    // Live copy of the featured box mode. Read by ShowcaseViewMenu's carousel
-    // and by FavoritesHeader, so switching it applies without a reload.
-    readonly property string featuredBoxContent: {
-        var e = settingsEpoch;
-        return settingsStore.get("Featured Box Content");
     }
 
     // ── Home "hide" sets: apps and emulators kept SEPARATE ────────────────
@@ -267,8 +260,7 @@ id: root
 
     // Live copies of the two Home hide options. `settings` is read once at
     // load, so rows bound to it only changed after a reload. These re-read on
-    // settingsEpoch, which Settings bumps on every save (the same pattern as
-    // featuredBoxContent above).
+    // settingsEpoch, which Settings bumps on every save.
     readonly property bool omitAppsLive: {
         var e = settingsEpoch;
         return (settingsStore.get("Omit genre: Application from Showcase", "No")) === "Yes";
@@ -411,7 +403,6 @@ id: root
         "Discover video audio":                      "Yes",
         "Dynamic Background":                        "No",
         "Favorited Tile Accent":                     "Yes",
-        "Featured Box Content":                      "Fanart Slideshow",
         "Game Background":                           "Fanart",
         "Game details video preview audio":          "Yes",
         "Grid Thumbnail":                            "Square",
@@ -425,7 +416,6 @@ id: root
         "Number of games showcased":                 "20",
         "Omit genre: Application from Showcase":     "No",
         "Omit genre: Emulator from Showcase":        "No",
-        "Pins to collection":                        "2",
         "Randomize System Tile Fanart":              "No",
         "Screenshot Fallback":                       "No",
         "Show scanlines":                            "No",
@@ -444,7 +434,6 @@ id: root
         "AllGames Hide box art on video":            "No",
         "AllGames Hide logo on video":               "No",
         "AllGames Items per row":                    "5",
-        "AllGames Match Platform":                   "No",
         "AllGames Show scanlines":                   "No",
         "AllGames Tile Art":                         "Fanart",
         "AllGames Tile Logo":                        "Yes",
@@ -452,7 +441,6 @@ id: root
         "AllGames Tile Style":                       "Wide",
         "AllGames Video preview":                    "Yes",
         "Always show titles":                        "No",
-        "Animate highlight":                         "No",
         "Back Box":                                  "Yes",
         "Blur Background":                           "No",
         "Cartridge":                                 "Yes",
@@ -464,8 +452,6 @@ id: root
         "Default to full details":                   "No",
         "Enable mouse hover":                        "No",
         "Fanart":                                    "Yes",
-        "Featured Box":                              "Yes",
-        "Featured collection":                       "Favorites",
         "Game Counter":                              "Yes",
         "Game Logo":                                 "Show",
         "Grid Game Logo":                            "Yes",
@@ -488,7 +474,6 @@ id: root
         "Showcase Collections Art":                  "Fanart",
         "Start up chime":                            "Yes",
         "Startup intro":                             "Yes",
-        "Tile frame":                                "Classic",
         "Library system tiles follow All":           "No",
         "System tile titles":                        "On focus",
         "Tile Halo":                                 "Yes",
@@ -515,26 +500,20 @@ id: root
             ColorLayout:                   (api.memory.has("Color Layout") && api.memory.get("Color Layout") !== "Gradient") ? api.memory.get("Color Layout") : "Lime",
             MouseHover:                    settingsStore.get("Enable mouse hover", "No"),
             AlwaysShowTitles:              settingsStore.get("Always show titles", "No"),
-            AnimateHighlight:              settingsStore.get("Animate highlight", "No"),
             AllowVideoPreviewAudio:        settingsStore.get("Game details video preview audio", "Yes"),
             ShowScanlines:                 settingsStore.get("Show scanlines", "No"),
             DetailsDefault:                settingsStore.get("Default to full details", "No"),
             LaunchScreenDelay:             settingsStore.get("Launch screen delay", "2.5"),
-            FeaturedBox:                   settingsStore.get("Featured Box", "Yes"),
-            FeaturedBoxCollection:         settingsStore.get("Pins to collection", "2"),
             UiScale:                       settingsStore.get("UI Scale", "1.0"),
             FavoritedTileAccent:           settingsStore.get("Favorited Tile Accent", "Yes"),
-            FeaturedBoxContent:            settingsStore.get("Featured Box Content", "Fanart Slideshow"),
             ShowcaseBackgroundArt:          settingsStore.get("Showcase Background Art", "Yes"),
             RandomizeSystemTileFanart:      settingsStore.get("Randomize System Tile Fanart", "No"),
             CustomBackground:               settingsStore.get("Custom Background", "Yes"),
             ShowcaseBackgroundOpacity:     settingsStore.get("Showcase Background Opacity", "1.00"),
             ShowcaseArt:                   settingsStore.get("Showcase Collections Art", "Fanart"),
             HeroBoxArt:                    settingsStore.get("Hero box art", "Fanart"),
-            TileHalo:                      settingsStore.get("Tile Halo", "Yes"),
             SystemSort:                    settingsStore.get("System sort", "Release year (oldest)"),
             ShowcaseColumns:               settingsStore.get("Number of games showcased", "20"),
-            ShowcaseFeaturedCollection:    settingsStore.get("Featured collection", "Favorites"),
             ShowcaseCollection1:           settingsStore.get("Collection 1", "Recommended"),
             ShowcaseCollection1_Thumbnail: settingsStore.get("Collection 1 - Thumbnail", "Wide"),
             ShowcaseCollection1_Size:      settingsStore.get("Collection 1 - Size", "Small"),
@@ -575,13 +554,10 @@ id: root
             CarouselCartridge:             settingsStore.get("Cartridge", "Yes"),
             CarouselMiximage:              settingsStore.get("Miximage", "Yes"),
             CarouselWheel:                 settingsStore.get("Logo", "Yes"),
-            OmitApplicationFromShowcase:   settingsStore.get("Omit genre: Application from Showcase", "No"),
-            OmitEmulatorFromShowcase:      settingsStore.get("Omit genre: Emulator from Showcase", "No"),
             HighQualityMode:               settingsStore.get("High Quality Mode", "No"),
             PlatformShoulderButtons:       settingsStore.get("LB/RB Function", "Cycle Platforms"),
             DynamicBackground:             settingsStore.get("Dynamic Background", "No"),
             ScreenshotFallback:            settingsStore.get("Screenshot Fallback", "No"),
-            AddedAppLaunch:                settingsStore.get("Added App Launch", "Instant"),
             HideAndroidSystemTile:         settingsStore.get("Hide Android System Tile", "Yes"),
             HideAndroidGamesSystemTile:    settingsStore.get("Hide Android Games System Tile", "No"),
             MoreByGenreDisplay:            settingsStore.get("More by Genre Display", "Full"),
@@ -596,7 +572,6 @@ id: root
             AllGamesTileArt:               settingsStore.get("AllGames Tile Art", "Fanart"),
             AllGamesTileLogo:              settingsStore.get("AllGames Tile Logo", "Yes"),
             AllGamesColumns:               settingsStore.get("AllGames Items per row", "5"),
-            AllGamesMatchPlatform:         settingsStore.get("AllGames Match Platform", "No"),
             SystemTileTitles:              settingsStore.get("System tile titles", "On focus"),
             PerSystemTiles:                settingsStore.get("Per-system tile settings", "No"),
             GridDimming:                   settingsStore.get("Grid background dimming", "Light"),
@@ -725,7 +700,6 @@ id: root
         return "";
     }
     readonly property real hqFanartScale:   hqMode ? 1.0 : (dynamicBg ? 0.7 : 0.6)   // fanart decode vs display size
-    readonly property bool hqDualDecoder:   hqMode                // featured box keeps playing under a row preview
     // Row/grid preview: how long a tile rests before its video plays, and how
     // far ahead of that the decoder warms. The lead is always 300ms short of
     // the delay in HQ: warming from the very first instant put the row's
@@ -798,32 +772,11 @@ id: root
     readonly property int  hqAllGamesArtMs:   hqMode ? 60   : 150  // rest before heavy art swaps in
     readonly property int  hqAllGamesCacheRows: hqMode ? 4  : 0    // off-screen list rows kept built
 
-    // Phase 2 — within the Showcase, the featured box yields to a row preview.
-    // Count of row previews currently loaded on the Showcase (0 or 1 in
-    // practice; a counter so an overlap during a row change can't leave it
-    // wrong). While non-zero the featured video pauses, so the Showcase never
-    // runs two decoders at once — the guarantee that matters on weaker chips.
-    property int showcaseRowPreviews: 0
-
     // True while a row preview video is actually PLAYING (not just loaded).
     // The tile under it fades its art on this, so the reveal is tied to the
     // first frame rather than to a fixed timer — previously the video ran
     // audibly for ~2.4s behind still-opaque art waiting on a 3s clock.
     property bool rowPreviewPlaying: false
-
-    // ── Discover handoff ──────────────────────────────────────────────────
-    // Lets the Showcase featured box (in Discover Videos mode) and the Discover
-    // screen pick up where the other left off, in both directions. Whichever
-    // side is leaving writes the game and position; whichever side is arriving
-    // consumes and clears them. Null game means "nothing to resume — pick
-    // randomly as before".
-    property var handoffGame: null
-    property int handoffPosition: 0
-    function takeHandoff() {
-        var g = handoffGame;
-        handoffGame = null;
-        return g;
-    }
 
     // Set by a screen that hides its whole UI (Discover's X toggle), so the
     // bottom-left Apps prompt goes with it. Deliberately explicit rather than
@@ -1913,6 +1866,14 @@ id: root
                 api.memory.unset(k + "Index");
             }
         });
+        // Rows removed in build 36 (the Xbox frame is the only frame; no
+        // Highlight animation; no Featured box) and keys nothing ever read.
+        // Saved values are dropped once so they can't linger in the file.
+        ["Tile frame", "Animate highlight", "Featured Box", "Pins to collection",
+         "Featured Box Content", "Featured collection", "AllGames Match Platform"].forEach(function(k) {
+            if (api.memory.has(k)) api.memory.unset(k);
+            if (api.memory.has(k + "Index")) api.memory.unset(k + "Index");
+        });
         rebuildHomeHide();      // first fill, before the Home rows filter
         navigator.home("showcasescreen");
 
@@ -2604,12 +2565,8 @@ id: root
     // ── Startup intro ─────────────────────────────────────────────────────
     // Cold start only (never on the way back from a game). Settings > Audio >
     // Startup intro. See Global/StartupIntro.qml.
-    // Settings > Tiles > Tile frame: Classic or Xbox (Global/FocusFrame.qml).
-    // Live, so the two can be compared without a reload.
-    readonly property bool xboxFrameLive: { var e = settingsEpoch; return settingsStore.get("Tile frame") === "Xbox"; }
-
-    // Settings > Tiles > Tile Halo, live. In Xbox mode it switches the
-    // frame's glow (Global/FocusFrame.qml); in Classic, the halo image.
+    // Settings > Tiles > Frame glow (key "Tile Halo"), live: the soft glow
+    // outside the focus frame (Global/FocusFrame.qml).
     readonly property bool tileHaloLive: { var e = settingsEpoch; return settingsStore.get("Tile Halo") === "Yes"; }
 
     property bool introDone: false

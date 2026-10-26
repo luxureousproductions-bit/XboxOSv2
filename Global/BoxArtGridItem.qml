@@ -95,10 +95,9 @@ id: root
     }
 
     property bool selected
-    // Xbox-style frame (Settings > Tiles > Tile frame): small corners and
-    // Global/FocusFrame.qml around a 2D box; a thin, tight trace around a 3D box.
-    property bool xboxFrame: xboxFrameLive
-    readonly property real artRadius: xboxFrame ? vpx(6) : vpx(12)
+    // Xbox-style focus: small corners and Global/FocusFrame.qml around a 2D
+    // box; a thin, tight trace around a 3D box.
+    readonly property real artRadius: vpx(6)
     // HQ: eased pop into the highlight instead of a linear ramp.
     Behavior on scale { enabled: !reduceMotion;
         NumberAnimation {
@@ -189,31 +188,8 @@ id: root
         mipmap: false
         visible: false
     }
-    // On demand: the effect (a shader plus its own offscreen texture) exists
-    // only while it could be seen. It used to be instantiated on EVERY tile —
-    // two effects per tile doing nothing on every screen full of tiles.
-    // Not while racing (reduceMotion): it was built and torn down on every
-    // step; it appears as soon as the cursor stops. The accent frame still
-    // follows the cursor throughout.
-    Loader {
-        active: selected && !reduceMotion
-        anchors.fill: tileHaloSrc
-        z: -1
-        sourceComponent: Component {
-        ColorOverlay {
-            id: tileGlow
-            anchors.fill: parent   // the Loader, which already fills tileHaloSrc
-            source: tileHaloSrc
-            color: theme.accent
-            z: -1
-            opacity: (selected && !is3d && !xboxFrame && tileHaloLive) ? 0.95 : 0
-            visible: opacity > 0
-            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-        }
-        }
-    }
-    // Subtle persistent glow for favorited tiles (not selected — the bright
-    // tileGlow above already covers that case).
+    // Subtle persistent glow for favorited tiles (not selected — the focus
+    // frame covers that case).
     // On demand: the effect (a shader plus its own offscreen texture) exists
     // only while it could be seen. It used to be instantiated on EVERY tile —
     // two effects per tile doing nothing on every screen full of tiles.
@@ -325,10 +301,10 @@ id: root
                     Glow {
                         anchors.fill: solidBox
                         source: solidBox
-                        // Xbox frame: a thin, tight trace instead of the wide glow
-                        radius: root.xboxFrame ? vpx(4) : vpx(10)
-                        samples: root.xboxFrame ? 17 : 25
-                        spread: root.xboxFrame ? 0.85 : 0.6
+                        // A thin, tight trace, like the 2D boxes' frame
+                        radius: vpx(4)
+                        samples: 17
+                        spread: 0.85
                         color: theme.accent
                         transparentBorder: true
                     }
@@ -509,7 +485,7 @@ id: root
     Loader {
         active: selected && !is3d
         anchors.fill: artBounds
-        sourceComponent: root.xboxFrame ? xboxBorder : border
+        sourceComponent: xboxBorder
         asynchronous: true
     }
 
@@ -525,16 +501,10 @@ id: root
                 // This tile grows 1.1x on focus; the frame is sized against
                 // that so its ring matches the other tiles'.
                 gap: vpx(2) / 1.1
-                ring: vpx(2.5) / 1.1
+                ring: vpx(3) / 1.1
                 glow: vpx(6) / 1.1
             }
         }
-    }
-
-    Component {
-    id: border
-
-        ItemBorder { }
     }
 
     // Backing pill for the 3D-box title: hugs the text, so it reads over a

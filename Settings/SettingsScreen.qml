@@ -378,34 +378,10 @@ id: root
         }
     }
 
-    ListModel {
-        id: featuredSettingsModel
-
-        ListElement {
-            settingName: "Featured Box"
-            setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "Pins to collection"
-            setting: "1,2,3,4,5,6"
-        }
-        ListElement {
-            settingName: "Featured Box Content"
-            setting: "Favorites,Discover Videos,Fanart Slideshow"
-        }
-    }
-
     property var tilesPage: {
         return {
             pageName: "Tiles",
             listmodel: tilesSettingsModel
-        }
-    }
-
-    property var featuredPage: {
-        return {
-            pageName: "Featured",
-            listmodel: featuredSettingsModel
         }
     }
 
@@ -431,23 +407,14 @@ id: root
         }
         ListElement { settingName: "Appearance"; setting: ""; header: true }
         ListElement {
-            settingName: "Tile frame"
-            label: "Tile frame"
-            setting: "Classic,Xbox"
-        }
-        ListElement {
             settingName: "Tile Halo"
+            label: "Frame glow"
             setting: "Yes,No"
         }
         ListElement {
             settingName: "Favorited Tile Accent"
             label: "Favorite tile accent"
             setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "Animate highlight"
-            label: "Highlight animation"
-            setting: "No,Yes"
         }
         ListElement {
             settingName: "Game Counter"
@@ -465,21 +432,6 @@ id: root
             settingName: "Hide logo when thumbnail video plays"
             label: "Hide logo when preview plays"
             setting: "No,Yes"
-        }
-        ListElement { settingName: "Featured box"; setting: ""; header: true }
-        ListElement {
-            settingName: "Featured Box"
-            setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "Pins to collection"
-            label: "Pin featured box to"
-            setting: "1,2,3,4,5,6"
-        }
-        ListElement {
-            settingName: "Featured Box Content"
-            label: "Featured box shows"
-            setting: "Favorites,Discover Videos,Fanart Slideshow"
         }
     }
 
@@ -747,7 +699,6 @@ id: root
         ListElement { settingName: "Mouse support"; setting: ""; header: false; tip: true }
         ListElement { settingName: "Home page"; setting: ""; header: true; tip: false }
         ListElement { settingName: "The hero tile"; setting: ""; header: false; tip: true }
-        ListElement { settingName: "Featured box and Discover"; setting: ""; header: false; tip: true }
         ListElement { settingName: "Random rows stay put"; setting: ""; header: false; tip: true }
         ListElement { settingName: "Library"; setting: ""; header: true; tip: false }
         ListElement { settingName: "Per-system tiles"; setting: ""; header: false; tip: true }
@@ -913,16 +864,13 @@ id: root
                  + "NEVER shows none";
         }
         if (name === "Tile Halo") {
-            return "The soft glow around the highlighted tile, everywhere tiles appear";
+            return "The soft glow just outside the highlighted tile's frame, everywhere tiles appear";
         }
         if (name === "Favorited Tile Accent") {
             return "Marks favorited games with a colored edge on their tile, so they stand out while you scroll";
         }
-        if (name === "Animate highlight") {
-            return "A pulse animation on the highlighted tile accent";
-        }
         if (name === "Game Counter") {
-            return "Shows the live game count on the platform page and all games menu";
+            return "Shows the live game count at the top of the Library";
         }
         if (name === "Frame counter") {
             return "Shows frames per second and the slowest frame in the top-left corner"
@@ -934,15 +882,6 @@ id: root
         }
         if (name === "Hide logo when thumbnail video plays") {
             return "While a tile's preview video plays on the Home page, hides the game's logo so it doesn't cover the video";
-        }
-        if (name === "Featured Box") {
-            return "The large featured tile on the Home page. Turn it off to remove it";
-        }
-        if (name === "Pins to collection") {
-            return "Which collection row the featured tile sits with on the Home page";
-        }
-        if (name === "Featured Box Content") {
-            return "What the featured tile shows: your Favorites, Discover videos, or a slideshow of fanart";
         }
         if (name === "All Games View") {
             return "How the Library is shown, for All Games and for every system\n"
@@ -1037,7 +976,7 @@ id: root
             return "Audio played from preview videos on the Home page";
         }
         if (name === "Discover video audio") {
-            return "Only affects Discover page; Audio for Discover videos in Featured box is controlled by \u201cVideo thumbnail audio\u201d";
+            return "Audio for the videos on the Discover page";
         }
         if (name === "Game details video preview audio") {
             return "Audio played from preview videos in the Game Details page";
@@ -1140,8 +1079,6 @@ id: root
             "The mouse wheel moves the selection through lists and grids, and the mouse back button works like B",
         "The hero tile":
             "The large tile at the start of the Home page's system row is always the game you played most recently. Press A to jump straight back in",
-        "Featured box and Discover":
-            "With Featured box shows set to Discover Videos, opening Discover carries on with the same video\nBacking out of Discover hands it back to the Home page",
         "Random rows stay put":
             "Rows like Recommended and Top by Genre keep their picks until you press Refresh (X) on the Home page\nTwo rows set to System always pick different systems",
         "Per-system tiles":
@@ -1192,21 +1129,16 @@ id: root
             || name === "System tile titles"
             || name === "Tile Halo"
             || name === "Favorited Tile Accent"
-            || name === "Animate highlight"
             || name === "Game Counter"
             || name === "Frame counter"
             || name === "Allow video thumbnails"
             || name === "Hide logo when thumbnail video plays"
-            || name === "Featured Box"
-            || name === "Pins to collection"
-            || name === "Featured Box Content"
             || name === "All Games View"
             || name === "AllGames Video preview"
             || name === "AllGames Hide box art on video"
             || name === "AllGames Hide logo on video"
             || name === "AllGames Blur Background"
             || name === "AllGames Show scanlines"
-            || name === "AllGames Match Platform"
             || name === "AllGames Tile Style"
             || name === "AllGames Tile Ratio"
             || name === "AllGames Tile Art"
@@ -1673,10 +1605,6 @@ id: root
                         || settingName === "AllGames Hide logo on video")
                         return mem("AllGames Video preview", "Yes") === "No";
 
-                    // Featured box off: its content and pin rows are moot.
-                    if (settingName === "Featured Box Content" || settingName === "Pins to collection")
-                        return mem("Featured Box", "Yes") === "No";
-
                     // A collection set to None has no thumbnail, size or ratio to configure.
                     var cm = settingName.match(/^(Collection \d) - (Thumbnail|Size|Ratio)$/);
                     if (cm && mem(cm[1], "") === "None") return true;
@@ -1736,9 +1664,9 @@ id: root
                     // Either of these changing can lock/unlock the randomize row
                     // Any row another row depends on refreshes the locks when saved.
                     var parents = ["Showcase Background Art", "Custom Background",
-                                   "Omit genre: Application from Showcase", "Menu sounds", "Xbox Logo",
+                                   "Menu sounds", "Xbox Logo",
                                    "Allow video thumbnails", "Video preview", "AllGames Video preview",
-                                   "Featured Box", "Grid Thumbnail", "All Games View",
+                                   "Grid Thumbnail", "All Games View",
                                    "Library system tiles follow All", "AllGames Tile Style"];
                     if (parents.indexOf(settingName) !== -1 || /^Collection \d$/.test(settingName)
                         || /^Collection \d - Thumbnail$/.test(settingName))

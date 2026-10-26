@@ -35,10 +35,6 @@ id: root
     ListAllGames    { id: listNone;        max: 0 }
     ListAllGames    { id: listAllGames;    max: settings.ShowcaseColumns; hideRows: libraryHideRows }
     ListFavorites   { id: listFavorites;   max: settings.ShowcaseColumns }
-    // Uncapped — feeds the favorites carousel header, which pages through
-    // every favorited game (unlike the "Favorites" collection category above,
-    // which is deliberately capped to a normal row's worth of tiles).
-    ListFavorites   { id: listFavoritesAll }
     ListLastPlayed  { id: listLastPlayed;  max: settings.ShowcaseColumns; omitApplication: false; omitEmulator: false; hideTitles: noHideTitles; hideRows: homeHideRows }
     ListMostPlayed  { id: listMostPlayed;  max: settings.ShowcaseColumns; omitApplication: false; omitEmulator: false; hideTitles: noHideTitles; hideRows: homeHideRows }
     ListRecommended { id: listRecommended; active: true; max: settings.ShowcaseColumns; omitApplication: false; omitEmulator: false; hideTitles: noHideTitles; hideRows: homeHideRows }
@@ -1132,23 +1128,6 @@ id: root
                                       && settings.ShowcaseCollection5 === "None"
                                       && settings.ShowcaseCollection6 === "None"
 
-    // Which collection slot (1-6) hosts the pin box, from Settings > Pins >
-    // "Pins to collection". If that collection is set to None the box simply
-    // doesn't appear — deliberately no fallback to another row, so the choice
-    // stays predictable.
-    property int featuredBoxSlot: {
-        if (settings.FeaturedBox === "No") return 0;
-        var slot = parseInt(settings.FeaturedBoxCollection) || 1;
-        if (slot < 1 || slot > 6) return 0;
-        var chosen = slot === 1 ? settings.ShowcaseCollection1
-                   : slot === 2 ? settings.ShowcaseCollection2
-                   : slot === 3 ? settings.ShowcaseCollection3
-                   : slot === 4 ? settings.ShowcaseCollection4
-                   : slot === 5 ? settings.ShowcaseCollection5
-                   :              settings.ShowcaseCollection6;
-        return (chosen === "None") ? 0 : slot;
-    }
-
     // Using an object model to build the list
     ObjectModel {
     id: mainModel
@@ -1326,7 +1305,7 @@ id: root
                 }
                 width: topRow.tileSz
                 height: topRow.tileSz
-                radius: xboxFrameLive ? vpx(6) : vpx(12)   // Settings > Tiles > Tile frame
+                radius: vpx(6)   // concentric with the focus frame
                 color: selected ? theme.accent : theme.secondary
                 Behavior on color { ColorAnimation { duration: 180; easing.type: Easing.OutCubic } }
                 // Grow from the bottom edge so the bottom stays put. The first (hero) tile
@@ -1349,30 +1328,6 @@ id: root
                 // Delegates lose their parent while being recycled; guarded so
                 // that doesn't throw (it threw ~60 times per Home scroll).
                 anchors.verticalCenter: parent ? parent.verticalCenter : undefined
-
-                // Xbox-style focus glow, auto-matched to the current Color Layout accent.
-                // The white PNG supplies only the glow SHAPE (alpha); ColorOverlay recolors
-                // it to theme.accent, so it always matches the selected colour. Only the
-                // selected tile's overlay is visible, so a single shader renders at a time.
-                Image {
-                    id: focusHaloSrc
-                    source: "../assets/images/focus_halo.png"
-                    anchors.fill: parent
-                    anchors.margins: -(tile.width * 0.0614)
-                    smooth: true
-                    mipmap: false
-                    visible: false
-                }
-                ColorOverlay {
-                    id: focusHalo
-                    anchors.fill: focusHaloSrc
-                    source: focusHaloSrc
-                    color: theme.accent
-                    z: -1
-                    opacity: (selected && tileHaloLive && !xboxFrameLive) ? 0.95 : 0
-                    visible: opacity > 0
-                    Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                }
 
                 // ── HERO (index 0): resume / last-played screenshot + title ──
                 // Rounded without a mask: the art through RoundedArt (one
@@ -1604,60 +1559,25 @@ id: root
                     }
                 }
 
-                // Accent frame: hero when selected; platform when selected AND system background loaded
-                // (platforms without a background keep the current accent-fill look instead)
-                Rectangle {
-                    // Overhang by a pixel: sharing the tile's exact bounds left
-                    // the tile's antialiased corner peeking outside the frame,
-                    // which reads as the old square-ish corner poking through
-                    // at the larger radius. Radius tracks tile.radius so the
-                    // two can't drift apart again.
-                    anchors.fill: parent
-                    anchors.margins: -vpx(3)
-                    visible: selected && (isHero || sysBg.status === Image.Ready) && !xboxFrameLive
-                    color: "transparent"
-                    radius: tile.radius + vpx(3)
-                    border.color: theme.accent
-                    border.width: vpx(5)
-                }
-
-                // Xbox tile frame: gap, ring and glow in one pass, on the
-                // selected tile only. Sized against the tile's grow-on-focus
-                // scale so the ring is as thin as on the game tiles.
+                // Focus frame: gap, ring and glow in one pass, on the selected
+                // tile only — the hero, or a system tile once its background is
+                // loaded (one without keeps the accent-fill look). Sized
+                // against the grow-on-focus scale so the ring matches the game
+                // tiles'.
                 Loader {
                     anchors.fill: parent
-                    active: xboxFrameLive && selected && (isHero || sysBg.status === Image.Ready)
+                    active: selected && (isHero || sysBg.status === Image.Ready)
                     sourceComponent: Item {
                         FocusFrame {
                             anchors.fill: parent
                             artRadius: tile.radius
                             gap: vpx(2) / topRow.growScale
-                            ring: vpx(2.5) / topRow.growScale
+                            ring: vpx(3) / topRow.growScale
                             glow: vpx(6) / topRow.growScale
                         }
                     }
                 }
 
-                // Animated highlight — flashes the frame white when the AnimateHighlight setting is on
-                Rectangle {
-                    id: highlightPulse
-                    anchors.fill: parent
-                    anchors.margins: -vpx(3)
-                    visible: selected && settings.AnimateHighlight === "Yes" && !xboxFrameLive
-                    color: "transparent"
-                    radius: tile.radius + vpx(3)
-                    border.color: "#ffffff"
-                    border.width: vpx(5)
-                    opacity: 0   // start invisible so it can't pop in at peak brightness
-                    SequentialAnimation on opacity {
-                        running: highlightPulse.visible
-                        loops: Animation.Infinite
-                        PropertyAction { target: highlightPulse; property: "opacity"; value: 0 }
-                        NumberAnimation { to: 1; duration: 200 }
-                        NumberAnimation { to: 0; duration: 500 }
-                        PauseAnimation  { duration: 200 }
-                    }
-                }
 
                 MouseArea {
                     anchors.fill: parent
@@ -1713,7 +1633,6 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (featuredBoxSlot === 1) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1748,7 +1667,6 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (featuredBoxSlot === 2) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1783,7 +1701,6 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (featuredBoxSlot === 3) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1818,7 +1735,6 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (featuredBoxSlot === 4) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1853,7 +1769,6 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (featuredBoxSlot === 5) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1888,7 +1803,6 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (featuredBoxSlot === 6) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1924,17 +1838,7 @@ id: root
         var list = null;
         if (mainList.currentIndex === 1) list = platformlist;
         else if (mainList.currentItem && mainList.currentItem.collectionList) list = mainList.currentItem.collectionList;
-        if (!list) return -1;
-        // Resting on the favorites carousel: currentIndex is -1 so there's no
-        // currentItem to measure. Report the header's own centre instead —
-        // without this the closest-column logic got no position, bailed out,
-        // and the destination row fell back to its stale savedIndex (jumping
-        // far right instead of straight down).
-        if (list.onFavoritesHeader !== undefined && list.onFavoritesHeader && list.headerItem) {
-            var h = list.headerItem;
-            return h.mapToItem(root, h.width / 2, 0).x;
-        }
-        if (!list.currentItem) return -1;
+        if (!list || !list.currentItem) return -1;
         var c = list.currentItem;
         return c.mapToItem(root, c.width / 2, 0).x;          // screen-x centre of current item
     }
@@ -1968,30 +1872,13 @@ id: root
             var it = mainList.itemAtIndex(destIndex);
             if (!it || !it.collectionList) return;
             var list = it.collectionList;
-            // A row carrying the favorites carousel has an extra slot before
-            // tile 0, so the plain column math lands one tile too far right.
-            // Offset by the header's extent, and treat a negative result as
-            // "that column IS the carousel" rather than clamping onto tile 0.
-            var hasHeader = it.showFavoritesHeader === true && list.headerItem;
-            var headerExtent = hasHeader ? (list.headerItem.width + list.spacing) : 0;
             var unit = it.itemWidth + list.spacing;
             if (unit <= 0) return;
             var local = list.mapFromItem(root, screenX, 0).x;
-            var i = Math.round((list.contentX + local - headerExtent - it.itemWidth / 2) / unit);
-
-            if (hasHeader && i < 0) {
-                it.savedIndex = 0;
-                list.savedOnHeader = true;
-                list.onFavoritesHeader = true;
-                return;
-            }
+            var i = Math.round((list.contentX + local - it.itemWidth / 2) / unit);
             if (i < 0) i = 0;
             if (i > list.count - 1) i = list.count - 1;
             it.savedIndex = i;
-            if (list.onFavoritesHeader !== undefined) {
-                list.savedOnHeader = false;
-                list.onFavoritesHeader = false;
-            }
         }
     }
 
