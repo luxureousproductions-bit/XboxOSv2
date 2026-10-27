@@ -4,7 +4,23 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 40)
+## Unreleased — refresh branch (build 41)
+
+### Settings, in the Xbox look
+- **New layout:** a rail of pages with icons on the left; the page's title and a one-line summary on the right; every setting is a card — name on the left, value on the right between ‹ ›, On/Off in place of Yes/No — framed with the same focus ring as the tiles. Section names are small accent capitals.
+- **Library** and **Previews & sound** are laid out as grids, as in the mockups: All Games beside Systems on Library; one row per screen with Preview, Sound, Grid: hide logo and List: hide columns on Previews & sound ("—" where a screen has no such setting). Move with the D-pad in any direction; A or RB changes a value, LB steps back, X shows More info, B or Left at the edge returns to the rail.
+- Library lists the systems that have their own settings; X on one sends it back to following Systems.
+- Right on the rail now enters the page, as A does.
+
+### Banner
+- **Background art** on Game details (and the launch screen) can be **Banner**; a game with no banner shows its fanart.
+- **Media carousel › Banner** — banners used to be added to the carousel always; now it's a switch (on by default).
+
+### Fixes found on the way
+- A settings grid cell's value read through a function named `valueOf`, which every JavaScript object already has — QML called that instead and every value came back blank. Renamed.
+- Scrolling a settings grid lagged one move behind (it read the focused cell before it was updated), so the bottom row could sit off-screen.
+
+## build 40
 
 ### All Games and every system, set separately
 - **All Games has its own View, tiles and titles; Systems is the default for every system** (Settings › Library). Changing All Games to list or grid no longer changes every system.

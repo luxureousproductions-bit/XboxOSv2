@@ -35,7 +35,9 @@ id: root
         // here but never existed as a setting, so it was always the first.)
         property var randoScreenshot: game ? game.assets.screenshotList[0] : ""
         property var randoFanart: game ? game.assets.backgroundList[0] : ""
-        property var actualBackground: (settings.GameBackground === "Screenshot") ? randoScreenshot : Utils.fanArt(game) || randoFanart;
+        property var actualBackground: (settings.GameBackground === "Screenshot") ? randoScreenshot
+                                     : (settings.GameBackground === "Banner" && game && game.assets.banner) ? game.assets.banner
+                                     : Utils.fanArt(game) || randoFanart;
         source: root.useAppFallback ? "" : (actualBackground || "")
         sourceSize: Qt.size(root.width, root.height)
         fillMode: Image.PreserveAspectCrop

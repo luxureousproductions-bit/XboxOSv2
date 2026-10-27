@@ -120,7 +120,7 @@ id: root
                 });
             }
             if (game.assets.poster)     mediaList.push(game.assets.poster);
-            if (game.assets.banner)     mediaList.push(game.assets.banner);
+            if (settings.CarouselBanner === "Yes" && game.assets.banner) mediaList.push(game.assets.banner);
             if (game.assets.tile)       mediaList.push(game.assets.tile);
             if (settings.CarouselWheel === "Yes" && game.assets.logo)
                 mediaList.push(game.assets.logo);
@@ -546,7 +546,10 @@ id: root
         // here but never existed as a setting, so it was always the first.)
         property var randoScreenshot: game ? game.assets.screenshotList[0] : ""
         property var randoFanart: game ? game.assets.backgroundList[0] : ""
-        property var actualBackground: (settings.GameBackground === "Screenshot") ? randoScreenshot : Utils.fanArt(game) || randoFanart;
+        // Banner falls back to fanart for games that have none.
+        property var actualBackground: (settings.GameBackground === "Screenshot") ? randoScreenshot
+                                     : (settings.GameBackground === "Banner" && game && game.assets.banner) ? game.assets.banner
+                                     : Utils.fanArt(game) || randoFanart;
         source: actualBackground || ""
         sourceSize: Qt.size(root.width, root.height)
         fillMode: Image.PreserveAspectCrop

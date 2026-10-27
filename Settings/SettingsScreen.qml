@@ -71,7 +71,9 @@ id: root
     property var generalPage: {
         return {
             pageName: "General",
-            listmodel: settingsModel
+            icon: "general",
+            listmodel: settingsModel,
+            lead: "How the theme behaves: scale, quality, launch and mouse."
         }
     }
 
@@ -121,7 +123,9 @@ id: root
     property var appearancePage: {
         return {
             pageName: "Appearance",
-            listmodel: appearanceSettingsModel
+            icon: "appearance",
+            listmodel: appearanceSettingsModel,
+            lead: "Colors, background shading and how tiles are drawn."
         }
     }
 
@@ -199,7 +203,9 @@ id: root
     property var showcasePage: {
         return {
             pageName: "Home",
-            listmodel: showcaseSettingsModel
+            icon: "home",
+            listmodel: showcaseSettingsModel,
+            lead: "The Home page: logo, hero tile, titles and the background."
         }
     }
 
@@ -337,7 +343,9 @@ id: root
     property var collectionsPage: {
         return {
             pageName: "Home rows",
-            listmodel: collectionsSettingsModel
+            icon: "rows",
+            listmodel: collectionsSettingsModel,
+            lead: "What each Home row shows and how its tiles look."
         }
     }
 
@@ -439,7 +447,10 @@ id: root
     property var libraryPage: {
         return {
             pageName: "Library",
-            listmodel: librarySettingsModel
+            icon: "library",
+            listmodel: librarySettingsModel,
+            lead: "All Games and the systems are set separately. A system follows Systems unless you give it its own settings with Y while you're on it.",
+            grid: "library"
         }
     }
 
@@ -460,7 +471,7 @@ id: root
         ListElement {
             settingName: "Game Background"
             label: "Background art"
-            setting: "Screenshot,Fanart"
+            setting: "Screenshot,Fanart,Banner"
         }
         ListElement {
             settingName: "Game Logo"
@@ -519,6 +530,10 @@ id: root
             setting: "Yes,No"
         }
         ListElement {
+            settingName: "Banner"
+            setting: "Yes,No"
+        }
+        ListElement {
             settingName: "Logo"
             setting: "Yes,No"
         }
@@ -527,7 +542,9 @@ id: root
     property var gamePage: {
         return {
             pageName: "Game details",
-            listmodel: gameSettingsModel
+            icon: "details",
+            listmodel: gameSettingsModel,
+            lead: "The Game details page and the items in its media carousel."
         }
     }
 
@@ -646,7 +663,10 @@ id: root
     property var previewsPage: {
         return {
             pageName: "Previews & sound",
-            listmodel: previewsSettingsModel
+            icon: "media",
+            listmodel: previewsSettingsModel,
+            lead: "Every video preview and every sound in one place. A or RB changes a value, LB steps back.",
+            grid: "previews"
         }
     }
 
@@ -711,7 +731,9 @@ id: root
     property var advancedPage: {
         return {
             pageName: "System",
-            listmodel: advancedSettingsModel
+            icon: "system",
+            listmodel: advancedSettingsModel,
+            lead: "Hiding apps and emulators, the status bar, and diagnostics for bug reports."
         }
     }
 
@@ -739,7 +761,9 @@ id: root
     property var raPage: {
         return {
             pageName:  "Retro Achievements",
-            listmodel: raSettingsModel
+            icon: "trophy",
+            listmodel: raSettingsModel,
+            lead: "Your RetroAchievements account."
         }
     }
 
@@ -777,7 +801,9 @@ id: root
     property var tipsPage: {
         return {
             pageName:  "Tips & Tricks",
-            listmodel: tipsSettingsModel
+            icon: "tips",
+            listmodel: tipsSettingsModel,
+            lead: "Things worth knowing that no button prompt tells you."
         }
     }
 
@@ -792,6 +818,124 @@ id: root
         case "Library size": return "Library: " + api.allGames.count + " games, " + api.collections.count + " collections";
         }
         return name;
+    }
+
+    // ── Grid pages (Settings/SettingsGrid.qml) ────────────────────────────
+    // The option string of a row as its ListModel declares it, so a grid
+    // card writes the same "<key>Index" the list row would.
+    function optsOf(model, key) {
+        for (var i = 0; i < model.count; i++) {
+            var e = model.get(i);
+            if (e.settingName === key && e.header !== true) return e.setting;
+        }
+        return "Yes,No";
+    }
+    readonly property var onOff: ({ "Yes": "On", "No": "Off" })
+    readonly property var volumeShow: ({ "1.0": "100%", "0.1": "10%", "0.2": "20%", "0.3": "30%", "0.4": "40%",
+                                         "0.5": "50%", "0.6": "60%", "0.7": "70%", "0.8": "80%", "0.9": "90%" })
+
+    // Previews & sound: one row per screen, one column per setting.
+    function previewsCells() {
+        var m = previewsSettingsModel, out = [], r = 0;
+        function v(row, col, key, extra) {
+            var c = { kind: "value", row: row, col: col, key: key, opts: optsOf(m, key), show: onOff };
+            for (var k in extra) c[k] = extra[k];
+            out.push(c);
+        }
+        function none(row, col, t) { out.push({ kind: "label", row: row, col: col, text: t || "—", dim: true }); }
+        out.push({ kind: "colhead", row: r, col: 0, text: "Where" });
+        out.push({ kind: "colhead", row: r, col: 1, text: "Preview" });
+        out.push({ kind: "colhead", row: r, col: 2, text: "Sound" });
+        out.push({ kind: "colhead", row: r, col: 3, text: "Grid: hide logo" });
+        out.push({ kind: "colhead", row: r, col: 4, text: "List: hide" });
+        r++;
+        var screens = [
+            { t: "Home rows", s: "The highlighted tile, after a short rest",
+              p: "Allow video thumbnails", a: "Video thumbnail audio", g: "Hide logo when thumbnail video plays" },
+            { t: "Library · All Games", s: "Grid tile or the list's preview panel",
+              p: "AllGames Video preview", a: "All games menu video audio", g: "AllGames Grid hide logo on video", l: "AllGames List hide on video" },
+            { t: "Library · Systems", s: "Every system without its own settings",
+              p: "Systems Video preview", a: "Systems video audio", g: "Systems Grid hide logo on video", l: "Systems List hide on video" },
+            { t: "Game details · background", s: "Plays behind the page",
+              p: "Video preview", a: "Game details video preview audio" },
+            { t: "Game details · More like this", s: "The rows under the page",
+              p: "Details rows video preview", a: "Details rows video audio", g: "Details rows hide logo on video" },
+            { t: "Discover", s: "Always plays", a: "Discover video audio" }
+        ];
+        for (var i = 0; i < screens.length; i++, r++) {
+            var sc = screens[i];
+            out.push({ kind: "label", row: r, col: 0, text: sc.t, sub: sc.s });
+            if (sc.p) v(r, 1, sc.p); else none(r, 1, "Always");
+            if (sc.a) v(r, 2, sc.a); else none(r, 2);
+            if (sc.g) v(r, 3, sc.g); else none(r, 3);
+            if (sc.l) v(r, 4, sc.l, { show: ({}) }); else none(r, 4);
+        }
+        out.push({ kind: "header", row: r, col: 0, span: 5, text: "Menu sounds" }); r++;
+        v(r, 0, "Menu sounds", { label: "Menu sounds" });
+        v(r, 1, "Menu Volume", { label: "Volume", span: 2, show: volumeShow });
+        v(r, 3, "Start up chime", { label: "Startup chime", span: 2 });
+        return out;
+    }
+
+    // Library: All Games and Systems side by side, then the list-view and
+    // navigation rows, then every system that has its own settings.
+    property int libraryRev: 0
+    function libraryCells() {
+        var e = libraryRev;
+        var m = librarySettingsModel, out = [], r = 0;
+        function v(row, col, key, label, extra) {
+            var c = { kind: "value", row: row, col: col, key: key, label: label, opts: optsOf(m, key) };
+            for (var k in extra) c[k] = extra[k];
+            out.push(c);
+        }
+        out.push({ kind: "header", row: r, col: 0, text: "All Games" });
+        out.push({ kind: "header", row: r, col: 1, text: "Systems · default for every system" });
+        r++;
+        var rows = [
+            ["View",          "All Games View",         "Systems View",        null],
+            ["Tile shape",    "AllGames Tile Style",    "Grid Thumbnail",      null],
+            ["Tile ratio",    "AllGames Tile Ratio",    "Grid Ratio",          null],
+            ["Tiles per row", "AllGames Items per row", "Number of columns",   null],
+            ["Tile art",      "AllGames Tile Art",      "Grid art",            null],
+            ["Logo on tile",  "AllGames Tile Logo",     "Grid Game Logo",      onOff],
+            ["Tile titles",   "AllGames Tile titles",   "Systems Tile titles", null]
+        ];
+        for (var i = 0; i < rows.length; i++, r++) {
+            var x = rows[i];
+            v(r, 0, x[1], x[0], x[3] ? { show: x[3] } : {});
+            v(r, 1, x[2], x[0], x[3] ? { show: x[3] } : {});
+        }
+        out.push({ kind: "header", row: r, col: 0, span: 2, text: "List view & navigation" }); r++;
+        v(r, 0, "AllGames Blur Background", "Blurred background", { show: onOff });
+        v(r, 1, "AllGames Show scanlines",  "Scanlines",          { show: onOff });
+        r++;
+        v(r, 0, "LB/RB Function", "LB / RB on a system", { span: 2 });
+        r++;
+        out.push({ kind: "header", row: r, col: 0, span: 2, text: "Systems with their own settings" }); r++;
+        var any = false;
+        for (var c = 0; c < api.collections.count; c++) {
+            var coll = api.collections.get(c), sn = coll.shortName || "";
+            if (!sn || settingsStore.get(sn + " - Use theme settings", "Yes") !== "No") continue;
+            any = true;
+            var view = settingsStore.get(sn + " - View", "");
+            var sub = view === "Grid"
+                ? "Grid · " + settingsStore.get(sn + " - Tile shape", "") + " · " + settingsStore.get(sn + " - Tiles per row", "") + " per row"
+                : "List";
+            out.push({ kind: "item", row: r, col: 0, span: 2, text: coll.name, sub: sub, sys: sn, action: "Back to Systems" });
+            r++;
+        }
+        if (!any)
+            out.push({ kind: "label", row: r, col: 0, span: 2, text: "None yet", sub: "Press Y while viewing a system to give it its own settings" });
+        return out;
+    }
+
+    readonly property var currentPage: settingsArr[pagelist.currentIndex]
+    readonly property string gridPage: (currentPage && currentPage.grid) ? currentPage.grid : ""
+    // Focus the page's content: its grid, or its list.
+    function focusContent() {
+        if (gridPage !== "") settingsGrid.forceActiveFocus();
+        else settingsList.forceActiveFocus();
+        rebuildHelpbar();
     }
 
     property var settingsArr: [generalPage, appearancePage, showcasePage, collectionsPage, libraryPage, gamePage, previewsPage, raPage, advancedPage, tipsPage]
@@ -998,7 +1142,7 @@ id: root
             return "Which part of a game's genre the More by genre row on Game Details uses to find similar games. For a genre like Action / Platformer it can match on the whole thing, just Action, or just Platformer";
         }
         if (name === "Game Background") {
-            return "The picture behind the Game Details page: a screenshot or the game's fanart";
+            return "The picture behind the Game Details page: a screenshot, the game's fanart, or its banner. A game with no banner shows its fanart instead";
         }
         if (name === "Game Logo") {
             return "If/How the games logo is displayed in Game Details page";
@@ -1136,9 +1280,101 @@ id: root
     // result, which is wasteful when all that's needed is whether one exists.
     // Mouse back button: mirrors B.
     function mouseBack() {
-        if (infoOpen)  { infoOpen = false; settingsList.forceActiveFocus(); return; }
+        if (infoOpen)  { infoOpen = false; focusContent(); return; }
         if (!pagelist.activeFocus) { pagelist.forceActiveFocus(); return; }   // rows -> page list
         previousScreen();
+    }
+
+    // Greying: true when a row's setting does nothing right now (another
+    // setting turns it off). Shared by the list rows and the grid pages.
+    function settingDisabled(settingName) {
+        // All Games' tile rows do nothing while All Games is a list.
+        var agGrid = (settingsStore.get("All Games View", "List")) === "Grid";
+        if (settingName === "AllGames Tile Style" || settingName === "AllGames Tile Ratio"
+            || settingName === "AllGames Tile Art" || settingName === "AllGames Tile Logo"
+            || settingName === "AllGames Items per row" || settingName === "AllGames Tile titles") {
+            if (!agGrid) return true;
+            // Shape-dependent rows (this used to sit after a return above
+            // and never ran): Box Art greys art + logo; Square greys ratio.
+            var agShape = settingsStore.get("AllGames Tile Style", "Wide");
+            if (settingName === "AllGames Tile Art" || settingName === "AllGames Tile Logo") return agShape === "Box Art" || agShape === "3D Box";
+            if (settingName === "AllGames Tile Ratio") return agShape === "Square";
+            return false;
+        }
+
+        if (settingName === "Randomize System Tile Fanart" || settingName === "Screenshot Fallback") {
+            var bgArt  = settingsStore.get("Showcase Background Art", "Yes");
+            return bgArt === "No";
+        }
+
+        // Small helper: current value of another row, with its default.
+        function mem(k, d) { return settingsStore.get(k, d); }
+
+        // Dynamic Background moves whichever background is showing — fanart
+        // or the custom image — so it's only inert when neither is.
+        if (settingName === "Dynamic Background")
+            return mem("Showcase Background Art", "Yes") === "No" && mem("Custom Background", "No") === "No";
+        // Opacity applies to fanart AND the custom image; inert only when neither shows.
+        if (settingName === "Showcase Background Opacity")
+            return mem("Showcase Background Art", "Yes") === "No" && mem("Custom Background", "No") === "No";
+
+        // Sound master: with Menu sounds off, the volume and the chime are silent anyway.
+        if (settingName === "Menu Volume" || settingName === "Start up chime")
+            return mem("Menu sounds") === "No";
+
+        // Logo tint only applies to the Xbox logos — not to None,
+        // and not to the RetroAchievements logo, which keeps its own colours.
+        if (settingName === "Logo Color Match") {
+            var xl = mem("Xbox Logo", "Logo1");
+            return xl === "None" || xl === "RetroAchievements";
+        }
+
+        // Previews & sound: each screen's Sound and "while it plays"
+        // rows do nothing while that screen's Preview is off.
+        if (settingName === "Hide logo when thumbnail video plays" || settingName === "Video thumbnail audio")
+            return mem("Allow video thumbnails") === "No";
+        if (settingName === "Game details video preview audio")
+            return mem("Video preview") === "No";
+        if (settingName === "All games menu video audio"
+            || settingName === "AllGames Grid hide logo on video"
+            || settingName === "AllGames List hide on video")
+            return mem("AllGames Video preview") === "No";
+        if (settingName === "Systems video audio"
+            || settingName === "Systems Grid hide logo on video"
+            || settingName === "Systems List hide on video")
+            return mem("Systems Video preview") === "No";
+        if (settingName === "Details rows video audio" || settingName === "Details rows hide logo on video")
+            return mem("Details rows video preview") === "No";
+        // Systems' tile rows do nothing while Systems is a list.
+        if (["Grid Thumbnail", "Grid Ratio", "Grid art", "Grid Game Logo", "Number of columns",
+             "Systems Tile titles"].indexOf(settingName) !== -1
+            && mem("Systems View") === "List")
+            return true;
+
+        // A collection set to None has no thumbnail, size or ratio to configure.
+        var cm = settingName.match(/^(Collection \d) - (Thumbnail|Size|Ratio)$/);
+        if (cm && mem(cm[1], "") === "None") return true;
+        // A collection's Ratio row is inert when its shape is Square
+        if (settingName.indexOf("Collection ") === 0 && settingName.indexOf(" - Ratio") !== -1) {
+            var coll = settingName.replace(" - Ratio", "");
+            var shp = settingsStore.get(coll + " - Thumbnail", "Wide");
+            return shp === "Square";
+        }
+        // Ratio is inert only for Square; Box Art scales with it on both grids.
+        if (settingName === "Grid Ratio") {
+            var gth = settingsStore.get("Grid Thumbnail");
+            return gth === "Square";
+        }
+        // Grid art / Grid Game Logo only apply to the Wide/Tall/Square
+        // tile styles — Box Art tiles always show the box art itself,
+        // so there's no art-source or logo-overlay choice to make.
+        // Box Art shape shows the box itself, so the art-source and logo
+        // rows have nothing to act on. Ratio and tiles-per-row stay live.
+        if (settingName === "Grid art" || settingName === "Grid Game Logo") {
+            var gth2 = settingsStore.get("Grid Thumbnail");
+            return gth2 === "Box Art" || gth2 === "3D Box";
+        }
+        return false;
     }
 
     function hasInfo(name) {
@@ -1213,7 +1449,7 @@ id: root
             || tipTexts.hasOwnProperty(name);
     }
 
-    property real itemheight: vpx(50)
+    property real itemheight: vpx(48)
     property color settingsTextColor: "white"   // locked white: the settings background is locked black, so text must never follow the Color Layout light/dark flip
 
     // ── On-screen keyboard for text fields (RA credentials) ───────────────
@@ -1262,10 +1498,11 @@ id: root
         settingsList.forceActiveFocus();
     }
 
-    // Settings background — locked to black (independent of Color Background)
+    // Settings background — locked dark (independent of Color Background),
+    // the Xbox settings charcoal.
     Rectangle {
         anchors.fill: parent
-        color: "#000000"
+        color: "#101010"
         z: -10
     }
 
@@ -1277,8 +1514,8 @@ id: root
             left: parent.left
             right: parent.right
         }
-        height: vpx(75)
-        color: "#000000"
+        height: vpx(84)
+        color: "transparent"
         z: 5
 
         // Settings cog (same icon used elsewhere in the theme)
@@ -1288,10 +1525,10 @@ id: root
                 left: parent.left; leftMargin: globalMargin
                 verticalCenter: parent.verticalCenter
             }
-            height: vpx(28)
+            height: vpx(27)
             width: height
             source: "../assets/images/settingsicon.svg"
-            sourceSize: Qt.size(vpx(28), vpx(28))
+            sourceSize: Qt.size(vpx(54), vpx(54))
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true
@@ -1301,7 +1538,7 @@ id: root
         Text {
         id: headertitle
             
-            text: "SETTINGS"
+            text: "Settings"
             
             anchors {
                 top: parent.top;
@@ -1312,7 +1549,7 @@ id: root
             
             color: settingsTextColor
             font.family: titleFont.name
-            font.pixelSize: vpx(30)
+            font.pixelSize: vpx(27)
             font.bold: true
             horizontalAlignment: Text.AlignHLeft
             verticalAlignment: Text.AlignVCenter
@@ -1329,48 +1566,20 @@ id: root
 
     }
 
-    // Active page name — left of the content box, matches the SETTINGS title color
-    Text {
-        id: activePageLabel
-        z: 6
-        anchors {
-            left: settingsList.left; leftMargin: vpx(25)
-            verticalCenter: header.verticalCenter
-        }
-        text: (pagelist.currentIndex >= 0 && settingsArr[pagelist.currentIndex])
-              ? settingsArr[pagelist.currentIndex].pageName.toUpperCase() : ""
-        color: settingsTextColor
-        font.family: subtitleFont.name
-        font.pixelSize: vpx(24)
-        font.bold: true
-        verticalAlignment: Text.AlignVCenter
-    }
-
-    // Subtle nav-rail panel (balances the content panel)
-    Rectangle {
-        id: railPanel
-        anchors {
-            top: header.bottom
-            bottom: parent.bottom; bottomMargin: helpMargin
-            left: parent.left
-            right: pagelist.right
-        }
-        color: theme.secondary
-        opacity: 0.5
-        radius: 0
-        z: -1
-    }
+    // Clock / battery / Wi-Fi, top right, as on every other screen.
+    StatusCluster { anchors.fill: parent; z: 50 }
 
     ListView {
     id: pagelist
     
         focus: true
         anchors {
-            top: header.bottom
+            top: header.bottom; topMargin: vpx(14)
             bottom: parent.bottom; bottomMargin: helpMargin
-            left: parent.left; leftMargin: globalMargin
+            left: parent.left; leftMargin: globalMargin + vpx(18)
         }
-        width: vpx(300)
+        width: vpx(287)
+        spacing: vpx(4)
         model: settingsArr
         onCurrentIndexChanged: {
             if (settingsArr[currentIndex] && settingsArr[currentIndex].pageName === "Retro Achievements")
@@ -1385,46 +1594,45 @@ id: root
                 property bool selected: ListView.isCurrentItem
 
                 width: ListView.view.width
-                height: itemheight
+                height: vpx(46)
 
-                // Selection tile
+                // Selected page: a lifted plate with an accent edge, as on the
+                // Xbox settings rail; the focus frame while the rail has focus.
                 Rectangle {
                 id: pageTile
                     anchors.fill: parent
-                    anchors.rightMargin: vpx(8)
-                    radius: vpx(6)
-                    color: theme.accent
-                    opacity: selected ? 0.16 : 0
-                    Behavior on opacity { NumberAnimation { duration: 120 } }
-                }
-                // Left accent edge-bar
-                Rectangle {
-                    anchors { left: pageTile.left; verticalCenter: pageTile.verticalCenter }
-                    width: vpx(4)
-                    height: pageTile.height * 0.55
-                    radius: width / 2
-                    color: theme.accent
-                    opacity: selected ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 120 } }
-                }
-
-                // Page name
-                Text {
-                id: oageNameText
-                
-                    text: modelData.pageName.toUpperCase()
-                    color: settingsTextColor
-                    font.family: subtitleFont.name
-                    font.pixelSize: vpx(24)
-                    font.bold: true
-                    verticalAlignment: Text.AlignVCenter
-                    opacity: selected ? 1 : 0.2
-
-                    width: contentWidth
-                    height: parent.height
-                    anchors {
-                        left: parent.left; leftMargin: vpx(25)
+                    radius: vpx(5)
+                    color: selected ? "#2c2c2c" : "transparent"
+                    Behavior on color { ColorAnimation { duration: 120 } }
+                    Rectangle {
+                        visible: selected
+                        anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
+                        width: vpx(3.5)
+                        color: theme.accent
                     }
+                }
+                Loader {
+                    anchors.fill: parent
+                    active: selected && pagelist.activeFocus
+                    sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(5); glowStrength: 0.45 } }
+                    z: 2
+                }
+                Image {
+                id: pageIcon
+                    anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                    width: vpx(22); height: vpx(22)
+                    source: modelData.icon ? "../assets/images/settings/" + modelData.icon + ".svg" : ""
+                    sourceSize { width: 48; height: 48 }
+                    opacity: selected ? 1 : 0.72
+                    asynchronous: true
+                }
+                Text {
+                    anchors { left: pageIcon.right; leftMargin: vpx(14); verticalCenter: parent.verticalCenter }
+                    text: modelData.pageName
+                    color: selected ? "white" : "#bdbdbd"
+                    font.family: subtitleFont.name
+                    font.pixelSize: vpx(18)
+                    font.bold: selected
                 }
 
                 // Mouse/touch functionality
@@ -1435,7 +1643,7 @@ id: root
                     onClicked: {
                         playNav();
                         pagelist.currentIndex = index;
-                        settingsList.focus = true;
+                        focusContent();
                     }
                 }
 
@@ -1454,12 +1662,13 @@ id: root
             if (currentIndex === count - 1) currentIndex = 0;
             else incrementCurrentIndex();
         }
+        Keys.onRightPressed: { playNav(); focusContent(); }
         Keys.onPressed: {
             // Accept
             if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                 event.accepted = true;
                 playAccept();
-                settingsList.focus = true;
+                focusContent();
             }
             // Back
             if (api.keys.isCancel(event) && !event.isAutoRepeat) {
@@ -1470,19 +1679,60 @@ id: root
 
     }
 
-    // Subtle content panel (depth behind the settings column)
-    Rectangle {
-        id: settingsPanel
+    // ── Page title and lead line ──────────────────────────────────────────
+    Item {
+    id: pane
         anchors {
-            top: header.bottom
+            top: header.bottom; topMargin: vpx(6)
             bottom: parent.bottom; bottomMargin: helpMargin
-            left: pagelist.right; leftMargin: vpx(10)
-            right: parent.right
+            left: pagelist.right; leftMargin: vpx(38)
+            right: parent.right; rightMargin: globalMargin + vpx(18)
         }
-        color: theme.secondary
-        opacity: 0.5
-        radius: 0
-        z: -1
+        Text {
+        id: pageTitle
+            text: currentPage ? currentPage.pageName : ""
+            color: "white"
+            font.family: titleFont.name
+            font.pixelSize: vpx(29)
+            font.bold: true
+        }
+        Text {
+        id: pageLead
+            anchors { top: pageTitle.bottom; topMargin: vpx(4) }
+            width: Math.min(pane.width, vpx(780))
+            text: (currentPage && currentPage.lead) ? currentPage.lead : ""
+            color: "#a9a9a9"
+            font.family: subtitleFont.name
+            font.pixelSize: vpx(14.5)
+            wrapMode: Text.WordWrap
+        }
+    }
+
+    // Grid pages: Previews & sound, Library.
+    SettingsGrid {
+    id: settingsGrid
+        visible: gridPage !== ""
+        anchors {
+            top: pane.top; topMargin: pageLead.y + pageLead.height + vpx(18)
+            left: pane.left; right: pane.right; bottom: pane.bottom
+        }
+        cells: gridPage === "previews" ? previewsCells() : gridPage === "library" ? libraryCells() : []
+        colWidths: gridPage === "previews" ? [0.36, 0.14, 0.14, 0.16, 0.20] : [0.5, 0.5]
+        isDisabled: function(c) { return root.settingDisabled(c.key); }
+        onChanged: {
+            // Box-front art already carries the name: its logo row turns off.
+            if (cell.key === "AllGames Tile Art" && value === "Boxfront") { settingsStore.set("AllGames Tile Logo", "No"); settingsStore.set("AllGames Tile LogoIndex", 1); }
+            if (cell.key === "Grid art" && value === "Boxfront") { settingsStore.set("Grid Game Logo", "No"); settingsStore.set("Grid Game LogoIndex", 1); }
+            settingsEpoch++;
+        }
+        onInfoRequested: { if (root.hasInfo(cell.key)) { playToggle(); root.openInfo(cell.label || cell.text || cell.key, root.infoText(cell.key)); } }
+        onItemAction: {
+            // A system with its own settings: back to following Systems.
+            if (cell.sys) { playToggle(); settingsStore.set(cell.sys + " - Use theme settings", "Yes"); settingsEpoch++; libraryRev++; }
+        }
+        onLeave: pagelist.forceActiveFocus()
+        onCurrentChanged: root.rebuildHelpbar()
+        onActiveFocusChanged: root.rebuildHelpbar()
     }
 
     // RetroAchievements credential status — only on the RA page.
@@ -1492,8 +1742,8 @@ id: root
         visible: settingsArr[pagelist.currentIndex]
                  && settingsArr[pagelist.currentIndex].pageName === "Retro Achievements"
         anchors {
-            left: pagelist.right;  leftMargin: globalMargin + vpx(25)
-            right: parent.right;   rightMargin: vpx(25)
+            left: pane.left
+            right: pane.right
             bottom: parent.bottom; bottomMargin: helpMargin + vpx(18)
         }
         wrapMode: Text.WordWrap
@@ -1518,15 +1768,19 @@ id: root
 
         model: settingsArr[pagelist.currentIndex].listmodel
         delegate: settingsDelegate
-        
-        anchors {
-            top: header.bottom; bottom: parent.bottom; bottomMargin: helpMargin
-            left: pagelist.right; leftMargin: globalMargin
-            right: parent.right; rightMargin: globalMargin
-        }
-        width: vpx(500)
+        visible: gridPage === ""
 
-        spacing: vpx(0)
+        anchors {
+            top: pane.top; topMargin: pageLead.y + pageLead.height + vpx(10)
+            bottom: pane.bottom
+            left: pane.left; leftMargin: -vpx(8)
+            right: pane.right; rightMargin: -vpx(8)
+        }
+        // Room for the focus frame, which sits just outside the card.
+        topMargin: vpx(8); bottomMargin: vpx(8)
+        leftMargin: vpx(8); rightMargin: vpx(8)
+
+        spacing: vpx(6)
         orientation: ListView.Vertical
 
         preferredHighlightBegin: settingsList.height / 2 - itemheight
@@ -1586,93 +1840,7 @@ id: root
                 property bool rowDisabled: {
                     if (isHeader || isTip) return false;
                     var _v = settingsList.settingsVersion;   // re-evaluate after any save
-                    // All Games' tile rows do nothing while All Games is a list.
-                    var agGrid = (settingsStore.get("All Games View", "List")) === "Grid";
-                    if (settingName === "AllGames Tile Style" || settingName === "AllGames Tile Ratio"
-                        || settingName === "AllGames Tile Art" || settingName === "AllGames Tile Logo"
-                        || settingName === "AllGames Items per row" || settingName === "AllGames Tile titles") {
-                        if (!agGrid) return true;
-                        // Shape-dependent rows (this used to sit after a return above
-                        // and never ran): Box Art greys art + logo; Square greys ratio.
-                        var agShape = settingsStore.get("AllGames Tile Style", "Wide");
-                        if (settingName === "AllGames Tile Art" || settingName === "AllGames Tile Logo") return agShape === "Box Art" || agShape === "3D Box";
-                        if (settingName === "AllGames Tile Ratio") return agShape === "Square";
-                        return false;
-                    }
-
-                    if (settingName === "Randomize System Tile Fanart" || settingName === "Screenshot Fallback") {
-                        var bgArt  = settingsStore.get("Showcase Background Art", "Yes");
-                        return bgArt === "No";
-                    }
-
-                    // Small helper: current value of another row, with its default.
-                    function mem(k, d) { return settingsStore.get(k, d); }
-
-                    // Dynamic Background moves whichever background is showing — fanart
-                    // or the custom image — so it's only inert when neither is.
-                    if (settingName === "Dynamic Background")
-                        return mem("Showcase Background Art", "Yes") === "No" && mem("Custom Background", "No") === "No";
-                    // Opacity applies to fanart AND the custom image; inert only when neither shows.
-                    if (settingName === "Showcase Background Opacity")
-                        return mem("Showcase Background Art", "Yes") === "No" && mem("Custom Background", "No") === "No";
-
-                    // Sound master: with Menu sounds off, the volume and the chime are silent anyway.
-                    if (settingName === "Menu Volume" || settingName === "Start up chime")
-                        return mem("Menu sounds") === "No";
-
-                    // Logo tint only applies to the Xbox logos — not to None,
-                    // and not to the RetroAchievements logo, which keeps its own colours.
-                    if (settingName === "Logo Color Match") {
-                        var xl = mem("Xbox Logo", "Logo1");
-                        return xl === "None" || xl === "RetroAchievements";
-                    }
-
-                    // Previews & sound: each screen's Sound and "while it plays"
-                    // rows do nothing while that screen's Preview is off.
-                    if (settingName === "Hide logo when thumbnail video plays" || settingName === "Video thumbnail audio")
-                        return mem("Allow video thumbnails") === "No";
-                    if (settingName === "Game details video preview audio")
-                        return mem("Video preview") === "No";
-                    if (settingName === "All games menu video audio"
-                        || settingName === "AllGames Grid hide logo on video"
-                        || settingName === "AllGames List hide on video")
-                        return mem("AllGames Video preview") === "No";
-                    if (settingName === "Systems video audio"
-                        || settingName === "Systems Grid hide logo on video"
-                        || settingName === "Systems List hide on video")
-                        return mem("Systems Video preview") === "No";
-                    if (settingName === "Details rows video audio" || settingName === "Details rows hide logo on video")
-                        return mem("Details rows video preview") === "No";
-                    // Systems' tile rows do nothing while Systems is a list.
-                    if (["Grid Thumbnail", "Grid Ratio", "Grid art", "Grid Game Logo", "Number of columns",
-                         "Systems Tile titles"].indexOf(settingName) !== -1
-                        && mem("Systems View") === "List")
-                        return true;
-
-                    // A collection set to None has no thumbnail, size or ratio to configure.
-                    var cm = settingName.match(/^(Collection \d) - (Thumbnail|Size|Ratio)$/);
-                    if (cm && mem(cm[1], "") === "None") return true;
-                    // A collection's Ratio row is inert when its shape is Square
-                    if (settingName.indexOf("Collection ") === 0 && settingName.indexOf(" - Ratio") !== -1) {
-                        var coll = settingName.replace(" - Ratio", "");
-                        var shp = settingsStore.get(coll + " - Thumbnail", "Wide");
-                        return shp === "Square";
-                    }
-                    // Ratio is inert only for Square; Box Art scales with it on both grids.
-                    if (settingName === "Grid Ratio") {
-                        var gth = settingsStore.get("Grid Thumbnail");
-                        return gth === "Square";
-                    }
-                    // Grid art / Grid Game Logo only apply to the Wide/Tall/Square
-                    // tile styles — Box Art tiles always show the box art itself,
-                    // so there's no art-source or logo-overlay choice to make.
-                    // Box Art shape shows the box itself, so the art-source and logo
-                    // rows have nothing to act on. Ratio and tiles-per-row stay live.
-                    if (settingName === "Grid art" || settingName === "Grid Game Logo") {
-                        var gth2 = settingsStore.get("Grid Thumbnail");
-                        return gth2 === "Box Art" || gth2 === "3D Box";
-                    }
-                    return false;
+                    return root.settingDisabled(settingName);
                 }
 
                 // Text-input rows (RA credentials) skip the cycling logic
@@ -1731,48 +1899,34 @@ id: root
                         savedIndex = settingList.length -1;
                 }
 
-                width: ListView.view.width
-                height: isHeader ? vpx(44) : (itemNote !== "" ? itemheight + vpx(22) : itemheight)
+                width: ListView.view.width - vpx(16)
+                height: isHeader ? vpx(36) : (itemNote !== "" ? itemheight + vpx(30) : itemheight)
 
-                // Header rendering: green label, thin rule, nothing else.
+                // Header rendering: accent caps over the group's cards.
                 Text {
                     visible: isHeader
-                    anchors { left: parent.left; leftMargin: vpx(4); bottom: headerRule.top; bottomMargin: vpx(6) }
+                    anchors { left: parent.left; leftMargin: vpx(2); bottom: parent.bottom; bottomMargin: vpx(6) }
                     text: settingName.toUpperCase()
                     color: theme.accent
-                    font { family: subtitleFont.name; pixelSize: vpx(13); bold: true; letterSpacing: 1 }
-                }
-                Rectangle {
-                id: headerRule
-                    visible: isHeader
-                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom; bottomMargin: vpx(6) }
-                    height: vpx(1); color: theme.secondary
+                    font { family: subtitleFont.name; pixelSize: vpx(12); bold: true; letterSpacing: vpx(1.2) }
                 }
 
-                // Selection tile
+                // Card
                 Rectangle {
                 id: setTile
                     visible: !isHeader
-                    anchors { left: parent.left; top: parent.top }
-                    anchors.right: isTextInput ? textInputContainer.left : parent.right
-                    anchors.leftMargin: vpx(12)
-                    anchors.rightMargin: vpx(12)
+                    anchors { left: parent.left; right: parent.right; top: parent.top }
                     height: itemheight
-                    radius: vpx(6)
-                    color: theme.accent
-                    opacity: selected ? 0.16 : 0
-                    Behavior on opacity { NumberAnimation { duration: 120 } }
+                    radius: vpx(4)
+                    color: selected ? "#2e2e2e" : "#232323"
+                    opacity: rowDisabled ? 0.38 : 1
                 }
-                // Left accent edge-bar
-                Rectangle {
-                    visible: !isHeader
-                    anchors { left: setTile.left; verticalCenter: setTile.verticalCenter }
-                    width: vpx(4)
-                    height: itemheight * 0.55
-                    radius: width / 2
-                    color: theme.accent
-                    opacity: selected ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 120 } }
+                // Focus: the same Xbox frame the tiles use.
+                Loader {
+                    anchors.fill: setTile
+                    active: selected && !isHeader
+                    z: 2
+                    sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(4); glowStrength: 0.45 } }
                 }
 
                 // ── Cycle-value rows (existing style) ──────────────────────
@@ -1780,35 +1934,41 @@ id: root
                 id: settingNameText
 
                     visible: !isHeader && (!isTextInput)
-                    text: isTip ? displayLabel.toUpperCase() : displayLabel.toUpperCase() + ": "
-                    color: settingsTextColor
+                    text: displayLabel
+                    color: "white"
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(22)
+                    font.pixelSize: vpx(17)
                     verticalAlignment: Text.AlignVCenter
-                    opacity: rowDisabled ? 0.12 : (selected ? 1 : 0.2)
+                    opacity: rowDisabled ? 0.38 : 1
 
-                    width: contentWidth
+                    width: parent.width * 0.62
+                    elide: Text.ElideRight
                     height: itemheight
                     anchors {
-                        left: parent.left; leftMargin: vpx(25)
+                        left: parent.left; leftMargin: vpx(16)
                     }
                 }
                 Text {
                 id: settingtext
 
                     visible: !isHeader && (!isTextInput)
-                    text: isTip ? (selected ? "\u203A" : "")
-                                : (selected && !rowDisabled ? "\u2039  " : "") + settingList[savedIndex].toUpperCase() + (selected && !rowDisabled ? "  \u203A" : "")
-                    font.bold: selected
-                    color: settingsTextColor
+                    // Yes/No reads as On/Off; arrows grey, value bold.
+                    readonly property string shown: {
+                        var v = settingList[savedIndex];
+                        return v === "Yes" ? "On" : v === "No" ? "Off" : v;
+                    }
+                    textFormat: Text.StyledText
+                    text: isTip ? "<font color='#8a8a8a'>\u203A</font>"
+                                : "<font color='#8a8a8a'>\u2039</font>&nbsp;&nbsp;<b>" + shown + "</b>&nbsp;&nbsp;<font color='#8a8a8a'>\u203A</font>"
+                    color: "white"
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(22)
+                    font.pixelSize: vpx(16)
                     verticalAlignment: Text.AlignVCenter
-                    opacity: rowDisabled ? 0.12 : (selected ? 1 : 0.2)
+                    opacity: rowDisabled ? 0.38 : 1
 
                     height: itemheight
                     anchors {
-                        right: parent.right; rightMargin: vpx(25)
+                        right: parent.right; rightMargin: vpx(14)
                     }
                 }
 
@@ -1817,17 +1977,16 @@ id: root
                 id: textInputLabel
 
                     visible: !isHeader && (isTextInput)
-                    text: settingName.toUpperCase() + ":"
-                    color: settingsTextColor
+                    text: displayLabel
+                    color: "white"
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(22)
+                    font.pixelSize: vpx(17)
                     verticalAlignment: Text.AlignVCenter
-                    opacity: selected ? 1 : 0.2
 
                     width: contentWidth
                     height: itemheight
                     anchors {
-                        left: parent.left; leftMargin: vpx(25)
+                        left: parent.left; leftMargin: vpx(16)
                     }
                 }
 
@@ -1838,15 +1997,14 @@ id: root
 
                     visible: !isHeader && (isTextInput)
                     anchors {
-                        right: parent.right; rightMargin: vpx(25)
-                        top: parent.top
+                        right: parent.right; rightMargin: vpx(14)
+                        top: parent.top; topMargin: (itemheight - height) / 2
                     }
-                    y: (itemheight - height) / 2
                     width:  vpx(280)
                     height: vpx(34)
                     color: "transparent"
-                    border.width: settingRow.selected ? vpx(1) : 0
-                    border.color: theme.accent
+                    border.width: vpx(1)
+                    border.color: settingRow.selected ? "#6a6a6a" : "#3a3a3a"
                     radius: vpx(4)
 
                     Text {
@@ -1860,10 +2018,9 @@ id: root
                               : ((typeof masked !== 'undefined' && masked)
                                  ? Array(storedVal.length + 1).join("\u25CF")
                                  : storedVal)
-                        color: settingsTextColor
+                        color: storedVal === "" ? "#8a8a8a" : "white"
                         font.family: subtitleFont.name
-                        font.pixelSize: vpx(18)
-                        opacity: settingRow.selected ? 1 : 0.2
+                        font.pixelSize: vpx(16)
                         verticalAlignment: Text.AlignVCenter
                         elide: Text.ElideRight
                     }
@@ -1883,8 +2040,8 @@ id: root
                     opacity: selected ? 1 : 0.45
 
                     anchors {
-                        left: parent.left; leftMargin: vpx(25)
-                        top: parent.top; topMargin: itemheight - vpx(4)
+                        left: parent.left; leftMargin: vpx(16)
+                        top: parent.top; topMargin: itemheight + vpx(4)
                     }
 
                     Text {
@@ -1896,18 +2053,6 @@ id: root
                         font.pixelSize: vpx(13)
                         font.bold: true
                     }
-                }
-
-                Rectangle {
-                    visible: !isHeader
-                    anchors {
-                        left: parent.left; leftMargin: vpx(25)
-                        right: parent.right; rightMargin: vpx(25)
-                        bottom: parent.bottom
-                    }
-                    color: settingsTextColor
-                    opacity: selected ? 0.1 : 0
-                    height: vpx(1)
                 }
 
                 // ── Input handling ────────────────────────────────────────
@@ -2074,7 +2219,10 @@ id: root
 
     function rebuildHelpbar() {
         var want = 0;
-        if (settingsList.focus) {
+        if (gridPage !== "" && settingsGrid.activeFocus) {
+            var gc = settingsGrid.cells[settingsGrid.current];   // currentCell lags inside onCurrentChanged
+            want = (gc && gc.kind === "item") ? 3 : (gc && hasInfo(gc.key)) ? 1 : 0;
+        } else if (settingsList.focus) {
             var page = settingsArr[pagelist.currentIndex];
             var i = settingsList.currentIndex;
             if (page && page.listmodel && i >= 0 && i < page.listmodel.count) {
@@ -2090,6 +2238,8 @@ id: root
         settingsHelpModel.append({ name: "Back", button: "cancel" });
         if (want === 1)
             settingsHelpModel.append({ name: "More info", button: "details" });
+        if (want === 3)
+            settingsHelpModel.append({ name: "Back to Systems", button: "details" });
     }
 
     Component.onCompleted: rebuildHelpbar()
@@ -2109,7 +2259,7 @@ id: root
     }
     function closeInfo() {
         infoOpen = false;
-        settingsList.forceActiveFocus();
+        focusContent();
     }
 
     FocusScope {
