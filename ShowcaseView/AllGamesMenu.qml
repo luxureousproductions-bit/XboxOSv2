@@ -193,10 +193,6 @@ id: root
     readonly property string sysTileLogo: lv("Grid Game Logo",           settings.GridGameLogo)
     readonly property string sysColumns:  lv("Number of columns",        settings.GridColumns)
     readonly property string sysTitles:   lv("Systems Tile titles")
-    readonly property string sysPreview:  lv("Systems Video preview")
-    readonly property string sysSound:    lv("Systems video audio")
-    readonly property string sysGridHide: lv("Systems Grid hide logo on video")
-    readonly property string sysListHide: lv("Systems List hide on video")
     // What this page is showing uses
     readonly property string lvView:      scoped ? sysPref("View",              sysView)    : allView
     readonly property string tileStyle:   scoped ? sysPref("Tile shape",        sysStyle)   : allStyle
@@ -205,12 +201,14 @@ id: root
     readonly property string tileLogo:    scoped ? sysPref("Show logo on tile", sysTileLogo): allLogo
     readonly property string tileColumns: scoped ? sysPref("Tiles per row",     sysColumns) : allColumns
     readonly property string tileTitles:  scoped ? sysPref("Game tile titles",  sysTitles)  : allTitles
-    readonly property string lvVideo:     gatePreview(scoped ? sysPref("Video preview", sysPreview) : allPreview)
-    readonly property string lvSound:     gateSound(scoped ? sysPref("Video audio",     sysSound)   : allSound)
+    // Previews are one Library-wide choice (Settings › Previews & sound):
+    // All Games and every system alike, nothing per system.
+    readonly property string lvVideo:     gatePreview(allPreview)
+    readonly property string lvSound:     gateSound(allSound)
     // Under a playing preview the art always fades. Grid: also the logo?
     // List: the box art, the logo, both or neither (the screenshot always).
-    readonly property bool   gridHideLogo: (scoped ? sysPref("Grid hide logo on video", sysGridHide) : allGridHide) === "Yes"
-    readonly property string listHide:     scoped ? sysPref("List hide on video", sysListHide) : allListHide
+    readonly property bool   gridHideLogo: allGridHide === "Yes"
+    readonly property string listHide:     allListHide
 
     // The scope the theme asked for (Home system tile, Library button,
     // return from a game). -2 = nothing pending.
@@ -1629,7 +1627,7 @@ id: root
                 boxArt: gridBoxArt
                 playVideo: lvVideo !== "No" && !boxArt
                 racing: root.fastScrolling
-                allowAudio: lvSound === "Yes"   // this page's sound row (All Games, Systems or this system), live from the Y panel
+                allowAudio: lvSound === "Yes"   // Library sound (Settings › Previews & sound)
             }
         }
 
@@ -1777,10 +1775,7 @@ id: root
     readonly property var tileShapes: ["Wide","Tall","Square","Box Art","3D Box"]
     readonly property var listRows: [
         { key: "All Games View",              label: "View",               opts: ["List","Grid"], order: "List,Grid", dflt: allView },
-        { key: "AllGames Video preview",      label: "Preview",            opts: ["Yes","No"], order: "Yes,No", dflt: allPreview, group: "Preview panel" },
-        { key: "All games menu video audio",  label: "Sound",              opts: ["Yes","No"], order: "No,Yes", dflt: allSound },
-        { key: "AllGames List hide on video", label: "While it plays, hide", opts: ["None","Box art","Logo","Both"], order: "None,Box art,Logo,Both", dflt: allListHide },
-        { key: "AllGames Blur Background",    label: "Blurred background", opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesBlurBackground },
+        { key: "AllGames Blur Background",    label: "Blurred background", opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesBlurBackground, group: "List view" },
         { key: "AllGames Show scanlines",     label: "Scanlines",          opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesScanlines }
     ]
     // Settings stores the ratio list in a jumbled order (0.66–0.99 first,
@@ -1795,10 +1790,7 @@ id: root
         { key: "AllGames Items per row",  label: "Tiles per row", opts: ["3","4","5","6","7","8"], order: "3,4,5,6,7,8", dflt: allColumns },
         { key: "AllGames Tile Art",       label: "Tile art",      opts: ["Fanart","Screenshot","Boxfront"], order: "Fanart,Screenshot,Boxfront", dflt: allArt },
         { key: "AllGames Tile Logo",      label: "Logo on tile",  opts: ["Yes","No"], order: "Yes,No", dflt: allLogo },
-        { key: "AllGames Tile titles",    label: "Tile titles",   opts: ["On focus","Always","Never"], order: "On focus,Always,Never", dflt: allTitles },
-        { key: "AllGames Video preview",  label: "Preview",       opts: ["Yes","No"], order: "Yes,No", dflt: allPreview, group: "Previews" },
-        { key: "All games menu video audio", label: "Sound",      opts: ["Yes","No"], order: "No,Yes", dflt: allSound },
-        { key: "AllGames Grid hide logo on video", label: "Hide logo while it plays", opts: ["Yes","No"], order: "Yes,No", dflt: allGridHide }
+        { key: "AllGames Tile titles",    label: "Tile titles",   opts: ["On focus","Always","Never"], order: "On focus,Always,Never", dflt: allTitles }
     ]
     // A system. Row 0 says whether it follows Systems or has its own; the
     // rest show what it uses either way (`sys` is the per-system row name,
@@ -1811,22 +1803,17 @@ id: root
         { key: sysKey + " - Tiles per row",      sys: "Tiles per row",     label: "Tiles per row", opts: ["3","4","5","6","7","8"], order: null, base: sysColumns },
         { key: sysKey + " - Tile art",           sys: "Tile art",          label: "Tile art",      opts: ["Fanart","Screenshot","Boxfront"], order: null, base: sysArt },
         { key: sysKey + " - Show logo on tile",  sys: "Show logo on tile", label: "Logo on tile",  opts: ["Yes","No"], order: null, base: sysTileLogo },
-        { key: sysKey + " - Game tile titles",   sys: "Game tile titles",  label: "Tile titles",   opts: ["On focus","Always","Never"], order: null, base: sysTitles },
-        { key: sysKey + " - Video preview",      sys: "Video preview",     label: "Preview",       opts: ["Yes","No"], order: null, base: sysPreview, group: "Previews" },
-        { key: sysKey + " - Video audio",        sys: "Video audio",       label: "Sound",         opts: ["Yes","No"], order: null, base: sysSound },
-        { key: sysKey + " - Grid hide logo on video", sys: "Grid hide logo on video", label: "Hide logo while it plays", opts: ["Yes","No"], order: null, base: sysGridHide },
-        { key: sysKey + " - List hide on video", sys: "List hide on video", label: "While it plays, hide", opts: ["None","Box art","Logo","Both"], order: null, base: sysListHide }
+        { key: sysKey + " - Game tile titles",   sys: "Game tile titles",  label: "Tile titles",   opts: ["On focus","Always","Never"], order: null, base: sysTitles }
     ]
     function sysRow(name) { for (var i = 0; i < sysAllRows.length; i++) if (sysAllRows[i].sys === name) return sysAllRows[i]; return null; }
     readonly property var sysOwnRow: ({ key: "__own", label: "Settings", opts: ["Follow Systems","Its own"], order: null, dflt: "Follow Systems" })
     // The panel mirrors All Games': the grid rows in grid view, the list
     // rows (with the shared Blurred background and Scanlines) in list view.
     readonly property var sysGridPanelRows: [sysOwnRow].concat(
-        ["View","Tile shape","Tile ratio","Tiles per row","Tile art","Show logo on tile","Game tile titles",
-         "Video preview","Video audio","Grid hide logo on video"].map(sysRow))
+        ["View","Tile shape","Tile ratio","Tiles per row","Tile art","Show logo on tile","Game tile titles"].map(sysRow))
     readonly property var sysListPanelRows: [sysOwnRow].concat(
-        ["View","Video preview","Video audio","List hide on video"].map(sysRow),
-        [ { key: "AllGames Blur Background", label: "Blurred background", opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesBlurBackground },
+        ["View"].map(sysRow),
+        [ { key: "AllGames Blur Background", label: "Blurred background", opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesBlurBackground, group: "List view" },
           { key: "AllGames Show scanlines",  label: "Scanlines",          opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesScanlines } ])
     readonly property var panelRows: scoped ? (lvView === "Grid" ? sysGridPanelRows : sysListPanelRows) : (gridMode ? gridRows : listRows)
     function listValue(row) {

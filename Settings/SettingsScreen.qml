@@ -336,6 +336,12 @@ id: root
             label: "Tile ratio"
             setting: "0.66,0.67,0.68,0.69,0.70,0.71,0.72,0.73,0.74,0.75,0.76,0.77,0.78,0.79,0.80,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88,0.89,0.90,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,0.25,0.26,0.27,0.28,0.29,0.30,0.31,0.32,0.33,0.34,0.35,0.36,0.37,0.38,0.39,0.40,0.41,0.42,0.43,0.44,0.45,0.46,0.47,0.48,0.49,0.50,0.51,0.52,0.53,0.54,0.55,0.56,0.57,0.58,0.59,0.60,0.61,0.62,0.63,0.64,0.65"
         }
+        ListElement { settingName: "While a preview plays"; setting: ""; header: true }
+        ListElement {
+            settingName: "Hide logo when thumbnail video plays"
+            label: "Hide logo"
+            setting: "No,Yes"
+        }
     }
 
     property var collectionsPage: {
@@ -433,6 +439,17 @@ id: root
             label: "Scanlines"
             setting: "No,Yes"
         }
+        ListElement { settingName: "While a preview plays"; setting: ""; header: true }
+        ListElement {
+            settingName: "AllGames Grid hide logo on video"
+            label: "Grid: hide logo"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "AllGames List hide on video"
+            label: "List: hide"
+            setting: "None,Box art,Logo,Both"
+        }
         ListElement { settingName: "Navigation"; setting: ""; header: true }
         ListElement {
             settingName: "LB/RB Function"
@@ -485,6 +502,12 @@ id: root
         }
         ListElement {
             settingName: "Show scanlines"
+            setting: "Yes,No"
+        }
+        ListElement { settingName: "More like this"; setting: ""; header: true }
+        ListElement {
+            settingName: "Details rows hide logo on video"
+            label: "Hide logo while a preview plays"
             setting: "Yes,No"
         }
         ListElement { settingName: "Media carousel"; setting: ""; header: true }
@@ -569,12 +592,7 @@ id: root
             label: "Sound"
             setting: "No,Yes"
         }
-        ListElement {
-            settingName: "Hide logo when thumbnail video plays"
-            label: "Hide logo while it plays"
-            setting: "No,Yes"
-        }
-        ListElement { settingName: "Library · All Games"; setting: ""; header: true }
+        ListElement { settingName: "Library"; setting: ""; header: true }
         ListElement {
             settingName: "AllGames Video preview"
             label: "Preview"
@@ -584,37 +602,6 @@ id: root
             settingName: "All games menu video audio"
             label: "Sound"
             setting: "No,Yes"
-        }
-        ListElement {
-            settingName: "AllGames Grid hide logo on video"
-            label: "Grid: hide logo while it plays"
-            setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "AllGames List hide on video"
-            label: "List: hide while it plays"
-            setting: "None,Box art,Logo,Both"
-        }
-        ListElement { settingName: "Library · Systems"; setting: ""; header: true }
-        ListElement {
-            settingName: "Systems Video preview"
-            label: "Preview"
-            setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "Systems video audio"
-            label: "Sound"
-            setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "Systems Grid hide logo on video"
-            label: "Grid: hide logo while it plays"
-            setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "Systems List hide on video"
-            label: "List: hide while it plays"
-            setting: "None,Box art,Logo,Both"
         }
         ListElement { settingName: "Game details · background"; setting: ""; header: true }
         ListElement {
@@ -636,11 +623,6 @@ id: root
         ListElement {
             settingName: "Details rows video audio"
             label: "Sound"
-            setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "Details rows hide logo on video"
-            label: "Hide logo while it plays"
             setting: "Yes,No"
         }
         ListElement { settingName: "Discover"; setting: ""; header: true }
@@ -670,7 +652,7 @@ id: root
         return {
             pageName: "Previews & sound",
             listmodel: previewsSettingsModel,
-            lead: "Every video preview and every sound in one place. A on a setting, then Left/Right to change it; A or B when done.",
+            lead: "Where video previews play, and their sound. The switches at the top turn them off everywhere and keep your choices.",
             grid: "previews"
         }
     }
@@ -851,43 +833,51 @@ id: root
             out.push(c);
         }
         function none(row, col, t) { out.push({ kind: "label", row: row, col: col, text: t || "—", dim: true }); }
-        // Master switches: Off silences or stops every screen below without
-        // touching their own choices, so On brings those straight back.
-        out.push({ kind: "header", row: r, col: 0, span: 5, text: "Everywhere" }); r++;
-        v(r, 0, "Video previews", { label: "All video previews" });
-        v(r, 1, "Preview sound",  { label: "All preview sound", span: 3 });
+        // Re-built when a master switch changes: Off hides what it covers
+        // instead of greying out rows that still read "On".
+        var e = settingsEpoch;
+        var previewsOn = settingsStore.get("Video previews", "Yes") !== "No";
+        var soundOn    = settingsStore.get("Preview sound", "Yes") !== "No";
+        out.push({ kind: "header", row: r, col: 0, span: 3, text: "Everywhere" }); r++;
+        v(r, 0, "Video previews", { label: "Video previews" });
+        v(r, 1, "Preview sound",  { label: "Preview sound", span: 2 });
         r++;
-        out.push({ kind: "colhead", row: r, col: 0, text: "Where" });
-        out.push({ kind: "colhead", row: r, col: 1, text: "Preview" });
-        out.push({ kind: "colhead", row: r, col: 2, text: "Sound" });
-        out.push({ kind: "colhead", row: r, col: 3, text: "Grid: hide logo" });
-        out.push({ kind: "colhead", row: r, col: 4, text: "List: hide" });
-        r++;
-        var screens = [
-            { t: "Home rows", s: "The highlighted tile, after a short rest",
-              p: "Allow video thumbnails", a: "Video thumbnail audio", g: "Hide logo when thumbnail video plays" },
-            { t: "Library · All Games", s: "Grid tile or the list's preview panel",
-              p: "AllGames Video preview", a: "All games menu video audio", g: "AllGames Grid hide logo on video", l: "AllGames List hide on video" },
-            { t: "Library · Systems", s: "Every system without its own settings",
-              p: "Systems Video preview", a: "Systems video audio", g: "Systems Grid hide logo on video", l: "Systems List hide on video" },
-            { t: "Game details · background", s: "Plays behind the page",
-              p: "Video preview", a: "Game details video preview audio" },
-            { t: "Game details · More like this", s: "The rows under the page",
-              p: "Details rows video preview", a: "Details rows video audio", g: "Details rows hide logo on video" },
-            { t: "Discover", s: "Always plays", a: "Discover video audio" }
-        ];
-        for (var i = 0; i < screens.length; i++, r++) {
-            var sc = screens[i];
-            out.push({ kind: "label", row: r, col: 0, text: sc.t, sub: sc.s });
-            if (sc.p) v(r, 1, sc.p); else none(r, 1, "Always");
-            if (sc.a) v(r, 2, sc.a); else none(r, 2);
-            if (sc.g) v(r, 3, sc.g); else none(r, 3);
-            if (sc.l) v(r, 4, sc.l, { show: ({}) }); else none(r, 4);
+        out.push({ kind: "header", row: r, col: 0, span: 3, text: "Where previews play" }); r++;
+        if (!previewsOn) {
+            out.push({ kind: "label", row: r, col: 0, span: 3, h: vpx(64),
+                       text: "Video previews are off everywhere",
+                       sub: "Turn them on to choose where they play. Your choices are kept." });
+            r++;
+        } else {
+            out.push({ kind: "colhead", row: r, col: 1, text: "Preview" });
+            if (soundOn) out.push({ kind: "colhead", row: r, col: 2, text: "Sound" });
+            r++;
+            var screens = [
+                { t: "Home rows",      s: "The highlighted tile",        p: "Allow video thumbnails", a: "Video thumbnail audio" },
+                { t: "Library",        s: "All Games and every system",  p: "AllGames Video preview", a: "All games menu video audio" },
+                { t: "Game details",   s: "Behind the page",             p: "Video preview",          a: "Game details video preview audio" },
+                { t: "More like this", s: "The rows under Game details", p: "Details rows video preview", a: "Details rows video audio" }
+            ];
+            for (var i = 0; i < screens.length; i++, r++) {
+                var sc = screens[i];
+                out.push({ kind: "label", row: r, col: 0, text: sc.t, sub: sc.s });
+                v(r, 1, sc.p);
+                // A screen with its preview off has no sound to set: "—", not a greyed "On".
+                if (soundOn) { if (settingsStore.get(sc.p) === "No") none(r, 2); else v(r, 2, sc.a); }
+            }
         }
-        out.push({ kind: "header", row: r, col: 0, span: 5, text: "Menu sounds" }); r++;
+        // Discover always plays its video: only its sound is a choice.
+        if (soundOn) {
+            out.push({ kind: "label", row: r, col: 0, text: "Discover", sub: "Always plays its video" });
+            none(r, 1, "Always");
+            v(r, 2, "Discover video audio");
+            r++;
+        }
+        out.push({ kind: "header", row: r, col: 0, span: 3, text: "Menu sounds" }); r++;
         v(r, 0, "Menu sounds", { label: "Menu sounds" });
         v(r, 1, "Menu Volume", { label: "Volume", span: 2, show: volumeShow });
-        v(r, 3, "Start up chime", { label: "Startup chime", span: 2 });
+        r++;
+        v(r, 0, "Start up chime", { label: "Startup chime" });
         return out;
     }
 
@@ -919,6 +909,10 @@ id: root
             v(r, 0, x[1], x[0], x[3] ? { show: x[3] } : {});
             v(r, 1, x[2], x[0], x[3] ? { show: x[3] } : {});
         }
+        out.push({ kind: "header", row: r, col: 0, span: 2, text: "While a preview plays" }); r++;
+        v(r, 0, "AllGames Grid hide logo on video", "Grid: hide logo", { show: onOff });
+        v(r, 1, "AllGames List hide on video",      "List: hide");
+        r++;
         out.push({ kind: "header", row: r, col: 0, span: 2, text: "List view & navigation" }); r++;
         v(r, 0, "AllGames Blur Background", "Blurred background", { show: onOff });
         v(r, 1, "AllGames Show scanlines",  "Scanlines",          { show: onOff });
@@ -1780,7 +1774,7 @@ id: root
             left: content.left; right: content.right; bottom: pane.bottom
         }
         cells: gridPage === "previews" ? previewsCells() : gridPage === "library" ? libraryCells() : []
-        colWidths: gridPage === "previews" ? [0.36, 0.14, 0.14, 0.16, 0.20] : [0.5, 0.5]
+        colWidths: gridPage === "previews" ? [0.5, 0.25, 0.25] : [0.5, 0.5]
         isDisabled: function(c) { return root.settingDisabled(c.key); }
         onChanged: {
             // Box-front art already carries the name: its logo row turns off.
@@ -1805,7 +1799,7 @@ id: root
     Item {
     id: content
         anchors { top: pane.top; bottom: pane.bottom; left: pane.left; leftMargin: vpx(28) }
-        width: Math.min(pane.width - vpx(28), gridPage === "previews" ? vpx(800) : vpx(595))
+        width: Math.min(pane.width - vpx(28), vpx(595))
     }
 
     // RetroAchievements credential status — only on the RA page.

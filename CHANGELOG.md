@@ -4,7 +4,15 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 54)
+## Unreleased — refresh branch (build 55)
+
+### Previews & sound, simplified
+- **One short table:** Preview and Sound for Home rows, Library, Game details and More like this, plus Discover's sound. About half as many settings as before.
+- **The switches at the top now show what they do.** With **Video previews** off, the table is replaced by one line saying previews are off everywhere (your choices are kept). With **Preview sound** off, the Sound column goes. A screen whose preview is off shows "—" for its sound instead of a greyed "On". (Before, the rows kept showing their own saved values, greyed, which read as if the switches did nothing.)
+- **Library is one choice** for All Games and every system. Preview and Sound are gone from each system's Y panel and from All Games' (a system that had its own now follows Library).
+- **"While it plays" settings moved to where they apply:** Library › While a preview plays (Grid: hide logo, List: hide), Home rows › Hide logo, Game details › More like this › Hide logo.
+
+## build 54
 
 - **Frame glow is honoured everywhere:** the focus ring on Settings rows and grid cards, the Y panels and the App Drawer's menus, and the page list's accent plate, now glow only when Settings › Appearance › Frame glow is on (they always glowed before).
 
