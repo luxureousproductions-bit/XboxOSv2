@@ -364,8 +364,28 @@ id: root
     // always plays its video; the sound master mutes it too.
     readonly property bool previewsMaster: liveSetting("Video previews") !== "No"
     readonly property bool previewSoundMaster: liveSetting("Preview sound") !== "No"
-    function gatePreview(v) { return previewsMaster ? v : "No"; }
-    function gateSound(v)   { return (previewsMaster && previewSoundMaster) ? v : "No"; }
+    function gatePreview(v) { return (previewsMaster && !videoUnsupported) ? v : "No"; }
+    function gateSound(v)   { return (previewsMaster && previewSoundMaster && !videoUnsupported) ? v : "No"; }
+
+    // ── Video health (Windows / Linux) ────────────────────────────────────
+    // Without the right codecs EVERY video fails, and the screens that show
+    // one stay black (Pegasus's Windows notes recommend the K-Lite Codec
+    // Pack, Basic). Each failure is logged to lastrun.log; once two different
+    // files have failed this session the theme stops trying: previews, the
+    // Game details video and the carousel video fall back to art, and
+    // Discover shows art and a hint. Never set on Android.
+    property bool videoUnsupported: false
+    property var  videoFailedSources: ({})
+    function reportVideoError(player) {
+        if (!player || player.error === MediaPlayer.NoError) return;
+        var src = String(player.source);
+        console.warn("XboxOSv2: video could not play (" + player.errorString + "): " + src);
+        if (platform.isAndroid || src === "" || videoFailedSources[src]) return;
+        var m = videoFailedSources;
+        m[src] = true;
+        videoFailedSources = m;
+        if (Object.keys(m).length >= 2) videoUnsupported = true;
+    }
 
     // ── Tile titles ───────────────────────────────────────────────────────
     // "Game tile titles" reuses the old "Always show titles" key. Saved values
@@ -1147,6 +1167,44 @@ id: root
         else if (discKind === "drawer")   launchAppFromDrawer(discGame);
         else                              launchGame(discGame);
         discReady = false;
+    }
+
+    // ── The theme's own record of the last launch ─────────────────────────
+    // The hero follows Pegasus's "last played", which Pegasus only writes
+    // once a game has FINISHED (and skips while a library scan runs). On
+    // Android that happens the moment the game starts; on Windows/Linux only
+    // after it closes, and some setups never record it. So the theme notes
+    // each launch itself, and the hero uses it when it's newer than what
+    // Pegasus reports. When Pegasus did record the game, its time is later,
+    // so nothing changes.
+    function rememberLaunch(game) {
+        if (!game) return;
+        var path = (game.files && game.files.count > 0) ? game.files.get(0).path : "";
+        api.memory.set("lastLaunch", JSON.stringify({ t: Date.now(), title: game.title, path: path }));
+    }
+    // -> { game, index, t } for the remembered launch, or null. The library
+    // search is cached against the stored text, so it runs once per launch.
+    property string lastLaunchKey: ""
+    property var lastLaunchCache: null
+    function lastLaunchRecord() {
+        if (!api.memory.has("lastLaunch")) return null;
+        var raw = api.memory.get("lastLaunch");
+        if (raw === lastLaunchKey) return lastLaunchCache;
+        lastLaunchKey = raw;
+        lastLaunchCache = null;
+        var r;
+        try { r = JSON.parse(raw); } catch (e) { return null; }
+        if (!r || !r.title) return null;
+        var all = api.allGames.toVarArray();
+        for (var i = 0; i < all.length; i++) {
+            var g = all[i];
+            if (!g || g.title !== r.title) continue;
+            var p = (g.files && g.files.count > 0) ? g.files.get(0).path : "";
+            if (r.path && p !== r.path) continue;
+            lastLaunchCache = { game: g, index: i, t: r.t };
+            break;
+        }
+        return lastLaunchCache;
     }
 
     function launchGame(game) {
@@ -2197,6 +2255,7 @@ id: root
         repeat: false
         onTriggered: {
             if (root.state !== "launchgamescreen" || !launchingGame) return;
+            rememberLaunch(launchingGame);
             if (launchingFile) {
                 var file = launchingFile;   // the disc picked before the splash
                 launchingFile = null;

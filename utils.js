@@ -640,3 +640,8 @@ function returnRandom(array) {
   return array[Math.floor(Math.random() * array.length)];
 }
 
+
+// True for any common video file, any capitals (.MP4, .mkv and .avi are usual on PC).
+function isVideoFile(path) {
+  return /\.(mp4|webm|mkv|avi|mov|m4v|wmv|flv|mpe?g|ogv)$/i.test(String(path || ""));
+}

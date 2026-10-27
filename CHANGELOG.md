@@ -4,7 +4,18 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 48)
+## Unreleased — refresh branch (build 49)
+
+### Windows / Linux: videos
+- **Every video player stops before it's destroyed** (changing screen, a row rebuilding, or Pegasus unloading the theme to start a game). Destroying a playing video is what the Windows media backend crashes on.
+- **When videos can't play** (no codecs — Pegasus's Windows notes recommend the K-Lite Codec Pack, Basic): every failure is written to lastrun.log, and once two different files have failed the theme stops trying — previews, the Game details video and the carousel video fall back to art. **Discover** shows the game's art instead of black, with a one-line hint about the codec pack. Never applies on Android.
+- **Game details** only fades its picture once the video is really showing frames (it used to fade after a fixed second, leaving black when the video never started).
+- Videos are recognised in any common format and capitals: .MP4, .mkv, .avi, .mov, .m4v, .wmv and more.
+
+### The hero follows launches on every platform
+- On Windows/Linux, Pegasus only records "last played" once a game closes (and not during a library scan), so the hero box could show an older game. The theme now notes each launch itself and the hero uses it when it's newer — unless Home is hiding that game.
+
+## build 48
 
 ### Y panels, Xbox 2023 style
 - All Games' and each system's Y panel are redrawn to match Settings: a charcoal card with a hairline edge (no coloured outline, as on the Xbox), the same setting cards with the green focus ring, values in bold between ‹ ›, On/Off for Yes/No, and accent group names (Previews, Preview panel).

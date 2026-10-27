@@ -141,6 +141,11 @@ id: root
 
         Video {
         id: videocomponent
+            // Stop before the player is destroyed (screen change, row rebuild, or
+            // Pegasus unloading the theme to launch a game): destroying a playing
+            // video is what the Windows media backend crashes on.
+            Component.onDestruction: stop()
+            onErrorChanged: reportVideoError(videocomponent)   // logged; see videoUnsupported in theme.qml
 
             anchors.fill: parent
             source: (game && game.assets.videoList.length) ? game.assets.videoList[0] : ""   // game can go null while the row changes

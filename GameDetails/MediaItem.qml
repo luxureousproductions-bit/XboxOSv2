@@ -17,6 +17,7 @@
 import QtQuick 2.15
 import QtGraphicalEffects 1.15
 import QtMultimedia 5.15
+import "../utils.js" as Utils
 
 Item {
 id: root
@@ -95,7 +96,8 @@ id: root
         }
     }
     property bool selected
-    property bool isVideo: mediaItem.includes(".mp4") || mediaItem.includes(".webm")
+    // Any common video format, any capitals (.MP4, .mkv and .avi are usual on PC).
+    property bool isVideo: Utils.isVideoFile(mediaItem)
     // True once the highlighted video tile's player is playing. The film
     // placeholder stays up until then, so there's never a frame where the tile
     // is empty (the player is created asynchronously on highlight).
@@ -120,6 +122,12 @@ id: root
     id: videoPreviewWrapper
 
         Video {
+        id: mediaItemVideo
+            // Stop before the player is destroyed (screen change, row rebuild, or
+            // Pegasus unloading the theme to launch a game): destroying a playing
+            // video is what the Windows media backend crashes on.
+            Component.onDestruction: stop()
+            onErrorChanged: reportVideoError(mediaItemVideo)   // logged; see videoUnsupported in theme.qml
             anchors.fill: parent
             source: mediaItem
             fillMode: VideoOutput.PreserveAspectCrop

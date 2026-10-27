@@ -84,7 +84,7 @@ id: root
     // Combine the video and the screenshot arrays into one
     function mediaArray() {
         let mediaList = [];
-        if (game && game.assets.video && settings.CarouselVideo === "Yes")
+        if (game && game.assets.video && settings.CarouselVideo === "Yes" && !videoUnsupported)
             game.assets.videoList.forEach(v => mediaList.push(v));
 
         if (game) {
@@ -395,7 +395,7 @@ id: root
         onTriggered: {
             if (game && game.assets.videos.length && canPlayVideo) {
                 videoPreviewLoader.sourceComponent = videoPreviewWrapper;
-                fadescreenshot.restart();
+                fadescreenshot.begin();
             }
         }
     }
@@ -405,12 +405,27 @@ id: root
     id: fadescreenshot
 
         interval: 1000
+        // Fades the picture only once the video is really showing frames. It
+        // used to fade after a fixed second whether or not the video had
+        // started, so a video that never plays (no codecs on Windows) left a
+        // black screen. Re-checks every half second for ~5s, then gives up
+        // and keeps the picture.
+        property int tries: 0
         onTriggered: {
-            // The blur layer's opacity is bound to screenshot.opacity, so this
-            // one write fades both. (The old bgBlur write referenced an id that
-            // no longer exists.)
-            screenshot.opacity = 0;
+            var w = videoPreviewLoader.item;
+            if (!w || w.failed) { tries = 0; return; }
+            if (w.framesFlowing) {
+                tries = 0;
+                // The blur layer's opacity is bound to screenshot.opacity, so
+                // this one write fades both.
+                screenshot.opacity = 0;
+                return;
+            }
+            if (tries < 10) { tries += 1; interval = 500; restart(); }
+            else tries = 0;
         }
+        // Every new start begins with the full first second and no retries.
+        function begin() { tries = 0; interval = 1000; restart(); }
     }
 
     Timer {
@@ -487,9 +502,18 @@ id: root
 
       Item {
         anchors.fill: parent
+        // Read by fadescreenshot: frames actually on screen / playback failed.
+        readonly property bool framesFlowing: videocomponent.playbackState === MediaPlayer.PlayingState
+                                              && videocomponent.position > 0
+        readonly property bool failed: videocomponent.error !== MediaPlayer.NoError
 
         Video {
         id: videocomponent
+            // Stop before the player is destroyed (screen change, row rebuild, or
+            // Pegasus unloading the theme to launch a game): destroying a playing
+            // video is what the Windows media backend crashes on.
+            Component.onDestruction: stop()
+            onErrorChanged: reportVideoError(videocomponent)   // logged; see videoUnsupported in theme.qml
 
             property bool videoExists: game ? game.assets.videos.length : false
             // Cleared off-screen, same reason as the other players.

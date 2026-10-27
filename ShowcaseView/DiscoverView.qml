@@ -103,6 +103,11 @@ id: root
     // Fullscreen video player – preserve original aspect ratio (black bars on sides)
     Video {
     id: videoPlayer
+        // Stop before the player is destroyed (screen change, row rebuild, or
+        // Pegasus unloading the theme to launch a game): destroying a playing
+        // video is what the Windows media backend crashes on.
+        Component.onDestruction: stop()
+        onErrorChanged: reportVideoError(videoPlayer)   // logged; see videoUnsupported in theme.qml
 
         anchors.fill: parent
         source: currentGame ? currentGame.assets.video : ""
@@ -149,6 +154,40 @@ id: root
         sourceComponent: VideoSharpen {
             source: videoPlayer
             amount: 0.5
+        }
+    }
+
+    // When the video can't play (no codecs on Windows/Linux, or a broken
+    // file), show the game's art instead of a black screen. Only shown on a
+    // failure, so a video that plays normally looks exactly as before.
+    readonly property bool videoFailed: videoUnsupported || videoPlayer.error !== MediaPlayer.NoError
+    Image {
+    id: fallbackArt
+        anchors.fill: parent
+        visible: root.videoFailed
+        asynchronous: true
+        fillMode: Image.PreserveAspectCrop
+        source: !visible || !currentGame ? ""
+              : (currentGame.assets.background
+                 || (currentGame.assets.screenshots.length ? currentGame.assets.screenshots[0] : "")
+                 || currentGame.assets.boxFront || "")
+        sourceSize { width: root.width; height: root.height }
+    }
+    // One-line hint while videos can't play here.
+    Rectangle {
+        visible: videoUnsupported && showInfo
+        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: helpMargin + vpx(70) }
+        width: videoHint.implicitWidth + vpx(40); height: videoHint.implicitHeight + vpx(20)
+        radius: height / 2
+        color: "#CC000000"
+        z: 5
+        Text {
+        id: videoHint
+            anchors.centerIn: parent
+            text: "Videos can't play on this computer. Install a codec pack (K-Lite Codec Pack Basic) and restart Pegasus."
+            color: "white"
+            font.family: subtitleFont.name
+            font.pixelSize: fpx(16)
         }
     }
 
