@@ -4,7 +4,14 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 47)
+## Unreleased — refresh branch (build 48)
+
+### Y panels, Xbox 2023 style
+- All Games' and each system's Y panel are redrawn to match Settings: a charcoal card with a hairline edge (no coloured outline, as on the Xbox), the same setting cards with the green focus ring, values in bold between ‹ ›, On/Off for Yes/No, and accent group names (Previews, Preview panel).
+- A system's panel shows a tag beside its name — **OWN SETTINGS** or **FOLLOWS SYSTEMS** — and its first row explains the choice. **X Back to Systems** appears when the system has its own settings.
+- The panel fits its rows (scrolling inside when there are more than fit), and its prompts — Back to Systems, All settings, Back — are clickable. Mouse: hover picks a row, clicking it changes it.
+
+## build 47
 
 ### A system's Y panel matches All Games'
 - In **list view** the panel shows the list rows — View, Preview, Sound, *While it plays, hide*, Blurred background, Scanlines — and in **grid view** the grid rows, with *Hide logo while it plays*. It used to show the grid rows in both views and grey them out in a list.

@@ -1902,84 +1902,179 @@ id: root
     id: listPanel
         visible: listPanelOpen; z: 31
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, 0.78)
+        color: Qt.rgba(0, 0, 0, 0.66)
         focus: listPanelOpen
         // hoverEnabled + onWheel: tiles under the open panel don't light up or scroll.
         MouseArea { anchors.fill: parent; hoverEnabled: true; onWheel: wheel.accepted = true; onClicked: { listPanelOpen = false; focusGames(); } }
+        // ── The panel, Xbox 2023 style ──────────────────────────────────────
+        // A charcoal card with a hairline edge; rows are the same cards as
+        // Settings (focus ring included); accent caps name each group.
         Rectangle {
+        id: ypanel
             anchors.centerIn: parent
-            width: vpx(720); height: vpx(576)
-            radius: vpx(14)
-            color: "#1E1E20"; border.color: theme.accent; border.width: vpx(2)
+            width: vpx(580)
+            height: Math.min(parent.height - vpx(96), headBlock.height + rowCol.height + vpx(108))
+            radius: vpx(6)
+            color: "#1f1f1f"
+            border.width: Math.max(1, vpx(1)); border.color: "#3a3a3a"
             // The wheel steps the panel's rows.
             MouseArea { anchors.fill: parent; onWheel: { wheel.accepted = true; listStep(wheel.angleDelta.y > 0 ? -1 : 1); } }
-            Text {
-                anchors { left: parent.left; leftMargin: vpx(36); top: parent.top; topMargin: vpx(28) }
-                text: scopedColl ? scopedColl.name : "All Games"; color: "white"; font.family: titleFont.name; font.pixelSize: vpx(28); font.bold: true
+
+            Column {
+            id: headBlock
+                anchors { left: parent.left; right: parent.right; top: parent.top; margins: vpx(28) }
+                spacing: vpx(5)
+                Row {
+                    spacing: vpx(12)
+                    Text {
+                        text: scopedColl ? scopedColl.name : "All Games"; color: "white"
+                        font.family: titleFont.name; font.pixelSize: vpx(26); font.bold: true
+                    }
+                    // A system: does it follow Systems or have its own?
+                    Rectangle {
+                        visible: scoped
+                        anchors.verticalCenter: parent.verticalCenter
+                        readonly property bool own: { var e = listEpoch; return scoped && sysOwn(); }
+                        width: tagText.width + vpx(14); height: vpx(19); radius: vpx(3)
+                        color: own ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.16) : "#2c2c2c"
+                        Text {
+                        id: tagText
+                            anchors.centerIn: parent
+                            text: parent.own ? "OWN SETTINGS" : "FOLLOWS SYSTEMS"
+                            color: parent.own ? theme.accent : "#a8a8a8"
+                            font { family: subtitleFont.name; pixelSize: vpx(10.5); bold: true; letterSpacing: vpx(1) }
+                        }
+                    }
+                }
+                Text {
+                    width: parent.width
+                    text: { var e = listEpoch;
+                            return scoped ? (sysOwn() ? "These change " + (scopedColl ? scopedColl.name : "this system") + " only."
+                                                      : "Showing what Systems uses. Change any row to give " + (scopedColl ? scopedColl.name : "this system") + " its own settings.")
+                                          : "These change All Games only. Systems keep their own."; }
+                    color: "#a9a9a9"; font.family: subtitleFont.name; font.pixelSize: vpx(13.5)
+                    wrapMode: Text.WordWrap
+                }
             }
-            Text {
-                anchors { left: parent.left; leftMargin: vpx(36); top: parent.top; topMargin: vpx(68) }
-                text: scoped ? (sysOwn() ? "These change " + (scopedColl ? scopedColl.name : "this system") + " only."
-                                         : "Follows Systems. Change any row to give it its own settings.")
-                             : "These change All Games only. Systems keep their own."
-                color: "#A0A0A0"; font.family: subtitleFont.name; font.pixelSize: vpx(15)
-            }
-            Rectangle { anchors { left: parent.left; right: parent.right; top: parent.top; topMargin: vpx(104); leftMargin: vpx(36); rightMargin: vpx(36) } height: vpx(2); color: "#3C3C40" }
-            // Fixed-height panel; the rows scroll behind a clip so a longer
-            // set (the grid's) doesn't grow the panel down over the help bar.
-            // contentY follows listRow so the highlight is always in view.
+
+            // Rows scroll inside the card when they outgrow it; the focus
+            // ring sits just outside a row, so the clip leaves room for it.
             Flickable {
             id: rowFlick
-                anchors { left: parent.left; right: parent.right; top: parent.top; bottom: parent.bottom
-                          topMargin: vpx(124); bottomMargin: vpx(80); leftMargin: vpx(24); rightMargin: vpx(24) }
+                anchors { left: parent.left; right: parent.right; top: headBlock.bottom; bottom: footer.top
+                          topMargin: vpx(10); bottomMargin: vpx(8); leftMargin: vpx(20); rightMargin: vpx(20) }
                 clip: true; interactive: false
-                contentHeight: rowCol.height
+                contentHeight: rowCol.height + vpx(12)
                 Behavior on contentY { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
                 function keepRowVisible() {
-                    var rowH = vpx(52) + vpx(6), y = listRow * rowH, maxY = Math.max(0, contentHeight - height);
-                    if (y < contentY) contentY = Math.min(y, maxY);
-                    else if (y + vpx(52) > contentY + height) contentY = Math.min(y + vpx(52) - height, maxY);
+                    var it = rowRep.itemAt(listRow); if (!it) return;
+                    var pad = vpx(8), y = it.y, h = it.height, maxY = Math.max(0, contentHeight - height);
+                    // Show the group name above the first row of a group too.
+                    if (y - pad < contentY) contentY = Math.max(0, Math.min(y - pad, maxY));
+                    else if (y + h + pad > contentY + height) contentY = Math.min(y + h + pad - height, maxY);
                 }
-                Connections { target: root; onListRowChanged: rowFlick.keepRowVisible() }
-                onContentHeightChanged: { contentY = 0; keepRowVisible(); }   // row set swapped (view flip)
+                Connections { target: root; function onListRowChanged() { rowFlick.keepRowVisible(); } }
+                onContentHeightChanged: { contentY = 0; Qt.callLater(keepRowVisible); }   // row set swapped (view flip)
             Column {
             id: rowCol
-                width: parent.width
-                spacing: vpx(6)
+                x: vpx(6); y: vpx(6)
+                width: parent.width - vpx(12)
+                spacing: vpx(5)
                 Repeater {
+                id: rowRep
                     model: panelRows.length
-                    delegate: Rectangle {
-                        width: parent.width; height: vpx(52); radius: vpx(8)
-                        readonly property bool cur: index === listRow
+                    delegate: Item {
+                    id: prow
+                        readonly property var r: panelRows[index]
+                        readonly property bool cur: index === listRow && listPanel.activeFocus
                         readonly property bool dis: { var e = listEpoch; return listRowDisabled(index); }
-                        color: cur ? "#2A2A2E" : "transparent"
-                        border.color: cur ? theme.accent : "transparent"; border.width: vpx(3)
-                        Text { anchors { left: parent.left; leftMargin: vpx(12); verticalCenter: parent.verticalCenter }
-                               text: panelRows[index].label; color: dis ? "#6E6E6E" : "white"; font.family: subtitleFont.name; font.pixelSize: vpx(20) }
-                        Text { anchors { right: parent.right; rightMargin: vpx(12); verticalCenter: parent.verticalCenter }
-                               text: { var e = listEpoch; return "<  " + listValue(index) + "  >"; }
-                               color: dis ? "#646464" : "#D7D7D7"; font.family: subtitleFont.name; font.pixelSize: vpx(20) }
+                        readonly property bool isOwn: r.key === "__own"
+                        // Group name above the row that starts a group.
+                        readonly property real groupH: r.group ? vpx(30) : 0
+                        width: rowCol.width
+                        height: groupH + card.height
+                        // y of the card itself, for keepRowVisible
+                        Text {
+                            visible: !!r.group
+                            anchors { left: parent.left; leftMargin: vpx(2); bottom: card.top; bottomMargin: vpx(7) }
+                            text: (r.group || "").toUpperCase()
+                            color: theme.accent
+                            font { family: subtitleFont.name; pixelSize: vpx(11.5); bold: true; letterSpacing: vpx(1.2) }
+                        }
+                        Rectangle {
+                        id: card
+                            y: prow.groupH
+                            width: parent.width
+                            height: isOwn ? vpx(52) : vpx(42)
+                            radius: vpx(4)
+                            color: cur ? "#2e2e2e" : "#262626"
+                            opacity: dis ? 0.38 : 1
+                            Column {
+                                anchors { left: parent.left; leftMargin: vpx(15); verticalCenter: parent.verticalCenter }
+                                spacing: vpx(1)
+                                Text { text: r.label; color: "white"; font.family: subtitleFont.name; font.pixelSize: vpx(16) }
+                                Text { visible: isOwn; text: "Follow Systems / Its own"; color: "#8e8e8e"; font.family: subtitleFont.name; font.pixelSize: vpx(11.5) }
+                            }
+                            Row {
+                                anchors { right: parent.right; rightMargin: vpx(13); verticalCenter: parent.verticalCenter }
+                                spacing: vpx(9)
+                                Text { text: "‹"; color: "#8a8a8a"; font.family: subtitleFont.name; font.pixelSize: vpx(16); anchors.verticalCenter: parent.verticalCenter }
+                                Text {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: { var e = listEpoch; var v = listValue(index); return v === "Yes" ? "On" : v === "No" ? "Off" : v; }
+                                    color: "white"; font.family: subtitleFont.name; font.pixelSize: vpx(15); font.bold: true
+                                }
+                                Text { text: "›"; color: "#8a8a8a"; font.family: subtitleFont.name; font.pixelSize: vpx(16); anchors.verticalCenter: parent.verticalCenter }
+                            }
+                        }
+                        Loader {
+                            x: card.x; y: card.y; width: card.width; height: card.height
+                            active: prow.cur
+                            z: 2
+                            sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(4); glowStrength: 0.45 } }
+                        }
+                        // Mouse: hover picks the row, a click on it changes it.
+                        MouseArea {
+                            x: card.x; y: card.y; width: card.width; height: card.height
+                            hoverEnabled: settings.MouseHover == "Yes"
+                            onEntered: { if (pointerMoved() && listRow !== index && !prow.dis) { listRow = index; playNav(); } }
+                            onClicked: {
+                                if (listRow !== index) { listRow = index; playNav(); return; }
+                                listCycle(index, 1);
+                            }
+                            onWheel: { wheel.accepted = true; listStep(wheel.angleDelta.y > 0 ? -1 : 1); }
+                        }
                     }
                 }
             }
             }
-            Text {
-                anchors { left: parent.left; leftMargin: vpx(36); bottom: parent.bottom; bottomMargin: vpx(52) }
-                text: "Changes apply as you make them."; color: "#8C8C8C"; font.family: subtitleFont.name; font.pixelSize: vpx(14)
-            }
+
+            // Prompts, right-aligned like the Xbox's own; each is clickable.
             Row {
-                anchors { right: parent.right; rightMargin: vpx(36); bottom: parent.bottom; bottomMargin: vpx(18) }
-                spacing: vpx(22)
-                Row { spacing: vpx(6)
-                    TapHandler { gesturePolicy: TapHandler.WithinBounds; onTapped: helpClick("filters") }
-                    HoverHandler { cursorShape: Qt.PointingHandCursor }
-                    Image { anchors.verticalCenter: parent.verticalCenter; width: vpx(20); height: vpx(20); source: "../assets/images/controller/" + Utils.processButtonArt("filters") + ".png"; sourceSize { width: 40; height: 40 } }
-                    Text { anchors.verticalCenter: parent.verticalCenter; text: "Theme settings"; color: "#D2D2D2"; font.family: subtitleFont.name; font.pixelSize: vpx(16) } }
-                Row { spacing: vpx(6)
-                    TapHandler { gesturePolicy: TapHandler.WithinBounds; onTapped: helpClick("cancel") }
-                    HoverHandler { cursorShape: Qt.PointingHandCursor }
-                    Image { anchors.verticalCenter: parent.verticalCenter; width: vpx(20); height: vpx(20); source: "../assets/images/controller/" + Utils.processButtonArt("cancel") + ".png"; sourceSize { width: 40; height: 40 } }
-                    Text { anchors.verticalCenter: parent.verticalCenter; text: "Back"; color: "#D2D2D2"; font.family: subtitleFont.name; font.pixelSize: vpx(16) } }
+            id: footer
+                anchors { right: parent.right; rightMargin: vpx(26); bottom: parent.bottom; bottomMargin: vpx(18) }
+                spacing: vpx(20)
+                Repeater {
+                    model: { var e = listEpoch;
+                             var m = [];
+                             if (scoped && sysOwn()) m.push({ b: "details", t: "Back to Systems" });
+                             m.push({ b: "filters", t: "All settings" });
+                             m.push({ b: "cancel",  t: "Back" });
+                             return m; }
+                    delegate: Row {
+                        spacing: vpx(7)
+                        TapHandler { gesturePolicy: TapHandler.WithinBounds; onTapped: helpClick(modelData.b) }
+                        HoverHandler { cursorShape: Qt.PointingHandCursor }
+                        Image {
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: vpx(20); height: vpx(20)
+                            source: "../assets/images/controller/" + Utils.processButtonArt(modelData.b) + ".png"
+                            sourceSize { width: 40; height: 40 }
+                            asynchronous: true
+                        }
+                        Text { anchors.verticalCenter: parent.verticalCenter; text: modelData.t; color: "#d6d6d6"; font.family: subtitleFont.name; font.pixelSize: vpx(14.5) }
+                    }
+                }
             }
         }
         // Clickable prompts: the same as the keys below.
