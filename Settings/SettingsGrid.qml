@@ -79,6 +79,7 @@ id: grid
     onCurrentChanged: {
         var c = cells[current];
         _focusKey = c ? { key: c.key, sys: c.sys, row: c.row, col: c.col } : null;
+        editing = false;
         keepVisible();
     }
 
@@ -199,15 +200,32 @@ id: grid
         else if (y + h > top + vis) flick.contentY = Math.min(Math.max(0, contentH - gap - vis), y + h - vis);
     }
 
-    Keys.onUpPressed:    move(0, -1)
-    Keys.onDownPressed:  move(0, 1)
-    Keys.onRightPressed: move(1, 0)
-    Keys.onLeftPressed:  { if (!move(-1, 0)) { playBack(); leave(); } }
+    // ── Editing a value ───────────────────────────────────────────────────
+    // A on a value card starts editing: Left/Right then change the value
+    // (the arrows light up), and A or B finishes. Up/Down finish and move
+    // on. Outside editing the D-pad only moves. RB / LB still change the
+    // focused value directly, edit or not.
+    property bool editing: false
+    function editableHere() { var c = cells[current]; return c && c.kind === "value" && !isDisabled(c); }
+    function toggleEdit() {
+        if (editing) { editing = false; playToggle(); return; }
+        if (editableHere()) { editing = true; playAccept(); }
+    }
+    onActiveFocusChanged: if (!activeFocus) editing = false
+
+    Keys.onUpPressed:    { editing = false; move(0, -1); }
+    Keys.onDownPressed:  { editing = false; move(0, 1); }
+    Keys.onRightPressed: { if (editing) step(cells[current], 1); else move(1, 0); }
+    Keys.onLeftPressed:  {
+        if (editing) { step(cells[current], -1); return; }
+        if (!move(-1, 0)) { playBack(); leave(); }
+    }
     // Clickable prompts (theme.qml helpClick): A and X as the keys do; B is
     // left to the screen's mouseBack().
     function helpAction(button) {
         var c = cells[current];
-        if (button === "accept") { if (c && c.kind === "value") step(c, 1); return true; }
+        if (button === "accept") { if (c && c.kind === "item") itemAction(c); else toggleEdit(); return true; }
+        if (button === "cancel" && editing) { editing = false; playBack(); return true; }
         if (button === "details") { if (c && c.kind === "item") itemAction(c); else if (c) infoRequested(c); return true; }
         return false;
     }
@@ -217,7 +235,7 @@ id: grid
         var c = currentCell;
         if (api.keys.isAccept(event)) {
             event.accepted = true;
-            if (c && c.kind === "value") step(c, 1);
+            if (c && c.kind === "item") itemAction(c); else toggleEdit();
             return;
         }
         if (api.keys.isNextPage(event)) { event.accepted = true; step(c, 1);  return; }
@@ -228,7 +246,8 @@ id: grid
             return;
         }
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
-            event.accepted = true; playBack(); leave();
+            event.accepted = true; playBack();
+            if (editing) editing = false; else leave();
         }
     }
 
@@ -252,6 +271,7 @@ id: grid
                 // A model swap can leave a delegate briefly past the new end.
                 readonly property var c: grid.cells[index] || ({})
                 readonly property bool focused: grid.activeFocus && index === grid.current
+                readonly property bool editing: focused && grid.editing
                 readonly property bool dis: { var e = grid.rev; var ee = settingsEpoch; return grid.interactive(c) && c.kind === "value" && grid.isDisabled(c); }
                 x: grid.cellX(c) + grid.edge; y: grid.cellY(c) + grid.edge
                 width: grid.cellW(c); height: grid.cellH(c)
@@ -279,7 +299,7 @@ id: grid
                     visible: c.kind === "label" || c.kind === "value" || c.kind === "item"
                     anchors.fill: parent
                     radius: vpx(4)
-                    color: c.dim ? "#1a1a1a" : card.focused ? "#2e2e2e" : "#232323"
+                    color: c.dim ? "#1a1a1a" : card.editing ? "#3a3a3a" : card.focused ? "#2e2e2e" : "#232323"
                     opacity: card.dis ? 0.38 : 1
                 }
                 // Focus: the same Xbox frame the tiles use.
@@ -333,14 +353,15 @@ id: grid
                     anchors.horizontalCenter: c.label ? undefined : parent.horizontalCenter
                     spacing: vpx(10)
                     opacity: card.dis ? 0.38 : 1
-                    Text { text: "‹"; color: "#8a8a8a"; font { family: subtitleFont.name; pixelSize: vpx(17) } anchors.verticalCenter: parent.verticalCenter }
+                    // Editing: the arrows light up — Left/Right now change the value.
+                    Text { text: "‹"; color: card.editing ? grid.accent : "#8a8a8a"; font { family: subtitleFont.name; pixelSize: vpx(17); bold: card.editing } anchors.verticalCenter: parent.verticalCenter }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: { var e = grid.rev; var ee = settingsEpoch; return c.kind === "value" ? grid.display(c) : ""; }
                         color: "white"
                         font { family: subtitleFont.name; pixelSize: vpx(16); bold: true }
                     }
-                    Text { text: "›"; color: "#8a8a8a"; font { family: subtitleFont.name; pixelSize: vpx(17) } anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: "›"; color: card.editing ? grid.accent : "#8a8a8a"; font { family: subtitleFont.name; pixelSize: vpx(17); bold: card.editing } anchors.verticalCenter: parent.verticalCenter }
                 }
 
                 MouseArea {

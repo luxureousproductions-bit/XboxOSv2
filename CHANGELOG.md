@@ -4,7 +4,15 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 43)
+## Unreleased — refresh branch (build 44)
+
+### Settings rail, Xbox style
+- The page list runs from the screen's edge to a divider line. **While you're on the list**, the selected page is a solid accent plate with a soft glow (dark text on light accents like Lime). **While you're inside a page**, it's a grey plate with an accent edge against the divider. Icons removed, as on the Xbox.
+
+### Changing values on the grid pages (Library, Previews & sound)
+- **A on a setting starts changing it:** the ‹ › arrows light up and Left/Right change the value. **A or B** finishes; Up/Down finish and move on. Outside that, the D-pad only moves between settings. RB / LB still change the focused value directly. The help bar shows *Change* on a setting and *Done* while changing.
+
+## build 43
 
 ### Settings grid pages: steady navigation
 - **A or RB no longer throws the focus back to the first card.** The Library page rebuilds its cards when a saved value changes (it lists the systems with their own settings), and every rebuild reset the focus to All Games › View. The focus now stays on the same setting.

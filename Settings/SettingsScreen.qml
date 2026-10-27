@@ -16,6 +16,7 @@
 
 import QtQuick 2.15
 import QtQuick.Layouts 1.15
+import QtGraphicalEffects 1.15   // DropShadow: the rail's focused plate glow
 import "../Global"
 import "../utils.js" as Utils
 import "../buildinfo.js" as BuildInfo
@@ -71,7 +72,6 @@ id: root
     property var generalPage: {
         return {
             pageName: "General",
-            icon: "general",
             listmodel: settingsModel,
             lead: "How the theme behaves: scale, quality, launch and mouse."
         }
@@ -123,7 +123,6 @@ id: root
     property var appearancePage: {
         return {
             pageName: "Appearance",
-            icon: "appearance",
             listmodel: appearanceSettingsModel,
             lead: "Colors, background shading and how tiles are drawn."
         }
@@ -203,7 +202,6 @@ id: root
     property var showcasePage: {
         return {
             pageName: "Home",
-            icon: "home",
             listmodel: showcaseSettingsModel,
             lead: "The Home page: logo, hero tile, titles and the background."
         }
@@ -343,7 +341,6 @@ id: root
     property var collectionsPage: {
         return {
             pageName: "Home rows",
-            icon: "rows",
             listmodel: collectionsSettingsModel,
             lead: "What each Home row shows and how its tiles look."
         }
@@ -447,7 +444,6 @@ id: root
     property var libraryPage: {
         return {
             pageName: "Library",
-            icon: "library",
             listmodel: librarySettingsModel,
             lead: "All Games and the systems are set separately. A system follows Systems unless you give it its own settings with Y while you're on it.",
             grid: "library"
@@ -542,7 +538,6 @@ id: root
     property var gamePage: {
         return {
             pageName: "Game details",
-            icon: "details",
             listmodel: gameSettingsModel,
             lead: "The Game details page and the items in its media carousel."
         }
@@ -674,9 +669,8 @@ id: root
     property var previewsPage: {
         return {
             pageName: "Previews & sound",
-            icon: "media",
             listmodel: previewsSettingsModel,
-            lead: "Every video preview and every sound in one place. A or RB changes a value, LB steps back.",
+            lead: "Every video preview and every sound in one place. A on a setting, then Left/Right to change it; A or B when done.",
             grid: "previews"
         }
     }
@@ -742,7 +736,6 @@ id: root
     property var advancedPage: {
         return {
             pageName: "System",
-            icon: "system",
             listmodel: advancedSettingsModel,
             lead: "Hiding apps and emulators, the status bar, and diagnostics for bug reports."
         }
@@ -772,7 +765,6 @@ id: root
     property var raPage: {
         return {
             pageName:  "Retro Achievements",
-            icon: "trophy",
             listmodel: raSettingsModel,
             lead: "Your RetroAchievements account."
         }
@@ -812,7 +804,6 @@ id: root
     property var tipsPage: {
         return {
             pageName:  "Tips & Tricks",
-            icon: "tips",
             listmodel: tipsSettingsModel,
             lead: "Things worth knowing that no button prompt tells you."
         }
@@ -1628,13 +1619,16 @@ id: root
     id: pagelist
     
         focus: true
+        // Full-bleed rail from the screen's left edge to the divider, as on
+        // the Xbox: the selected page is an accent plate while the rail has
+        // focus, and a grey plate with an accent edge while you're in a page.
         anchors {
             top: header.bottom; topMargin: vpx(14)
             bottom: parent.bottom; bottomMargin: helpMargin
-            left: parent.left; leftMargin: globalMargin + vpx(18)
+            left: parent.left
         }
-        width: vpx(287)
-        spacing: vpx(4)
+        width: globalMargin + vpx(300)
+        spacing: vpx(2)
         model: settingsArr
         onCurrentIndexChanged: {
             if (settingsArr[currentIndex] && settingsArr[currentIndex].pageName === "Retro Achievements")
@@ -1651,43 +1645,41 @@ id: root
                 width: ListView.view.width
                 height: vpx(46)
 
-                // Selected page: a lifted plate with an accent edge, as on the
-                // Xbox settings rail; the focus frame while the rail has focus.
+                readonly property bool railFocused: selected && pagelist.activeFocus
+
+                // Rail focused: an accent plate with a soft glow.
                 Rectangle {
-                id: pageTile
                     anchors.fill: parent
-                    radius: vpx(5)
-                    color: selected ? "#2c2c2c" : "transparent"
-                    Behavior on color { ColorAnimation { duration: 120 } }
+                    anchors.rightMargin: vpx(2)
+                    visible: railFocused
+                    radius: vpx(3)
+                    color: theme.accent
+                    layer.enabled: visible
+                    layer.effect: DropShadow {
+                        cached: true
+                        transparentBorder: true
+                        radius: 14; samples: 29
+                        color: Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.55)
+                    }
+                }
+                // In a page: a grey plate, accent edge against the divider.
+                Rectangle {
+                    anchors.fill: parent
+                    visible: selected && !railFocused
+                    color: "#2e2e2e"
                     Rectangle {
-                        visible: selected
-                        anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
-                        width: vpx(3.5)
+                        anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
+                        width: vpx(5)
                         color: theme.accent
                     }
                 }
-                Loader {
-                    anchors.fill: parent
-                    active: selected && pagelist.activeFocus
-                    sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(5); glowStrength: 0.45 } }
-                    z: 2
-                }
-                Image {
-                id: pageIcon
-                    anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
-                    width: vpx(22); height: vpx(22)
-                    source: modelData.icon ? "../assets/images/settings/" + modelData.icon + ".svg" : ""
-                    sourceSize { width: 48; height: 48 }
-                    opacity: selected ? 1 : 0.72
-                    asynchronous: true
-                }
                 Text {
-                    anchors { left: pageIcon.right; leftMargin: vpx(14); verticalCenter: parent.verticalCenter }
+                    anchors { left: parent.left; leftMargin: globalMargin + vpx(16); verticalCenter: parent.verticalCenter }
                     text: modelData.pageName
-                    color: selected ? "white" : "#bdbdbd"
+                    // Dark text on a light accent (lime, yellow), white otherwise.
+                    color: railFocused ? (accentIsLight ? "#111111" : "white") : selected ? "white" : "#d2d2d2"
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(18)
-                    font.bold: selected
+                    font.pixelSize: vpx(19)
                 }
 
                 // Mouse/touch functionality
@@ -1733,6 +1725,14 @@ id: root
         }
 
     }
+
+    // Rail / page divider
+    Rectangle {
+        anchors { left: pagelist.right; top: parent.top; bottom: parent.bottom }
+        width: Math.max(1, vpx(1.5))
+        color: "#2f2f2f"
+    }
+    readonly property bool accentIsLight: (0.299 * theme.accent.r + 0.587 * theme.accent.g + 0.114 * theme.accent.b) > 0.62
 
     // ── Page title and lead line ──────────────────────────────────────────
     Item {
@@ -1788,6 +1788,7 @@ id: root
         onLeave: pagelist.forceActiveFocus()
         onCurrentChanged: root.rebuildHelpbar()
         onActiveFocusChanged: root.rebuildHelpbar()
+        onEditingChanged: root.rebuildHelpbar()
     }
 
     // RetroAchievements credential status — only on the RA page.
@@ -2276,7 +2277,13 @@ id: root
         var want = 0;
         if (gridPage !== "" && settingsGrid.activeFocus) {
             var gc = settingsGrid.cells[settingsGrid.current];   // currentCell lags inside onCurrentChanged
-            want = (gc && gc.kind === "item") ? 3 : (gc && hasInfo(gc.key)) ? 1 : 0;
+            if (settingsGrid.editing) want = 6;
+            else if (gc && gc.kind === "item") want = 3;
+            else {
+                var canEdit = gc && gc.kind === "value" && !settingDisabled(gc.key);
+                var info = gc && hasInfo(gc.key);
+                want = canEdit ? (info ? 5 : 4) : (info ? 1 : 0);
+            }
         } else if (settingsList.focus) {
             var page = settingsArr[pagelist.currentIndex];
             var i = settingsList.currentIndex;
@@ -2290,7 +2297,16 @@ id: root
         settingsHelpModel.clear();
         // The bar lays out right-to-left, so the LAST entry appended is the
         // one furthest left. Back goes first to sit on the right of it.
+        if (want === 6) {                       // editing a grid value
+            settingsHelpModel.append({ name: "Back", button: "cancel" });
+            settingsHelpModel.append({ name: "Done", button: "accept" });
+            return;
+        }
         settingsHelpModel.append({ name: "Back", button: "cancel" });
+        if (want === 5)
+            settingsHelpModel.append({ name: "More info", button: "details" });
+        if (want === 4 || want === 5)
+            settingsHelpModel.append({ name: "Change", button: "accept" });
         if (want === 1)
             settingsHelpModel.append({ name: "More info", button: "details" });
         if (want === 3)
