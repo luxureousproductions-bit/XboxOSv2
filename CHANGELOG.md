@@ -4,7 +4,11 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 55)
+## Unreleased — refresh branch (build 56)
+
+- **Media viewer sound:** a video opened full screen from Game details' media row now has its own Sound setting (Settings › Previews & sound › Media viewer). Like Discover it always plays; Preview sound Off at the top mutes it too. It used to always play with sound.
+
+## build 55
 
 ### Previews & sound, simplified
 - **One short table:** Preview and Sound for Home rows, Library, Game details and More like this, plus Discover's sound. About half as many settings as before.

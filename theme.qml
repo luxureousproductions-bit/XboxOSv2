@@ -539,6 +539,7 @@ id: root
         "Menu sounds":                               menuSoundsDefault,
         "Miximage":                                  "Yes",
         "Video previews":                            "Yes",
+        "Media viewer video audio":                  "Yes",
         "Preview sound":                             "Yes",
         "Banner":                                    "Yes",
         "Screenshots":                               "Yes",
@@ -636,6 +637,9 @@ id: root
             HideAndroidGamesSystemTile:    settingsStore.get("Hide Android Games System Tile", "No"),
             MoreByGenreDisplay:            settingsStore.get("More by Genre Display", "Full"),
             AllowDiscoverVideoAudio:         previewSoundMaster ? settingsStore.get("Discover video audio", "Yes") : "No",
+            // A video opened full screen from Game details' media row: like Discover,
+            // it always plays; only its sound is a choice (and the sound master).
+            MediaViewerAudio:                previewSoundMaster ? settingsStore.get("Media viewer video audio", "Yes") : "No",
             MenuSounds:                      settingsStore.get("Menu sounds"),
             MenuVolume:                      settingsStore.get("Menu Volume", "1.0"),
             StartupChime:                    settingsStore.get("Start up chime"),

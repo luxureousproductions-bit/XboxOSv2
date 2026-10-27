@@ -73,7 +73,7 @@ id: root
             // it stays true when the drawer or another app takes active
             // focus, and the audio carried on underneath.
             readonly property bool shouldPlay: playbackOwner === "gameviewscreen"
-            muted: !shouldPlay
+            muted: !shouldPlay || settings.MediaViewerAudio === "No"
             autoPlay: false
             onShouldPlayChanged: { if (shouldPlay) { if (source != "") play(); } else pause(); }
             onSourceChanged: if (shouldPlay) play(); else pause()

@@ -627,6 +627,11 @@ id: root
         }
         ListElement { settingName: "Discover"; setting: ""; header: true }
         ListElement {
+            settingName: "Media viewer video audio"
+            label: "Sound"
+            setting: "Yes,No"
+        }
+        ListElement {
             settingName: "Discover video audio"
             label: "Sound"
             setting: "No,Yes"
@@ -866,8 +871,13 @@ id: root
                 if (soundOn) { if (settingsStore.get(sc.p) === "No") none(r, 2); else v(r, 2, sc.a); }
             }
         }
-        // Discover always plays its video: only its sound is a choice.
+        // Discover and the media viewer always play their video: only the
+        // sound is a choice.
         if (soundOn) {
+            out.push({ kind: "label", row: r, col: 0, text: "Media viewer", sub: "A video opened from Game details' media" });
+            none(r, 1, "Always");
+            v(r, 2, "Media viewer video audio");
+            r++;
             out.push({ kind: "label", row: r, col: 0, text: "Discover", sub: "Always plays its video" });
             none(r, 1, "Always");
             v(r, 2, "Discover video audio");
@@ -1148,6 +1158,9 @@ id: root
         }
         if (name === "More by Genre Display") {
             return "Which part of a game's genre the More by genre row on Game Details uses to find similar games. For a genre like Action / Platformer it can match on the whole thing, just Action, or just Platformer";
+        }
+        if (name === "Media viewer video audio") {
+            return "Sound for a video you open full screen from the media row on Game details. Off keeps it silent. Preview sound Off at the top mutes it too";
         }
         if (name === "Video previews") {
             return "Off stops every video preview at once: Home rows, the Library, Game details and its rows. Each screen keeps its own choice, so turning this back On restores them. Discover always plays";
