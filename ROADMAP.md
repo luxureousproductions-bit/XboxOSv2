@@ -57,7 +57,26 @@ and a Filters button, an item count, and a grid of big square art tiles with
 the title on the focused tile. The accent colour stays user-selectable, as it
 is on the Xbox. Many staged steps; plan and mock it up before starting.
 
-## 3. Quality modes per platform (future note)
+## 3. Home as the Xbox Series home (future phase)
+
+The end goal is a close copy of the Xbox Series UI, page by page. For Home:
+
+- **Top row of 9 tiles**, matching the Xbox: the same gap from the top of the
+  screen to the row, the same left/right margins and gaps between tiles, and
+  the same focus growth (the focused tile grows to about 1.7x with its name
+  bar). On handhelds 9 tiles read small, so a setting offers **7** (today's
+  count, adjusted to the same margins and gaps).
+- **The four wide tiles under the row** (on the Xbox: Browse your games,
+  Customize your Home, a featured game, a promo): undecided. Options to mock
+  up: shortcuts (All Games, Settings / Customize, Discover, Achievements), the
+  last-played or a featured game, or drop them and start Collections 1–6
+  there.
+- **Rows below** stay Collections 1–6, keeping the same left/right margins as
+  the top row.
+
+Mock up before starting.
+
+## 4. Quality modes per platform (future note)
 
 - **Base and High Quality on both platforms, tuned per platform:**
   Android base renders like 720p, HQ like 1080p; Windows/Linux base 1080p,
@@ -72,7 +91,7 @@ is on the Xbox. Many staged steps; plan and mock it up before starting.
   Off / On. Base mode renders the blur at a lower resolution than HQ. The
   Xbox guide itself doesn't blur when it slides out, so the default is Off.
 
-## 4. Clean-up and release
+## 5. Clean-up and release
 
 - Delete the old `windows-wip`, `pdf-manuals` and `perf-tiles` branches
   (everything useful from `windows-wip` is in `refresh` as of build 51).
