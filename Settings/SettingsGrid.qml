@@ -320,7 +320,7 @@ id: grid
                 Loader {
                     anchors.fill: parent
                     active: card.focused
-                    sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(4); glowStrength: tileHaloLive ? 0.45 : 0 }   // honours Frame glow }
+                    sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(4); glowStrength: tileHaloLive ? 0.45 : 0 } }   // glow honours Frame glow
                     z: 2
                 }
 

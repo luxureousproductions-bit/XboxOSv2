@@ -2024,7 +2024,7 @@ id: root
                     anchors.fill: setTile
                     active: selected && !isDecor
                     z: 2
-                    sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(4); glowStrength: tileHaloLive ? 0.45 : 0 }   // honours Frame glow }
+                    sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(4); glowStrength: tileHaloLive ? 0.45 : 0 } }   // glow honours Frame glow
                 }
 
                 // ── Cycle-value rows (existing style) ──────────────────────

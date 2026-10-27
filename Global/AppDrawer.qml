@@ -1235,7 +1235,7 @@ ListView {
                         anchors.fill: qPlate
                         active: parent.current
                         z: 2
-                        sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(4); glowStrength: tileHaloLive ? 0.45 : 0 }   // honours Frame glow }
+                        sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(4); glowStrength: tileHaloLive ? 0.45 : 0 } }   // glow honours Frame glow
                     }
                     Row {
                         anchors {
@@ -1356,7 +1356,7 @@ ListView {
                         anchors.fill: hPlate
                         active: parent.current
                         z: 2
-                        sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(4); glowStrength: tileHaloLive ? 0.45 : 0 }   // honours Frame glow }
+                        sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(4); glowStrength: tileHaloLive ? 0.45 : 0 } }   // glow honours Frame glow
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(22)
