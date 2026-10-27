@@ -4,7 +4,12 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 45)
+## Unreleased — refresh branch (build 46)
+
+### Diagnostics, one panel
+- Settings › System › Diagnostics is a single read-only panel — theme build, frontend, features, display, library — instead of five rows whose More info repeated the same line. Frame rate counter and Write diagnostics to log sit under it; the cursor steps over the panel.
+
+## build 45
 
 ### Previews & sound: straight columns
 - The "—" and "Always" placeholders can be focused now, so Up/Down/Left/Right move through every column in straight lines instead of skipping to whatever card was nearest. They have nothing to change; the help bar shows just Back on them.

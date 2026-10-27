@@ -720,11 +720,8 @@ id: root
             setting: "12hr,24hr,No"
         }
         ListElement { settingName: "Diagnostics"; setting: ""; header: true }
-        ListElement { settingName: "Theme build";   setting: ""; tip: true; diag: true }
-        ListElement { settingName: "Frontend";      setting: ""; tip: true; diag: true }
-        ListElement { settingName: "Features";      setting: ""; tip: true; diag: true }
-        ListElement { settingName: "Display";       setting: ""; tip: true; diag: true }
-        ListElement { settingName: "Library size";  setting: ""; tip: true; diag: true }
+        // One read-only panel with every line (no More info: it said the same).
+        ListElement { settingName: "Diagnostics panel"; setting: ""; panel: true }
         ListElement {
             settingName: "Frame counter"
             label: "Frame rate counter"
@@ -809,8 +806,17 @@ id: root
         }
     }
 
-    // Diagnostics rows live on the System page; `diag` rows show a live
-    // value as their label (diagLabel) and A opens the long form.
+    // Diagnostics on the System page: the panel's lines (name, value).
+    function diagLines() {
+        return [
+            ["Theme build", BuildInfo.build + " (" + BuildInfo.branch + ", " + BuildInfo.date + ")"],
+            ["Frontend",    platform.frontendLine],
+            ["Features",    platform.featureLine],
+            ["Display",     platform.os + ", " + Math.round(root.width) + "x" + Math.round(root.height) + ", UI scale " + settings.UiScale + ", HQ " + (hqMode ? "on" : "off")],
+            ["Library",     api.allGames.count + " games, " + api.collections.count + " collections"]
+        ];
+    }
+    // Long-form labels (diagnosticsText and older callers).
     function diagLabel(name) {
         switch (name) {
         case "Theme build":  return "Theme build " + BuildInfo.build + " (" + BuildInfo.branch + ", " + BuildInfo.date + ")";
@@ -1884,6 +1890,9 @@ id: root
                 // Section header rows: a label with a rule beneath, never
                 // selectable. Declared with `header: true` in the page model.
                 readonly property bool isHeader: (typeof header !== 'undefined') && header === true
+                // The Diagnostics panel: read-only, never landed on.
+                readonly property bool isPanel: (typeof panel !== 'undefined') && panel === true
+                readonly property bool isDecor: isHeader || isPanel
                 // Tips & Tricks rows: a title only, no value; A or X opens the tip.
                 readonly property bool isTip: (typeof tip !== 'undefined') && tip === true
 
@@ -1895,7 +1904,7 @@ id: root
                 // mutually exclusive, but the custom image is a base layer now
                 // and fanart still runs on top of it.
                 property bool rowDisabled: {
-                    if (isHeader || isTip) return false;
+                    if (isDecor || isTip) return false;
                     var _v = settingsList.settingsVersion;   // re-evaluate after any save
                     return root.settingDisabled(settingName);
                 }
@@ -1957,7 +1966,29 @@ id: root
                 }
 
                 width: ListView.view.width - vpx(16)
-                height: isHeader ? vpx(36) : (itemNote !== "" ? itemheight + vpx(30) : itemheight)
+                height: isHeader ? vpx(36) : isPanel ? diagCol.height + vpx(26) : (itemNote !== "" ? itemheight + vpx(30) : itemheight)
+
+                // Diagnostics panel
+                Rectangle {
+                    visible: isPanel
+                    anchors.fill: parent
+                    radius: vpx(4)
+                    color: "#1b1b1b"
+                    border.width: Math.max(1, vpx(1)); border.color: "#2c2c2c"
+                    Column {
+                    id: diagCol
+                        anchors { left: parent.left; right: parent.right; top: parent.top; margins: vpx(13); leftMargin: vpx(16) }
+                        spacing: vpx(5)
+                        Repeater {
+                            model: isPanel ? root.diagLines() : []
+                            delegate: Row {
+                                spacing: vpx(12)
+                                Text { width: vpx(118); text: modelData[0]; color: "#8e8e8e"; font { family: subtitleFont.name; pixelSize: vpx(15) } }
+                                Text { text: modelData[1]; color: "white"; font { family: subtitleFont.name; pixelSize: vpx(15) } }
+                            }
+                        }
+                    }
+                }
 
                 // Header rendering: accent caps over the group's cards.
                 Text {
@@ -1971,7 +2002,7 @@ id: root
                 // Card
                 Rectangle {
                 id: setTile
-                    visible: !isHeader
+                    visible: !isDecor
                     anchors { left: parent.left; right: parent.right; top: parent.top }
                     height: itemheight
                     radius: vpx(4)
@@ -1981,7 +2012,7 @@ id: root
                 // Focus: the same Xbox frame the tiles use.
                 Loader {
                     anchors.fill: setTile
-                    active: selected && !isHeader
+                    active: selected && !isDecor
                     z: 2
                     sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(4); glowStrength: 0.45 } }
                 }
@@ -1990,7 +2021,7 @@ id: root
                 Text {
                 id: settingNameText
 
-                    visible: !isHeader && (!isTextInput)
+                    visible: !isDecor && (!isTextInput)
                     text: displayLabel
                     color: "white"
                     font.family: subtitleFont.name
@@ -2008,7 +2039,7 @@ id: root
                 Text {
                 id: settingtext
 
-                    visible: !isHeader && (!isTextInput)
+                    visible: !isDecor && (!isTextInput)
                     // Yes/No reads as On/Off; arrows grey, value bold.
                     readonly property string shown: {
                         var v = settingList[savedIndex];
@@ -2033,7 +2064,7 @@ id: root
                 Text {
                 id: textInputLabel
 
-                    visible: !isHeader && (isTextInput)
+                    visible: !isDecor && (isTextInput)
                     text: displayLabel
                     color: "white"
                     font.family: subtitleFont.name
@@ -2052,7 +2083,7 @@ id: root
                 Rectangle {
                 id: textInputContainer
 
-                    visible: !isHeader && (isTextInput)
+                    visible: !isDecor && (isTextInput)
                     anchors {
                         right: parent.right; rightMargin: vpx(14)
                         top: parent.top; topMargin: (itemheight - height) / 2
@@ -2087,7 +2118,7 @@ id: root
                 Rectangle {
                 id: noteBadge
 
-                    visible: !isHeader && (itemNote !== "")
+                    visible: !isDecor && (itemNote !== "")
                     width: noteLabel.width + vpx(16)
                     height: noteLabel.height + vpx(6)
                     color: "transparent"
@@ -2160,7 +2191,7 @@ id: root
 
                 // Mouse/touch functionality
                 MouseArea {
-                    visible: !isHeader
+                    visible: !isDecor
                     anchors.fill: parent
                     hoverEnabled: settings.MouseHover == "Yes"
                     onEntered: { playNav(); }
@@ -2179,7 +2210,7 @@ id: root
                             }
                         } else {
                             settingsList.forceActiveFocus();
-                            if (!isHeader) settingsList.currentIndex = index;
+                            if (!isDecor) settingsList.currentIndex = index;
                         }
                     }
                 }
@@ -2195,7 +2226,7 @@ id: root
         // direction, wrapping at both ends like before.
         function isHeaderAt(i) {
             var e = model.get(i);
-            return !!e && e.header === true;
+            return !!e && (e.header === true || e.panel === true);   // headers and the diagnostics panel
         }
         function step(dir) {
             if (count === 0) return;
