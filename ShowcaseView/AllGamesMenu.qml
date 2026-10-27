@@ -1973,7 +1973,8 @@ id: root
                     if (y - pad < contentY) contentY = Math.max(0, Math.min(y - pad, maxY));
                     else if (y + h + pad > contentY + height) contentY = Math.min(y + h + pad - height, maxY);
                 }
-                Connections { target: root; function onListRowChanged() { rowFlick.keepRowVisible(); } }
+                readonly property int watchRow: listRow
+                onWatchRowChanged: keepRowVisible()
                 onContentHeightChanged: { contentY = 0; Qt.callLater(keepRowVisible); }   // row set swapped (view flip)
             Column {
             id: rowCol
