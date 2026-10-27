@@ -1,0 +1,143 @@
+# XboxOSv2 — PC Apps for the App Drawer (Windows)
+#
+# Put this folder in one of your Pegasus game folders (or add this folder in
+# Pegasus › Settings › Game directories), then restart Pegasus.
+# Lines starting with # are switched off: delete the # in front of an entry's
+# lines to switch it on, and fix the path if yours is different.
+#
+# The genre picks the drawer tab:
+#   Game · Emulator · Launcher · App · Tool  — and Power for the Power tile.
+#
+# Apps open through `cmd /c start`, so Pegasus comes straight back instead of
+# waiting for the app to close, and %LOCALAPPDATA% style paths work.
+
+collection: PC Apps
+shortname: pcapps
+
+# Every entry needs a `file:` so Pegasus keeps it. `pcapps:<name>` is a
+# placeholder (no real file needed) — keep each one different.
+
+# ── Tools (on every Windows PC) ────────────────────────────────────────────
+game: File Explorer
+file: pcapps:file-explorer
+genre: Tool
+launch: cmd /c start "" explorer.exe
+
+game: Task Manager
+file: pcapps:task-manager
+genre: Tool
+launch: cmd /c start "" taskmgr.exe
+
+game: Windows Settings
+file: pcapps:windows-settings
+genre: Tool
+launch: cmd /c start "" ms-settings:
+
+# game: DS4Windows
+# file: pcapps:ds4windows
+# genre: Tool
+# launch: cmd /c start "" "C:\Program Files\DS4Windows\DS4Windows.exe"
+
+# ── Power (the Power tile at the foot of the drawer) ───────────────────────
+game: Sleep
+file: pcapps:sleep
+genre: Power
+launch: rundll32.exe powrprof.dll,SetSuspendState 0,1,0
+
+game: Restart
+file: pcapps:restart
+genre: Power
+launch: shutdown /r /t 0
+
+game: Shut down
+file: pcapps:shut-down
+genre: Power
+launch: shutdown /s /t 0
+
+game: Exit to desktop
+file: pcapps:exit-to-desktop
+genre: Power
+launch: taskkill /im pegasus-fe.exe
+
+# ── Launchers ──────────────────────────────────────────────────────────────
+# game: Steam
+# file: pcapps:steam
+# genre: Launcher
+# launch: cmd /c start "" "C:\Program Files (x86)\Steam\steam.exe"
+
+# game: Steam Big Picture
+# file: pcapps:steam-big-picture
+# genre: Launcher
+# launch: cmd /c start "" steam://open/bigpicture
+
+# game: Epic Games
+# file: pcapps:epic-games
+# genre: Launcher
+# launch: cmd /c start "" "C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win32\EpicGamesLauncher.exe"
+
+# game: GOG Galaxy
+# file: pcapps:gog-galaxy
+# genre: Launcher
+# launch: cmd /c start "" "C:\Program Files (x86)\GOG Galaxy\GalaxyClient.exe"
+
+# game: Playnite
+# file: pcapps:playnite
+# genre: Launcher
+# launch: cmd /c start "" "%LOCALAPPDATA%\Playnite\Playnite.FullscreenApp.exe"
+
+# game: EA app
+# file: pcapps:ea-app
+# genre: Launcher
+# launch: cmd /c start "" "C:\Program Files\Electronic Arts\EA Desktop\EA Desktop\EALauncher.exe"
+
+# game: Battle.net
+# file: pcapps:battle-net
+# genre: Launcher
+# launch: cmd /c start "" "C:\Program Files (x86)\Battle.net\Battle.net Launcher.exe"
+
+# ── Emulators ──────────────────────────────────────────────────────────────
+# game: RetroArch
+# file: pcapps:retroarch
+# genre: Emulator
+# launch: cmd /c start "" "C:\RetroArch-Win64\retroarch.exe"
+
+# game: Dolphin
+# file: pcapps:dolphin
+# genre: Emulator
+# launch: cmd /c start "" "C:\Program Files\Dolphin\Dolphin.exe"
+
+# game: PCSX2
+# file: pcapps:pcsx2
+# genre: Emulator
+# launch: cmd /c start "" "C:\Program Files\PCSX2\pcsx2-qt.exe"
+
+# game: DuckStation
+# file: pcapps:duckstation
+# genre: Emulator
+# launch: cmd /c start "" "C:\DuckStation\duckstation-qt-x64-ReleaseLTCG.exe"
+
+# game: PPSSPP
+# file: pcapps:ppsspp
+# genre: Emulator
+# launch: cmd /c start "" "C:\Program Files\PPSSPP\PPSSPPWindows64.exe"
+
+# ── Apps ───────────────────────────────────────────────────────────────────
+# game: Discord
+# file: pcapps:discord
+# genre: App
+# launch: cmd /c start "" "%LOCALAPPDATA%\Discord\Update.exe" --processStart Discord.exe
+
+# game: Spotify
+# file: pcapps:spotify
+# genre: App
+# launch: cmd /c start "" "%APPDATA%\Spotify\Spotify.exe"
+
+# game: Browser
+# file: pcapps:browser
+# genre: App
+# launch: cmd /c start "" https://www.google.com
+
+# game: OBS Studio
+# file: pcapps:obs-studio
+# genre: App
+# launch: cmd /c start "" /d "C:\Program Files\obs-studio\bin\64bit" obs64.exe

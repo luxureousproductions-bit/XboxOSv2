@@ -100,7 +100,8 @@ id: root
         { act: "achievements", icon: "../assets/images/trophy.svg",       scale: 0.92 },
         { act: "search",       icon: "../assets/images/icon_search.svg",   scale: 0.84 },
         { act: "settings",     icon: "../assets/images/settingsicon.svg",  scale: 0.92 }
-    ]
+    ].concat((pcMode && powerApps.length > 0)
+             ? [{ act: "power", icon: "../assets/images/icon_power.svg", scale: 0.84 }] : [])
 
     // The host owns navigation; the drawer just says which tile was pressed.
     signal navDiscover()
@@ -111,6 +112,7 @@ id: root
     function runAction(i) {
         var a = actions[i];
         if (!a) return;
+        if (a.act === "power") { playAccept(); openPowerMenu(); return; }   // pops out; the drawer stays
         if (a.act === "toggleHidden") {
             // Stays open: this one changes the panel rather than leaving it.
             showHiddenTab = !showHiddenTab;
@@ -157,8 +159,17 @@ id: root
     //
     // Appended last on purpose, so its appearing and disappearing never shifts
     // the index of any other tab.
+    readonly property bool pcMode: lib ? lib.pcMode : false
     readonly property var tabs: {
-        var base = [
+        var base = pcMode ? [
+            { icon: "../assets/images/Xbox-logo2-tight.png", filter: "all",      label: "All" },
+            { icon: "../assets/images/icon_heart.svg",     filter: "favorite", label: "Favorites", scale: 0.77 },
+            { icon: "../assets/images/icon_games.svg",     filter: "game",     label: "Games", scale: 1.03 },
+            { icon: "../assets/images/icon_emulator.svg",  filter: "emulator", label: "Emulators", scale: 1.34 },
+            { icon: "../assets/images/icon_launchers.svg", filter: "launcher", label: "Launchers", scale: 0.92 },
+            { icon: "../assets/images/icon_apps.svg",      filter: "app",      label: "Apps", scale: 0.86 },
+            { icon: "../assets/images/icon_tools.svg",     filter: "tool",     label: "Tools", scale: 0.96 }
+        ] : [
             { icon: "../assets/images/Xbox-logo2-tight.png", filter: "all",      label: "All" },
             { icon: "../assets/images/icon_heart.svg",  filter: "favorite", label: "Favorites", scale: 0.77 },
             { icon: "../assets/images/icon_games.svg",  filter: "game",     label: "Games", scale: 1.03 },
@@ -312,6 +323,8 @@ id: root
             // Hidden apps are gone from every tab except Hidden itself,
             // otherwise there'd be no way to get them back.
             if (want !== "hidden" && hid[e.pkg] === true) continue;
+            // Power entries live behind the Power tile, not in any tab.
+            if (cats[e.pkg] === "power") continue;
             if (want === "all") { out.push(e); continue; }
             if (want === "favorite") { if (fav[e.pkg] === true) out.push(e); continue; }
             if (want === "hidden")   { if (hid[e.pkg] === true) out.push(e); continue; }
@@ -635,8 +648,11 @@ id: root
                   ? (root.activeFilter === "all"
                      ? "No apps in the selected collections."
                      : "Nothing in this category yet.")
-                  : "No collections are set to appear here.\nSettings > Systems, "
-                    + "then set a collection's App Drawer option to Include."
+                  : root.pcMode
+                    ? "No PC Apps collection yet.\nCopy extras/pc-apps into a Pegasus game folder, "
+                      + "uncomment what you have, and restart Pegasus."
+                    : "No collections are set to appear here.\nSettings > Systems, "
+                      + "then set a collection's App Drawer option to Include."
             color: Qt.rgba(1, 1, 1, 0.5)
             font.family: subtitleFont.name
             font.pixelSize: fpx(15)
@@ -1034,6 +1050,10 @@ ListView {
 
     // Human-readable name for a category key, used in the menu header.
     function categoryLabel(cat) {
+        if (cat === "launcher") return "Launchers";
+        if (cat === "app")      return "Apps";
+        if (cat === "tool")     return "Tools";
+        if (cat === "power")    return "Power";
         if (cat === "game")     return "Games";
         if (cat === "emulator") return "Emulators";
         if (cat === "system")   return "System";
@@ -1041,8 +1061,45 @@ ListView {
         return "Other";
     }
 
+    // "app" = the quick menu for the highlighted entry; "power" = the Power
+    // tile's list (PC).
+    property string quickMode: "app"
+    readonly property var powerApps: {
+        var out = [], idx = appIndex, cats = categoryMap;
+        for (var i = 0; i < idx.length; i++) if (cats[idx[i].pkg] === "power") out.push(idx[i]);
+        // The guide's order, not A–Z: Sleep, Restart, Shut down, then the rest.
+        function rank(t) {
+            t = t.toLowerCase();
+            if (t.indexOf("sleep") >= 0 || t.indexOf("suspend") >= 0) return 0;
+            if (t.indexOf("restart") >= 0 || t.indexOf("reboot") >= 0) return 1;
+            if (t.indexOf("shut") >= 0 || t.indexOf("power off") >= 0) return 2;
+            return 3;
+        }
+        out.sort(function(a, b) { return rank(a.title) - rank(b.title); });
+        return out;
+    }
     readonly property var quickActions: {
+        if (quickMode === "power") {
+            var pw = [];
+            for (var pi = 0; pi < powerApps.length; pi++)
+                pw.push({ label: powerApps[pi].title, act: "launch", entry: powerApps[pi],
+                          icon: "../assets/images/icon_power.svg", scale: 0.9 });
+            return pw;
+        }
         var pkg = root.quickApp ? root.quickApp.pkg : "";
+        if (pcMode) return [
+            { label: root.isFavorite(pkg) ? "Remove from Favorites" : "Add to Favorites",
+              act: "fav",  icon: "../assets/images/icon_heart.svg",     scale: 0.90 },
+            { label: "Hide", act: "hidemenu", sub: true,
+              detail: root.hideModeLabel(root.hideMode(pkg)),
+              icon: "../assets/images/icon_hidden.svg",    scale: 0.95 },
+            { label: "Move to Games",     act: "cat", cat: "game",     icon: "../assets/images/icon_games.svg",     scale: 1.15 },
+            { label: "Move to Emulators", act: "cat", cat: "emulator", icon: "../assets/images/icon_emulator.svg",  scale: 1.45 },
+            { label: "Move to Launchers", act: "cat", cat: "launcher", icon: "../assets/images/icon_launchers.svg", scale: 1.0 },
+            { label: "Move to Apps",      act: "cat", cat: "app",      icon: "../assets/images/icon_apps.svg",      scale: 0.95 },
+            { label: "Move to Tools",     act: "cat", cat: "tool",     icon: "../assets/images/icon_tools.svg",     scale: 1.05 },
+            { label: "Reset to automatic", act: "reset", icon: "../assets/images/icon_reset.svg", scale: 1.05 }
+        ];
         return [
             { label: root.isFavorite(pkg) ? "Remove from Favorites" : "Add to Favorites",
               act: "fav",  icon: "../assets/images/icon_heart.svg",     scale: 0.90 },
@@ -1115,9 +1172,29 @@ ListView {
         hideOpen = false;
         quickOpen = false;
         quickApp = null;
+        quickMode = "app";
+    }
+    // The Power tile (PC): Sleep, Restart, Shut down… from your PC Apps file.
+    function openPowerMenu() {
+        if (powerApps.length === 0) return;
+        quickMode = "power";
+        quickApp = { title: "Power", pkg: "" };
+        quickIndex = 0;
+        var t = actionBar.mapToItem(root, 0, 0);
+        quickAnchorY = t.y + actionBar.height - vpx(60) * powerApps.length;
+        quickOpen = true;
     }
     function runQuickAction() {
         var a = quickActions[quickIndex];
+        if (a && a.act === "launch") {
+            var g = a.entry ? a.entry.g : null;
+            closeQuickMenu();
+            if (!g) return;
+            open = false;
+            previousFocusItem = null;
+            appChosen(g);
+            return;
+        }
         var pkg = quickApp ? quickApp.pkg : "";
         if (!a || pkg === "") { closeQuickMenu(); return; }
         if (a.act === "hidemenu") { openHidePanel(); return; }   // menu stays up
@@ -1202,7 +1279,7 @@ ListView {
                     Text {
                         id: hdrCat
                         anchors.verticalCenter: parent.verticalCenter
-                        text: root.quickApp
+                        text: (root.quickApp && root.quickMode === "app")
                               ? root.categoryLabel(root.categoryMap[root.quickApp.pkg]) : ""
                         color: theme.accent
                         font.family: subtitleFont.name

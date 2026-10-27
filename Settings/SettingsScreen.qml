@@ -1903,6 +1903,7 @@ id: root
                 // Optional friendly display label; storage key remains settingName
                 readonly property bool isDiag: (typeof diag !== 'undefined') && diag === true
                 property string displayLabel: isDiag ? root.diagLabel(settingName)
+                                            : (onDesktop && settingName === "Hide Android System Tile") ? "Hide PC Apps system tile"
                                             : (typeof label !== 'undefined' && label !== "") ? label : settingName
                 // Section header rows: a label with a rule beneath, never
                 // selectable. Declared with `header: true` in the page model.

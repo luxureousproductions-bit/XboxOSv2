@@ -893,9 +893,14 @@ id: root
     // hand-written "Android Apps" collection both report shortName "android",
     // so shortName can't tell them apart. Hand-made app collections are left
     // alone on purpose — only the provider's own tile is replaced.
-    readonly property string appsCollectionName: "Android"
+    // Windows / Linux: the drawer reads your "PC Apps" collection instead
+    // (shortName pcapps also counts), and it's kept off the system row the
+    // same way.
+    readonly property string appsCollectionName: onDesktop ? "PC Apps" : "Android"
     function isDrawerCollection(c) {
-        return !!c && (c.name || "").toLowerCase() === appsCollectionName.toLowerCase();
+        if (!c) return false;
+        if ((c.name || "").toLowerCase() === appsCollectionName.toLowerCase()) return true;
+        return onDesktop && (c.shortName || "").toLowerCase() === "pcapps";
     }
 
     // ── Android sources: ONE answer to "what is an app" ───────────────────
@@ -2644,6 +2649,7 @@ id: root
         // androidgames collections. An explicit list wins over collectionMatch,
         // which stays only as the fallback when none of them exist.
         collections: drawerCollections
+        pcMode: onDesktop
     }
 
     // The drawer's SCREEN is created the first time it's opened (it used to be

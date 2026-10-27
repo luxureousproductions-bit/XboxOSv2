@@ -4,7 +4,16 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 56)
+## Unreleased — refresh branch (build 57)
+
+### App Drawer on Windows / Linux (part 1)
+- **On a PC the drawer reads a collection called "PC Apps"** (shortname `pcapps`) instead of Android's apps, and keeps it off the system row the same way (Settings › System › "Hide PC Apps system tile").
+- **PC tabs:** All · Favorites · Games · Emulators · Launchers · Apps · Tools, with new Launchers, Apps and Tools icons. Each entry's **genre** picks its tab (Game, Emulator, Launcher, App, Tool); the quick menu's "Move to…" offers the PC tabs.
+- **Power tile:** entries with the genre **Power** sit behind a new tile at the foot of the drawer, which pops out like the guide's power menu (Sleep, Restart, Shut down, then the rest).
+- **Starter files** in `extras/pc-apps/` for Windows and for Linux: File Explorer / Files, Task Manager, Settings and the four power entries switched on; common launchers, emulators and apps ready to switch on by deleting a `#`. Apps open without Pegasus waiting for them to close. See extras/pc-apps/README.md.
+- Android is unchanged.
+
+## build 56
 
 - **Media viewer sound:** a video opened full screen from Game details' media row now has its own Sound setting (Settings › Previews & sound › Media viewer). Like Discover it always plays; Preview sound Off at the top mutes it too. It used to always play with sound.
 

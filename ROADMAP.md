@@ -51,8 +51,9 @@ entries (sleep, restart, shut down). Same look, same tabs, same quick menu
 7. **Home.** The "Hide Android System Tile" settings read "Hide PC Apps system
    tile" on a PC.
 
-Builds: (A) source collection + tab mapping + PC icon; (B) starter file and
-icons; (C) mouse, right-click and wide art; (D) optional PC games.
+Builds: (A) source collection + tab mapping + PC icon — done, build 57; (B) starter
+file — done, build 57 (icon set still to come); (C) mouse, right-click and wide art;
+(D) optional PC games; the "App drawer source" setting.
 
 ## 2. All Games as the Xbox "Full library" (big phase, after the PC drawer)
 

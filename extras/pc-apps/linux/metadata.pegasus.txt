@@ -1,0 +1,122 @@
+# XboxOSv2 — PC Apps for the App Drawer (Linux)
+#
+# Put this folder in one of your Pegasus game folders (or add this folder in
+# Pegasus › Settings › Game directories), then restart Pegasus.
+# Lines starting with # are switched off: delete the # in front of an entry's
+# lines to switch it on, and change the command if yours is different.
+#
+# The genre picks the drawer tab:
+#   Game · Emulator · Launcher · App · Tool  — and Power for the Power tile.
+#
+# Apps open through `setsid -f`, so Pegasus comes straight back instead of
+# waiting for the app to close. Installed from Flathub? Use the
+# `flatpak run …` lines instead.
+
+collection: PC Apps
+shortname: pcapps
+
+# Every entry needs a `file:` so Pegasus keeps it. `pcapps:<name>` is a
+# placeholder (no real file needed) — keep each one different.
+
+# ── Tools ──────────────────────────────────────────────────────────────────
+game: Files
+file: pcapps:files
+genre: Tool
+launch: setsid -f xdg-open .
+
+# game: System Monitor
+# file: pcapps:system-monitor
+# genre: Tool
+# launch: setsid -f gnome-system-monitor
+
+# game: Settings
+# file: pcapps:settings
+# genre: Tool
+# launch: setsid -f gnome-control-center
+
+# ── Power (the Power tile at the foot of the drawer) ───────────────────────
+game: Sleep
+file: pcapps:sleep
+genre: Power
+launch: systemctl suspend
+
+game: Restart
+file: pcapps:restart
+genre: Power
+launch: systemctl reboot
+
+game: Shut down
+file: pcapps:shut-down
+genre: Power
+launch: systemctl poweroff
+
+game: Exit to desktop
+file: pcapps:exit-to-desktop
+genre: Power
+launch: pkill -x pegasus-fe
+
+# ── Launchers ──────────────────────────────────────────────────────────────
+# game: Steam
+# file: pcapps:steam
+# genre: Launcher
+# launch: setsid -f steam
+
+# game: Steam Big Picture
+# file: pcapps:steam-big-picture
+# genre: Launcher
+# launch: setsid -f steam steam://open/bigpicture
+
+# game: Lutris
+# file: pcapps:lutris
+# genre: Launcher
+# launch: setsid -f lutris
+# (Flathub: setsid -f flatpak run net.lutris.Lutris)
+
+# game: Heroic
+# file: pcapps:heroic
+# genre: Launcher
+# launch: setsid -f heroic
+# (Flathub: setsid -f flatpak run com.heroicgameslauncher.hgl)
+
+# ── Emulators ──────────────────────────────────────────────────────────────
+# game: RetroArch
+# file: pcapps:retroarch
+# genre: Emulator
+# launch: setsid -f retroarch
+# (Flathub: setsid -f flatpak run org.libretro.RetroArch)
+
+# game: Dolphin
+# file: pcapps:dolphin
+# genre: Emulator
+# launch: setsid -f dolphin-emu
+# (Flathub: setsid -f flatpak run org.DolphinEmu.dolphin-emu)
+
+# game: PCSX2
+# file: pcapps:pcsx2
+# genre: Emulator
+# launch: setsid -f pcsx2-qt
+# (Flathub: setsid -f flatpak run net.pcsx2.PCSX2)
+
+# game: DuckStation
+# file: pcapps:duckstation
+# genre: Emulator
+# launch: setsid -f duckstation-qt
+# (Flathub: setsid -f flatpak run org.duckstation.DuckStation)
+
+# game: PPSSPP
+# file: pcapps:ppsspp
+# genre: Emulator
+# launch: setsid -f PPSSPPSDL
+# (Flathub: setsid -f flatpak run org.ppsspp.PPSSPP)
+
+# ── Apps ───────────────────────────────────────────────────────────────────
+# game: Discord
+# file: pcapps:discord
+# genre: App
+# launch: setsid -f discord
+# (Flathub: setsid -f flatpak run com.discordapp.Discord)
+
+# game: Browser
+# file: pcapps:browser
+# genre: App
+# launch: setsid -f xdg-open https://www.google.com

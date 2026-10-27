@@ -21,6 +21,9 @@ id: lib
     //   collections     - an explicit list, wins when non-empty
     //   collectionMatch - a name to resolve, which is what theme.qml passes
     property var collections: []
+    // Windows / Linux: the drawer holds PC entries from your "PC Apps"
+    // collection, sorted into PC tabs by the genre you give each one.
+    property bool pcMode: false
     property string collectionMatch: "Android"
 
     // Resolved by exact name, then exact shortName, then substring. Exact-first
@@ -250,6 +253,21 @@ id: lib
     //   "Application"                             -> game
     function categoryHint(g, gamesCol, imported) {
         if (!g) return "";
+        // PC: the genre picks the tab. Game, Emulator, Launcher, App, Tool,
+        // Power (Sleep / Restart / Shut down — the drawer's Power tile).
+        if (pcMode) {
+            var pgl = g.genreList;
+            for (var p = 0; pgl && p < pgl.length; p++) {
+                var pg = (pgl[p] || "").toLowerCase();
+                if (pg === "game" || pg === "games") return "game";
+                if (pg === "emulator" || pg === "emulators") return "emulator";
+                if (pg === "launcher" || pg === "launchers" || pg === "store") return "launcher";
+                if (pg === "app" || pg === "apps" || pg === "application") return "app";
+                if (pg === "tool" || pg === "tools" || pg === "system" || pg === "utility") return "tool";
+                if (pg === "power") return "power";
+            }
+            return "";
+        }
         // Pegasus X tags every Android entry, its own imports included
         // (Game / Emulator / Application); Application falls through to the
         // rules below, which tell system apps from the rest.
@@ -286,7 +304,7 @@ id: lib
         for (i = 0; i < emulatorKeywords.length; i++)
             if (p.indexOf(emulatorKeywords[i]) >= 0 || t.indexOf(emulatorKeywords[i]) >= 0)
                 return "emulator";
-        return "other";
+        return pcMode ? "app" : "other";
     }
 
     // Pegasus only has art for some installed apps, so try the asset slots an
