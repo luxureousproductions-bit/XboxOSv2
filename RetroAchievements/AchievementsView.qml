@@ -95,7 +95,7 @@ id: root
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true
-            sourceSize { width: 96; height: 96 }
+            sourceSize { width: hrpx(96); height: hrpx(96) }
         }
 
         // Avatar + username + points + rank + member since
@@ -117,7 +117,7 @@ id: root
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
                     asynchronous: true
-                    sourceSize { width: 64; height: 64 }
+                    sourceSize { width: hrpx(64); height: hrpx(64) }
                     layer.enabled: true
                     layer.smooth: true
                     layer.effect: OpacityMask {
@@ -308,7 +308,7 @@ id: root
                         fillMode: Image.PreserveAspectFit
                         smooth: true
                         asynchronous: true
-                        sourceSize { width: 96; height: 96 }
+                        sourceSize { width: hrpx(96); height: hrpx(96) }
                     }
                 }
 
@@ -511,7 +511,7 @@ id: root
                             + buttonbar.processButtonArt(button) + ".png"
                     width: vpx(32); height: vpx(32)
                     asynchronous: true
-                    sourceSize { width: 48; height: 48 }
+                    sourceSize { width: hrpx(48); height: hrpx(48) }
                 }
                 Text {
                     text: name

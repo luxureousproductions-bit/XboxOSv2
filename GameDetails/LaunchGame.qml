@@ -103,7 +103,11 @@ id: root
             }
         }
         FastBlur {
-            anchors.fill: parent
+            // Big desktop screens: blur at 1080p size and scale up (1 on Android).
+            width: parent.width / hiResScale
+            height: parent.height / hiResScale
+            scale: hiResScale
+            transformOrigin: Item.TopLeft
             source: fallbackSource
             // Hard maximum is 64 — vpx(110) scaled past it, which is why the
             // backdrop rendered as nothing and the splash came out black.

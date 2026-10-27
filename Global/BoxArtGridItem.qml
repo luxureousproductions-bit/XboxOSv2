@@ -101,7 +101,7 @@ id: root
     // HQ: eased pop into the highlight instead of a linear ramp.
     Behavior on scale { enabled: !reduceMotion;
         NumberAnimation {
-            duration: hqMode ? 180 : 100
+            duration: animMs(hqMode ? 180 : 100)
             easing.type: hqMode ? Easing.OutBack : Easing.Linear
             easing.overshoot: 1.2
         }
@@ -206,7 +206,7 @@ id: root
             z: -1
             opacity: (gameData && gameData.favorite && !selected && !is3d && settings.FavoritedTileAccent !== "No") ? 0.35 : 0
             visible: opacity > 0
-            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(180); easing.type: Easing.OutCubic } }
         }
         }
     }
@@ -234,7 +234,7 @@ id: root
 
         anchors.fill: parent
         anchors.margins: vpx(6)
-        Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 200 } }
+        Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(200) } }
                        
         Image {
         id: screenshot
@@ -250,7 +250,7 @@ id: root
             asynchronous: true
             // HQ: dissolve in on load instead of snapping.
             opacity: hqFadeIn ? (status === Image.Ready ? 1 : 0) : 1
-            Behavior on opacity { enabled: !reduceMotion && hqFadeIn; NumberAnimation { duration: 180 } }
+            Behavior on opacity { enabled: !reduceMotion && hqFadeIn; NumberAnimation { duration: animMs(180) } }
             source: artGame ? boxArt(artGame) : ""
             sourceSize { width: root.width; height: root.height }
             smooth: true
@@ -350,7 +350,7 @@ id: root
             sourceComponent: boxTitleBar
             // As a child of the image it inherited the HQ dissolve-in; keep that.
             opacity: (active ? 1 : 0) * screenshot.opacity
-            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 120 } }
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(120) } }
         }
 
         // Favorite heart — bottom-right corner of the tile. No title bar exists
@@ -375,8 +375,8 @@ id: root
             opacity: (gameData && gameData.favorite && is3d && titleShown) ? 1 : 0
             visible: opacity > 0
             scale: (gameData && gameData.favorite) ? 1 : 0.4
-            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-            Behavior on scale { enabled: !reduceMotion; NumberAnimation { duration: 220; easing.type: Easing.OutBack; easing.overshoot: 3 } }
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(180); easing.type: Easing.OutCubic } }
+            Behavior on scale { enabled: !reduceMotion; NumberAnimation { duration: animMs(220); easing.type: Easing.OutBack; easing.overshoot: 3 } }
             Image {
                 source: "../assets/images/favicon.svg"
                 asynchronous: true
@@ -556,7 +556,7 @@ id: root
         anchors { fill: parent; margins: vpx(10) }
         color: "white"
         scale: selected ? 1.1 : 1
-        Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 100 } }
+        Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(100) } }
         font.pixelSize: fpx(18)
         font.family: subtitleFont.name
         font.bold: true

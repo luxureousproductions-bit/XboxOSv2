@@ -594,7 +594,11 @@ id: root
         sourceComponent: Component {
             FastBlur {
                 cached: true   // static: blur once, not every frame
-                anchors.fill: parent
+                // Big desktop screens: blur at 1080p size and scale up (1 on Android).
+                width: parent.width / hiResScale
+                height: parent.height / hiResScale
+                scale: hiResScale
+                transformOrigin: Item.TopLeft
                 source: blurLoader.blurSource
                 radius: 64
                 opacity: blurLoader.blurOpacity
@@ -643,7 +647,7 @@ id: root
         width: vpx(500)
         height: vpx(450) + header.height
         source: settings.GameLogo === "Show" && game ? Utils.logo(game) : ""
-        sourceSize { width: 512; height: 512 }
+        sourceSize { width: hrpx(512); height: hrpx(512) }
         fillMode: Image.PreserveAspectFit
         asynchronous: true
         opacity: logoAtTop ? 1 : 0
@@ -824,7 +828,7 @@ id: root
                             source: Utils.boxArt(game, settings.BoxArtStyle)
                             width: vpx(350)
                             height: parent.height
-                            sourceSize { width: 512; height: 512 }
+                            sourceSize { width: hrpx(512); height: hrpx(512) }
                             fillMode: Image.PreserveAspectFit
                             asynchronous: true
                             smooth: true
@@ -877,7 +881,7 @@ id: root
             }
             fillMode: Image.PreserveAspectFit
             source: systemLogoSource(game.collections.get(0))
-            sourceSize { width: 256; height: 256 }
+            sourceSize { width: hrpx(256); height: hrpx(256) }
             smooth: true
             asynchronous: true
 

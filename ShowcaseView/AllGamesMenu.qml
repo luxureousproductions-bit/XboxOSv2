@@ -438,7 +438,7 @@ id: root
         visible: false
         asynchronous: true
         source: artBoxSource
-        sourceSize: Qt.size(64, 64)
+        sourceSize: Qt.size(hrpx(64), hrpx(64))
     }
     property bool boxRotated: is3dPath(artBoxSource.toString())
                               && boxProbe.status === Image.Ready
@@ -821,7 +821,11 @@ id: root
             sourceComponent: Component {
                 FastBlur {
                     cached: true   // static: blur once, not every frame
-                    anchors.fill: parent
+                    // Big desktop screens: blur at 1080p size and scale up (1 on Android).
+                    width: parent.width / hiResScale
+                    height: parent.height / hiResScale
+                    scale: hiResScale
+                    transformOrigin: Item.TopLeft
                     source: bgBlurLoader.blurSrc
                     radius: 64
                     opacity: 0.55
@@ -910,7 +914,7 @@ id: root
                     width:  parent.width  * 1.45
                     height: parent.height * 1.45
                     source: appIconMode ? artScreenshot : ""
-                    sourceSize { width: hqMode ? 768 : 512; height: hqMode ? 768 : 512 }
+                    sourceSize { width: hrpx(hqMode ? 768 : 512); height: hrpx(hqMode ? 768 : 512) }
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
                     asynchronous: true
@@ -1452,7 +1456,7 @@ id: root
         preferredHighlightBegin: gamelist.height / 2 - itemheight
         preferredHighlightEnd:   gamelist.height / 2
         highlightRangeMode: ListView.ApplyRange
-        highlightMoveDuration: 100
+        highlightMoveDuration: animMs(100)
         clip: true
 
         model: displayModel
@@ -1611,7 +1615,7 @@ id: root
         // born mid-race hold off loading their art (deferArt), so keeping
         // the look-ahead costs no decoding.
         cacheBuffer: gridCellH * (hqMode ? 1.0 : 0.5)
-        highlightMoveDuration: root.fastScrolling ? 0 : 200   // snap while racing; matches the Platform grid at rest
+        highlightMoveDuration: root.fastScrolling ? 0 : animMs(200)   // snap while racing; matches the Platform grid at rest
 
         // Video previews live in the highlight, exactly as on the platform
         // grid. Follows the All Games video setting and the coordinator.

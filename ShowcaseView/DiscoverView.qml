@@ -251,7 +251,7 @@ id: root
 
             anchors.fill: parent
             source: shortName !== "" ? systemLogoSource(currentGame.collections.get(0)) : ""
-            sourceSize { width: 400; height: 80 }
+            sourceSize { width: hrpx(400); height: hrpx(80) }
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true

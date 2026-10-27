@@ -476,7 +476,7 @@ id: searchOverlay
                     source: "../assets/images/controller/" + buttonbar.processButtonArt(modelData.b) + ".png"
                     width: vpx(30); height: vpx(30)
                     asynchronous: true
-                    sourceSize { width: 48; height: 48 }
+                    sourceSize { width: hrpx(48); height: hrpx(48) }
                 }
                 Text {
                     text: modelData.n

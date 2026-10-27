@@ -359,6 +359,27 @@ id: root
     // A setting read live: re-evaluates whenever any setting is saved.
     function liveSetting(key) { var e = settingsEpoch; return settingsStore.get(key); }
 
+    // ── Big desktop screens (1440p / 4K) ──────────────────────────────────
+    // Layout already scales with vpx(). What doesn't are FIXED pixel numbers
+    // tuned for 1080p handhelds: single images' decode sizes (icons, logos,
+    // badges) and blur textures. hiResScale grows those with the window:
+    // 1 at 1080p, 1.33 at 1440p, 2 at 4K — and is exactly 1 on Android, so
+    // handhelds decode and draw exactly what they did before. Per-tile art
+    // is deliberately NOT grown: decoding every tile at up to 4x the pixels
+    // is what made art load slowly on a 4K tester's screen.
+    readonly property bool onDesktop: !platform.isAndroid
+    readonly property real hiResScale: platform.isAndroid ? 1 : Math.max(1, vpx(1) / 1.5)
+    function hrpx(n) { return Math.round(n * hiResScale); }
+    // Images drawn at a known size (system tiles): base mode decodes them for
+    // a 1080p screen, High Quality Mode for the real one. Same on Android.
+    // Selection animations run at half length on PC (tile grow, highlight,
+    // row and system-strip slides): with a mouse they read as lag. Android
+    // keeps its timings exactly.
+    function animMs(ms) { return onDesktop ? Math.round(ms / 2) : ms; }
+    function decodePxFor(displayPx) {
+        return Math.max(1, Math.round(displayPx * (hqMode ? 1 : 1 / hiResScale)));
+    }
+
     // ── Previews & sound master switches ──────────────────────────────────
     // Off overrides every screen without rewriting its own choice. Discover
     // always plays its video; the sound master mutes it too.
@@ -834,8 +855,12 @@ id: root
     // One definition of the fanart decode size, used by the crossfade layers
     // AND the prefetcher. They must match exactly, or a prefetched image lands
     // in a different cache entry and the crossfade decodes it all over again.
-    readonly property size fanartDecodeSize: Qt.size(Math.round(width  * hqFanartScale),
-                                                     Math.round(height * hqFanartScale))
+    // Desktop base mode decodes the background for a 1080p screen even on a
+    // bigger one (each move decodes and uploads a new one); High Quality Mode
+    // decodes for the real screen. Exactly 1 on Android and at 1080p.
+    readonly property real fanartDesktopFactor: (onDesktop && !hqMode) ? 1 / hiResScale : 1
+    readonly property size fanartDecodeSize: Qt.size(Math.round(width  * hqFanartScale * fanartDesktopFactor),
+                                                     Math.round(height * hqFanartScale * fanartDesktopFactor))
     readonly property int  hqCacheTiles:    hqMode ? 4    : 2     // off-screen row tiles pre-decoded
 
     // All Games Menu
@@ -2578,9 +2603,15 @@ id: root
                 live: drawerOpen && drawerSlide < 1
                 hideSource: false
                 visible: false
+                textureSize: Qt.size(Math.round(width / hiResScale), Math.round(height / hiResScale))
             }
             FastBlur {
-                anchors.fill: parent
+                // Big desktop screens: blur at 1080p size and scale up — same
+                // look, a quarter of the GPU memory at 4K (1 on Android).
+                width: parent.width / hiResScale
+                height: parent.height / hiResScale
+                scale: hiResScale
+                transformOrigin: Item.TopLeft
                 source: drawerSnap
                 radius: 48
                 cached: true
@@ -2781,6 +2812,17 @@ id: root
 
         if (logKeys)
             console.log("[theme] key code:", event.key, "text:", event.text);
+
+        // Ctrl+F (keyboard): frame rate counter on/off — the same switch as
+        // Settings › System › Frame rate counter, for quick desktop checks.
+        if (event.key === Qt.Key_F && (event.modifiers & Qt.ControlModifier)) {
+            event.accepted = true;
+            var fc = frameCounterLive ? "No" : "Yes";
+            settingsStore.set("Frame counter", fc);
+            settingsStore.set("Frame counterIndex", fc === "Yes" ? 1 : 0);   // Settings row is "No,Yes"
+            settingsEpoch++;
+            return;
+        }
 
         if (appDrawerKeys.indexOf(event.key) === -1) return;
         event.accepted = true;

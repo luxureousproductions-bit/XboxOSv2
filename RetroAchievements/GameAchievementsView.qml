@@ -115,7 +115,7 @@ id: root
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true
-            sourceSize { width: 96; height: 96 }
+            sourceSize { width: hrpx(96); height: hrpx(96) }
         }
 
         Row {
@@ -136,7 +136,7 @@ id: root
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
                     asynchronous: true
-                    sourceSize { width: 64; height: 64 }
+                    sourceSize { width: hrpx(64); height: hrpx(64) }
                     layer.enabled: true
                     layer.smooth: true
                     layer.effect: OpacityMask {
@@ -245,7 +245,7 @@ id: root
                 fillMode: Image.PreserveAspectFit
                 smooth: true
                 asynchronous: true
-                sourceSize { width: 120; height: 120 }
+                sourceSize { width: hrpx(120); height: hrpx(120) }
             }
         }
 
@@ -391,6 +391,12 @@ id: root
                         font.pixelSize: fpx(14)
                         font.bold: active
                     }
+                    // Click picks this filter, same as LB/RB reaching it.
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: if (!active) { playToggle(); cheevosData.filterMode = modelData.mode; root.currentIndex = 0; }
+                    }
                 }
             }
         }
@@ -436,6 +442,12 @@ id: root
                         font.family: subtitleFont.name
                         font.pixelSize: fpx(13)
                         font.bold: active
+                    }
+                    // Click picks this sort, same as Y reaching it.
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: if (!active) { playToggle(); cheevosData.sortMode = modelData.mode; root.currentIndex = 0; }
                     }
                 }
             }
@@ -519,7 +531,7 @@ id: root
                         fillMode:    Image.PreserveAspectFit
                         smooth:      true
                         asynchronous: true
-                        sourceSize { width: 64; height: 64 }
+                        sourceSize { width: hrpx(64); height: hrpx(64) }
                         opacity: isEarned ? 1.0 : 0.28
                     }
                 }
@@ -708,7 +720,7 @@ id: root
                             + buttonbar.processButtonArt(button) + ".png"
                     width: vpx(32); height: vpx(32)
                     asynchronous: true
-                    sourceSize { width: 48; height: 48 }
+                    sourceSize { width: hrpx(48); height: hrpx(48) }
                 }
                 Text {
                     text: name

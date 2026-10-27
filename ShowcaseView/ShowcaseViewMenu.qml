@@ -729,7 +729,7 @@ id: root
             // Logo Color Match: tints the logo to the current Color Layout accent.
             layer.enabled: settings.LogoColorMatch === "Yes"
             layer.effect: ColorOverlay { color: theme.accent }
-            sourceSize { width: 150; height: 100}
+            sourceSize { width: hrpx(150); height: hrpx(100) }
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true
@@ -770,7 +770,7 @@ id: root
                         source: cheevosData.avatarUrl
                         fillMode: Image.PreserveAspectCrop
                         smooth: true; asynchronous: true
-                        sourceSize { width: 64; height: 64 }
+                        sourceSize { width: hrpx(64); height: hrpx(64) }
                         layer.enabled: true
                         layer.smooth: true
                         layer.effect: OpacityMask {
@@ -1258,7 +1258,7 @@ id: root
             orientation: ListView.Horizontal
             highlightRangeMode: ListView.NoHighlightRange
             snapMode: ListView.SnapToItem
-            highlightMoveDuration: 100
+            highlightMoveDuration: animMs(100)
             keyNavigationWraps: false
             
             // Whole-tile alignment of the scroll position. Shared by both the live
@@ -1336,7 +1336,7 @@ id: root
                 height: topRow.tileSz
                 radius: vpx(6)   // concentric with the focus frame
                 color: selected ? theme.accent : theme.secondary
-                Behavior on color { ColorAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                Behavior on color { ColorAnimation { duration: animMs(180); easing.type: Easing.OutCubic } }
                 // Grow from the bottom edge so the bottom stays put. The first (hero) tile
                 // grows up-and-right (left border pinned) and the last tile grows up-and-left
                 // (right border pinned) so neither outer border is clipped at the screen edge;
@@ -1344,11 +1344,11 @@ id: root
                 transformOrigin: index === 0 ? Item.BottomLeft
                                  : (index === platformlist.count - 1 ? Item.BottomRight : Item.Bottom)
                 scale: selected ? topRow.growScale : 1.0
-                Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                Behavior on scale { NumberAnimation { duration: animMs(180); easing.type: Easing.OutCubic } }
                 // Animated horizontal shift so neighbors slide out of the way of the selected tile
                 transform: Translate {
                     x: navShift
-                    Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                    Behavior on x { NumberAnimation { duration: animMs(180); easing.type: Easing.OutCubic } }
                 }
                 // Selected always renders above its neighbors so the border can't be clipped behind them
                 z: selected ? 1 : 0
@@ -1382,7 +1382,7 @@ id: root
                         asynchronous: true; smooth: true
                         source: heroArtSource(platformlist.resumeGame)
                         // Decoded at the grown tile's size, not the file's.
-                        sourceSize: Qt.size(Math.round(topRow.tileSz * topRow.growScale), Math.round(topRow.tileSz * topRow.growScale))
+                        sourceSize: Qt.size(decodePxFor(topRow.tileSz * topRow.growScale), decodePxFor(topRow.tileSz * topRow.growScale))
                         opacity: tile.selected ? 1 : 0.5
                         // Drawn by heroBgFx; shown directly only if the shader can't run
                         visible: heroBgFx.failed
@@ -1410,7 +1410,7 @@ id: root
                         asynchronous: true; smooth: true
                         source: (platformlist.resumeGame && platformlist.resumeGame.assets.logo)
                                 ? platformlist.resumeGame.assets.logo : ""
-                        sourceSize: Qt.size(Math.round(topRow.tileSz * topRow.growScale), Math.round(topRow.tileSz * topRow.growScale))
+                        sourceSize: Qt.size(decodePxFor(topRow.tileSz * topRow.growScale), decodePxFor(topRow.tileSz * topRow.growScale))
                         visible: source != ""
                                  && (settings.HeroBoxArt === "Screenshot" || settings.HeroBoxArt === "Fanart")
                         opacity: tile.selected ? 1 : 0.5
@@ -1482,7 +1482,7 @@ id: root
                     anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true; smooth: true
-                    sourceSize: Qt.size(Math.round(topRow.tileSz * topRow.growScale), Math.round(topRow.tileSz * topRow.growScale))
+                    sourceSize: Qt.size(decodePxFor(topRow.tileSz * topRow.growScale), decodePxFor(topRow.tileSz * topRow.growScale))
                     readonly property string customBg: (!isHero && coll) ? customSystemBackground(coll) : ""
                     source: customBg !== "" ? customBg : (basePath !== "" ? basePath + exts[extIdx] : "")
                     // HQ: dissolve in once decoded instead of snapping. The
@@ -1513,7 +1513,7 @@ id: root
                         ? systemLogoSource(coll) : ""
                     // The grown tile's size: 512 px was twice what a 244 px
                     // tile (366 grown) can show, for every logo in the strip.
-                    sourceSize: Qt.size(Math.round(topRow.tileSz * topRow.growScale), Math.round(topRow.tileSz * topRow.growScale))
+                    sourceSize: Qt.size(decodePxFor(topRow.tileSz * topRow.growScale), decodePxFor(topRow.tileSz * topRow.growScale))
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                     smooth: true
@@ -1956,7 +1956,7 @@ id: root
         anchors.fill: parent
         model: mainModel
         focus: true
-        highlightMoveDuration: 200
+        highlightMoveDuration: animMs(200)
         highlightRangeMode: ListView.ApplyRange 
         preferredHighlightBegin: header.height
         preferredHighlightEnd: parent.height - (helpMargin * 2)

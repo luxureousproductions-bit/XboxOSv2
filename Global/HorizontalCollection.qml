@@ -69,7 +69,15 @@ id: root
     // A held Left/Right: the highlight skips its preview warm-up while this
     // holds (see ItemHighlight.racing). Released 200 ms after the last repeat.
     property bool held: false
-    function noteHeld(event) { if (event.isAutoRepeat) { held = true; heldRelease.restart(); } }
+    // PC: presses closer than 250 ms count too (fast tapping or a keyboard
+    // with its own repeat), so the same light drawing applies while the
+    // cursor races. Android: only the held repeat, as before.
+    property double lastStepMs: 0
+    function noteHeld(event) {
+        var now = Date.now();
+        if (event.isAutoRepeat || (onDesktop && now - lastStepMs < 250)) { held = true; heldRelease.restart(); }
+        lastStepMs = now;
+    }
     Timer { id: heldRelease; interval: 200; onTriggered: root.held = false }
 
     signal activate(int activeIndex)
@@ -118,7 +126,7 @@ id: root
         preferredHighlightEnd: parent.width - vpx(60)
         highlightRangeMode: ListView.ApplyRange
         snapMode: ListView.SnapOneItem 
-        highlightMoveDuration: 100
+        highlightMoveDuration: animMs(100)
         highlight: highlightcomponent
         displayMarginEnd: itemWidth
         cacheBuffer: itemWidth * hqCacheTiles

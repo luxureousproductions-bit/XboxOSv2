@@ -4,7 +4,16 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 49)
+## Unreleased — refresh branch (build 50)
+
+### Windows / Linux: big screens and speed
+- **1440p and 4K:** single images (logos, icons, Retro Achievements badges, Game details art) decode sharper in step with the screen; background blurs (Game details, the launch screen, All Games, the App Drawer backdrop) render at 1080p size and scale up — the same look for a quarter of the GPU memory at 4K. System tiles and the Home background decode for a 1080p screen in normal mode and for the real screen in High Quality Mode. Per-tile art is deliberately not grown. Android is untouched (the scale is exactly 1 there).
+- **Snappier with a mouse or keyboard:** selection animations (tile grow and fades, row and grid slides, the system strip) run at half length on PC.
+- **Fast tapping counts as racing on PC:** presses closer than a quarter second get the same light drawing as holding the D-pad on Home rows (no tile animations, art fills in when you stop).
+- **Ctrl+F** toggles the frame rate counter (the same switch as Settings › System).
+- **Retro Achievements:** a game's filter tabs (All / Earned / Locked) and sort chips are clickable.
+
+## build 49
 
 ### Windows / Linux: videos
 - **Every video player stops before it's destroyed** (changing screen, a row rebuilding, or Pegasus unloading the theme to start a game). Destroying a playing video is what the Windows media backend crashes on.
