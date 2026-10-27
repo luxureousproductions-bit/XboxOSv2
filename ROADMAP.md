@@ -27,11 +27,17 @@ entries (sleep, restart, shut down). Same look, same tabs, same quick menu
    each with its genre set (Emulator / Launcher / App / System). You uncomment
    what you have, fix the paths, and drop the folder in your Pegasus game
    folders. A small icon set (generic, no brand logos) comes with it.
-3. **Tabs on a PC.** All · Favorites · Games · Emulators · Launchers · System ·
-   Other. The genre in the file picks the tab: `Game` → Games, `Emulator` →
-   Emulators, `Launcher` → Launchers, `System` → System, anything else → Other.
-   The quick menu's "Move to…" moves an entry, as on Android. The System tab
-   gets a PC icon instead of the phone.
+3. **Tabs on a PC (proposal, mocked up):** All · Favorites · Games ·
+   Emulators · Launchers · Apps · Tools. The genre in the file picks the tab:
+   `Game` → Games, `Emulator` → Emulators, `Launcher` → Launchers (Steam, Epic,
+   GOG Galaxy, Playnite, Heroic, Battle.net, EA app), `App` → Apps (Discord,
+   browser, Spotify, OBS), `Tool` → Tools (File Explorer / Files, Task Manager,
+   OS settings, controller tools). Same icons on Windows and Linux; Tools uses a
+   monitor icon instead of the phone. "Move to…" in the quick menu works as on
+   Android.
+   **Power tile (PC only):** joins the bar at the foot of the drawer and pops
+   out like the guide's menus: Sleep, Restart, Shut down, Exit to desktop —
+   entries tagged `Power` in the PC Apps file.
 4. **PC games in the drawer (optional).** A setting adds your Steam, GOG,
    Playnite or Lutris collections to the Games tab, so installed PC games can
    be launched from the drawer too. Off by default (they're already in the
