@@ -356,6 +356,9 @@ id: root
         }
     }
 
+    // A setting read live: re-evaluates whenever any setting is saved.
+    function liveSetting(key) { var e = settingsEpoch; return settingsStore.get(key); }
+
     // ── Tile titles ───────────────────────────────────────────────────────
     // "Game tile titles" reuses the old "Always show titles" key. Saved values
     // from before are Yes/No; the row now stores On focus/Always/Never. Both
@@ -381,6 +384,20 @@ id: root
     readonly property string chimeDefault:      platform.isAndroid ? "Yes" : "No"
     readonly property string menuSoundsDefault: platform.isWindows ? "No"  : "Yes"
     readonly property var settingDefaults: ({
+        // ── Library (build 40): All Games and Systems are set separately ──
+        "AllGames Tile titles":                      "On focus",
+        "AllGames Grid hide logo on video":          "Yes",
+        "AllGames List hide on video":               "None",
+        "Systems View":                              "List",
+        "Systems Tile titles":                       "On focus",
+        "Systems Video preview":                     previewDefault,
+        "Systems video audio":                       "Yes",
+        "Systems Grid hide logo on video":           "Yes",
+        "Systems List hide on video":                "None",
+        // ── Game details "More like this" rows: their own previews ──
+        "Details rows video preview":                previewDefault,
+        "Details rows video audio":                  "Yes",
+        "Details rows hide logo on video":           "Yes",
         "3D Box":                                    "Yes",
         "All games menu video audio":                "Yes",
         "Allow video thumbnails":                    previewDefault,
@@ -439,8 +456,6 @@ id: root
         "Added App Launch":                          "Instant",
         "All Games View":                            "List",
         "AllGames Blur Background":                  "No",
-        "AllGames Hide box art on video":            "No",
-        "AllGames Hide logo on video":               "No",
         "AllGames Items per row":                    "5",
         "AllGames Show scanlines":                   "No",
         "AllGames Tile Art":                         "Fanart",
@@ -448,7 +463,7 @@ id: root
         "AllGames Tile Ratio":                       "0.66",
         "AllGames Tile Style":                       "Wide",
         "AllGames Video preview":                    previewDefault,
-        "Always show titles":                        "No",
+        "Always show titles":                        "On focus",
         "Back Box":                                  "Yes",
         "Blur Background":                           "No",
         "Cartridge":                                 "Yes",
@@ -474,7 +489,6 @@ id: root
         "Menu Volume":                               "1.0",
         "Menu sounds":                               menuSoundsDefault,
         "Miximage":                                  "Yes",
-        "Per-system tile settings":                  "No",
         "Screenshots":                               "Yes",
         "Show Battery Percentage":                   "Battery Only",
         "Show Clock":                                "12hr",
@@ -482,7 +496,6 @@ id: root
         "Showcase Collections Art":                  "Fanart",
         "Start up chime":                            chimeDefault,
         "Startup intro":                             "Yes",
-        "Library system tiles follow All":           "No",
         "System tile titles":                        "On focus",
         "Tile Halo":                                 "Yes",
         "Title Screen":                              "Yes",
@@ -507,7 +520,7 @@ id: root
             // "Gradient" was removed as an option; a stale saved value falls back to the default.
             ColorLayout:                   (api.memory.has("Color Layout") && api.memory.get("Color Layout") !== "Gradient") ? api.memory.get("Color Layout") : "Lime",
             MouseHover:                    settingsStore.get("Enable mouse hover"),
-            AlwaysShowTitles:              settingsStore.get("Always show titles", "No"),
+            AlwaysShowTitles:              settingsStore.get("Always show titles"),
             AllowVideoPreviewAudio:        settingsStore.get("Game details video preview audio", "Yes"),
             ShowScanlines:                 settingsStore.get("Show scanlines", "No"),
             DetailsDefault:                settingsStore.get("Default to full details", "No"),
@@ -581,11 +594,8 @@ id: root
             AllGamesTileLogo:              settingsStore.get("AllGames Tile Logo", "Yes"),
             AllGamesColumns:               settingsStore.get("AllGames Items per row", "5"),
             SystemTileTitles:              settingsStore.get("System tile titles", "On focus"),
-            PerSystemTiles:                settingsStore.get("Per-system tile settings", "No"),
             GridDimming:                   settingsStore.get("Grid background dimming", "Light"),
             GridFade:                      settingsStore.get("Bottom fade", "Strong"),
-            AllGamesHideBoxOnVideo:          settingsStore.get("AllGames Hide box art on video", "No"),
-            AllGamesHideLogoOnVideo:         settingsStore.get("AllGames Hide logo on video", "No"),
             AllGamesBlurBackground:          settingsStore.get("AllGames Blur Background", "No"),
             AllGamesScanlines:               settingsStore.get("AllGames Show scanlines", "No"),
             AllGamesVideoAudio:              settingsStore.get("All games menu video audio", "Yes"),
@@ -1242,6 +1252,67 @@ id: root
 
     // Older builds saved ten separate keys (and "To Game"). Removed once,
     // without restoring from them: if they're still here they're stale.
+    // ── Settings schema 2 (build 40) ──────────────────────────────────────
+    // All Games and Systems became separate (their own View, titles and
+    // previews), each system follows Systems or has its own without a master
+    // switch, and Game details' "More like this" rows got their own preview
+    // settings. Runs once; every new key starts from exactly what the
+    // screen showed before, so nothing changes on update.
+    function migrateSettingsV2() {
+        var st = settingsStore;
+        if (String(st.get("Settings schema", "1")) !== "1") return;
+        function put(k, v, order) {
+            st.set(k, v);
+            if (order) { var i = order.split(",").indexOf(String(v)); if (i >= 0) st.set(k + "Index", i); }
+        }
+        function copyIf(from, to, order) { if (st.has(from) && !st.has(to)) put(to, st.get(from), order); }
+        var yn = "Yes,No", titlesOrder = "On focus,Always,Never";
+        // Titles: the Library had none of its own (it used the Home rows').
+        if (!st.has("AllGames Tile titles")) put("AllGames Tile titles", gameTitleMode, titlesOrder);
+        if (!st.has("Systems Tile titles"))  put("Systems Tile titles",  gameTitleMode, titlesOrder);
+        // View: one setting used to cover All Games and every system.
+        if (!st.has("Systems View")) put("Systems View", st.get("All Games View", "List"), "List,Grid");
+        // "Same as All view": the systems used All Games' tile rows.
+        if (st.get("Library system tiles follow All", "No") === "Yes") {
+            put("Grid Thumbnail",    st.get("AllGames Tile Style"),    "Wide,Tall,Square,Box Art,3D Box");
+            st.set("Grid Ratio", st.get("AllGames Tile Ratio"));
+            if (st.has("AllGames Tile RatioIndex")) st.set("Grid RatioIndex", st.get("AllGames Tile RatioIndex"));
+            put("Grid art",          st.get("AllGames Tile Art"),      "Fanart,Screenshot,Boxfront");
+            put("Grid Game Logo",    st.get("AllGames Tile Logo"),     yn);
+            put("Number of columns", st.get("AllGames Items per row"), "3,4,5,6,7,8");
+        }
+        // Previews: the systems used All Games'; the grids and "More like
+        // this" rows used Home's hide-logo rule; "More like this" used
+        // Home's preview and sound.
+        copyIf("AllGames Video preview",     "Systems Video preview", yn);
+        copyIf("All games menu video audio", "Systems video audio",   yn);
+        copyIf("Hide logo when thumbnail video plays", "AllGames Grid hide logo on video", yn);
+        copyIf("Hide logo when thumbnail video plays", "Systems Grid hide logo on video",  yn);
+        copyIf("Hide logo when thumbnail video plays", "Details rows hide logo on video",  yn);
+        copyIf("Allow video thumbnails", "Details rows video preview", yn);
+        copyIf("Video thumbnail audio",  "Details rows video audio",   yn);
+        // The list's two hide rows become one choice.
+        var hb = st.get("AllGames Hide box art on video", "No") === "Yes";
+        var hl = st.get("AllGames Hide logo on video", "No") === "Yes";
+        var lh = (hb && hl) ? "Both" : hb ? "Box art" : hl ? "Logo" : "None";
+        var lhOrder = "None,Box art,Logo,Both";
+        if (!st.has("AllGames List hide on video")) put("AllGames List hide on video", lh, lhOrder);
+        if (!st.has("Systems List hide on video"))  put("Systems List hide on video",  lh, lhOrder);
+        // No more master switch: overrides it kept switched off stay off.
+        if (st.get("Per-system tile settings", "No") !== "Yes") {
+            for (var c = 0; c < api.collections.count; c++) {
+                var k = (api.collections.get(c).shortName || "") + " - Use theme settings";
+                if (st.get(k, "Yes") === "No") st.set(k, "Yes");
+            }
+        }
+        ["Per-system tile settings", "Library system tiles follow All",
+         "AllGames Hide box art on video", "AllGames Hide logo on video"].forEach(function(k) {
+            st.unset(k); st.unset(k + "Index");
+        });
+        st.set("Settings schema", "2");
+        st.flush();
+    }
+
     function dropLegacyResumeKeys() {
         if (!api.memory.has('To Game') && !api.memory.has('savedState')) return;
         ['To Game', 'savedState', 'savedGame', 'savedCollection', 'lastState', 'lastGame',
@@ -1903,6 +1974,7 @@ id: root
                 api.memory.unset(k + "Index");
             }
         });
+        migrateSettingsV2();
         // Rows removed in build 36 (the Xbox frame is the only frame; no
         // Highlight animation; no Featured box) and keys nothing ever read.
         // Saved values are dropped once so they can't linger in the file.

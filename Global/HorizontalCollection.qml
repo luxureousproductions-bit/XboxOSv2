@@ -58,6 +58,13 @@ id: root
             source: neighbourBg(+1) }
     // Set by the hosting screen ("showcasescreen", "gameviewscreen").
     property string ownScreen: ""
+    // Preview settings for this row, from its host: Home rows use Home's,
+    // Game details' rows their own (Settings > Previews & sound).
+    property bool previewOn:       settings.AllowThumbVideo === "Yes"
+    property bool previewSound:    settings.AllowThumbVideoAudio !== "No"
+    property bool hideLogoOnVideo: settings.HideLogo === "Yes"
+    // Tile titles for this row (Home: the collection-rows setting).
+    property string titleMode: gameTitleMode
 
     // A held Left/Right: the highlight skips its preview warm-up while this
     // holds (see ItemHighlight.racing). Released 200 ms after the last repeat.
@@ -144,6 +151,9 @@ id: root
             DynamicGridItem {
                 selected: ListView.isCurrentItem && collectionList.focus
                 ListView.onReused: resetForReuse()
+                playVideo: root.previewOn && gameData ? gameData.assets.videoList.length > 0 : false
+                hideLogoOnVideo: root.hideLogoOnVideo
+                titleMode: root.titleMode
                 // While Left/Right is held: no tile animations, and art only
                 // for tiles that keep their game a moment (raceArtMs).
                 reduceMotion: root.held
@@ -175,6 +185,7 @@ id: root
             BoxArtGridItem {
                 selected: ListView.isCurrentItem && collectionList.focus
                 ListView.onReused: resetForReuse()
+                titleMode: root.titleMode
                 reduceMotion: root.held
                 deferArt: root.held
                 // Unlike the dynamic tile, this one has no default for gameData —
@@ -216,6 +227,8 @@ id: root
                 // both use this component and must not keep each other alive.
                 ownScreen: root.ownScreen
                 racing: root.held
+                playVideo: root.previewOn && !root.boxArt
+                allowAudio: root.previewSound
             }
         }
 

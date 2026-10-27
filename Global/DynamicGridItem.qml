@@ -184,8 +184,11 @@ id: root
         if (videoShowing) fadeArt();
         else restoreArt();
     }
+    // Under a playing preview the art always fades; the logo too when the
+    // host says so (Settings > Previews & sound, per screen).
+    property bool hideLogoOnVideo: settings.HideLogo == "Yes"
     function fadeArt() {
-        if (settings.HideLogo == "Yes") container.opacity = 0;
+        if (hideLogoOnVideo) container.opacity = 0;
         else screenshot.opacity = 0;
     }
     onPreviewCoveringChanged: {

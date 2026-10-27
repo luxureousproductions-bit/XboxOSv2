@@ -1402,7 +1402,8 @@ id: root
                     id: heroBar
                         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                         height: Math.max(vpx(36), topRow.tileSz * 0.16, heroBarText.contentHeight + vpx(16)); color: "transparent"
-                        opacity: gameTitleMode === "Never" ? 0 : ((tile.selected || gameTitleMode === "Always") ? 1 : 0)
+                        // The hero is part of the system row: its titles setting.
+                        opacity: systemTitleMode === "Never" ? 0 : ((tile.selected || systemTitleMode === "Always") ? 1 : 0)
                         visible: opacity > 0
                         Behavior on opacity { NumberAnimation { duration: 120 } }
                         readonly property real r: Math.min(tile.radius, height)

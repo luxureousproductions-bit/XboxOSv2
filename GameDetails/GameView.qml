@@ -1254,6 +1254,11 @@ id: root
         HorizontalCollection {
         id: list1
             ownScreen: "gameviewscreen"
+            // "More like this" rows have their own preview settings
+            // (Settings > Previews & sound); they used to follow Home's.
+            previewOn:       liveSetting("Details rows video preview") === "Yes"
+            previewSound:    liveSetting("Details rows video audio") === "Yes"
+            hideLogoOnVideo: liveSetting("Details rows hide logo on video") === "Yes"
 
             property bool selected: ListView.isCurrentItem
             focus: selected
@@ -1291,6 +1296,11 @@ id: root
         HorizontalCollection {
         id: list2
             ownScreen: "gameviewscreen"
+            // "More like this" rows have their own preview settings
+            // (Settings > Previews & sound); they used to follow Home's.
+            previewOn:       liveSetting("Details rows video preview") === "Yes"
+            previewSound:    liveSetting("Details rows video audio") === "Yes"
+            hideLogoOnVideo: liveSetting("Details rows hide logo on video") === "Yes"
 
             property bool selected: ListView.isCurrentItem
             focus: selected

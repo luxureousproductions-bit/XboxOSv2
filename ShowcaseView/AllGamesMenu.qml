@@ -34,8 +34,9 @@ id: root
     // share currentGameIndex, so currentGame — and everything derived from it
     // (audio, video preview, imported-app handling, the helpbar) — is
     // unchanged. Only the layout differs; there is no second screen.
-    // Scoped to a system, View can be that system's own (per-system override).
-    readonly property bool gridMode: (scoped ? sysPref("View", lvView) : lvView) === "Grid"
+    // All Games and the systems each have their own View (Settings >
+    // Library); a system can also have its own (Y on that system).
+    readonly property bool gridMode: lvView === "Grid"
     // The header buttons hand focus back to "the games". That used to be
     // gamelist unconditionally — in grid mode that focused the hidden list,
     // so the grid never received input.
@@ -122,31 +123,61 @@ id: root
     readonly property bool scoped: systemIndex >= 0
     readonly property var  scopedColl: scoped ? api.collections.get(systemIndex) : null
     readonly property string sysKey: scopedColl ? (scopedColl.shortName || "") : ""
-    readonly property bool perSystemOn: settings.PerSystemTiles === "Yes"
-    function sysOverride() {
+    // ── Library settings: All Games, Systems, and each system ─────────────
+    // All Games has its own rows; Systems is the default for every system;
+    // a system can follow Systems or have its own ("<shortName> - <row>",
+    // switched by "<shortName> - Use theme settings": Yes = follow).
+    // Every value is live (listEpoch / settingsEpoch), so the Y panel and
+    // Settings apply as they're changed.
+    function sysOwn() {
         var e = listEpoch;
-        return scoped && perSystemOn && sysKey !== ""
+        return scoped && sysKey !== ""
                && settingsStore.get(sysKey + " - Use theme settings", "Yes") === "No";
     }
-    function sysPref(row, globalValue) {
+    // The value a system uses for a row: its own when it has its own,
+    // otherwise what Systems uses.
+    function sysPref(row, systemsValue) {
         var e = listEpoch;
-        return sysOverride() ? settingsStore.get(sysKey + " - " + row, globalValue) : globalValue;
+        return sysOwn() ? settingsStore.get(sysKey + " - " + row, systemsValue) : systemsValue;
     }
-    // Settings > Library. The All view has its own tile rows; the System view
-    // has its own too, or follows the All view ("Same as All view"); a
-    // system's per-system overrides sit on top of either.
-    readonly property bool sysFollowAll: lv("Library system tiles follow All", "No") === "Yes"
-    readonly property string allStyle:   lv("AllGames Tile Style",    settings.AllGamesTileStyle)
-    readonly property string allRatio:   lv("AllGames Tile Ratio",    settings.AllGamesTileRatio)
-    readonly property string allArt:     lv("AllGames Tile Art",      settings.AllGamesTileArt)
-    readonly property string allLogo:    lv("AllGames Tile Logo",     settings.AllGamesTileLogo)
-    readonly property string allColumns: lv("AllGames Items per row", settings.AllGamesColumns)
-    readonly property string tileStyle:   scoped ? sysPref("Tile shape",        sysFollowAll ? allStyle   : lv("Grid Thumbnail",    settings.GridThumbnail)) : allStyle
-    readonly property string tileRatioStr:scoped ? sysPref("Tile ratio",        sysFollowAll ? allRatio   : lv("Grid Ratio",        settings.GridRatio))     : allRatio
-    readonly property string tileArt:     scoped ? sysPref("Tile art",          sysFollowAll ? allArt     : lv("Grid art",          settings.GridArt))       : allArt
-    readonly property string tileLogo:    scoped ? sysPref("Show logo on tile", sysFollowAll ? allLogo    : lv("Grid Game Logo",    settings.GridGameLogo))  : allLogo
-    readonly property string tileColumns: scoped ? sysPref("Tiles per row",     sysFollowAll ? allColumns : lv("Number of columns", settings.GridColumns))   : allColumns
-    readonly property string tileTitles:  scoped ? sysPref("Game tile titles",  gameTitleMode) : gameTitleMode
+    // All Games
+    readonly property string allView:     lv("All Games View",           settings.AllGamesView)
+    readonly property string allStyle:    lv("AllGames Tile Style",      settings.AllGamesTileStyle)
+    readonly property string allRatio:    lv("AllGames Tile Ratio",      settings.AllGamesTileRatio)
+    readonly property string allArt:      lv("AllGames Tile Art",        settings.AllGamesTileArt)
+    readonly property string allLogo:     lv("AllGames Tile Logo",       settings.AllGamesTileLogo)
+    readonly property string allColumns:  lv("AllGames Items per row",   settings.AllGamesColumns)
+    readonly property string allTitles:   lv("AllGames Tile titles")
+    readonly property string allPreview:  lv("AllGames Video preview")
+    readonly property string allSound:    lv("All games menu video audio")
+    readonly property string allGridHide: lv("AllGames Grid hide logo on video")
+    readonly property string allListHide: lv("AllGames List hide on video")
+    // Systems (the default for every system)
+    readonly property string sysView:     lv("Systems View")
+    readonly property string sysStyle:    lv("Grid Thumbnail",           settings.GridThumbnail)
+    readonly property string sysRatio:    lv("Grid Ratio",               settings.GridRatio)
+    readonly property string sysArt:      lv("Grid art",                 settings.GridArt)
+    readonly property string sysTileLogo: lv("Grid Game Logo",           settings.GridGameLogo)
+    readonly property string sysColumns:  lv("Number of columns",        settings.GridColumns)
+    readonly property string sysTitles:   lv("Systems Tile titles")
+    readonly property string sysPreview:  lv("Systems Video preview")
+    readonly property string sysSound:    lv("Systems video audio")
+    readonly property string sysGridHide: lv("Systems Grid hide logo on video")
+    readonly property string sysListHide: lv("Systems List hide on video")
+    // What this page is showing uses
+    readonly property string lvView:      scoped ? sysPref("View",              sysView)    : allView
+    readonly property string tileStyle:   scoped ? sysPref("Tile shape",        sysStyle)   : allStyle
+    readonly property string tileRatioStr:scoped ? sysPref("Tile ratio",        sysRatio)   : allRatio
+    readonly property string tileArt:     scoped ? sysPref("Tile art",          sysArt)     : allArt
+    readonly property string tileLogo:    scoped ? sysPref("Show logo on tile", sysTileLogo): allLogo
+    readonly property string tileColumns: scoped ? sysPref("Tiles per row",     sysColumns) : allColumns
+    readonly property string tileTitles:  scoped ? sysPref("Game tile titles",  sysTitles)  : allTitles
+    readonly property string lvVideo:     scoped ? sysPref("Video preview",     sysPreview) : allPreview
+    readonly property string lvSound:     scoped ? sysPref("Video audio",       sysSound)   : allSound
+    // Under a playing preview the art always fades. Grid: also the logo?
+    // List: the box art, the logo, both or neither (the screenshot always).
+    readonly property bool   gridHideLogo: (scoped ? sysGridHide : allGridHide) === "Yes"
+    readonly property string listHide:     scoped ? sysListHide : allListHide
 
     // The scope the theme asked for (Home system tile, Library button,
     // return from a game). -2 = nothing pending.
@@ -285,10 +316,6 @@ id: root
     // only re-reads on reload, so the list reads them here with an epoch.
     property int listEpoch: 0
     function lv(key, fallback) { var e = listEpoch; return settingsStore.get(key, fallback); }
-    readonly property string lvView:      lv("All Games View",                settings.AllGamesView)
-    readonly property string lvVideo:     lv("AllGames Video preview",        settings.AllGamesVideoPreview)
-    readonly property string lvHideBox:   lv("AllGames Hide box art on video", settings.AllGamesHideBoxOnVideo)
-    readonly property string lvHideLogo:  lv("AllGames Hide logo on video",    settings.AllGamesHideLogoOnVideo)
     readonly property string lvBlur:      lv("AllGames Blur Background",       settings.AllGamesBlurBackground)
     readonly property string lvScanlines: lv("AllGames Show scanlines",        settings.AllGamesScanlines)
 
@@ -389,8 +416,8 @@ id: root
     property string videoSource: (currentGame && currentGame.assets && currentGame.assets.videos && currentGame.assets.videos.length > 0) ? currentGame.assets.videos[0] : ""
     property bool   videoArmed:      false
     property bool   videoPlaying:    previewVideo.playbackState === MediaPlayer.PlayingState
-    property bool   hideBoxForVideo:  videoPlaying && lvHideBox === "Yes"
-    property bool   hideLogoForVideo: videoPlaying && lvHideLogo === "Yes"
+    property bool   hideBoxForVideo:  videoPlaying && (listHide === "Box art" || listHide === "Both")
+    property bool   hideLogoForVideo: videoPlaying && (listHide === "Logo"    || listHide === "Both")
     Timer {
     id: videoDebounce
         interval: hqAllGamesVideoMs; repeat: false   // HQ: preview starts sooner
@@ -882,7 +909,7 @@ id: root
                          && videoSource !== "" && playbackOwner === "allgamesscreen" && !gridMode)
                         ? videoSource : ""
                 fillMode: VideoOutput.PreserveAspectCrop
-                muted: lv("All games menu video audio", settings.AllGamesVideoAudio) !== "Yes"
+                muted: lvSound !== "Yes"
                 loops: MediaPlayer.Infinite
                 autoPlay: !hqAllGamesWarm
                 readonly property bool ready: status === MediaPlayer.Loaded
@@ -1560,7 +1587,7 @@ id: root
                 boxArt: gridBoxArt
                 playVideo: lvVideo !== "No" && !boxArt
                 racing: root.fastScrolling
-                allowAudio: lv("All games menu video audio", settings.AllGamesVideoAudio) === "Yes"   // this page's audio row, live from the Y panel
+                allowAudio: lvSound === "Yes"   // this page's sound row (All Games, Systems or this system), live from the Y panel
             }
         }
 
@@ -1630,6 +1657,7 @@ id: root
                 showLogo: tileLogo === "Yes"
                 playVideo: gameData ? (gameData.assets.videoList.length
                            && lvVideo !== "No") : false
+                hideLogoOnVideo: gridHideLogo
                 ownScreen: "allgamesscreen"
                 reduceMotion: root.fastScrolling
                 deferArt: root.fastScrolling
@@ -1702,14 +1730,16 @@ id: root
     // rows were being indexed as "Yes,No".
     property bool listPanelOpen: false
     property int  listRow: 0
+    // Rows for the panel. `order` is the option string exactly as the Settings
+    // page declares the row (it draws from "<key>Index"); null = no Settings row.
+    readonly property var tileShapes: ["Wide","Tall","Square","Box Art","3D Box"]
     readonly property var listRows: [
-        { key: "All Games View",                label: "View",                          opts: ["List","Grid"], order: "List,Grid", dflt: settings.AllGamesView },
-        { key: "AllGames Video preview",        label: "Video previews",                opts: ["Yes","No"], order: "Yes,No", dflt: settings.AllGamesVideoPreview },
-        { key: "All games menu video audio",    label: "Video audio",                   opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesVideoAudio },
-        { key: "AllGames Hide box art on video", label: "Hide box art when preview plays", opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesHideBoxOnVideo },
-        { key: "AllGames Hide logo on video",    label: "Hide logo when preview plays",  opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesHideLogoOnVideo },
-        { key: "AllGames Blur Background",       label: "Blur background",               opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesBlurBackground },
-        { key: "AllGames Show scanlines",        label: "Show scanlines",                opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesScanlines }
+        { key: "All Games View",              label: "View",               opts: ["List","Grid"], order: "List,Grid", dflt: allView },
+        { key: "AllGames Video preview",      label: "Preview",            opts: ["Yes","No"], order: "Yes,No", dflt: allPreview, group: "Preview panel" },
+        { key: "All games menu video audio",  label: "Sound",              opts: ["Yes","No"], order: "No,Yes", dflt: allSound },
+        { key: "AllGames List hide on video", label: "While it plays, hide", opts: ["None","Box art","Logo","Both"], order: "None,Box art,Logo,Both", dflt: allListHide },
+        { key: "AllGames Blur Background",    label: "Blurred background", opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesBlurBackground },
+        { key: "AllGames Show scanlines",     label: "Scanlines",          opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesScanlines }
     ]
     // Settings stores the ratio list in a jumbled order (0.66–0.99 first,
     // then 0.25–0.65); the panel steps through it in numeric order and the
@@ -1717,68 +1747,57 @@ id: root
     readonly property string ratioOrder: "0.66,0.67,0.68,0.69,0.70,0.71,0.72,0.73,0.74,0.75,0.76,0.77,0.78,0.79,0.80,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88,0.89,0.90,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,0.25,0.26,0.27,0.28,0.29,0.30,0.31,0.32,0.33,0.34,0.35,0.36,0.37,0.38,0.39,0.40,0.41,0.42,0.43,0.44,0.45,0.46,0.47,0.48,0.49,0.50,0.51,0.52,0.53,0.54,0.55,0.56,0.57,0.58,0.59,0.60,0.61,0.62,0.63,0.64,0.65"
     readonly property var ratioOpts: { var a = []; for (var i = 25; i <= 99; i++) a.push("0." + i); return a; }
     readonly property var gridRows: [
-        { key: "All Games View",          label: "View",                opts: ["List","Grid"], order: "List,Grid", dflt: settings.AllGamesView },
-        { key: "AllGames Video preview",  label: "Video previews",      opts: ["Yes","No"], order: "Yes,No", dflt: settings.AllGamesVideoPreview },
-        { key: "All games menu video audio", label: "Video audio",       opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesVideoAudio },
-        { key: "AllGames Tile Style",     label: "Tile shape",          opts: ["Wide","Tall","Square","Box Art","3D Box"], order: "Wide,Tall,Square,Box Art,3D Box", dflt: settings.AllGamesTileStyle },
-        { key: "AllGames Tile Ratio",     label: "Tile ratio",          opts: ratioOpts, order: ratioOrder, dflt: settings.AllGamesTileRatio },
-        { key: "AllGames Tile Art",       label: "Tile art",            opts: ["Fanart","Screenshot","Boxfront"], order: "Fanart,Screenshot,Boxfront", dflt: settings.AllGamesTileArt },
-        { key: "AllGames Tile Logo",      label: "Show logo on tile",   opts: ["Yes","No"], order: "Yes,No", dflt: settings.AllGamesTileLogo },
-        { key: "AllGames Items per row",  label: "Tiles per row",       opts: ["3","4","5","6","7","8"], order: "3,4,5,6,7,8", dflt: settings.AllGamesColumns }
+        { key: "All Games View",          label: "View",          opts: ["List","Grid"], order: "List,Grid", dflt: allView },
+        { key: "AllGames Tile Style",     label: "Tile shape",    opts: tileShapes, order: "Wide,Tall,Square,Box Art,3D Box", dflt: allStyle },
+        { key: "AllGames Tile Ratio",     label: "Tile ratio",    opts: ratioOpts, order: ratioOrder, dflt: allRatio },
+        { key: "AllGames Items per row",  label: "Tiles per row", opts: ["3","4","5","6","7","8"], order: "3,4,5,6,7,8", dflt: allColumns },
+        { key: "AllGames Tile Art",       label: "Tile art",      opts: ["Fanart","Screenshot","Boxfront"], order: "Fanart,Screenshot,Boxfront", dflt: allArt },
+        { key: "AllGames Tile Logo",      label: "Logo on tile",  opts: ["Yes","No"], order: "Yes,No", dflt: allLogo },
+        { key: "AllGames Tile titles",    label: "Tile titles",   opts: ["On focus","Always","Never"], order: "On focus,Always,Never", dflt: allTitles },
+        { key: "AllGames Video preview",  label: "Preview",       opts: ["Yes","No"], order: "Yes,No", dflt: allPreview, group: "Previews" },
+        { key: "All games menu video audio", label: "Sound",      opts: ["Yes","No"], order: "No,Yes", dflt: allSound },
+        { key: "AllGames Grid hide logo on video", label: "Hide logo while it plays", opts: ["Yes","No"], order: "Yes,No", dflt: allGridHide }
     ]
-    // Scoped to a system: the Platform page's rows, or that system's own
-    // rows when "Per-system tile settings" is on (what the Platform page's Y
-    // panel edited). Per-system keys have no Settings row, so no Index.
-    readonly property var platformRows: [
-        { key: "All Games View",    label: "View",              opts: ["List","Grid"], order: "List,Grid", dflt: settings.AllGamesView },
-        { key: "Grid Thumbnail",    label: "Tile shape",        opts: ["Wide","Tall","Square","Box Art","3D Box"], order: "Wide,Tall,Square,Box Art,3D Box", dflt: settings.GridThumbnail },
-        { key: "Grid Ratio",        label: "Tile ratio",        opts: ratioOpts, order: ratioOrder, dflt: settings.GridRatio },
-        { key: "Grid art",          label: "Tile art",          opts: ["Fanart","Screenshot","Boxfront"], order: "Fanart,Screenshot,Boxfront", dflt: settings.GridArt },
-        { key: "Grid Game Logo",    label: "Show logo on tile", opts: ["Yes","No"], order: "Yes,No", dflt: settings.GridGameLogo },
-        { key: "Number of columns", label: "Tiles per row",     opts: ["3","4","5","6","7","8"], order: "3,4,5,6,7,8", dflt: settings.GridColumns }
-    ]
+    // A system. Row 0 says whether it follows Systems or has its own; the
+    // rest show what it uses either way (`sys` is the per-system row name,
+    // `base` what Systems uses). Changing any row gives it its own settings.
     readonly property var sysPanelRows: [
-        { key: sysKey + " - Use theme settings", label: "Use theme settings", opts: ["Yes","No"], order: null, dflt: "Yes" },
-        { key: sysKey + " - View",               label: "View",               opts: ["List","Grid"], order: null, dflt: settings.AllGamesView },
-        { key: sysKey + " - Tile shape",         label: "Tile shape",         opts: ["Wide","Tall","Square","Box Art","3D Box"], order: null, dflt: settings.GridThumbnail },
-        { key: sysKey + " - Tile ratio",         label: "Tile ratio",         opts: ratioOpts, order: null, dflt: settings.GridRatio },
-        { key: sysKey + " - Tile art",           label: "Tile art",           opts: ["Fanart","Screenshot","Boxfront"], order: null, dflt: settings.GridArt },
-        { key: sysKey + " - Show logo on tile",  label: "Show logo on tile",  opts: ["Yes","No"], order: null, dflt: settings.GridGameLogo },
-        { key: sysKey + " - Tiles per row",      label: "Tiles per row",      opts: ["3","4","5","6","7","8"], order: null, dflt: settings.GridColumns },
-        { key: sysKey + " - Game tile titles",   label: "Game tile titles",   opts: ["On focus","Always","Never"], order: null, dflt: gameTitleMode }
+        { key: "__own",                          label: "Settings",      opts: ["Follow Systems","Its own"], order: null, dflt: "Follow Systems" },
+        { key: sysKey + " - View",               sys: "View",              label: "View",          opts: ["List","Grid"], order: null, base: sysView },
+        { key: sysKey + " - Tile shape",         sys: "Tile shape",        label: "Tile shape",    opts: tileShapes, order: null, base: sysStyle },
+        { key: sysKey + " - Tile ratio",         sys: "Tile ratio",        label: "Tile ratio",    opts: ratioOpts, order: null, base: sysRatio },
+        { key: sysKey + " - Tiles per row",      sys: "Tiles per row",     label: "Tiles per row", opts: ["3","4","5","6","7","8"], order: null, base: sysColumns },
+        { key: sysKey + " - Tile art",           sys: "Tile art",          label: "Tile art",      opts: ["Fanart","Screenshot","Boxfront"], order: null, base: sysArt },
+        { key: sysKey + " - Show logo on tile",  sys: "Show logo on tile", label: "Logo on tile",  opts: ["Yes","No"], order: null, base: sysTileLogo },
+        { key: sysKey + " - Game tile titles",   sys: "Game tile titles",  label: "Tile titles",   opts: ["On focus","Always","Never"], order: null, base: sysTitles },
+        { key: sysKey + " - Video preview",      sys: "Video preview",     label: "Preview",       opts: ["Yes","No"], order: null, base: sysPreview, group: "Previews" },
+        { key: sysKey + " - Video audio",        sys: "Video audio",       label: "Sound",         opts: ["Yes","No"], order: null, base: sysSound }
     ]
-    readonly property var panelRows: scoped ? ((perSystemOn && sysKey !== "") ? sysPanelRows : platformRows)
-                                            : (gridMode ? gridRows : listRows)
-    function listValue(row) { var e = listEpoch; var k = panelRows[row].key; return settingsStore.get(k, String(panelRows[row].dflt)); }
-    function panelKeyValue(key, dflt) { var e = listEpoch; return settingsStore.get(key, String(dflt)); }
-    // Mirrors the Settings page's greying so the two never disagree about
-    // what is in play.
+    readonly property var panelRows: scoped ? sysPanelRows : (gridMode ? gridRows : listRows)
+    function listValue(row) {
+        var e = listEpoch; var r = panelRows[row];
+        if (r.key === "__own") return sysOwn() ? "Its own" : "Follow Systems";
+        if (r.sys) return sysPref(r.sys, String(r.base));
+        return settingsStore.get(r.key, String(r.dflt));
+    }
+    function rowValue(key) {
+        for (var i = 0; i < panelRows.length; i++) if (panelRows[i].key === key) return listValue(i);
+        return "";
+    }
+    // Greying, the same rules as Settings.
     function listRowDisabled(row) {
-        var k = panelRows[row].key;
-        if (scoped) {
-            // Per-system rows: all follow the theme until "Use theme settings" is No
-            if (k.indexOf(sysKey + " - ") === 0) {
-                if (row > 0 && panelKeyValue(sysKey + " - Use theme settings", "Yes") === "Yes") return true;
-                var ss = panelKeyValue(sysKey + " - Tile shape", settings.GridThumbnail);
-                if ((k === sysKey + " - Tile art" || k === sysKey + " - Show logo on tile") && (ss === "Box Art" || ss === "3D Box")) return true;
-                if (k === sysKey + " - Tile ratio" && ss === "Square") return true;
-                return false;
-            }
-            if (k.indexOf("Grid") === 0 || k === "Number of columns") {
-                if (panelKeyValue("Library system tiles follow All", "No") === "Yes") return true;
-            }
-            var gs = panelKeyValue("Grid Thumbnail", settings.GridThumbnail);
-            if ((k === "Grid art" || k === "Grid Game Logo") && (gs === "Box Art" || gs === "3D Box")) return true;
-            if (k === "Grid Ratio" && gs === "Square") return true;
-            return false;
+        var e = listEpoch; var r = panelRows[row], k = r.key;
+        var label = r.label;
+        if (label === "Sound" || label === "Hide logo while it plays" || label === "While it plays, hide") {
+            var prev = scoped ? listValue(row - (label === "Sound" ? 1 : 2)) : rowValue("AllGames Video preview");
+            if (prev === "No") return true;
+            if (label === "Hide logo while it plays" && rowValue("AllGames Tile Logo") === "No") return true;
         }
-        if (k === "AllGames Hide box art on video" || k === "AllGames Hide logo on video" || k === "All games menu video audio")
-            return panelKeyValue("AllGames Video preview", settings.AllGamesVideoPreview) === "No";
-        if (k.indexOf("AllGames Tile") === 0 || k === "AllGames Items per row") {
-            var shape = panelKeyValue("AllGames Tile Style", settings.AllGamesTileStyle);
-            if (k === "AllGames Tile Art" || k === "AllGames Tile Logo") return shape === "Box Art" || shape === "3D Box";
-            if (k === "AllGames Tile Ratio") return shape === "Square";
-        }
+        if (scoped && r.sys && r.sys !== "View" && r.sys !== "Video preview" && r.sys !== "Video audio"
+            && listValue(1) === "List") return true;           // tile rows mean nothing in list view
+        var shape = scoped ? listValue(2) : rowValue("AllGames Tile Style");
+        if (label === "Tile art" || label === "Logo on tile") return shape === "Box Art" || shape === "3D Box";
+        if (label === "Tile ratio") return shape === "Square";
         return false;
     }
     // Writes the value AND the index the Settings page draws its row from.
@@ -1788,22 +1807,41 @@ id: root
         var oi = order.split(",").indexOf(String(v));
         if (oi >= 0) settingsStore.set(key + "Index", oi);
     }
+    // A system following Systems gets its own settings, starting from
+    // exactly what it shows now.
+    function makeSysOwn() {
+        if (sysOwn()) return;
+        for (var i = 0; i < sysPanelRows.length; i++) {
+            var r = sysPanelRows[i];
+            if (r.sys) settingsStore.set(r.key, String(r.base));
+        }
+        settingsStore.set(sysKey + " - Use theme settings", "No");
+    }
+    function sysFollow() {
+        settingsStore.set(sysKey + " - Use theme settings", "Yes");
+        listEpoch++; settingsEpoch++;
+    }
     function listCycle(row, dir) {
         if (listRowDisabled(row)) return;
         var r = panelRows[row], opts = r.opts, i = opts.indexOf(listValue(row)); if (i < 0) i = 0;
         var ni = (i + dir + opts.length) % opts.length, v = opts[ni];
-        panelWrite(r.key, v, r.order);
-        // Same rule as Settings: box-front art already carries the name, so
-        // choosing it turns the tile logo off.
-        if (r.key === "AllGames Tile Art" && v === "Boxfront") panelWrite("AllGames Tile Logo", "No", "Yes,No");
-        if (r.key === "Grid art" && v === "Boxfront") panelWrite("Grid Game Logo", "No", "Yes,No");
-        if (r.key === sysKey + " - Tile art" && v === "Boxfront") panelWrite(sysKey + " - Show logo on tile", "No", null);
+        var oldView = lvView;
+        if (r.key === "__own") {
+            if (v === "Its own") makeSysOwn(); else settingsStore.set(sysKey + " - Use theme settings", "Yes");
+        } else if (r.sys) {
+            makeSysOwn();
+            settingsStore.set(r.key, v);
+            if (r.sys === "Tile art" && v === "Boxfront") settingsStore.set(sysKey + " - Show logo on tile", "No");
+        } else {
+            panelWrite(r.key, v, r.order);
+            // Same rule as Settings: box-front art already carries the name.
+            if (r.key === "AllGames Tile Art" && v === "Boxfront") panelWrite("AllGames Tile Logo", "No", "Yes,No");
+        }
         listEpoch++; settingsEpoch++; playNav();
-        // Flipping the view swaps the panel's row set in place; the highlight
-        // stays on the View row, which is row 0 in both sets. The incoming
-        // view's `focus: gridMode` binding grabs focus as it appears, so take
-        // it back — otherwise the panel is showing but the grid/list is live.
-        if (r.key === "All Games View" || r.key === sysKey + " - View") {
+        // Flipping the view can swap the row set; the incoming view's focus
+        // binding grabs focus as it appears, so take it back and stay on
+        // the row just changed.
+        if (lvView !== oldView) {
             var vr = 0;
             for (var pi = 0; pi < panelRows.length; pi++) if (panelRows[pi].key === r.key) { vr = pi; break; }
             listRow = vr; listPanel.forceActiveFocus();
@@ -1836,8 +1874,9 @@ id: root
             }
             Text {
                 anchors { left: parent.left; leftMargin: vpx(36); top: parent.top; topMargin: vpx(68) }
-                text: scoped ? ((perSystemOn && sysKey !== "") ? "This system's tile settings" : "Platform page tile settings")
-                             : (gridMode ? "Grid view settings" : "List view settings")
+                text: scoped ? (sysOwn() ? "These change " + (scopedColl ? scopedColl.name : "this system") + " only."
+                                         : "Follows Systems. Change any row to give it its own settings.")
+                             : "These change All Games only. Systems keep their own."
                 color: "#A0A0A0"; font.family: subtitleFont.name; font.pixelSize: vpx(15)
             }
             Rectangle { anchors { left: parent.left; right: parent.right; top: parent.top; topMargin: vpx(104); leftMargin: vpx(36); rightMargin: vpx(36) } height: vpx(2); color: "#3C3C40" }
@@ -1898,6 +1937,12 @@ id: root
             if (api.keys.isCancel(event) && !event.isAutoRepeat)  { event.accepted = true; playBack(); listPanelOpen = false; focusGames(); return; }
             if (api.keys.isFilters(event) && !event.isAutoRepeat) { event.accepted = true; listPanelOpen = false; settingsScreen(); return; }
             if (api.keys.isAccept(event) && !event.isAutoRepeat)  { event.accepted = true; listCycle(listRow, 1); return; }
+            // X on a system with its own settings: back to following Systems.
+            if (api.keys.isDetails(event) && !event.isAutoRepeat) {
+                event.accepted = true;
+                if (scoped && sysOwn()) { playToggle(); sysFollow(); }
+                return;
+            }
         }
         Keys.onUpPressed:    listStep(-1)
         Keys.onDownPressed:  listStep(1)

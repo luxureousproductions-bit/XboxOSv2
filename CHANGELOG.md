@@ -4,7 +4,33 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 39)
+## Unreleased — refresh branch (build 40)
+
+### All Games and every system, set separately
+- **All Games has its own View, tiles and titles; Systems is the default for every system** (Settings › Library). Changing All Games to list or grid no longer changes every system.
+- **A system follows Systems or has its own settings.** Y on a system opens that system's panel: the top row says *Follow Systems* or *Its own*; while following, it shows what Systems uses, and changing any row gives the system its own settings, starting from what it showed. X in that panel sends it back to following Systems. The **Per-system overrides** switch and **Same as All view** are gone — Y on a system can no longer change every system.
+- Y on All Games changes All Games only.
+
+### Previews & sound, one page
+- New **Settings › Previews & sound**: Preview, Sound and what hides while a preview plays, for each screen — Home rows, Library · All Games, Library · Systems (each system can have its own Preview and Sound), Game details background, Game details "More like this" rows, and Discover — plus menu sounds, volume and the startup chime. Replaces the rows spread over Tiles, Library, Game details and Audio.
+- **Grids:** a tile's art always fades away under its preview; the choice is whether the logo goes too (**Hide logo while it plays**). The Library grid used to follow Home's row; it has its own now, for All Games and for Systems.
+- **List view:** the screenshot always gives way to the preview; **hide while it plays** is None, Box art, Logo or Both (was two separate rows).
+- Game details' "More like this" rows have their own Preview, Sound and Hide logo (they used to follow Home's, silently).
+
+### Titles
+- Home: **System row titles** (the system row, hero tile included) and **Collection row titles**, on Settings › Home.
+- Library: **Tile titles** for All Games and for Systems, and per system.
+
+### Settings pages
+- New order: General, Appearance, Home, Home rows, Library, Game details (with the Media carousel items), Previews & sound, Retro Achievements, System (with Diagnostics), Tips & Tricks. Same look for now; the Xbox-style restyle is next.
+
+### Sound
+- Menu sounds and the startup chime re-mastered: +3 dB below ~150 Hz, −3 dB above ~5 kHz, same peak level.
+
+### Updating
+- Settings move over once (schema 2): every new setting starts from what the screen showed before — Systems takes the old View and System-view tiles (or the All view's, if "Same as All view" was on), the Library's titles take Home's, Systems and "More like this" previews take what they followed, and the two list hide rows become one choice. Per-system settings that were switched off by the old master switch stay off.
+
+## Build 39
 
 ### Windows / Linux, part 1 (ported from the windows-wip branch, re-done on the refresh)
 - **Mouse hover only follows the mouse.** Hover selects tiles, but a list scrolled by keys, wheel or a held D-pad moves tiles under a pointer that's sitting still, and Qt reports that as the pointer "entering" them — the selection jumped to whatever passed under the cursor, mid-scroll. Hover now counts only when the pointer itself moved in the last 300 ms (one watcher on the whole theme that doesn't take hover from anything). Applies to game tiles, Home system tiles, the Game details media strip and the RA lists.

@@ -38,6 +38,7 @@ id: root
         onReleased: mouse.accepted = true
     }
 
+    // ── General ──
     ListModel {
     id: settingsModel
 
@@ -62,11 +63,31 @@ id: root
             setting: "No,Yes"
         }
         ListElement {
+            settingName: "Startup intro"
+            setting: "Yes,No"
+        }
+    }
+
+    property var generalPage: {
+        return {
+            pageName: "General",
+            listmodel: settingsModel
+        }
+    }
+
+    // ── Appearance ──
+    ListModel {
+    id: appearanceSettingsModel
+
+        ListElement { settingName: "Colors"; setting: ""; header: true }
+        ListElement {
             settingName: "Color Background"
+            label: "Background color"
             setting: "White,Light Gray,Silver,Cool Gray,Gray,Mid Gray,Dark Gray,Charcoal,Black,Light Blue,Steel Blue,Slate,Dark Steel,Dark Blue,Navy Blue,Midnight Blue,Teal,Dark Teal,Sage,Forest,Forest Green,Dark Green,Rose,Dark Red,Wine,Burgundy,Plum,Dark Purple,Deep Purple,Indigo,Tan,Dark Orange,Dark Brown"
         }
         ListElement {
             settingName: "Color Layout"
+            label: "Accent color"
             setting: "White,Silver,Light Gray,Stone,Mid Gray,Steel,Slate,Dark Gray,Gunmetal,Charcoal,Onyx,Ice Blue,Arctic,Sky Blue,Light Blue,Cyan,Royal Blue,Cobalt,Sapphire,Dark Blue,Navy Blue,Seafoam,Turquoise,Teal,Dark Teal,Mint,Lime,Light Green,Jade,Emerald,Sage,Olive,Dark Green,Forest Green,Yellow,Gold,Amber,Dark Gold,Orange,Dark Orange,Coral,Salmon,Copper,Bronze,Rust,Sienna,Light Pink,Hot Pink,Rose,Dark Pink,Magenta,Light Red,Ruby,Crimson,Dark Red,Brick Red,Maroon,Burgundy,Lavender,Violet,Purple,Dark Purple,Indigo,Tan,Light Brown,Dark Brown"
         }
         ListElement {
@@ -79,109 +100,32 @@ id: root
             label: "Bottom fade"
             setting: "Off,Light,Medium,Strong"
         }
+        ListElement { settingName: "Tiles"; setting: ""; header: true }
+        ListElement {
+            settingName: "Tile Halo"
+            label: "Frame glow"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Favorited Tile Accent"
+            label: "Favorite tile accent"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Game Counter"
+            label: "Show game count"
+            setting: "Yes,No"
+        }
     }
 
-    property var generalPage: {
+    property var appearancePage: {
         return {
-            pageName: "General",
-            listmodel: settingsModel
+            pageName: "Appearance",
+            listmodel: appearanceSettingsModel
         }
     }
 
-    ListModel {
-    id: audioSettingsModel
-
-        ListElement { settingName: "Menu"; setting: ""; header: true }
-        ListElement {
-            settingName: "Menu sounds"
-            setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "Start up chime"
-            setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "Menu Volume"
-            setting: "1.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9"
-        }
-        ListElement { settingName: "Video"; setting: ""; header: true }
-        ListElement {
-            settingName: "Video thumbnail audio"
-            setting: "No,Yes"
-        }
-        ListElement {
-            settingName: "Discover video audio"
-            setting: "No,Yes"
-        }
-        ListElement {
-            settingName: "Game details video preview audio"
-            setting: "No,Yes"
-        }
-        ListElement {
-            settingName: "All games menu video audio"
-            setting: "No,Yes"
-        }
-    }
-
-    property var audioPage: {
-        return {
-            pageName: "Audio",
-            listmodel: audioSettingsModel
-        }
-    }
-
-    ListModel {
-    id: advancedSettingsModel
-
-        ListElement {
-            settingName: "Omit genre: Application from Showcase"
-            label: "Hide apps from Home"
-            setting: "No,Yes"
-        }
-        ListElement {
-            settingName: "Omit genre: Emulator from Showcase"
-            label: "Hide emulators from Home"
-            setting: "No,Yes"
-        }
-        ListElement {
-            settingName: "Hide Android System Tile"
-            setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "Hide Android Games System Tile"
-            setting: "No,Yes"
-        }
-        ListElement {
-            settingName: "Added App Launch"
-            setting: "Instant,Details Page"
-        }
-        ListElement {
-            settingName: "Show WiFi Indicator"
-            setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "Show Battery Percentage"
-            label: "Battery indicator"
-            setting: "Battery Only,Percentage Only,Combined,No"
-        }
-        ListElement {
-            settingName: "Show Clock"
-            label: "Clock"
-            setting: "12hr,24hr,No"
-        }
-        ListElement {
-            settingName: "Startup intro"
-            setting: "Yes,No"
-        }
-    }
-
-    property var advancedPage: {
-        return {
-            pageName: "Advanced",
-            listmodel: advancedSettingsModel
-        }
-    }
-
+    // ── Home ──
     ListModel {
     id: showcaseSettingsModel
 
@@ -196,14 +140,14 @@ id: root
             setting: "No,Yes"
         }
         ListElement {
-            settingName: "Showcase Collections Art"
-            label: "Tile art"
-            setting: "Fanart,Screenshot"
-        }
-        ListElement {
             settingName: "Hero box art"
             label: "Hero tile art"
             setting: "Fanart,Boxfront,Screenshot"
+        }
+        ListElement {
+            settingName: "Showcase Collections Art"
+            label: "Row tile art"
+            setting: "Fanart,Screenshot"
         }
         ListElement {
             settingName: "System sort"
@@ -212,6 +156,17 @@ id: root
         ListElement {
             settingName: "Number of games showcased"
             setting: "15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,1,2,3,4,5,6,7,8,9,10,11,12,13,14"
+        }
+        ListElement { settingName: "Titles"; setting: ""; header: true }
+        ListElement {
+            settingName: "System tile titles"
+            label: "System row titles"
+            setting: "On focus,Always,Never"
+        }
+        ListElement {
+            settingName: "Always show titles"
+            label: "Collection row titles"
+            setting: "On focus,Always,Never"
         }
         ListElement { settingName: "Background"; setting: ""; header: true }
         ListElement {
@@ -243,7 +198,7 @@ id: root
 
     property var showcasePage: {
         return {
-            pageName: "Home page",
+            pageName: "Home",
             listmodel: showcaseSettingsModel
         }
     }
@@ -379,107 +334,23 @@ id: root
         }
     }
 
-    property var tilesPage: {
-        return {
-            pageName: "Tiles",
-            listmodel: tilesSettingsModel
-        }
-    }
-
     property var collectionsPage: {
         return {
-            pageName: "Collections",
+            pageName: "Home rows",
             listmodel: collectionsSettingsModel
         }
     }
 
-    ListModel {
-    id: tilesSettingsModel
-
-        ListElement { settingName: "Titles"; setting: ""; header: true }
-        ListElement {
-            settingName: "Always show titles"
-            label: "Game tile titles"
-            setting: "On focus,Always,Never"
-        }
-        ListElement {
-            settingName: "System tile titles"
-            setting: "On focus,Always,Never"
-        }
-        ListElement { settingName: "Appearance"; setting: ""; header: true }
-        ListElement {
-            settingName: "Tile Halo"
-            label: "Frame glow"
-            setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "Favorited Tile Accent"
-            label: "Favorite tile accent"
-            setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "Game Counter"
-            label: "Show game count"
-            setting: "Yes,No"
-        }
-
-        ListElement { settingName: "Video"; setting: ""; header: true }
-        ListElement {
-            settingName: "Allow video thumbnails"
-            label: "Video previews"
-            setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "Hide logo when thumbnail video plays"
-            label: "Hide logo when preview plays"
-            setting: "No,Yes"
-        }
-    }
-
-    // ── Library: All Games and every system, one screen ──────────────────
-    // Same keys as the old Platform page / All Games menu sections, so saved
-    // values and per-system overrides carry over; only the grouping is new.
+    // ── Library: All Games and Systems, set separately (a system can have its own: Y on it) ──
     ListModel {
     id: librarySettingsModel
 
-        ListElement { settingName: "Layout"; setting: ""; header: true }
+        ListElement { settingName: "All Games"; setting: ""; header: true }
         ListElement {
             settingName: "All Games View"
             label: "View"
             setting: "List,Grid"
         }
-        ListElement {
-            settingName: "LB/RB Function"
-            label: "LB/RB on a system"
-            setting: "Cycle Platforms,Nav Bar"
-        }
-        ListElement { settingName: "Video"; setting: ""; header: true }
-        ListElement {
-            settingName: "AllGames Video preview"
-            label: "Video previews"
-            setting: "Yes,No"
-        }
-        ListElement {
-            settingName: "AllGames Hide box art on video"
-            label: "Hide box art when preview plays"
-            setting: "No,Yes"
-        }
-        ListElement {
-            settingName: "AllGames Hide logo on video"
-            label: "Hide logo when preview plays"
-            setting: "No,Yes"
-        }
-        ListElement {
-            settingName: "AllGames Blur Background"
-            label: "Blur background (list view)"
-            setting: "No,Yes"
-        }
-        ListElement {
-            settingName: "AllGames Show scanlines"
-            label: "Show scanlines (list view)"
-            setting: "No,Yes"
-        }
-        ListElement { settingName: "Tiles - All view"; setting: ""; header: true }
         ListElement {
             settingName: "AllGames Tile Style"
             label: "Tile shape"
@@ -491,25 +362,30 @@ id: root
             setting: "0.66,0.67,0.68,0.69,0.70,0.71,0.72,0.73,0.74,0.75,0.76,0.77,0.78,0.79,0.80,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88,0.89,0.90,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,0.25,0.26,0.27,0.28,0.29,0.30,0.31,0.32,0.33,0.34,0.35,0.36,0.37,0.38,0.39,0.40,0.41,0.42,0.43,0.44,0.45,0.46,0.47,0.48,0.49,0.50,0.51,0.52,0.53,0.54,0.55,0.56,0.57,0.58,0.59,0.60,0.61,0.62,0.63,0.64,0.65"
         }
         ListElement {
+            settingName: "AllGames Items per row"
+            label: "Tiles per row"
+            setting: "3,4,5,6,7,8"
+        }
+        ListElement {
             settingName: "AllGames Tile Art"
             label: "Tile art"
             setting: "Fanart,Screenshot,Boxfront"
         }
         ListElement {
             settingName: "AllGames Tile Logo"
-            label: "Show logo on tile"
+            label: "Logo on tile"
             setting: "Yes,No"
         }
         ListElement {
-            settingName: "AllGames Items per row"
-            label: "Tiles per row"
-            setting: "3,4,5,6,7,8"
+            settingName: "AllGames Tile titles"
+            label: "Tile titles"
+            setting: "On focus,Always,Never"
         }
-        ListElement { settingName: "Tiles - System view"; setting: ""; header: true }
+        ListElement { settingName: "Systems"; setting: ""; header: true }
         ListElement {
-            settingName: "Library system tiles follow All"
-            label: "Same as All view"
-            setting: "No,Yes"
+            settingName: "Systems View"
+            label: "View"
+            setting: "List,Grid"
         }
         ListElement {
             settingName: "Grid Thumbnail"
@@ -522,24 +398,41 @@ id: root
             setting: "0.66,0.67,0.68,0.69,0.70,0.71,0.72,0.73,0.74,0.75,0.76,0.77,0.78,0.79,0.80,0.81,0.82,0.83,0.84,0.85,0.86,0.87,0.88,0.89,0.90,0.91,0.92,0.93,0.94,0.95,0.96,0.97,0.98,0.99,0.25,0.26,0.27,0.28,0.29,0.30,0.31,0.32,0.33,0.34,0.35,0.36,0.37,0.38,0.39,0.40,0.41,0.42,0.43,0.44,0.45,0.46,0.47,0.48,0.49,0.50,0.51,0.52,0.53,0.54,0.55,0.56,0.57,0.58,0.59,0.60,0.61,0.62,0.63,0.64,0.65"
         }
         ListElement {
+            settingName: "Number of columns"
+            label: "Tiles per row"
+            setting: "3,4,5,6,7,8"
+        }
+        ListElement {
             settingName: "Grid art"
             label: "Tile art"
             setting: "Fanart,Screenshot,Boxfront"
         }
         ListElement {
             settingName: "Grid Game Logo"
-            label: "Show logo on tile"
+            label: "Logo on tile"
             setting: "Yes,No"
         }
         ListElement {
-            settingName: "Number of columns"
-            label: "Tiles per row"
-            setting: "3,4,5,6,7,8"
+            settingName: "Systems Tile titles"
+            label: "Tile titles"
+            setting: "On focus,Always,Never"
+        }
+        ListElement { settingName: "List view"; setting: ""; header: true }
+        ListElement {
+            settingName: "AllGames Blur Background"
+            label: "Blurred background"
+            setting: "No,Yes"
         }
         ListElement {
-            settingName: "Per-system tile settings"
-            label: "Per-system overrides"
+            settingName: "AllGames Show scanlines"
+            label: "Scanlines"
             setting: "No,Yes"
+        }
+        ListElement { settingName: "Navigation"; setting: ""; header: true }
+        ListElement {
+            settingName: "LB/RB Function"
+            label: "LB/RB on a system"
+            setting: "Cycle Platforms,Nav Bar"
         }
     }
 
@@ -550,6 +443,7 @@ id: root
         }
     }
 
+    // ── Game details (Media carousel items included) ──
     ListModel {
     id: gameSettingsModel
 
@@ -578,11 +472,6 @@ id: root
             setting: "No,Yes"
         }
         ListElement {
-            settingName: "Video preview"
-            label: "Video previews"
-            setting: "Yes,No"
-        }
-        ListElement {
             settingName: "Blur Background"
             label: "Blur background"
             setting: "No,Yes"
@@ -591,19 +480,7 @@ id: root
             settingName: "Show scanlines"
             setting: "Yes,No"
         }
-    }
-
-    property var gamePage: {
-        return {
-            pageName: "Game details",
-            listmodel: gameSettingsModel
-        }
-    }
-
-
-    ListModel {
-    id: mediaCarouselSettingsModel
-
+        ListElement { settingName: "Media carousel"; setting: ""; header: true }
         ListElement {
             settingName: "Video"
             setting: "Yes,No"
@@ -633,7 +510,7 @@ id: root
             setting: "Yes,No"
         }
         ListElement {
-            settingName: "Cartridge"          // saved-setting key, keep as is
+            settingName: "Cartridge"
             label: "Physical Media"
             setting: "Yes,No"
         }
@@ -647,10 +524,194 @@ id: root
         }
     }
 
-    property var mediaCarouselPage: {
+    property var gamePage: {
         return {
-            pageName: "Media Carousel",
-            listmodel: mediaCarouselSettingsModel
+            pageName: "Game details",
+            listmodel: gameSettingsModel
+        }
+    }
+
+    // ── Previews & sound: every video preview and every sound, one group per screen ──
+    ListModel {
+    id: previewsSettingsModel
+
+        ListElement { settingName: "Home rows"; setting: ""; header: true }
+        ListElement {
+            settingName: "Allow video thumbnails"
+            label: "Preview"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Video thumbnail audio"
+            label: "Sound"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "Hide logo when thumbnail video plays"
+            label: "Hide logo while it plays"
+            setting: "No,Yes"
+        }
+        ListElement { settingName: "Library · All Games"; setting: ""; header: true }
+        ListElement {
+            settingName: "AllGames Video preview"
+            label: "Preview"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "All games menu video audio"
+            label: "Sound"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "AllGames Grid hide logo on video"
+            label: "Grid: hide logo while it plays"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "AllGames List hide on video"
+            label: "List: hide while it plays"
+            setting: "None,Box art,Logo,Both"
+        }
+        ListElement { settingName: "Library · Systems"; setting: ""; header: true }
+        ListElement {
+            settingName: "Systems Video preview"
+            label: "Preview"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Systems video audio"
+            label: "Sound"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Systems Grid hide logo on video"
+            label: "Grid: hide logo while it plays"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Systems List hide on video"
+            label: "List: hide while it plays"
+            setting: "None,Box art,Logo,Both"
+        }
+        ListElement { settingName: "Game details · background"; setting: ""; header: true }
+        ListElement {
+            settingName: "Video preview"
+            label: "Preview"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Game details video preview audio"
+            label: "Sound"
+            setting: "No,Yes"
+        }
+        ListElement { settingName: "Game details · More like this"; setting: ""; header: true }
+        ListElement {
+            settingName: "Details rows video preview"
+            label: "Preview"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Details rows video audio"
+            label: "Sound"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Details rows hide logo on video"
+            label: "Hide logo while it plays"
+            setting: "Yes,No"
+        }
+        ListElement { settingName: "Discover"; setting: ""; header: true }
+        ListElement {
+            settingName: "Discover video audio"
+            label: "Sound"
+            setting: "No,Yes"
+        }
+        ListElement { settingName: "Menu sounds"; setting: ""; header: true }
+        ListElement {
+            settingName: "Menu sounds"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Menu Volume"
+            label: "Volume"
+            setting: "1.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9"
+        }
+        ListElement {
+            settingName: "Start up chime"
+            label: "Startup chime"
+            setting: "Yes,No"
+        }
+    }
+
+    property var previewsPage: {
+        return {
+            pageName: "Previews & sound",
+            listmodel: previewsSettingsModel
+        }
+    }
+
+    // ── System (status bar, apps, diagnostics) ──
+    ListModel {
+    id: advancedSettingsModel
+
+        ListElement { settingName: "Home"; setting: ""; header: true }
+        ListElement {
+            settingName: "Omit genre: Application from Showcase"
+            label: "Hide apps from Home"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "Omit genre: Emulator from Showcase"
+            label: "Hide emulators from Home"
+            setting: "No,Yes"
+        }
+        ListElement { settingName: "Apps"; setting: ""; header: true }
+        ListElement {
+            settingName: "Hide Android System Tile"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Hide Android Games System Tile"
+            setting: "No,Yes"
+        }
+        ListElement {
+            settingName: "Added App Launch"
+            setting: "Instant,Details Page"
+        }
+        ListElement { settingName: "Status bar"; setting: ""; header: true }
+        ListElement {
+            settingName: "Show WiFi Indicator"
+            label: "Wi-Fi indicator"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Show Battery Percentage"
+            label: "Battery indicator"
+            setting: "Battery Only,Percentage Only,Combined,No"
+        }
+        ListElement {
+            settingName: "Show Clock"
+            label: "Clock"
+            setting: "12hr,24hr,No"
+        }
+        ListElement { settingName: "Diagnostics"; setting: ""; header: true }
+        ListElement { settingName: "Theme build";   setting: ""; tip: true; diag: true }
+        ListElement { settingName: "Frontend";      setting: ""; tip: true; diag: true }
+        ListElement { settingName: "Features";      setting: ""; tip: true; diag: true }
+        ListElement { settingName: "Display";       setting: ""; tip: true; diag: true }
+        ListElement { settingName: "Library size";  setting: ""; tip: true; diag: true }
+        ListElement {
+            settingName: "Frame counter"
+            label: "Frame rate counter"
+            setting: "No,Yes"
+        }
+        ListElement { settingName: "Write diagnostics to log"; setting: ""; tip: true }
+    }
+
+    property var advancedPage: {
+        return {
+            pageName: "System",
+            listmodel: advancedSettingsModel
         }
     }
 
@@ -720,32 +781,8 @@ id: root
         }
     }
 
-    // ── Diagnostics: for testers' reports ────────────────────────────────
-    // `diag` rows show a live value as their label (diagLabel) and A opens
-    // the long form; "Write diagnostics to log" writes it to lastrun.log.
-    ListModel {
-    id: diagnosticsSettingsModel
-
-        ListElement { settingName: "This build"; setting: ""; header: true }
-        ListElement { settingName: "Theme build";   setting: ""; tip: true; diag: true }
-        ListElement { settingName: "Frontend";      setting: ""; tip: true; diag: true }
-        ListElement { settingName: "Features";      setting: ""; tip: true; diag: true }
-        ListElement { settingName: "Display";       setting: ""; tip: true; diag: true }
-        ListElement { settingName: "Library size";  setting: ""; tip: true; diag: true }
-        ListElement { settingName: "Tools"; setting: ""; header: true }
-        ListElement {
-            settingName: "Frame counter"
-            label: "Frame rate counter"
-            setting: "No,Yes"
-        }
-        ListElement { settingName: "Write diagnostics to log"; setting: ""; tip: true }
-    }
-    property var diagnosticsPage: {
-        return {
-            pageName:  "Diagnostics",
-            listmodel: diagnosticsSettingsModel
-        }
-    }
+    // Diagnostics rows live on the System page; `diag` rows show a live
+    // value as their label (diagLabel) and A opens the long form.
     function diagLabel(name) {
         switch (name) {
         case "Theme build":  return "Theme build " + BuildInfo.build + " (" + BuildInfo.branch + ", " + BuildInfo.date + ")";
@@ -757,7 +794,7 @@ id: root
         return name;
     }
 
-    property var settingsArr: [generalPage, showcasePage, collectionsPage, tilesPage, libraryPage, gamePage, mediaCarouselPage, audioPage, raPage, advancedPage, diagnosticsPage, tipsPage]
+    property var settingsArr: [generalPage, appearancePage, showcasePage, collectionsPage, libraryPage, gamePage, previewsPage, raPage, advancedPage, tipsPage]
 
     // ── Help text ─────────────────────────────────────────────────────────
     // In a function, not on the ListElements: a ListElement only accepts
@@ -879,37 +916,42 @@ id: root
                  + "At 60 fps each frame has about 17 ms; a worst well past that is a visible stutter";
         }
         if (name === "Allow video thumbnails") {
-            return "Plays a short preview video on the highlighted tile on the Home page";
+            return "Plays a short preview video on the highlighted tile in the Home rows";
         }
-        if (name === "Hide logo when thumbnail video plays") {
-            return "While a tile's preview video plays on the Home page, hides the game's logo so it doesn't cover the video";
+        if (name === "Hide logo when thumbnail video plays" || name === "AllGames Grid hide logo on video"
+            || name === "Systems Grid hide logo on video" || name === "Details rows hide logo on video") {
+            return "The tile's art always fades away when its preview plays; this hides the game's logo too";
+        }
+        if (name === "AllGames List hide on video" || name === "Systems List hide on video") {
+            return "In the list view the screenshot always gives way to the preview; this also hides the box art, the logo, both, or neither while it plays";
+        }
+        if (name === "Systems Video preview") {
+            return "Plays a short preview for the highlighted game when viewing a system (any system without its own settings)";
+        }
+        if (name === "Details rows video preview") {
+            return "Plays a short preview on the highlighted tile in Game details' \u201cMore like this\u201d rows";
         }
         if (name === "All Games View") {
-            return "How the Library is shown, for All Games and for every system\n"
+            return "How All Games is shown (systems have their own View under Systems)\n"
                  + "\n"
                  + "LIST is a scrolling list with a preview panel and details\n"
                  + "\n"
-                 + "GRID fills the page with tiles \u2014 no preview panel. A system can have its own View with Per-system overrides";
+                 + "GRID fills the page with tiles \u2014 no preview panel";
+        }
+        if (name === "Systems View") {
+            return "How every system is shown, unless it has its own settings (Y while viewing it)";
+        }
+        if (name === "AllGames Tile titles" || name === "Systems Tile titles") {
+            return "When the game's name shows on its tile: on the highlighted tile, always, or never";
         }
         if (name === "AllGames Video preview") {
             return "Plays a short preview video for the highlighted game in the Library (List & Grid)";
         }
-        if (name === "AllGames Hide box art on video") {
-            return "In the All Games list, hides the box art in the preview panel while the video plays";
-        }
-        if (name === "AllGames Hide logo on video") {
-            return "In the All Games list, hides the game's logo while the preview video plays";
-        }
         if (name === "AllGames Blur Background") {
-            return "In the All Games list, softens the background artwork so the list stays easy to read";
+            return "In the list view (All Games and systems), softens the background artwork so the list stays easy to read";
         }
         if (name === "AllGames Show scanlines") {
-            return "In the All Games list, draws faint scanlines over the preview for a retro look";
-        }
-        if (name === "Library system tiles follow All") {
-            return "Systems use the All view's tile settings above\n"
-                 + "\n"
-                 + "While this is on, the System view rows below are not in use and grey out. A system's own Per-system overrides still apply on top";
+            return "In the list view (All Games and systems), draws faint scanlines over the preview for a retro look";
         }
         if (name === "AllGames Tile Style") {
             return "The shape of each tile when viewing All Games";
@@ -995,12 +1037,6 @@ id: root
                  + "\n"
                  + "Apps Pegasus found on its own follow the App Drawer: anything in its Emulators section is hidden, including apps you moved there yourself. For ones you added yourself, give them the genre tag \u201cEmulator\u201d in their metadata and they'll be hidden too";
         }
-        if (name === "Per-system tile settings") {
-            return "Give each system its own look.\n\n"
-                 + "When on, press Y while viewing a system to set its own view, tile "
-                 + "shape, ratio, art, logo, tiles per row and titles. Systems you "
-                 + "don't change keep following the System view rows above.";
-        }
         if (name === "Grid background dimming") {
             return "Slightly darkens the area below the header in the "
                  + "Library, Game Details and the Achievements pages, so "
@@ -1083,7 +1119,7 @@ id: root
         "Random rows stay put":
             "Rows like Recommended and Top by Genre keep their picks until you press Refresh (X) on the Home page\nTwo rows set to System always pick different systems",
         "Per-system tiles":
-            "With Per-system overrides on (Library settings), Y while viewing a system opens that system's own view and tile settings, kept separately from the rest",
+            "Every system follows Settings \u203a Library \u203a Systems until you give it its own settings: press Y while viewing it\nX in that panel sends it back to following Systems",
         "Forgiving search":
             "Search ignores capitals, punctuation and region tags like (USA)\nIt also finds \u201cLegend of Zelda, The\u201d when you type \u201cThe Legend of Zelda\u201d",
         "The Hidden tab":
@@ -1136,8 +1172,11 @@ id: root
             || name === "Hide logo when thumbnail video plays"
             || name === "All Games View"
             || name === "AllGames Video preview"
-            || name === "AllGames Hide box art on video"
-            || name === "AllGames Hide logo on video"
+            || name === "AllGames Grid hide logo on video" || name === "Systems Grid hide logo on video"
+            || name === "Details rows hide logo on video"
+            || name === "AllGames List hide on video" || name === "Systems List hide on video"
+            || name === "Systems Video preview" || name === "Details rows video preview"
+            || name === "Systems View" || name === "AllGames Tile titles" || name === "Systems Tile titles"
             || name === "AllGames Blur Background"
             || name === "AllGames Show scanlines"
             || name === "AllGames Tile Style"
@@ -1547,16 +1586,11 @@ id: root
                 property bool rowDisabled: {
                     if (isHeader || isTip) return false;
                     var _v = settingsList.settingsVersion;   // re-evaluate after any save
-                    // Both depend on the fanart background being shown at all.
-                    // All Games: list rows are inert in Grid, grid rows in List.
-                    // "All Games View" and "Video preview" apply to both.
+                    // All Games' tile rows do nothing while All Games is a list.
                     var agGrid = (settingsStore.get("All Games View", "List")) === "Grid";
-                    if (["AllGames Hide box art on video", "AllGames Hide logo on video",
-                         "AllGames Blur Background", "AllGames Show scanlines"].indexOf(settingName) !== -1)
-                        return agGrid;
-                    // The All view's tile rows are inert in List view.
-                    if (settingName.indexOf("AllGames Tile") === 0
-                        || settingName === "AllGames Items per row") {
+                    if (settingName === "AllGames Tile Style" || settingName === "AllGames Tile Ratio"
+                        || settingName === "AllGames Tile Art" || settingName === "AllGames Tile Logo"
+                        || settingName === "AllGames Items per row" || settingName === "AllGames Tile titles") {
                         if (!agGrid) return true;
                         // Shape-dependent rows (this used to sit after a return above
                         // and never ran): Box Art greys art + logo; Square greys ratio.
@@ -1593,19 +1627,27 @@ id: root
                         return xl === "None" || xl === "RetroAchievements";
                     }
 
-                    // Showcase thumbnail previews: the logo-hide and audio rows do nothing without them.
+                    // Previews & sound: each screen's Sound and "while it plays"
+                    // rows do nothing while that screen's Preview is off.
                     if (settingName === "Hide logo when thumbnail video plays" || settingName === "Video thumbnail audio")
                         return mem("Allow video thumbnails") === "No";
-
-                    // Game Details preview video and its audio.
                     if (settingName === "Game details video preview audio")
                         return mem("Video preview") === "No";
-
-                    // All Games preview video and the rows that only matter while it plays.
                     if (settingName === "All games menu video audio"
-                        || settingName === "AllGames Hide box art on video"
-                        || settingName === "AllGames Hide logo on video")
+                        || settingName === "AllGames Grid hide logo on video"
+                        || settingName === "AllGames List hide on video")
                         return mem("AllGames Video preview") === "No";
+                    if (settingName === "Systems video audio"
+                        || settingName === "Systems Grid hide logo on video"
+                        || settingName === "Systems List hide on video")
+                        return mem("Systems Video preview") === "No";
+                    if (settingName === "Details rows video audio" || settingName === "Details rows hide logo on video")
+                        return mem("Details rows video preview") === "No";
+                    // Systems' tile rows do nothing while Systems is a list.
+                    if (["Grid Thumbnail", "Grid Ratio", "Grid art", "Grid Game Logo", "Number of columns",
+                         "Systems Tile titles"].indexOf(settingName) !== -1
+                        && mem("Systems View") === "List")
+                        return true;
 
                     // A collection set to None has no thumbnail, size or ratio to configure.
                     var cm = settingName.match(/^(Collection \d) - (Thumbnail|Size|Ratio)$/);
@@ -1616,10 +1658,6 @@ id: root
                         var shp = settingsStore.get(coll + " - Thumbnail", "Wide");
                         return shp === "Square";
                     }
-                    // System view tiles: all inert while following the All view.
-                    if (["Grid Thumbnail", "Grid Ratio", "Grid art", "Grid Game Logo", "Number of columns"].indexOf(settingName) !== -1
-                        && settingsStore.get("Library system tiles follow All", "No") === "Yes")
-                        return true;
                     // Ratio is inert only for Square; Box Art scales with it on both grids.
                     if (settingName === "Grid Ratio") {
                         var gth = settingsStore.get("Grid Thumbnail");
@@ -1668,8 +1706,8 @@ id: root
                     var parents = ["Showcase Background Art", "Custom Background",
                                    "Menu sounds", "Xbox Logo",
                                    "Allow video thumbnails", "Video preview", "AllGames Video preview",
-                                   "Grid Thumbnail", "All Games View",
-                                   "Library system tiles follow All", "AllGames Tile Style"];
+                                   "Systems Video preview", "Details rows video preview",
+                                   "Grid Thumbnail", "All Games View", "Systems View", "AllGames Tile Style"];
                     if (parents.indexOf(settingName) !== -1 || /^Collection \d$/.test(settingName)
                         || /^Collection \d - Thumbnail$/.test(settingName))
                         settingsList.settingsVersion++;
