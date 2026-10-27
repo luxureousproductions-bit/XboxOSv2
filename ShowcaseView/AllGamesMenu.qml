@@ -2042,7 +2042,7 @@ id: root
                             x: card.x; y: card.y; width: card.width; height: card.height
                             active: prow.cur
                             z: 2
-                            sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(4); glowStrength: 0.45 } }
+                            sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(4); glowStrength: tileHaloLive ? 0.45 : 0 }   // honours Frame glow }
                         }
                         // Mouse: hover picks the row, a click on it changes it.
                         MouseArea {

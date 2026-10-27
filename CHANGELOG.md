@@ -4,7 +4,11 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 53)
+## Unreleased — refresh branch (build 54)
+
+- **Frame glow is honoured everywhere:** the focus ring on Settings rows and grid cards, the Y panels and the App Drawer's menus, and the page list's accent plate, now glow only when Settings › Appearance › Frame glow is on (they always glowed before).
+
+## build 53
 
 ### PC fixes from Windows testing
 - **Settings › Library and Previews & sound: mouse hover and wheel work.** Two causes. The wheel went to the page's hidden list (its wheel helper sat over the same area and still took the wheel on the grid pages). Hover picked a card without moving focus off the page list, so nothing showed, and Qt delivers "entered" before the theme's pointer tracker updates, so the first check saw a stale time and ignored the hover. Hover and the wheel now move focus into the grid, and the hover check also runs as the pointer moves inside a card.

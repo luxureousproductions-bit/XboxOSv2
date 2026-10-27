@@ -1662,7 +1662,7 @@ id: root
                     visible: railFocused
                     radius: vpx(3)
                     color: theme.accent
-                    layer.enabled: visible
+                    layer.enabled: visible && tileHaloLive   // the glow follows Frame glow
                     layer.effect: DropShadow {
                         cached: true
                         transparentBorder: true
@@ -2024,7 +2024,7 @@ id: root
                     anchors.fill: setTile
                     active: selected && !isDecor
                     z: 2
-                    sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(4); glowStrength: 0.45 } }
+                    sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(4); glowStrength: tileHaloLive ? 0.45 : 0 }   // honours Frame glow }
                 }
 
                 // ── Cycle-value rows (existing style) ──────────────────────
