@@ -48,7 +48,16 @@ entries (sleep, restart, shut down). Same look, same tabs, same quick menu
 Builds: (A) source collection + tab mapping + PC icon; (B) starter file and
 icons; (C) mouse, right-click and wide art; (D) optional PC games.
 
-## 2. Quality modes per platform (future note)
+## 2. All Games as the Xbox "Full library" (big phase, after the PC drawer)
+
+Rebuild the All Games screen to look like the Xbox's Full library: a left
+rail (Search, Games, Apps, Groups, Full library, Manage) with counts, a top
+tab strip (All games, and the theme's own groupings), a "Sort by" dropdown
+and a Filters button, an item count, and a grid of big square art tiles with
+the title on the focused tile. The accent colour stays user-selectable, as it
+is on the Xbox. Many staged steps; plan and mock it up before starting.
+
+## 3. Quality modes per platform (future note)
 
 - **Base and High Quality on both platforms, tuned per platform:**
   Android base renders like 720p, HQ like 1080p; Windows/Linux base 1080p,
@@ -63,7 +72,7 @@ icons; (C) mouse, right-click and wide art; (D) optional PC games.
   Off / On. Base mode renders the blur at a lower resolution than HQ. The
   Xbox guide itself doesn't blur when it slides out, so the default is Off.
 
-## 3. Clean-up and release
+## 4. Clean-up and release
 
 - Delete the old `windows-wip`, `pdf-manuals` and `perf-tiles` branches
   (everything useful from `windows-wip` is in `refresh` as of build 51).

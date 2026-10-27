@@ -1502,7 +1502,7 @@ id: root
             || tipTexts.hasOwnProperty(name);
     }
 
-    property real itemheight: vpx(48)
+    property real itemheight: vpx(45)   // ~68 px at 1080p
     property color settingsTextColor: "white"   // locked white: the settings background is locked black, so text must never follow the Color Layout light/dark flip
 
     // ── On-screen keyboard for text fields (RA credentials) ───────────────
@@ -1575,7 +1575,7 @@ id: root
         Image {
             id: settingsCog
             anchors {
-                left: parent.left; leftMargin: globalMargin
+                left: parent.left; leftMargin: vpx(72)   // lines up with the rail's text, as on the Xbox
                 verticalCenter: parent.verticalCenter
             }
             height: vpx(27)
@@ -1634,7 +1634,8 @@ id: root
             bottom: parent.bottom; bottomMargin: helpMargin
             left: parent.left
         }
-        width: globalMargin + vpx(300)
+        // A quarter of the screen, as on the Xbox (480 of 1920).
+        width: Math.round(root.width * 0.25)
         spacing: vpx(2)
         model: settingsArr
         onCurrentIndexChanged: {
@@ -1650,7 +1651,7 @@ id: root
                 property bool selected: ListView.isCurrentItem
 
                 width: ListView.view.width
-                height: vpx(46)
+                height: vpx(43)            // 64 px at 1080p, the Xbox rail's row
 
                 readonly property bool railFocused: selected && pagelist.activeFocus
 
@@ -1681,12 +1682,12 @@ id: root
                     }
                 }
                 Text {
-                    anchors { left: parent.left; leftMargin: globalMargin + vpx(16); verticalCenter: parent.verticalCenter }
+                    anchors { left: parent.left; leftMargin: vpx(72); verticalCenter: parent.verticalCenter }   // 108 px at 1080p
                     text: modelData.pageName
                     // Dark text on a light accent (lime, yellow), white otherwise.
                     color: railFocused ? (accentIsLight ? "#111111" : "white") : selected ? "white" : "#d2d2d2"
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(19)
+                    font.pixelSize: vpx(17.5)
                 }
 
                 // Mouse/touch functionality
@@ -1747,7 +1748,7 @@ id: root
         anchors {
             top: header.bottom; topMargin: vpx(6)
             bottom: parent.bottom; bottomMargin: helpMargin
-            left: pagelist.right; leftMargin: vpx(38)
+            left: pagelist.right; leftMargin: vpx(31)        // title 47 px past the divider at 1080p
             right: parent.right; rightMargin: globalMargin + vpx(18)
         }
         Text {
@@ -1776,7 +1777,7 @@ id: root
         visible: gridPage !== ""
         anchors {
             top: pane.top; topMargin: pageLead.y + pageLead.height + vpx(18)
-            left: pane.left; right: pane.right; bottom: pane.bottom
+            left: content.left; right: content.right; bottom: pane.bottom
         }
         cells: gridPage === "previews" ? previewsCells() : gridPage === "library" ? libraryCells() : []
         colWidths: gridPage === "previews" ? [0.36, 0.14, 0.14, 0.16, 0.20] : [0.5, 0.5]
@@ -1798,6 +1799,15 @@ id: root
         onEditingChanged: root.rebuildHelpbar()
     }
 
+    // The settings column: indented from the title and as wide as the Xbox's
+    // two columns of cards (2 x 438 + 16 px at 1080p). Previews & sound has
+    // five columns, so it gets more room.
+    Item {
+    id: content
+        anchors { top: pane.top; bottom: pane.bottom; left: pane.left; leftMargin: vpx(28) }
+        width: Math.min(pane.width - vpx(28), gridPage === "previews" ? vpx(800) : vpx(595))
+    }
+
     // RetroAchievements credential status — only on the RA page.
     Text {
         id: raVerifyBanner
@@ -1805,8 +1815,8 @@ id: root
         visible: settingsArr[pagelist.currentIndex]
                  && settingsArr[pagelist.currentIndex].pageName === "Retro Achievements"
         anchors {
-            left: pane.left
-            right: pane.right
+            left: content.left
+            right: content.right
             bottom: parent.bottom; bottomMargin: helpMargin + vpx(18)
         }
         wrapMode: Text.WordWrap
@@ -1836,14 +1846,14 @@ id: root
         anchors {
             top: pane.top; topMargin: pageLead.y + pageLead.height + vpx(10)
             bottom: pane.bottom
-            left: pane.left; leftMargin: -vpx(8)
-            right: pane.right; rightMargin: -vpx(8)
+            left: content.left; leftMargin: -vpx(8)
+            right: content.right; rightMargin: -vpx(8)
         }
         // Room for the focus frame, which sits just outside the card.
         topMargin: vpx(8); bottomMargin: vpx(8)
         leftMargin: vpx(8); rightMargin: vpx(8)
 
-        spacing: vpx(6)
+        spacing: vpx(8)
         orientation: ListView.Vertical
 
         preferredHighlightBegin: settingsList.height / 2 - itemheight

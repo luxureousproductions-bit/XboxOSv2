@@ -1921,7 +1921,8 @@ id: root
         Rectangle {
         id: ypanel
             anchors.centerIn: parent
-            width: vpx(580)
+            // Xbox pop-up proportions: ~690 px wide at 1080p, 64 px rows.
+            width: vpx(460)
             height: Math.min(parent.height - vpx(96), headBlock.height + rowCol.height + vpx(108))
             radius: vpx(6)
             color: "#1f1f1f"
@@ -2015,7 +2016,7 @@ id: root
                         id: card
                             y: prow.groupH
                             width: parent.width
-                            height: isOwn ? vpx(52) : vpx(42)
+                            height: isOwn ? vpx(52) : vpx(43)
                             radius: vpx(4)
                             color: cur ? "#2e2e2e" : "#262626"
                             opacity: dis ? 0.38 : 1

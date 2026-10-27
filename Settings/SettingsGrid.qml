@@ -31,9 +31,9 @@ id: grid
     property var cells: []
     // Column widths as fractions of the width (gaps come out of them).
     property var colWidths: [1]
-    property real gap: vpx(6)
+    property real gap: vpx(8)
     readonly property real edge: vpx(8)
-    property real rowH: vpx(50)
+    property real rowH: vpx(45)
     property real headerH: vpx(34)
     property real colHeadH: vpx(24)
     property color accent: theme.accent

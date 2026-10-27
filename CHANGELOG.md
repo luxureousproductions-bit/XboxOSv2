@@ -4,7 +4,17 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 51)
+## Unreleased — refresh branch (build 52)
+
+### Xbox proportions
+- **Settings** measured against the Xbox's own: the page list is a quarter of the screen, its rows 64 px tall at 1080p with the text 108 px in (the cog and "Settings" line up with it); the page title sits just past the divider and the settings column is the Xbox's two-card width (Previews & sound gets more room for its five columns). Rows and grid cards are a touch shorter, with the Xbox's wider gaps.
+- **Y panels** (All Games, each system) narrowed to the Xbox pop-up width, 64 px rows.
+
+### App drawer menus behave like the guide's
+- The quick menu now **pops out beside the drawer**, level with the app it acts on, sliding out from behind it — instead of a box in the middle of the screen. Its **Hide** options cascade out to the right of the Hide row. Both use the green focus ring, a lighter dim, and the guide's row height. Mouse hover picks a row.
+- Keyboard: the **Menu** key opens the quick menu (Start on a controller).
+
+## build 51
 
 ### Mouse wheel
 - A quick spin plays the navigation sound once instead of on every notch (every list, grid and Settings), and Home snaps between rows while the wheel spins instead of queueing one slide per notch.

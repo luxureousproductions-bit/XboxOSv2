@@ -1023,11 +1023,14 @@ ListView {
     // Opened with Start on the highlighted app. Modal: while it's up the
     // drawer's own key handling defers to it entirely.
     property bool quickOpen: false
+    property real quickAnchorY: 0
     property int quickIndex: 0
     property var quickApp: null
     // Start. api.keys has no binding for it, so the raw code is used — the
     // same one the virtual keyboard uses.
     property int quickMenuKey: 1048587
+    // Start on a controller; the Menu (context) key on a keyboard.
+    function isQuickKey(event) { return event.key === quickMenuKey || event.key === Qt.Key_Menu; }
 
     // Human-readable name for a category key, used in the menu header.
     function categoryLabel(cat) {
@@ -1104,6 +1107,8 @@ ListView {
         if (list.currentIndex < 0 || list.currentIndex >= filteredApps.length) return;
         quickApp = filteredApps[list.currentIndex];   // cached entry, not a raw Game
         quickIndex = 0;
+        // Pop-out sits beside the guide, level with the app it acts on.
+        quickAnchorY = list.currentItem ? list.currentItem.mapToItem(root, 0, 0).y : root.height / 2;
         quickOpen = true;
     }
     function closeQuickMenu() {
@@ -1129,7 +1134,7 @@ ListView {
     Rectangle {
         anchors.fill: parent
         color: "#000000"
-        opacity: root.quickOpen ? 0.5 : 0
+        opacity: root.quickOpen ? 0.3 : 0
         visible: opacity > 0.001
         Behavior on opacity { NumberAnimation { duration: 120 } }
         MouseArea {
@@ -1144,23 +1149,29 @@ ListView {
     Rectangle {
     id: quickMenu
 
-        anchors.centerIn: parent
-        width: vpx(380)
-        height: quickCol.height + vpx(30)
-        radius: vpx(10)
+        // Xbox guide pop-out: attached to the guide's right edge, level with
+        // the highlighted app, sliding out from behind the guide. ~480 px wide
+        // at 1080p with 64 px rows, like the guide's own menus.
+        x: panel.x + panel.width + vpx(8)
+        y: Math.max(panel.y, Math.min(root.height - height - vpx(20), root.quickAnchorY - vpx(50)))
+        width: vpx(320)
+        height: quickCol.height + vpx(24)
+        radius: vpx(6)
         color: root.colMenu
-        border.width: vpx(1)
-        border.color: Qt.rgba(1, 1, 1, 0.10)
-        visible: root.quickOpen
+        border.width: Math.max(1, vpx(1))
+        border.color: Qt.rgba(1, 1, 1, 0.08)
+        visible: opacity > 0.001
         opacity: root.quickOpen ? 1 : 0
-        scale: root.quickOpen ? 1 : 0.94
         Behavior on opacity { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
-        Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutBack; easing.overshoot: 2 } }
+        transform: Translate {
+            x: root.quickOpen ? 0 : -vpx(28)
+            Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+        }
 
         Column {
         id: quickCol
 
-            anchors { top: parent.top; topMargin: vpx(14); left: parent.left; right: parent.right }
+            anchors { top: parent.top; topMargin: vpx(12); left: parent.left; right: parent.right }
             spacing: vpx(2)
 
             // Header: which app this menu is acting on, and where it currently
@@ -1202,23 +1213,29 @@ ListView {
             }
 
             Repeater {
+            id: quickRep
                 model: root.quickActions
                 delegate: Item {
                     width: quickCol.width
-                    height: vpx(46)
+                    height: vpx(43)
                     readonly property bool current: root.quickIndex === index
 
                     Rectangle {
+                    id: qPlate
                         anchors {
                             fill: parent
                             leftMargin: vpx(10); rightMargin: vpx(10)
                             topMargin: vpx(1); bottomMargin: vpx(1)
                         }
-                        radius: vpx(5)
+                        radius: vpx(4)
                         color: parent.current ? root.colMenuSel : "transparent"
-                        border.width: parent.current ? vpx(2) : 0
-                        border.color: theme.accent
-                        AccentHalo { active: parent.parent.current; targetRadius: parent.radius }   // Tile Halo
+                    }
+                    // The same green ring as everywhere else.
+                    Loader {
+                        anchors.fill: qPlate
+                        active: parent.current
+                        z: 2
+                        sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(4); glowStrength: 0.45 } }
                     }
                     Row {
                         anchors {
@@ -1265,6 +1282,8 @@ ListView {
                     }
                     MouseArea {
                         anchors.fill: parent
+                        hoverEnabled: settings.MouseHover == "Yes"
+                        onEntered: if (pointerMoved() && root.quickIndex !== index && !root.hideOpen) { root.quickIndex = index; playNav(); }
                         onClicked: { root.quickIndex = index; root.runQuickAction(); }
                     }
                 }
@@ -1277,14 +1296,19 @@ ListView {
     Rectangle {
     id: hidePanel
 
-        anchors { left: quickMenu.right; leftMargin: vpx(10)
-                  verticalCenter: quickMenu.verticalCenter }
-        width: vpx(270)
+        // Cascades from the Hide row, the way the guide's sub-menus do.
+        x: quickMenu.x + quickMenu.width + vpx(8)
+        y: {
+            var r = quickRep.itemAt(root.quickIndex);
+            var top = r ? quickMenu.y + quickCol.y + r.y - vpx(42) : quickMenu.y;
+            return Math.max(vpx(20), Math.min(root.height - height - vpx(20), top));
+        }
+        width: vpx(260)
         height: hideCol.height + vpx(24)
-        radius: vpx(10)
+        radius: vpx(6)
         color: root.colMenu
-        border.width: vpx(1)
-        border.color: Qt.rgba(1, 1, 1, 0.10)
+        border.width: Math.max(1, vpx(1))
+        border.color: Qt.rgba(1, 1, 1, 0.08)
         visible: opacity > 0.001
         opacity: root.hideOpen ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 130; easing.type: Easing.OutCubic } }
@@ -1314,19 +1338,23 @@ ListView {
                 model: root.hideOptions
                 delegate: Item {
                     width: hideCol.width
-                    height: vpx(44)
+                    height: vpx(43)
                     readonly property bool current: root.hideIndex === index
                     readonly property bool chosen:
                         root.quickApp && root.hideMode(root.quickApp.pkg) === modelData.mode
 
                     Rectangle {
+                    id: hPlate
                         anchors { fill: parent; leftMargin: vpx(10); rightMargin: vpx(10)
                                   topMargin: vpx(1); bottomMargin: vpx(1) }
-                        radius: vpx(5)
+                        radius: vpx(4)
                         color: parent.current ? root.colMenuSel : "transparent"
-                        border.width: parent.current ? vpx(2) : 0
-                        border.color: theme.accent
-                        AccentHalo { active: parent.parent.current; targetRadius: parent.radius }   // Tile Halo
+                    }
+                    Loader {
+                        anchors.fill: hPlate
+                        active: parent.current
+                        z: 2
+                        sourceComponent: Item { FocusFrame { anchors.fill: parent; artRadius: vpx(4); glowStrength: 0.45 } }
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(22)
@@ -1464,17 +1492,17 @@ ListView {
             if (hideOpen) {
                 if (api.keys.isAccept(event))        { playAccept(); runHideOption(); }
                 else if (api.keys.isCancel(event))   { playBack(); closeHidePanel(); }
-                else if (event.key === quickMenuKey) { playBack(); closeQuickMenu(); }
+                else if (isQuickKey(event)) { playBack(); closeQuickMenu(); }
                 return;
             }
             if (api.keys.isAccept(event))      { playAccept(); runQuickAction(); }
             else if (api.keys.isCancel(event)) { playBack(); closeQuickMenu(); }
-            else if (event.key === quickMenuKey) { playBack(); closeQuickMenu(); }
+            else if (isQuickKey(event)) { playBack(); closeQuickMenu(); }
             return;
         }
 
         // Start opens the quick menu on the highlighted app.
-        if (event.key === quickMenuKey) {
+        if (isQuickKey(event)) {
             event.accepted = true;
             if (zone === zoneApps) playToggle();
             openQuickMenu();
