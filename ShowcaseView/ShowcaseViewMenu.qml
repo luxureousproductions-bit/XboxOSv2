@@ -1603,7 +1603,13 @@ id: root
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: settings.MouseHover == "Yes"
-                    onEntered: { playNav(); mainList.currentIndex = topRow.ObjectModel.index; platformlist.currentIndex = index; }
+                    // Only when the pointer itself moved (see theme.qml pointerMoved).
+                    function hoverSelect() {
+                        if (selected || !pointerMoved()) return;
+                        playNav(); mainList.currentIndex = topRow.ObjectModel.index; platformlist.currentIndex = index;
+                    }
+                    onEntered: hoverSelect()
+                    onPositionChanged: hoverSelect()
                     onClicked: {
                         if (selected) {
                             if (isHero) { if (platformlist.resumeGame) { launchGame(platformlist.resumeGame); } }

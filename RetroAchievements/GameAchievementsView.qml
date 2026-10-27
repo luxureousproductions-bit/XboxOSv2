@@ -87,6 +87,7 @@ id: root
         acceptedButtons: Qt.AllButtons
         hoverEnabled: true
         onPressed: mouse.accepted = true
+        onWheel: wheel.accepted = true   // the wheel stops here too, not on the screen behind
         onClicked: mouse.accepted = true
         onReleased: mouse.accepted = true
     }
@@ -646,7 +647,8 @@ id: root
             MouseArea {
                 anchors.fill: parent
                 hoverEnabled: settings.MouseHover === "Yes"
-                onEntered: { playNav(); root.currentIndex = index; }
+                onEntered: { if (!pointerMoved()) return;   // scrolled under a still pointer
+                    playNav(); root.currentIndex = index; }
                 onClicked:  { playNav(); root.currentIndex = index; }
             }
         }

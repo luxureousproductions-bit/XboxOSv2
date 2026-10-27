@@ -44,7 +44,7 @@ id: root
                 font.family: subtitleFont.name
                 font.pixelSize: fpx(16)
                 color: promptColor
-                height: parent.height
+                height: vpx(30)   // the icon's height: parent.height was circular (the Row takes its height from this)
                 verticalAlignment: Text.AlignVCenter
             }
         }
@@ -52,6 +52,9 @@ id: root
 
     ListView {
         anchors.fill: parent
+        // Never scrolls. An interactive ListView grabs every press over its
+        // whole area, which ate clicks meant for prompts drawn in this strip.
+        interactive: false
         model: currentHelpbarModel
         delegate: buttonhelpDelegate
         orientation: ListView.Horizontal
@@ -99,7 +102,7 @@ id: root
             font.family: subtitleFont.name
             font.pixelSize: fpx(16)
             color: promptColor
-            height: parent.height
+            height: vpx(30)   // the icon's height (see above)
             verticalAlignment: Text.AlignVCenter
         }
     }
@@ -142,8 +145,9 @@ id: root
             buttonModel = api.keys.accept;
         }
 
-        var i;
-        for (i = 0; buttonModel.length; i++) {
+        // `i < length`: the loop used to test `buttonModel.length` alone, so a
+        // key with no controller binding ran past the end and threw.
+        for (var i = 0; i < buttonModel.length; i++) {
             if (buttonModel[i].name().includes("Gamepad")) {
             var buttonValue = buttonModel[i].key.toString(16)
             // Last hex digit of the gamepad key = button index (A 0 ... Select a,
@@ -151,6 +155,12 @@ id: root
             return String(parseInt(buttonValue.substring(buttonValue.length-1, buttonValue.length), 16));
             }
         }
+        // A key with no controller binding (keyboard-only on PC) gets the
+        // default controller glyph instead of no icon.
+        return defaultButtonArt[button] || "0";
     }
+    // Default glyph per action (Pegasus's default controller layout).
+    readonly property var defaultButtonArt: ({ accept: "0", cancel: "1", details: "2", filters: "3",
+                                               prevPage: "4", nextPage: "5", pageUp: "6", pageDown: "7", menu: "11" })
     
 }

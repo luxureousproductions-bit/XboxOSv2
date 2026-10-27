@@ -343,8 +343,12 @@ id: root
         anchors.fill: parent
         color: "#000000"
         opacity: 0.55 * root.slide
+        // hoverEnabled + onWheel: nothing behind the open drawer lights up
+        // or scrolls under the pointer.
         MouseArea {
             anchors.fill: parent
+            hoverEnabled: true
+            onWheel: wheel.accepted = true
             onClicked: root.closeDrawer()
         }
     }
@@ -1131,6 +1135,8 @@ ListView {
         MouseArea {
             anchors.fill: parent
             enabled: root.quickOpen
+            hoverEnabled: true
+            onWheel: wheel.accepted = true
             onClicked: root.closeQuickMenu()
         }
     }

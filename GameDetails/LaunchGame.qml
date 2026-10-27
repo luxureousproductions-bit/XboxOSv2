@@ -294,6 +294,7 @@ id: root
         hoverEnabled: true
         acceptedButtons: Qt.AllButtons
         onPressed: mouse.accepted = true
+        onWheel: wheel.accepted = true   // the wheel stops here too, not on the screen behind
         onClicked: mouse.accepted = true
         onReleased: mouse.accepted = true
     }

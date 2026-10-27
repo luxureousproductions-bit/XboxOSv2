@@ -326,7 +326,8 @@ id: root
     MouseArea {
         anchors.fill: parent
         hoverEnabled: settings.MouseHover == "Yes"
-        onEntered: { sfxNav.play(); highlighted(); }
+        onEntered: { if (!pointerMoved()) return;   // scrolled under a still pointer
+            sfxNav.play(); highlighted(); }
         onExited: {}
         onClicked: activated();
     }

@@ -4,7 +4,19 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 38)
+## Unreleased — refresh branch (build 39)
+
+### Windows / Linux, part 1 (ported from the windows-wip branch, re-done on the refresh)
+- **Mouse hover only follows the mouse.** Hover selects tiles, but a list scrolled by keys, wheel or a held D-pad moves tiles under a pointer that's sitting still, and Qt reports that as the pointer "entering" them — the selection jumped to whatever passed under the cursor, mid-scroll. Hover now counts only when the pointer itself moved in the last 300 ms (one watcher on the whole theme that doesn't take hover from anything). Applies to game tiles, Home system tiles, the Game details media strip and the RA lists.
+- **Hover works in the Library grid.** The tiles played their nav sound on hover but the grid never moved the selection.
+- **The wheel and hover stop at the screen you're on.** Every full-screen page now swallows the wheel as well as clicks, and overlays (app drawer and its menu, the Library's Y panel and filter panel, Settings' keyboard and info box, search) block hover and wheel for what's behind them. Hidden screens take no mouse input at all (`enabled: shown` on every screen), so tiles behind Settings stopped lighting up and playing sounds.
+- **The wheel steps the Library's Y-panel rows.**
+- **Desktop defaults** (only for settings you've never changed): video previews off on Windows and Linux (many PCs lack the codecs; a failed preview is a black box), mouse hover on, startup chime off; menu sounds off on Windows. Android keeps every default it had. The defaults live in one place now, so Settings and the theme can't disagree about them.
+- Fixed: on a keyboard-only setup (no controller bound), help-bar prompts lost their icon and threw an error; they now show the default controller glyph. The help bar no longer swallows clicks over its whole strip, and its text no longer sits on a circular height binding.
+- Fixed (Linux): system logos and backgrounds weren't found when a collection's shortname had capitals (Linux file names are case-sensitive).
+- Already in place, so not ported: previews pause while Pegasus's own menu is open (the playback owner already follows the theme's focus).
+
+## Build 38
 
 ### Less work before the theme appears
 - Home's random rows (publisher, developer, two genres) were picked by four separate passes, each first copying the whole library into a JS array — four copies of ~4,400 games before the first frame. Now one pass, reading each game in place (`Utils.homePools`). Returning from a game restores the saved picks without any pass at all. The four old helpers are gone.

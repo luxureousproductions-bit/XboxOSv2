@@ -372,10 +372,18 @@ id: root
     // settings object below (as each key's fallback) AND by SettingsScreen (to
     // show the right current value on a fresh install) — one table, so the two
     // can never disagree. Keys absent here keep the fallback written inline.
+    // Per-OS defaults (only for settings never changed; a saved value
+    // always wins). Desktop: no video previews (many PCs lack the codecs, and
+    // a failed preview is a black box), mouse hover on, no startup chime;
+    // Windows: menu sounds off. Android keeps every default it had.
+    readonly property string previewDefault:    platform.isAndroid ? "Yes" : "No"
+    readonly property string hoverDefault:      platform.isAndroid ? "No"  : "Yes"
+    readonly property string chimeDefault:      platform.isAndroid ? "Yes" : "No"
+    readonly property string menuSoundsDefault: platform.isWindows ? "No"  : "Yes"
     readonly property var settingDefaults: ({
         "3D Box":                                    "Yes",
         "All games menu video audio":                "Yes",
-        "Allow video thumbnails":                    "Yes",
+        "Allow video thumbnails":                    previewDefault,
         "Bottom fade":                               "Strong",
         "Box Art":                                   "3D",
         "Collection 1":                              "Recommended",
@@ -439,7 +447,7 @@ id: root
         "AllGames Tile Logo":                        "Yes",
         "AllGames Tile Ratio":                       "0.66",
         "AllGames Tile Style":                       "Wide",
-        "AllGames Video preview":                    "Yes",
+        "AllGames Video preview":                    previewDefault,
         "Always show titles":                        "No",
         "Back Box":                                  "Yes",
         "Blur Background":                           "No",
@@ -450,7 +458,7 @@ id: root
         "Collection 5 - Thumbnail":                  "Wide",
         "Collection 6 - Ratio":                      "0.66",
         "Default to full details":                   "No",
-        "Enable mouse hover":                        "No",
+        "Enable mouse hover":                        hoverDefault,
         "Fanart":                                    "Yes",
         "Game Counter":                              "Yes",
         "Game Logo":                                 "Show",
@@ -464,7 +472,7 @@ id: root
         "Logo":                                      "Yes",
         "Logo Color Match":                          "No",
         "Menu Volume":                               "1.0",
-        "Menu sounds":                               "Yes",
+        "Menu sounds":                               menuSoundsDefault,
         "Miximage":                                  "Yes",
         "Per-system tile settings":                  "No",
         "Screenshots":                               "Yes",
@@ -472,14 +480,14 @@ id: root
         "Show Clock":                                "12hr",
         "Show WiFi Indicator":                       "Yes",
         "Showcase Collections Art":                  "Fanart",
-        "Start up chime":                            "Yes",
+        "Start up chime":                            chimeDefault,
         "Startup intro":                             "Yes",
         "Library system tiles follow All":           "No",
         "System tile titles":                        "On focus",
         "Tile Halo":                                 "Yes",
         "Title Screen":                              "Yes",
         "Video":                                     "Yes",
-        "Video preview":                             "Yes",
+        "Video preview":                             previewDefault,
     })
 
     property var settings: {
@@ -491,14 +499,14 @@ id: root
             GameBackground:                settingsStore.get("Game Background", "Fanart"),
             GameLogo:                      settingsStore.get("Game Logo", "Show"),
             GameBlurBackground:            settingsStore.get("Blur Background", "No"),
-            VideoPreview:                  settingsStore.get("Video preview", "Yes"),
-            AllowThumbVideo:               settingsStore.get("Allow video thumbnails", "Yes"),
+            VideoPreview:                  settingsStore.get("Video preview"),
+            AllowThumbVideo:               settingsStore.get("Allow video thumbnails"),
             AllowThumbVideoAudio:          settingsStore.get("Video thumbnail audio", "Yes"),
             HideLogo:                      settingsStore.get("Hide logo when thumbnail video plays", "Yes"),
             HideButtonHelp:                settingsStore.get("Hide button help", "No"),
             // "Gradient" was removed as an option; a stale saved value falls back to the default.
             ColorLayout:                   (api.memory.has("Color Layout") && api.memory.get("Color Layout") !== "Gradient") ? api.memory.get("Color Layout") : "Lime",
-            MouseHover:                    settingsStore.get("Enable mouse hover", "No"),
+            MouseHover:                    settingsStore.get("Enable mouse hover"),
             AlwaysShowTitles:              settingsStore.get("Always show titles", "No"),
             AllowVideoPreviewAudio:        settingsStore.get("Game details video preview audio", "Yes"),
             ShowScanlines:                 settingsStore.get("Show scanlines", "No"),
@@ -562,10 +570,10 @@ id: root
             HideAndroidGamesSystemTile:    settingsStore.get("Hide Android Games System Tile", "No"),
             MoreByGenreDisplay:            settingsStore.get("More by Genre Display", "Full"),
             AllowDiscoverVideoAudio:         settingsStore.get("Discover video audio", "Yes"),
-            MenuSounds:                      settingsStore.get("Menu sounds", "Yes"),
+            MenuSounds:                      settingsStore.get("Menu sounds"),
             MenuVolume:                      settingsStore.get("Menu Volume", "1.0"),
-            StartupChime:                    settingsStore.get("Start up chime", "Yes"),
-            AllGamesVideoPreview:            settingsStore.get("AllGames Video preview", "Yes"),
+            StartupChime:                    settingsStore.get("Start up chime"),
+            AllGamesVideoPreview:            settingsStore.get("AllGames Video preview"),
             AllGamesView:                  settingsStore.get("All Games View", "List"),
             AllGamesTileStyle:             settingsStore.get("AllGames Tile Style", "Wide"),
             AllGamesTileRatio:             settingsStore.get("AllGames Tile Ratio", "0.66"),
@@ -631,6 +639,27 @@ id: root
     // all, and resumes when the menu closes. Only trusted once the theme has
     // had focus, like windowSeenActive above.
     property bool themeSeenFocused: false
+    // ── Pointer movement ──────────────────────────────────────────────────
+    // Hover selects tiles (Settings > General > Enable mouse hover, on by
+    // default on desktop). But a list scrolled by keys, wheel or a held
+    // D-pad moves tiles under a mouse that's sitting still, and Qt calls
+    // that "entered": the selection jumped to whatever passed under the
+    // pointer, mid-scroll. Hover now counts only if the pointer itself moved
+    // in the last 300 ms. A HoverHandler watches without taking hover away
+    // from anything below it.
+    property double pointerMovedMs: 0
+    property point  pointerPos: Qt.point(-1, -1)
+    HoverHandler {
+        onPointChanged: {
+            var p = point.position;
+            if (p.x !== root.pointerPos.x || p.y !== root.pointerPos.y) {
+                root.pointerPos = p;
+                root.pointerMovedMs = Date.now();
+            }
+        }
+    }
+    function pointerMoved() { return Date.now() - pointerMovedMs < 300; }
+
     readonly property bool appActive: Qt.application.state === Qt.ApplicationActive
                                       && (!windowSeenActive || Window.active)
                                       && (!themeSeenFocused || activeFocus)
@@ -1950,6 +1979,12 @@ id: root
     id: showcaseLoader
 
         readonly property bool shown: (root.state === "showcasescreen")
+
+        // Input only while this is the screen: a hidden screen still got the
+
+        // mouse, so hover lit its tiles and played nav sounds behind another one.
+
+        enabled: shown
         focus: shown
         opacity: shown ? 1 : 0
         // Hidden once faded out: the Home screen stays loaded under every
@@ -1972,6 +2007,12 @@ id: root
     id: allgamesloader
 
         readonly property bool shown: (root.state === "allgamesscreen")
+
+        // Input only while this is the screen: a hidden screen still got the
+
+        // mouse, so hover lit its tiles and played nav sounds behind another one.
+
+        enabled: shown
         focus: shown
         active: opacity !== 0
         opacity: shown ? 1 : 0
@@ -1986,6 +2027,12 @@ id: root
     id: gameviewloader
 
         readonly property bool shown: (root.state === "gameviewscreen")
+
+        // Input only while this is the screen: a hidden screen still got the
+
+        // mouse, so hover lit its tiles and played nav sounds behind another one.
+
+        enabled: shown
         focus: shown
         // Stay alive once loaded: the first visit sets gameviewLoaded = true via onLoaded,
         // after which active is always true so the component is never destroyed.
@@ -2013,6 +2060,9 @@ id: root
         // the RA page for the whole splash delay instead of the launch screen.
         z: 100
         readonly property bool shown: (root.state === "launchgamescreen")
+        // Input only while this is the screen: a hidden screen still got the
+        // mouse, so hover lit its tiles and played nav sounds behind another one.
+        enabled: shown
         focus: shown
         active: opacity !== 0
         opacity: shown ? 1 : 0
@@ -2077,6 +2127,12 @@ id: root
     id: settingsloader
 
         readonly property bool shown: (root.state === "settingsscreen")
+
+        // Input only while this is the screen: a hidden screen still got the
+
+        // mouse, so hover lit its tiles and played nav sounds behind another one.
+
+        enabled: shown
         focus: shown
         active: opacity !== 0
         opacity: shown ? 1 : 0
@@ -2091,6 +2147,12 @@ id: root
     id: achievementsloader
 
         readonly property bool shown: (root.state === "achievementsscreen")
+
+        // Input only while this is the screen: a hidden screen still got the
+
+        // mouse, so hover lit its tiles and played nav sounds behind another one.
+
+        enabled: shown
         focus: shown
         active: opacity !== 0
         opacity: shown ? 1 : 0
@@ -2105,6 +2167,12 @@ id: root
     id: gameachievementsloader
 
         readonly property bool shown: (root.state === "gameachievementsscreen")
+
+        // Input only while this is the screen: a hidden screen still got the
+
+        // mouse, so hover lit its tiles and played nav sounds behind another one.
+
+        enabled: shown
         focus: shown
         active: opacity !== 0
         opacity: shown ? 1 : 0
@@ -2119,6 +2187,12 @@ id: root
     id: raentryloader
 
         readonly property bool shown: (root.state === "raentryscreen")
+
+        // Input only while this is the screen: a hidden screen still got the
+
+        // mouse, so hover lit its tiles and played nav sounds behind another one.
+
+        enabled: shown
         focus: shown
         active: opacity !== 0
         opacity: shown ? 1 : 0
@@ -2197,6 +2271,12 @@ id: root
     id: discoverviewloader
 
         readonly property bool shown: (root.state === "discoverscreen")
+
+        // Input only while this is the screen: a hidden screen still got the
+
+        // mouse, so hover lit its tiles and played nav sounds behind another one.
+
+        enabled: shown
         focus: shown
         active: opacity !== 0
         opacity: shown ? 1 : 0

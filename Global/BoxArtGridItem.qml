@@ -609,7 +609,13 @@ id: root
     MouseArea {
         anchors.fill: parent
         hoverEnabled: settings.MouseHover == "Yes"
-        onEntered: { playNav(); highlighted(); }
+        // Hover selects only when the pointer itself moved (theme.qml
+        // pointerMoved): a list scrolling under a still mouse must not
+        // steal the selection. Movement inside the tile counts too, so the
+        // first nudge onto a tile after a pause still selects it.
+        function hoverSelect() { if (!root.selected && pointerMoved()) { playNav(); highlighted(); } }
+        onEntered: hoverSelect()
+        onPositionChanged: hoverSelect()
         onClicked: {
             playNav();
             activate();

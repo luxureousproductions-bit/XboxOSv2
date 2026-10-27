@@ -33,6 +33,7 @@ id: root
         acceptedButtons: Qt.AllButtons
         hoverEnabled: true
         onPressed: mouse.accepted = true
+        onWheel: wheel.accepted = true   // the wheel stops here too, not on the screen behind
         onClicked: mouse.accepted = true
         onReleased: mouse.accepted = true
     }
@@ -1583,7 +1584,7 @@ id: root
 
                     // Sound master: with Menu sounds off, the volume and the chime are silent anyway.
                     if (settingName === "Menu Volume" || settingName === "Start up chime")
-                        return mem("Menu sounds", "Yes") === "No";
+                        return mem("Menu sounds") === "No";
 
                     // Logo tint only applies to the Xbox logos — not to None,
                     // and not to the RetroAchievements logo, which keeps its own colours.
@@ -1594,17 +1595,17 @@ id: root
 
                     // Showcase thumbnail previews: the logo-hide and audio rows do nothing without them.
                     if (settingName === "Hide logo when thumbnail video plays" || settingName === "Video thumbnail audio")
-                        return mem("Allow video thumbnails", "Yes") === "No";
+                        return mem("Allow video thumbnails") === "No";
 
                     // Game Details preview video and its audio.
                     if (settingName === "Game details video preview audio")
-                        return mem("Video preview", "Yes") === "No";
+                        return mem("Video preview") === "No";
 
                     // All Games preview video and the rows that only matter while it plays.
                     if (settingName === "All games menu video audio"
                         || settingName === "AllGames Hide box art on video"
                         || settingName === "AllGames Hide logo on video")
-                        return mem("AllGames Video preview", "Yes") === "No";
+                        return mem("AllGames Video preview") === "No";
 
                     // A collection set to None has no thumbnail, size or ratio to configure.
                     var cm = settingName.match(/^(Collection \d) - (Thumbnail|Size|Ratio)$/);
@@ -1995,7 +1996,7 @@ id: root
         color: Qt.rgba(0, 0, 0, 0.82)
         focus: kbOpen
 
-        MouseArea { anchors.fill: parent; onClicked: closeEditor(); }
+        MouseArea { anchors.fill: parent; hoverEnabled: true; onWheel: wheel.accepted = true; onClicked: closeEditor(); }
 
         // Built only while open: an 890-line keyboard used to be created
         // with every visit to Settings for the two RA text fields.
@@ -2085,7 +2086,7 @@ id: root
             anchors.fill: parent
             color: "#000000"
             opacity: 0.65
-            MouseArea { anchors.fill: parent; onClicked: root.closeInfo() }
+            MouseArea { anchors.fill: parent; hoverEnabled: true; onWheel: wheel.accepted = true; onClicked: root.closeInfo() }
         }
 
         Rectangle {

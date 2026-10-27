@@ -200,6 +200,8 @@ id: searchOverlay
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.AllButtons
+        hoverEnabled: true
+        onWheel: wheel.accepted = true
         onPressed:  mouse.accepted = true
         onClicked:  mouse.accepted = true
         onReleased: mouse.accepted = true

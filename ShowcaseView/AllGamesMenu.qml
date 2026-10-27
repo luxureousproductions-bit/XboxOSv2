@@ -22,6 +22,7 @@ id: root
         acceptedButtons: Qt.AllButtons
         hoverEnabled: true
         onPressed: mouse.accepted = true
+        onWheel: wheel.accepted = true   // the wheel stops here too, not on the screen behind
         onClicked: mouse.accepted = true
         onReleased: mouse.accepted = true
     }
@@ -1608,6 +1609,10 @@ id: root
                     if (selected) activateCurrent();
                     else          gamegrid.currentIndex = flatIndex;   // mouse/touch on another tile
                 }
+                // Mouse hover (Settings > General > Enable mouse hover) moves
+                // the selection, as on Home. The tile played its nav sound but
+                // the Library never listened, so hover did nothing here.
+                onHighlighted: if (!selected) gamegrid.currentIndex = flatIndex
             }
         }
         Component {
@@ -1634,6 +1639,7 @@ id: root
                     if (selected) activateCurrent();
                     else          gamegrid.currentIndex = flatIndex;
                 }
+                onHighlighted: if (!selected) gamegrid.currentIndex = flatIndex   // mouse hover
             }
         }
 
@@ -1815,13 +1821,15 @@ id: root
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, 0.78)
         focus: listPanelOpen
-        MouseArea { anchors.fill: parent; onClicked: { listPanelOpen = false; focusGames(); } }
+        // hoverEnabled + onWheel: tiles under the open panel don't light up or scroll.
+        MouseArea { anchors.fill: parent; hoverEnabled: true; onWheel: wheel.accepted = true; onClicked: { listPanelOpen = false; focusGames(); } }
         Rectangle {
             anchors.centerIn: parent
             width: vpx(720); height: vpx(576)
             radius: vpx(14)
             color: "#1E1E20"; border.color: theme.accent; border.width: vpx(2)
-            MouseArea { anchors.fill: parent }
+            // The wheel steps the panel's rows.
+            MouseArea { anchors.fill: parent; onWheel: { wheel.accepted = true; listStep(wheel.angleDelta.y > 0 ? -1 : 1); } }
             Text {
                 anchors { left: parent.left; leftMargin: vpx(36); top: parent.top; topMargin: vpx(28) }
                 text: scopedColl ? scopedColl.name : "All Games"; color: "white"; font.family: titleFont.name; font.pixelSize: vpx(28); font.bold: true
@@ -1903,7 +1911,7 @@ id: root
         anchors.fill: parent
         color: Qt.rgba(0, 0, 0, 0.78)
 
-        MouseArea { anchors.fill: parent; onClicked: { searchActive = false; filterOpen = false; focusGames(); } }
+        MouseArea { anchors.fill: parent; hoverEnabled: true; onWheel: wheel.accepted = true; onClicked: { searchActive = false; filterOpen = false; focusGames(); } }
 
         // Shared on-screen keyboard — same presentation as the RA search:
         // title and text field up top, keys below, its own help prompts.
