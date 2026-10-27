@@ -1,0 +1,39 @@
+XboxOSv2 - testing on Windows / Linux (refresh branch)
+
+INSTALL
+1. On GitHub switch the branch to "refresh", then Code > Download ZIP and
+   extract it into your Pegasus themes folder.
+2. Rename the extracted folder to the name your old XboxOSv2 folder had.
+   Pegasus keeps theme settings per folder name, so a new name starts from
+   defaults.
+
+VIDEOS
+Pegasus on Windows plays video through Windows' own DirectShow, which can't
+open .mp4 on a stock install. Pegasus's Windows guide recommends:
+  - K-Lite Codec Pack Basic, then restart Pegasus.
+Without codecs the theme shows the game's art instead of black, and Discover
+says what to install. Each failed video is listed in lastrun.log as
+"XboxOSv2: video could not play".
+Preview videos are OFF by default on Windows/Linux. Turn them on in
+Settings > Previews & sound (or the "All video previews" switch).
+
+DEFAULTS ON A PC
+Mouse hover on; startup chime off; menu sounds off (Windows).
+
+FRAME COUNTER
+Ctrl+F shows frames per second (top left); press again to hide. Read it
+WHILE scrolling: about 60 is smooth. Note which screen drops.
+
+KEYBOARD AND MOUSE
+- Esc on Home opens Pegasus's own menu. Backspace (or B) opens Discover.
+- Every button prompt at the bottom can be clicked. "Apps" opens the drawer.
+- Mouse Back / right button = B everywhere.
+- Settings grid pages (Library, Previews & sound): click a setting to pick
+  it, click again to change it, click its < arrow to go back a value.
+  Keyboard: Enter starts/finishes changing, arrows change, Esc finishes.
+- Y panel (All Games / a system): hover picks a row, click changes it.
+
+WHAT TO SEND BACK
+lastrun.log (in the Pegasus folder) and a short video of anything odd.
+Settings > System > "Write diagnostics to log" first adds the theme build,
+screen size and features to it.

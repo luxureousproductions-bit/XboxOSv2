@@ -674,7 +674,7 @@ id: root
         view: achievementList
         columns: 1
         active: true
-        onStepped: function() { playNav(); }
+        onStepped: function(quiet) { if (!quiet) playNav(); }
     }
 
     // ── Page counter ─────────────────────────────────────────────────────

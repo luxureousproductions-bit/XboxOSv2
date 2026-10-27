@@ -4,7 +4,15 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 50)
+## Unreleased — refresh branch (build 51)
+
+### Mouse wheel
+- A quick spin plays the navigation sound once instead of on every notch (every list, grid and Settings), and Home snaps between rows while the wheel spins instead of queueing one slide per notch.
+
+### Testing notes
+- **TESTING-windows.txt** brought up to date for the refresh branch: install, codecs, PC defaults, Ctrl+F, keyboard and mouse controls, and what to send back.
+
+## build 50
 
 ### Windows / Linux: big screens and speed
 - **1440p and 4K:** single images (logos, icons, Retro Achievements badges, Game details art) decode sharper in step with the screen; background blurs (Game details, the launch screen, All Games, the App Drawer backdrop) render at 1080p size and scale up — the same look for a quarter of the GPU memory at 4K. System tiles and the Home background decode for a 1080p screen in normal mode and for the real screen in High Quality Mode. Per-tile art is deliberately not grown. Android is untouched (the scale is exactly 1 there).

@@ -150,7 +150,7 @@ id: root
         view: medialist
         columns: 1
         active: true
-        onStepped: function() { playNav(); }
+        onStepped: function(quiet) { if (!quiet) playNav(); }
     }
 
     Row {

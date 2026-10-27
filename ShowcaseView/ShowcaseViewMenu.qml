@@ -1956,7 +1956,8 @@ id: root
         anchors.fill: parent
         model: mainModel
         focus: true
-        highlightMoveDuration: animMs(200)
+        // Snaps while the wheel spins, so a fast spin doesn't queue a slide per notch.
+        highlightMoveDuration: homeWheel.busy ? 0 : animMs(200)
         highlightRangeMode: ListView.ApplyRange 
         preferredHighlightBegin: header.height
         preferredHighlightEnd: parent.height - (helpMargin * 2)
@@ -2040,11 +2041,12 @@ id: root
     // a list the user isn't in. navJump/savedRow are left alone: this is an
     // ordinary row change, not a jump to the nav bar.
     WheelNav {
+    id: homeWheel
         anchors.fill: mainList
         view: mainList
         columns: 1
         active: mainList.activeFocus
-        onStepped: function() { playNav(); }
+        onStepped: function(quiet) { if (!quiet) playNav(); }
     }
 
     // Global input handling for the screen
