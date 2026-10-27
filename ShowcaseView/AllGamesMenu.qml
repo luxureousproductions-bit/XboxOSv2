@@ -209,8 +209,8 @@ id: root
     readonly property string lvSound:     gateSound(scoped ? sysPref("Video audio",     sysSound)   : allSound)
     // Under a playing preview the art always fades. Grid: also the logo?
     // List: the box art, the logo, both or neither (the screenshot always).
-    readonly property bool   gridHideLogo: (scoped ? sysGridHide : allGridHide) === "Yes"
-    readonly property string listHide:     scoped ? sysListHide : allListHide
+    readonly property bool   gridHideLogo: (scoped ? sysPref("Grid hide logo on video", sysGridHide) : allGridHide) === "Yes"
+    readonly property string listHide:     scoped ? sysPref("List hide on video", sysListHide) : allListHide
 
     // The scope the theme asked for (Home system tile, Library button,
     // return from a game). -2 = nothing pending.
@@ -1794,8 +1794,8 @@ id: root
     // A system. Row 0 says whether it follows Systems or has its own; the
     // rest show what it uses either way (`sys` is the per-system row name,
     // `base` what Systems uses). Changing any row gives it its own settings.
-    readonly property var sysPanelRows: [
-        { key: "__own",                          label: "Settings",      opts: ["Follow Systems","Its own"], order: null, dflt: "Follow Systems" },
+    // Every per-system row, whichever view: what makeSysOwn() copies.
+    readonly property var sysAllRows: [
         { key: sysKey + " - View",               sys: "View",              label: "View",          opts: ["List","Grid"], order: null, base: sysView },
         { key: sysKey + " - Tile shape",         sys: "Tile shape",        label: "Tile shape",    opts: tileShapes, order: null, base: sysStyle },
         { key: sysKey + " - Tile ratio",         sys: "Tile ratio",        label: "Tile ratio",    opts: ratioOpts, order: null, base: sysRatio },
@@ -1804,9 +1804,22 @@ id: root
         { key: sysKey + " - Show logo on tile",  sys: "Show logo on tile", label: "Logo on tile",  opts: ["Yes","No"], order: null, base: sysTileLogo },
         { key: sysKey + " - Game tile titles",   sys: "Game tile titles",  label: "Tile titles",   opts: ["On focus","Always","Never"], order: null, base: sysTitles },
         { key: sysKey + " - Video preview",      sys: "Video preview",     label: "Preview",       opts: ["Yes","No"], order: null, base: sysPreview, group: "Previews" },
-        { key: sysKey + " - Video audio",        sys: "Video audio",       label: "Sound",         opts: ["Yes","No"], order: null, base: sysSound }
+        { key: sysKey + " - Video audio",        sys: "Video audio",       label: "Sound",         opts: ["Yes","No"], order: null, base: sysSound },
+        { key: sysKey + " - Grid hide logo on video", sys: "Grid hide logo on video", label: "Hide logo while it plays", opts: ["Yes","No"], order: null, base: sysGridHide },
+        { key: sysKey + " - List hide on video", sys: "List hide on video", label: "While it plays, hide", opts: ["None","Box art","Logo","Both"], order: null, base: sysListHide }
     ]
-    readonly property var panelRows: scoped ? sysPanelRows : (gridMode ? gridRows : listRows)
+    function sysRow(name) { for (var i = 0; i < sysAllRows.length; i++) if (sysAllRows[i].sys === name) return sysAllRows[i]; return null; }
+    readonly property var sysOwnRow: ({ key: "__own", label: "Settings", opts: ["Follow Systems","Its own"], order: null, dflt: "Follow Systems" })
+    // The panel mirrors All Games': the grid rows in grid view, the list
+    // rows (with the shared Blurred background and Scanlines) in list view.
+    readonly property var sysGridPanelRows: [sysOwnRow].concat(
+        ["View","Tile shape","Tile ratio","Tiles per row","Tile art","Show logo on tile","Game tile titles",
+         "Video preview","Video audio","Grid hide logo on video"].map(sysRow))
+    readonly property var sysListPanelRows: [sysOwnRow].concat(
+        ["View","Video preview","Video audio","List hide on video"].map(sysRow),
+        [ { key: "AllGames Blur Background", label: "Blurred background", opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesBlurBackground },
+          { key: "AllGames Show scanlines",  label: "Scanlines",          opts: ["Yes","No"], order: "No,Yes", dflt: settings.AllGamesScanlines } ])
+    readonly property var panelRows: scoped ? (lvView === "Grid" ? sysGridPanelRows : sysListPanelRows) : (gridMode ? gridRows : listRows)
     function listValue(row) {
         var e = listEpoch; var r = panelRows[row];
         if (r.key === "__own") return sysOwn() ? "Its own" : "Follow Systems";
@@ -1822,13 +1835,12 @@ id: root
         var e = listEpoch; var r = panelRows[row], k = r.key;
         var label = r.label;
         if (label === "Sound" || label === "Hide logo while it plays" || label === "While it plays, hide") {
-            var prev = scoped ? listValue(row - (label === "Sound" ? 1 : 2)) : rowValue("AllGames Video preview");
+            var prev = rowValue(scoped ? sysKey + " - Video preview" : "AllGames Video preview");
             if (prev === "No") return true;
-            if (label === "Hide logo while it plays" && rowValue("AllGames Tile Logo") === "No") return true;
+            if (label === "Hide logo while it plays"
+                && rowValue(scoped ? sysKey + " - Show logo on tile" : "AllGames Tile Logo") === "No") return true;
         }
-        if (scoped && r.sys && r.sys !== "View" && r.sys !== "Video preview" && r.sys !== "Video audio"
-            && listValue(1) === "List") return true;           // tile rows mean nothing in list view
-        var shape = scoped ? listValue(2) : rowValue("AllGames Tile Style");
+        var shape = rowValue(scoped ? sysKey + " - Tile shape" : "AllGames Tile Style");
         if (label === "Tile art" || label === "Logo on tile") return shape === "Box Art" || shape === "3D Box";
         if (label === "Tile ratio") return shape === "Square";
         return false;
@@ -1844,9 +1856,9 @@ id: root
     // exactly what it shows now.
     function makeSysOwn() {
         if (sysOwn()) return;
-        for (var i = 0; i < sysPanelRows.length; i++) {
-            var r = sysPanelRows[i];
-            if (r.sys) settingsStore.set(r.key, String(r.base));
+        for (var i = 0; i < sysAllRows.length; i++) {
+            var r = sysAllRows[i];
+            settingsStore.set(r.key, String(r.base));
         }
         settingsStore.set(sysKey + " - Use theme settings", "No");
     }

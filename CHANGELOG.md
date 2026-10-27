@@ -4,7 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 46)
+## Unreleased — refresh branch (build 47)
+
+### A system's Y panel matches All Games'
+- In **list view** the panel shows the list rows — View, Preview, Sound, *While it plays, hide*, Blurred background, Scanlines — and in **grid view** the grid rows, with *Hide logo while it plays*. It used to show the grid rows in both views and grey them out in a list.
+- *While it plays, hide* and *Hide logo while it plays* can now be set per system (they follow Systems until the system has its own settings).
+
+## build 46
 
 ### Diagnostics, one panel
 - Settings › System › Diagnostics is a single read-only panel — theme build, frontend, features, display, library — instead of five rows whose More info repeated the same line. Frame rate counter and Write diagnostics to log sit under it; the cursor steps over the panel.
