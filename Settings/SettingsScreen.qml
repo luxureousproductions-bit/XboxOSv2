@@ -1313,6 +1313,7 @@ id: root
 
     function mouseBack() {
         if (infoOpen)  { infoOpen = false; focusContent(); return; }
+        if (settingsGrid.editing) { playBack(); settingsGrid.editing = false; return; }   // finish editing first
         if (!pagelist.activeFocus) { pagelist.forceActiveFocus(); return; }   // rows -> page list
         previousScreen();
     }

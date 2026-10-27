@@ -51,7 +51,10 @@ id: grid
     property int rev: 0
     readonly property var currentCell: (current >= 0 && current < cells.length) ? cells[current] : null
 
-    function interactive(c) { return c && (c.kind === "value" || c.kind === "item"); }
+    // Focusable cards. A dim placeholder ("—", "Always") is focusable too, so
+    // Up/Down/Left/Right walk every column of a table page in straight
+    // lines; it just has nothing to change.
+    function interactive(c) { return c && (c.kind === "value" || c.kind === "item" || (c.kind === "label" && c.dim === true)); }
     function firstInteractive() {
         for (var i = 0; i < cells.length; i++) if (interactive(cells[i])) return i;
         return -1;
@@ -354,14 +357,14 @@ id: grid
                     spacing: vpx(10)
                     opacity: card.dis ? 0.38 : 1
                     // Editing: the arrows light up — Left/Right now change the value.
-                    Text { text: "‹"; color: card.editing ? grid.accent : "#8a8a8a"; font { family: subtitleFont.name; pixelSize: vpx(17); bold: card.editing } anchors.verticalCenter: parent.verticalCenter }
+                    Text { id: leftArrow; text: "‹"; color: card.editing ? grid.accent : "#8a8a8a"; font { family: subtitleFont.name; pixelSize: vpx(17); bold: card.editing } anchors.verticalCenter: parent.verticalCenter }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: { var e = grid.rev; var ee = settingsEpoch; return c.kind === "value" ? grid.display(c) : ""; }
                         color: "white"
                         font { family: subtitleFont.name; pixelSize: vpx(16); bold: true }
                     }
-                    Text { text: "›"; color: card.editing ? grid.accent : "#8a8a8a"; font { family: subtitleFont.name; pixelSize: vpx(17); bold: card.editing } anchors.verticalCenter: parent.verticalCenter }
+                    Text { id: rightArrow; text: "›"; color: card.editing ? grid.accent : "#8a8a8a"; font { family: subtitleFont.name; pixelSize: vpx(17); bold: card.editing } anchors.verticalCenter: parent.verticalCenter }
                 }
 
                 MouseArea {
@@ -372,7 +375,11 @@ id: grid
                     onClicked: {
                         grid.forceActiveFocus();
                         if (index !== grid.current) { grid.wantCol = c.col; grid.current = index; playNav(); return; }
-                        if (c.kind === "value") grid.step(c, 1);
+                        // Mouse: the ‹ arrow steps back, anywhere else forward.
+                        if (c.kind === "value") {
+                            var p = mapToItem(leftArrow, mouse.x, mouse.y);
+                            grid.step(c, (p.x > -vpx(10) && p.x < leftArrow.width + vpx(10)) ? -1 : 1);
+                        }
                         else if (c.kind === "item") grid.itemAction(c);
                     }
                     onWheel: { wheel.accepted = true; grid.move(0, wheel.angleDelta.y > 0 ? -1 : 1); }

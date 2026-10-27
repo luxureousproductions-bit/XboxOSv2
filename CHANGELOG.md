@@ -4,7 +4,16 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 44)
+## Unreleased — refresh branch (build 45)
+
+### Previews & sound: straight columns
+- The "—" and "Always" placeholders can be focused now, so Up/Down/Left/Right move through every column in straight lines instead of skipping to whatever card was nearest. They have nothing to change; the help bar shows just Back on them.
+
+### Mouse and keyboard on the grid pages
+- Keyboard: Enter starts and finishes changing a value, the arrow keys change it, Esc finishes (or leaves the page when not changing).
+- Mouse: clicking the ‹ arrow of the focused setting steps back, anywhere else on it steps forward; the mouse Back / right button finishes changing before it leaves the page.
+
+## build 44
 
 ### Settings rail, Xbox style
 - The page list runs from the screen's edge to a divider line. **While you're on the list**, the selected page is a solid accent plate with a soft glow (dark text on light accents like Lime). **While you're inside a page**, it's a grey plate with an accent edge against the divider. Icons removed, as on the Xbox.
