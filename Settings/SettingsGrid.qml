@@ -56,7 +56,31 @@ id: grid
         for (var i = 0; i < cells.length; i++) if (interactive(cells[i])) return i;
         return -1;
     }
-    onCellsChanged: { current = firstInteractive(); layout(); }
+    // The cell list is rebuilt whenever a value it shows changes (the Library
+    // page re-reads the systems with their own settings), so a rebuild must
+    // keep the focus where it was: the same setting, else the same spot.
+    // It used to jump to the first card every time — A on Tile ratio landed
+    // on All Games View.
+    property var _focusKey: null
+    onCellsChanged: {
+        var k = _focusKey, keep = -1;
+        if (k) {
+            for (var i = 0; i < cells.length && keep < 0; i++) {
+                var c = cells[i];
+                if (interactive(c) && c.key === k.key && c.sys === k.sys && c.col === k.col) keep = i;
+            }
+            for (var j = 0; j < cells.length && keep < 0; j++)
+                if (interactive(cells[j]) && cells[j].row === k.row && covers(cells[j], k.col)) keep = j;
+        }
+        layout();      // first: keepVisible (via current) reads the new row tops
+        if (keep < 0) { keep = firstInteractive(); wantCol = -1; }
+        current = keep;
+    }
+    onCurrentChanged: {
+        var c = cells[current];
+        _focusKey = c ? { key: c.key, sys: c.sys, row: c.row, col: c.col } : null;
+        keepVisible();
+    }
 
     // ── Layout ────────────────────────────────────────────────────────────
     property var rowTops: []
@@ -116,29 +140,50 @@ id: grid
     }
 
     // ── Focus movement ────────────────────────────────────────────────────
-    // The nearest interactive card in a direction, by centre distance with
-    // sideways offset weighted double (so Down prefers the card below over
-    // one diagonally closer).
+    // By rows and columns, like a table — not by on-screen distance, which
+    // picked odd cards around wide (spanning) ones and could refuse Right.
+    //   Left/Right: the next card in the same row.
+    //   Up/Down:    the next row that has a card; in it, the card under the
+    //               column you're travelling in (wantCol), else the nearest.
+    // wantCol only changes on Left/Right, so passing through a wide card
+    // and on down brings you back to the column you were in.
+    property int wantCol: -1
+    function span(c) { return c.span || 1; }
+    function covers(c, col) { return col >= c.col && col < c.col + span(c); }
+    function colDist(c, col) { return col < c.col ? c.col - col : (col >= c.col + span(c) ? col - (c.col + span(c) - 1) : 0); }
     function move(dx, dy) {
-        var c = currentCell; if (!c) { current = firstInteractive(); return true; }
-        var cx = cellX(c) + cellW(c) / 2, cy = cellY(c) + cellH(c) / 2;
-        var best = -1, bestD = 1e12;
-        for (var i = 0; i < cells.length; i++) {
-            if (i === current || !interactive(cells[i])) continue;
-            var o = cells[i];
-            var ox = cellX(o) + cellW(o) / 2, oy = cellY(o) + cellH(o) / 2;
-            var ddx = ox - cx, ddy = oy - cy;
-            if (dx !== 0 && (Math.sign(ddx) !== dx || Math.abs(ddx) < 1)) continue;
-            if (dy !== 0 && (Math.sign(ddy) !== dy || Math.abs(ddy) < 1)) continue;
-            var d = dx !== 0 ? Math.abs(ddx) + 2 * Math.abs(ddy) : Math.abs(ddy) + 2 * Math.abs(ddx);
-            if (d < bestD) { bestD = d; best = i; }
+        var c = cells[current];
+        if (!c) { current = firstInteractive(); return current >= 0; }
+        var best = -1, i, o;
+        if (dx !== 0) {
+            for (i = 0; i < cells.length; i++) {
+                o = cells[i];
+                if (i === current || !interactive(o) || o.row !== c.row) continue;
+                if (dx > 0 ? o.col < c.col + span(c) : o.col >= c.col) continue;
+                if (best < 0 || (dx > 0 ? o.col < cells[best].col : o.col > cells[best].col)) best = i;
+            }
+            if (best < 0) return false;
+            wantCol = cells[best].col;
+        } else {
+            var want = wantCol >= 0 ? wantCol : c.col;
+            var maxRow = -1;
+            for (i = 0; i < cells.length; i++) if (cells[i].row > maxRow) maxRow = cells[i].row;
+            for (var r = c.row + dy; r >= 0 && r <= maxRow && best < 0; r += dy) {
+                var bestD = 1e9;
+                for (i = 0; i < cells.length; i++) {
+                    o = cells[i];
+                    if (o.row !== r || !interactive(o)) continue;
+                    var d = colDist(o, want);
+                    if (d < bestD) { bestD = d; best = i; }
+                }
+            }
+            if (best < 0) return false;
+            if (wantCol < 0) wantCol = c.col;
         }
-        if (best < 0) return false;
         current = best;
         playNav();
         return true;
     }
-    onCurrentChanged: keepVisible()
     function keepVisible() {
         // cells[current], not currentCell: this runs from onCurrentChanged,
         // before that binding has caught up, so it would be one move behind.
@@ -302,10 +347,10 @@ id: grid
                     anchors.fill: parent
                     enabled: grid.interactive(c)
                     hoverEnabled: settings.MouseHover == "Yes"
-                    onEntered: { if (pointerMoved() && index !== grid.current) { grid.current = index; playNav(); } }
+                    onEntered: { if (pointerMoved() && index !== grid.current) { grid.wantCol = c.col; grid.current = index; playNav(); } }
                     onClicked: {
                         grid.forceActiveFocus();
-                        if (index !== grid.current) { grid.current = index; playNav(); return; }
+                        if (index !== grid.current) { grid.wantCol = c.col; grid.current = index; playNav(); return; }
                         if (c.kind === "value") grid.step(c, 1);
                         else if (c.kind === "item") grid.itemAction(c);
                     }

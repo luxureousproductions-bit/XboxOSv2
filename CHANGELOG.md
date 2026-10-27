@@ -4,7 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 42)
+## Unreleased — refresh branch (build 43)
+
+### Settings grid pages: steady navigation
+- **A or RB no longer throws the focus back to the first card.** The Library page rebuilds its cards when a saved value changes (it lists the systems with their own settings), and every rebuild reset the focus to All Games › View. The focus now stays on the same setting.
+- **Left/Right and Up/Down move like a table.** The grid used to pick the nearest card by on-screen distance, which around the wide cards (Volume, Startup chime, All preview sound) chose odd targets and could refuse Right. Now Left/Right go to the next card in the row, and Up/Down go to the next row, staying in the column you're in — passing a wide card and coming back returns you to the same column. Where a row has nothing in your column ("—"), Up/Down land on the nearest card in that row.
+
+## build 42
 
 ### Clickable button prompts (Windows / Linux, and touch)
 - **Every prompt in the help bar does what its button does when clicked or tapped** — on Home, All Games and each system, Game details (with the media viewer and the manual), Discover, Settings (list and grid pages), Retro Achievements, and the search results. **Apps** opens the App Drawer.
