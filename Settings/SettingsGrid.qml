@@ -158,6 +158,15 @@ id: grid
     Keys.onDownPressed:  move(0, 1)
     Keys.onRightPressed: move(1, 0)
     Keys.onLeftPressed:  { if (!move(-1, 0)) { playBack(); leave(); } }
+    // Clickable prompts (theme.qml helpClick): A and X as the keys do; B is
+    // left to the screen's mouseBack().
+    function helpAction(button) {
+        var c = cells[current];
+        if (button === "accept") { if (c && c.kind === "value") step(c, 1); return true; }
+        if (button === "details") { if (c && c.kind === "item") itemAction(c); else if (c) infoRequested(c); return true; }
+        return false;
+    }
+
     Keys.onPressed: {
         if (event.isAutoRepeat && api.keys.isAccept(event)) return;
         var c = currentCell;

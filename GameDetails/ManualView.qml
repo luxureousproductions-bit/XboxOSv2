@@ -777,6 +777,24 @@ id: root
     // Input handling
     // Mouse back button: same as B
     function mouseBack() { close(); }
+    // Clickable prompts: the same branches as the keys; modal, so every
+    // button is claimed and nothing reaches Game details.
+    function helpAction(button) {
+        if (overview) {
+            if (button === "cancel" || button === "filters") closeOverview(-1);
+            else if (button === "details") toggleOverviewBookmarks();
+            else if (button === "accept") {
+                var picked = overviewPages[pageGrid.currentIndex];
+                closeOverview(picked === undefined ? -1 : picked);
+            }
+            return true;
+        }
+        if (button === "cancel") close();
+        else if (button === "accept") toggleBookmark();
+        else if (button === "details") { if (pageCount > 1) toggleSpread(); }
+        else if (button === "filters") { if (pageCount > 1) openOverview(); }
+        return true;
+    }
 
     Keys.onPressed: {
         // Modal: nothing reaches GameView while the manual is open

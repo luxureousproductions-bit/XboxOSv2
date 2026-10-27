@@ -4,7 +4,20 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 41)
+## Unreleased — refresh branch (build 42)
+
+### Clickable button prompts (Windows / Linux, and touch)
+- **Every prompt in the help bar does what its button does when clicked or tapped** — on Home, All Games and each system, Game details (with the media viewer and the manual), Discover, Settings (list and grid pages), Retro Achievements, and the search results. **Apps** opens the App Drawer.
+- The prompts the panels draw themselves are clickable too: Sorting & Filters (and its genre and system lists), the Y panel, the search results and the Retro Achievements pages.
+- How it works: a click travels the same way the key does — from whatever has focus up through the screen — so the tile under the cursor takes A, an open panel takes its own buttons, and the page takes the rest. A click on B that nothing else claims goes through the same path as the mouse Back button.
+
+### Esc on Home opens the Pegasus menu (Windows / Linux)
+- On Home, **Esc** now reaches Pegasus's own menu (themes, settings, quit) instead of opening Discover — a keyboard had no other way there but F1. A controller's B (and Backspace) still opens Discover. Android is unchanged.
+
+### Previews & sound: master switches
+- New **Everywhere** row at the top of Settings › Previews & sound: **All video previews** and **All preview sound**. Off stops (or mutes) every screen at once without touching each screen's own choice, so On brings them all back. Discover always plays its video; *All preview sound* mutes it too.
+
+## build 41
 
 ### Settings, in the Xbox look
 - **New layout:** a rail of pages with icons on the left; the page's title and a one-line summary on the right; every setting is a card — name on the left, value on the right between ‹ ›, On/Off in place of Yes/No — framed with the same focus ring as the tiles. Section names are small accent capitals.

@@ -503,6 +503,8 @@ id: root
         Repeater {
             model: localHelpModel
             delegate: Row {
+                TapHandler { gesturePolicy: TapHandler.WithinBounds; onTapped: helpClick(button) }
+                HoverHandler { cursorShape: Qt.PointingHandCursor }
                 spacing: vpx(8)
                 Image {
                     source: "../assets/images/controller/"
@@ -557,6 +559,16 @@ id: root
     // theme.qml's mouseBack() handles it first.
     function mouseBack() {
         previousScreen();
+    }
+
+    // Clickable prompts: each does what its button does.
+    function helpAction(button) {
+        if (button === "details") openLibrarySearch("ra");
+        else if (button === "accept") { playAccept(); openSelectedGame(); }
+        else if (button === "cancel") previousScreen();
+        else if (button === "filters") { playAccept(); initialized = false; cheevosData.refreshAll(); }
+        else return false;
+        return true;
     }
 
     Keys.onPressed: {

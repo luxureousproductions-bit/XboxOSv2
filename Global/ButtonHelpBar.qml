@@ -20,9 +20,27 @@ import QtQuick.Layouts 1.15
 Item {
 id: root
 
+    // Clicking (or tapping) a prompt does what pressing its button does.
+    // The bar only reports which one; theme.qml routes it down the focus
+    // chain, the same path the key itself takes.
+    signal promptClicked(string button)
+    signal leftPromptClicked()
+
     Component {
         id: buttonhelpDelegate
+        Item {
+        width: promptRow.width
+        height: promptRow.height
+        opacity: promptMouse.pressed ? 0.6 : 1
+        MouseArea {
+        id: promptMouse
+            anchors.fill: parent
+            anchors.margins: -vpx(6)          // a little easier to hit
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.promptClicked(button)
+        }
         Row {
+        id: promptRow
             spacing: 10
             Image {
                 // An entry may supply its own icon instead of a controller
@@ -47,6 +65,7 @@ id: root
                 height: vpx(30)   // the icon's height: parent.height was circular (the Row takes its height from this)
                 verticalAlignment: Text.AlignVCenter
             }
+        }
         }
     }
 
@@ -75,6 +94,8 @@ id: root
     // rows out from the TOP of the bar, so centring this one instead is what
     // made "Apps" sit lower than everything else.
     Row {
+    id: leftPrompt
+        opacity: leftMouse.pressed ? 0.6 : 1
         anchors {
             left: parent.left
             top: parent.top
@@ -105,6 +126,16 @@ id: root
             height: vpx(30)   // the icon's height (see above)
             verticalAlignment: Text.AlignVCenter
         }
+    }
+    // Click area for Apps: a sibling over the Row, so the Row doesn't lay
+    // it out as one more item.
+    MouseArea {
+    id: leftMouse
+        anchors.fill: leftPrompt
+        anchors.margins: -vpx(6)
+        enabled: leftPrompt.visible
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.leftPromptClicked()
     }
 
     visible: currentHelpbarModel ? true : false

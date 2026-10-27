@@ -275,6 +275,13 @@ id: root
 
     // Mouse back button: the same exit B performs — hand the game and
     // position back so the featured box resumes here, and clear the prompt.
+    // Clickable prompts: each does what its button does (B: mouseBack).
+    function helpAction(button) {
+        if (button === "accept")       { if (currentGame) launchGameFromDiscover(currentGame); return true; }
+        if (button === "details")      { showInfo = !showInfo; return true; }
+        if (button === "filters")      { if (currentGame) gameDetailsFromDiscover(currentGame); return true; }
+        return false;
+    }
     function mouseBack() {
         // (No `event` here: the mouse Back button calls this directly. The
         // old `event.accepted = true` threw, so mouse Back never left Discover.)

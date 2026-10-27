@@ -421,6 +421,13 @@ id: root
         }
     }
 
+    // Clickable prompts (B is left to mouseBack).
+    function helpAction(button) {
+        if (button !== "accept") return false;
+        if (!cheevosData.lookupInProgress && cheevosData.pendingGameID === 0) { playAccept(); activateSelected(); }
+        return true;
+    }
+
     // ── Help bar ─────────────────────────────────────────────────────────
     ListModel {
     id: entryHelpModel

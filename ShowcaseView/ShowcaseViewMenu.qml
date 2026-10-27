@@ -1637,14 +1637,23 @@ id: root
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                     event.accepted = true;
-                    if (currentIndex <= 0) {
-                        if (resumeGame) { launchGame(resumeGame); }
-                    } else {
-                        currentCollectionIndex = sortedColl[currentIndex - 1];
-                        collectionVisited = true;
-                        softwareScreen();
-                    }
+                    activateCurrent();
                 }
+            }
+            // A on the system row: the hero resumes its game, a system opens.
+            function activateCurrent() {
+                if (currentIndex <= 0) {
+                    if (resumeGame) { launchGame(resumeGame); }
+                } else {
+                    currentCollectionIndex = sortedColl[currentIndex - 1];
+                    collectionVisited = true;
+                    softwareScreen();
+                }
+            }
+            function helpAction(button) {
+                if (button !== "accept") return false;
+                activateCurrent();
+                return true;
             }
 
         }
@@ -2023,6 +2032,21 @@ id: root
     // Discover from the rows — and, from a header button, returning to the
     // rows (restoring the saved row so a navJump doesn't glide to the top),
     // which is what those buttons' own B handlers do.
+    // Clickable prompts (theme.qml helpClick). Tiles and the system row take
+    // A themselves; this covers the header buttons and the page's own keys.
+    // B is left to mouseBack(), which mirrors it.
+    function helpAction(button) {
+        if (button === "filters") { settingsScreen(); return true; }
+        if (button === "details") { refreshLists(); return true; }
+        if (button !== "accept") return false;
+        if (homebutton.activeFocus)         allGamesScreen();
+        else if (discoverbutton.activeFocus)     discoverScreen();
+        else if (achievementsbutton.activeFocus) achievementsScreen();
+        else if (searchbutton.activeFocus)       openLibrarySearch();
+        else if (settingsbutton.activeFocus)     settingsScreen();
+        return true;
+    }
+
     function mouseBack() {
         if (!mainList.activeFocus) {
             if (mainList.navJump) { mainList.navJump = false; mainList.currentIndex = mainList.savedRow; }
@@ -2045,6 +2069,11 @@ id: root
         }
         // Discover mode (B)
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
+            // Windows / Linux: Esc is left unaccepted, so it reaches Pegasus,
+            // which opens its own menu (themes, settings, quit) — a keyboard
+            // has no other way there but F1. A controller's B and Backspace
+            // still open Discover; Android is unchanged.
+            if (event.key === Qt.Key_Escape && !platform.isAndroid) return;
             event.accepted = true;
             discoverScreen();
         }

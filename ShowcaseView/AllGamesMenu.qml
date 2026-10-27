@@ -41,6 +41,29 @@ id: root
     // gamelist unconditionally — in grid mode that focused the hidden list,
     // so the grid never received input.
     // Mouse back button: mirrors B, in the same priority order.
+    // Clickable prompts (theme.qml helpClick). Panels and tiles answer
+    // first; this is the page itself, mirroring its key handler. B is
+    // left to mouseBack(), which mirrors it.
+    function helpAction(button) {
+        if (filterOpen || listPanelOpen || searchActive) return false;
+        if (button === "accept") {
+            if (!gamesFocused) {
+                if (homebutton.activeFocus) showcaseScreen();
+                else if (discoverbutton.activeFocus) discoverScreen(scopedColl);
+                else if (achievementsbutton.activeFocus) achievementsScreen();
+                else if (settingsbutton.activeFocus) settingsScreen();
+                return true;
+            }
+            if (!currentGame) return true;
+            if (gridMode) activateCurrent(); else activateGame(currentGame, false);
+            return true;
+        }
+        if (!gamesFocused) return false;
+        if (button === "details") { openFilters(); return true; }
+        if (button === "filters") { playAccept(); listRow = 0; listPanelOpen = true; listPanel.forceActiveFocus(); return true; }
+        return false;
+    }
+
     function mouseBack() {
         if (listPanelOpen)   { playBack(); listPanelOpen = false; focusGames(); return; }
         if (searchActive)    { searchActive = false; filterPanel.forceActiveFocus(); return; }
@@ -48,6 +71,16 @@ id: root
         if (filterOpen)      { playBack(); filterOpen = false; focusGames(); return; }
         if (!gamesFocused)   { focusGames(); return; }     // header -> games
         previousScreen();
+    }
+
+    function openFilters() {
+        playAccept();
+        var fi = sortFields.map(function(f){ return f.key; }).indexOf(sortField);
+        filterRow = fi >= 0 ? fi + 2 : 0;
+        filterOpen = true;
+        searchActive = false;
+        genrePickerOpen = false;
+        filterPanel.forceActiveFocus();
     }
 
     function focusGames() {
@@ -172,8 +205,8 @@ id: root
     readonly property string tileLogo:    scoped ? sysPref("Show logo on tile", sysTileLogo): allLogo
     readonly property string tileColumns: scoped ? sysPref("Tiles per row",     sysColumns) : allColumns
     readonly property string tileTitles:  scoped ? sysPref("Game tile titles",  sysTitles)  : allTitles
-    readonly property string lvVideo:     scoped ? sysPref("Video preview",     sysPreview) : allPreview
-    readonly property string lvSound:     scoped ? sysPref("Video audio",       sysSound)   : allSound
+    readonly property string lvVideo:     gatePreview(scoped ? sysPref("Video preview", sysPreview) : allPreview)
+    readonly property string lvSound:     gateSound(scoped ? sysPref("Video audio",     sysSound)   : allSound)
     // Under a playing preview the art always fades. Grid: also the logo?
     // List: the box art, the logo, both or neither (the screenshot always).
     readonly property bool   gridHideLogo: (scoped ? sysGridHide : allGridHide) === "Yes"
@@ -1926,12 +1959,24 @@ id: root
                 anchors { right: parent.right; rightMargin: vpx(36); bottom: parent.bottom; bottomMargin: vpx(18) }
                 spacing: vpx(22)
                 Row { spacing: vpx(6)
+                    TapHandler { gesturePolicy: TapHandler.WithinBounds; onTapped: helpClick("filters") }
+                    HoverHandler { cursorShape: Qt.PointingHandCursor }
                     Image { anchors.verticalCenter: parent.verticalCenter; width: vpx(20); height: vpx(20); source: "../assets/images/controller/" + Utils.processButtonArt("filters") + ".png"; sourceSize { width: 40; height: 40 } }
                     Text { anchors.verticalCenter: parent.verticalCenter; text: "Theme settings"; color: "#D2D2D2"; font.family: subtitleFont.name; font.pixelSize: vpx(16) } }
                 Row { spacing: vpx(6)
+                    TapHandler { gesturePolicy: TapHandler.WithinBounds; onTapped: helpClick("cancel") }
+                    HoverHandler { cursorShape: Qt.PointingHandCursor }
                     Image { anchors.verticalCenter: parent.verticalCenter; width: vpx(20); height: vpx(20); source: "../assets/images/controller/" + Utils.processButtonArt("cancel") + ".png"; sourceSize { width: 40; height: 40 } }
                     Text { anchors.verticalCenter: parent.verticalCenter; text: "Back"; color: "#D2D2D2"; font.family: subtitleFont.name; font.pixelSize: vpx(16) } }
             }
+        }
+        // Clickable prompts: the same as the keys below.
+        function helpAction(button) {
+            if (button === "cancel")       { playBack(); listPanelOpen = false; focusGames(); }
+            else if (button === "filters") { listPanelOpen = false; settingsScreen(); }
+            else if (button === "accept")  listCycle(listRow, 1);
+            else if (button === "details") { if (scoped && sysOwn()) { playToggle(); sysFollow(); } }
+            return true;
         }
         Keys.onPressed: {
             if (api.keys.isCancel(event) && !event.isAutoRepeat)  { event.accepted = true; playBack(); listPanelOpen = false; focusGames(); return; }
@@ -2224,6 +2269,8 @@ id: root
                          : systemPickerOpen ? [ {a:"accept",t:"Select"}, {a:"cancel",t:"Back"} ]
                          :                    [ {a:"accept",t:"Select"}, {a:"details",t:"Clear all"}, {a:"cancel",t:"Close"} ]
                     delegate: Row {
+                        TapHandler { gesturePolicy: TapHandler.WithinBounds; onTapped: helpClick(modelData.a) }
+                        HoverHandler { cursorShape: Qt.PointingHandCursor }
                         spacing: vpx(7)
                         Image {
                             anchors.verticalCenter: parent.verticalCenter
@@ -2289,12 +2336,7 @@ id: root
                 return;
             }
             if (api.keys.isAccept(event) && !event.isAutoRepeat) {
-                event.accepted = true; playAccept();
-                if (filterRow === 0) activateSearch();
-                else if (filterRow === 1) openGenrePicker();
-                else if (filterRow === 2) openSystemPicker();
-                else if (filterRow <= sortFields.length + 2) selectSort(sortFields[filterRow - 3].key);
-                else if (filterRow === sortFields.length + 3) { favsOnly = !favsOnly; gamesView.currentIndex = 0; }
+                event.accepted = true; filterAccept();
             }
             if (api.keys.isCancel(event) && !event.isAutoRepeat) {
                 event.accepted = true; playBack(); filterOpen = false; focusGames();
@@ -2302,6 +2344,34 @@ id: root
             if (api.keys.isDetails(event) && !event.isAutoRepeat) {
                 event.accepted = true; playToggle(); clearAllFilters();
             }
+        }
+        // A on a filter row.
+        function filterAccept() {
+            playAccept();
+            if (filterRow === 0) activateSearch();
+            else if (filterRow === 1) openGenrePicker();
+            else if (filterRow === 2) openSystemPicker();
+            else if (filterRow <= sortFields.length + 2) selectSort(sortFields[filterRow - 3].key);
+            else if (filterRow === sortFields.length + 3) { favsOnly = !favsOnly; gamesView.currentIndex = 0; }
+        }
+        // Clickable prompts: the same branches as the keys above.
+        function helpAction(button) {
+            if (searchActive) return false;
+            if (genrePickerOpen) {
+                if (button === "accept")       { playAccept(); toggleGenre(genreOptions[genrePickerIndex]); }
+                else if (button === "cancel")  { playBack(); genrePickerOpen = false; }
+                else if (button === "details") { playAccept(); genrePickerOpen = false; }
+                return true;
+            }
+            if (systemPickerOpen) {
+                if (button === "accept") { playAccept(); selectSystem(systemOptions[systemPickerIndex]); }
+                else if (button === "cancel" || button === "details") { playBack(); systemPickerOpen = false; }
+                return true;
+            }
+            if (button === "accept")       filterAccept();
+            else if (button === "cancel")  { playBack(); filterOpen = false; focusGames(); }
+            else if (button === "details") { playToggle(); clearAllFilters(); }
+            return true;
         }
     }
 
@@ -2332,15 +2402,7 @@ id: root
         // X — open Sorting & Filters
         if (api.keys.isDetails(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (!filterOpen && gamesFocused) {
-                playAccept();
-                var fi = sortFields.map(function(f){ return f.key; }).indexOf(sortField);
-                filterRow = fi >= 0 ? fi + 2 : 0;
-                filterOpen = true;
-                searchActive = false;
-                genrePickerOpen = false;
-                filterPanel.forceActiveFocus();
-            }
+            if (!filterOpen && gamesFocused) openFilters();
         }
         // Y — game details page, opened with the full details pane expanded.
         // Inert for imported apps: they carry no metadata, so the page would be

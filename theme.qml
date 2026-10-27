@@ -359,6 +359,14 @@ id: root
     // A setting read live: re-evaluates whenever any setting is saved.
     function liveSetting(key) { var e = settingsEpoch; return settingsStore.get(key); }
 
+    // ── Previews & sound master switches ──────────────────────────────────
+    // Off overrides every screen without rewriting its own choice. Discover
+    // always plays its video; the sound master mutes it too.
+    readonly property bool previewsMaster: liveSetting("Video previews") !== "No"
+    readonly property bool previewSoundMaster: liveSetting("Preview sound") !== "No"
+    function gatePreview(v) { return previewsMaster ? v : "No"; }
+    function gateSound(v)   { return (previewsMaster && previewSoundMaster) ? v : "No"; }
+
     // ── Tile titles ───────────────────────────────────────────────────────
     // "Game tile titles" reuses the old "Always show titles" key. Saved values
     // from before are Yes/No; the row now stores On focus/Always/Never. Both
@@ -489,6 +497,8 @@ id: root
         "Menu Volume":                               "1.0",
         "Menu sounds":                               menuSoundsDefault,
         "Miximage":                                  "Yes",
+        "Video previews":                            "Yes",
+        "Preview sound":                             "Yes",
         "Banner":                                    "Yes",
         "Screenshots":                               "Yes",
         "Show Battery Percentage":                   "Battery Only",
@@ -513,16 +523,16 @@ id: root
             GameBackground:                settingsStore.get("Game Background", "Fanart"),
             GameLogo:                      settingsStore.get("Game Logo", "Show"),
             GameBlurBackground:            settingsStore.get("Blur Background", "No"),
-            VideoPreview:                  settingsStore.get("Video preview"),
-            AllowThumbVideo:               settingsStore.get("Allow video thumbnails"),
-            AllowThumbVideoAudio:          settingsStore.get("Video thumbnail audio", "Yes"),
+            VideoPreview:                  gatePreview(settingsStore.get("Video preview")),
+            AllowThumbVideo:               gatePreview(settingsStore.get("Allow video thumbnails")),
+            AllowThumbVideoAudio:          gateSound(settingsStore.get("Video thumbnail audio", "Yes")),
             HideLogo:                      settingsStore.get("Hide logo when thumbnail video plays", "Yes"),
             HideButtonHelp:                settingsStore.get("Hide button help", "No"),
             // "Gradient" was removed as an option; a stale saved value falls back to the default.
             ColorLayout:                   (api.memory.has("Color Layout") && api.memory.get("Color Layout") !== "Gradient") ? api.memory.get("Color Layout") : "Lime",
             MouseHover:                    settingsStore.get("Enable mouse hover"),
             AlwaysShowTitles:              settingsStore.get("Always show titles"),
-            AllowVideoPreviewAudio:        settingsStore.get("Game details video preview audio", "Yes"),
+            AllowVideoPreviewAudio:        gateSound(settingsStore.get("Game details video preview audio", "Yes")),
             ShowScanlines:                 settingsStore.get("Show scanlines", "No"),
             DetailsDefault:                settingsStore.get("Default to full details", "No"),
             LaunchScreenDelay:             settingsStore.get("Launch screen delay", "2.5"),
@@ -584,11 +594,11 @@ id: root
             HideAndroidSystemTile:         settingsStore.get("Hide Android System Tile", "Yes"),
             HideAndroidGamesSystemTile:    settingsStore.get("Hide Android Games System Tile", "No"),
             MoreByGenreDisplay:            settingsStore.get("More by Genre Display", "Full"),
-            AllowDiscoverVideoAudio:         settingsStore.get("Discover video audio", "Yes"),
+            AllowDiscoverVideoAudio:         previewSoundMaster ? settingsStore.get("Discover video audio", "Yes") : "No",
             MenuSounds:                      settingsStore.get("Menu sounds"),
             MenuVolume:                      settingsStore.get("Menu Volume", "1.0"),
             StartupChime:                    settingsStore.get("Start up chime"),
-            AllGamesVideoPreview:            settingsStore.get("AllGames Video preview"),
+            AllGamesVideoPreview:            gatePreview(settingsStore.get("AllGames Video preview")),
             AllGamesView:                  settingsStore.get("All Games View", "List"),
             AllGamesTileStyle:             settingsStore.get("AllGames Tile Style", "Wide"),
             AllGamesTileRatio:             settingsStore.get("AllGames Tile Ratio", "0.66"),
@@ -600,7 +610,7 @@ id: root
             GridFade:                      settingsStore.get("Bottom fade", "Strong"),
             AllGamesBlurBackground:          settingsStore.get("AllGames Blur Background", "No"),
             AllGamesScanlines:               settingsStore.get("AllGames Show scanlines", "No"),
-            AllGamesVideoAudio:              settingsStore.get("All games menu video audio", "Yes"),
+            AllGamesVideoAudio:              gateSound(settingsStore.get("All games menu video audio", "Yes")),
             ShowWifi:                      settingsStore.get("Show WiFi Indicator", "Yes"),
             ShowBattery:                   settingsStore.get("Show Battery Percentage", "Battery Only"),
             ShowClock:                     settingsStore.get("Show Clock", "12hr")
@@ -2375,6 +2385,9 @@ id: root
     ButtonHelpBar {
     id: buttonbar
 
+        onPromptClicked: root.helpClick(button)
+        onLeftPromptClicked: root.toggleAppDrawer()
+
         height: vpx(50)
         anchors {
             left: parent.left; leftMargin: globalMargin
@@ -2418,6 +2431,33 @@ id: root
     //
     // Remove Qt.RightButton below to make it thumb-button only.
     readonly property int mouseBackButtons: Qt.BackButton | Qt.RightButton
+
+    // ── Clickable prompts ─────────────────────────────────────────────────
+    // A click on a help prompt travels the way its key would: from the
+    // focused item up through its parents. The first one with a
+    // helpAction(button) that returns true has handled it (a tile takes A,
+    // a panel its own buttons, the screen the rest). Unclaimed B falls
+    // back to mouseBack(), which already mirrors B on every screen.
+    function helpClick(button) {
+        if (frontendBusy()) return;
+        var it = root.Window.activeFocusItem;
+        for (var n = 0; it && n < 64; n++, it = it.parent) {
+            if (typeof it.helpAction === "function" && it.helpAction(button) === true) return;
+        }
+        if (button === "cancel") mouseBack();
+    }
+    function frontendBusy() { return state === "launchgamescreen"; }
+    // Select (and the Apps prompt): open or close the App Drawer.
+    function toggleAppDrawer() {
+        if (searchOpen) return;   // no drawer over an open search
+        if (drawerOpen) {
+            closeAppDrawer();
+        } else {
+            playAccept();
+            drawerOpenChime.restart();    // tabRight follows once accept has sounded
+            openAppDrawer();
+        }
+    }
 
     function mouseBack() {
         // Global search mirrors B: results -> back to the keyboard, keyboard -> close.
@@ -2685,14 +2725,7 @@ id: root
 
         if (appDrawerKeys.indexOf(event.key) === -1) return;
         event.accepted = true;
-        if (searchOpen) return;   // no drawer over an open search
-        if (drawerOpen) {
-            closeAppDrawer();
-        } else {
-            playAccept();
-            drawerOpenChime.restart();    // tabRight follows once accept has sounded
-            openAppDrawer();
-        }
+        toggleAppDrawer();
     }
 
     ///////////////////

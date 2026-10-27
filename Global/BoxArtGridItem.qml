@@ -604,6 +604,12 @@ id: root
             activate();        
         }
     }
+    // Clickable prompts (theme.qml helpClick): A on the focused tile.
+    function helpAction(button) {
+        if (button !== "accept") return false;
+        activate();
+        return true;
+    }
 
     // Mouse/touch functionality
     MouseArea {

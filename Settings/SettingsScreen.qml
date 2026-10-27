@@ -552,6 +552,17 @@ id: root
     ListModel {
     id: previewsSettingsModel
 
+        ListElement { settingName: "Everywhere"; setting: ""; header: true }
+        ListElement {
+            settingName: "Video previews"
+            label: "All video previews"
+            setting: "Yes,No"
+        }
+        ListElement {
+            settingName: "Preview sound"
+            label: "All preview sound"
+            setting: "Yes,No"
+        }
         ListElement { settingName: "Home rows"; setting: ""; header: true }
         ListElement {
             settingName: "Allow video thumbnails"
@@ -843,6 +854,12 @@ id: root
             out.push(c);
         }
         function none(row, col, t) { out.push({ kind: "label", row: row, col: col, text: t || "—", dim: true }); }
+        // Master switches: Off silences or stops every screen below without
+        // touching their own choices, so On brings those straight back.
+        out.push({ kind: "header", row: r, col: 0, span: 5, text: "Everywhere" }); r++;
+        v(r, 0, "Video previews", { label: "All video previews" });
+        v(r, 1, "Preview sound",  { label: "All preview sound", span: 3 });
+        r++;
         out.push({ kind: "colhead", row: r, col: 0, text: "Where" });
         out.push({ kind: "colhead", row: r, col: 1, text: "Preview" });
         out.push({ kind: "colhead", row: r, col: 2, text: "Sound" });
@@ -1141,6 +1158,12 @@ id: root
         if (name === "More by Genre Display") {
             return "Which part of a game's genre the More by genre row on Game Details uses to find similar games. For a genre like Action / Platformer it can match on the whole thing, just Action, or just Platformer";
         }
+        if (name === "Video previews") {
+            return "Off stops every video preview at once: Home rows, the Library, Game details and its rows. Each screen keeps its own choice, so turning this back On restores them. Discover always plays";
+        }
+        if (name === "Preview sound") {
+            return "Off mutes every preview, Discover included. Each screen keeps its own Sound choice, so turning this back On restores them";
+        }
         if (name === "Game Background") {
             return "The picture behind the Game Details page: a screenshot, the game's fanart, or its banner. A game with no banner shows its fanart instead";
         }
@@ -1279,6 +1302,24 @@ id: root
     // Cheap yes/no test. infoText() concatenates a lot of literals to build its
     // result, which is wasteful when all that's needed is whether one exists.
     // Mouse back button: mirrors B.
+    // Clickable prompts (theme.qml helpClick). The grid answers its own
+    // A and X; this is the list's More info. B is left to mouseBack().
+    function helpAction(button) {
+        if (kbOpen) return true;                  // the keyboard has its own keys
+        if (infoOpen) { if (button === "cancel" || button === "details") { playBack(); closeInfo(); } return true; }
+        if (button === "details" && settingsList.activeFocus) {
+            var page = settingsArr[pagelist.currentIndex];
+            var i = settingsList.currentIndex;
+            var entry = (page && page.listmodel && i >= 0 && i < page.listmodel.count) ? page.listmodel.get(i) : null;
+            if (entry && hasInfo(entry.settingName)) {
+                playToggle();
+                openInfo(settingsList.currentItem ? settingsList.currentItem.displayLabel : entry.settingName, infoText(entry.settingName));
+            }
+            return true;
+        }
+        return false;
+    }
+
     function mouseBack() {
         if (infoOpen)  { infoOpen = false; focusContent(); return; }
         if (!pagelist.activeFocus) { pagelist.forceActiveFocus(); return; }   // rows -> page list
@@ -1329,6 +1370,20 @@ id: root
             return xl === "None" || xl === "RetroAchievements";
         }
 
+        // Previews & sound masters: Off greys every screen's row it covers.
+        var previewKeys = ["Allow video thumbnails", "AllGames Video preview", "Systems Video preview",
+                           "Video preview", "Details rows video preview"];
+        var soundKeys = ["Video thumbnail audio", "All games menu video audio", "Systems video audio",
+                         "Game details video preview audio", "Details rows video audio", "Discover video audio"];
+        var hideKeys = ["Hide logo when thumbnail video plays", "AllGames Grid hide logo on video",
+                        "AllGames List hide on video", "Systems Grid hide logo on video",
+                        "Systems List hide on video", "Details rows hide logo on video"];
+        var previewsOff = mem("Video previews", "Yes") === "No";
+        if (previewsOff && (previewKeys.indexOf(settingName) !== -1 || hideKeys.indexOf(settingName) !== -1)) return true;
+        if (soundKeys.indexOf(settingName) !== -1) {
+            if (mem("Preview sound", "Yes") === "No") return true;
+            if (previewsOff && settingName !== "Discover video audio") return true;   // Discover always plays
+        }
         // Previews & sound: each screen's Sound and "while it plays"
         // rows do nothing while that screen's Preview is off.
         if (settingName === "Hide logo when thumbnail video plays" || settingName === "Video thumbnail audio")

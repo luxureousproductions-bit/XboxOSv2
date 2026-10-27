@@ -213,6 +213,11 @@ id: root
     // Input handling
     // Mouse back button: same as B — close the fullscreen media.
     function mouseBack() { close(); }
+    // Clickable prompts: modal, so it claims every button (as its keys do).
+    function helpAction(button) {
+        if (button === "cancel" || button === "accept") close();
+        return true;
+    }
 
     Keys.onPressed: {
         // Swallow the drawer key while fullscreen media is up. A global panel

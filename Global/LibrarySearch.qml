@@ -469,6 +469,8 @@ id: searchOverlay
             model: [ { n: "Open", b: "accept" },
                      { n: "Back", b: "cancel" } ]
             delegate: Row {
+                TapHandler { gesturePolicy: TapHandler.WithinBounds; onTapped: helpClick(modelData.b) }
+                HoverHandler { cursorShape: Qt.PointingHandCursor }
                 spacing: vpx(8)
                 Image {
                     source: "../assets/images/controller/" + buttonbar.processButtonArt(modelData.b) + ".png"
@@ -535,6 +537,14 @@ id: searchOverlay
         event.accepted = true;
         if (!showingResults) return;
         resultList.currentIndex = Math.min(results.length - 1, resultList.currentIndex + 10);
+    }
+
+    // Clickable prompts: the search is modal, so it claims every button.
+    function helpAction(button) {
+        if (!showingResults) { if (button === "cancel") { playBack(); searchOverlay.closeSearch(); } return true; }
+        if (button === "accept") searchOverlay.chooseResult();
+        else if (button === "cancel") { playBack(); searchOverlay.resetSearch(); }
+        return true;
     }
 
     Keys.onPressed: {

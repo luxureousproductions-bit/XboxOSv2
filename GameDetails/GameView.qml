@@ -1259,8 +1259,8 @@ id: root
             ownScreen: "gameviewscreen"
             // "More like this" rows have their own preview settings
             // (Settings > Previews & sound); they used to follow Home's.
-            previewOn:       liveSetting("Details rows video preview") === "Yes"
-            previewSound:    liveSetting("Details rows video audio") === "Yes"
+            previewOn:       gatePreview(liveSetting("Details rows video preview")) === "Yes"
+            previewSound:    gateSound(liveSetting("Details rows video audio")) === "Yes"
             hideLogoOnVideo: liveSetting("Details rows hide logo on video") === "Yes"
 
             property bool selected: ListView.isCurrentItem
@@ -1301,8 +1301,8 @@ id: root
             ownScreen: "gameviewscreen"
             // "More like this" rows have their own preview settings
             // (Settings > Previews & sound); they used to follow Home's.
-            previewOn:       liveSetting("Details rows video preview") === "Yes"
-            previewSound:    liveSetting("Details rows video audio") === "Yes"
+            previewOn:       gatePreview(liveSetting("Details rows video preview")) === "Yes"
+            previewSound:    gateSound(liveSetting("Details rows video audio")) === "Yes"
             hideLogoOnVideo: liveSetting("Details rows hide logo on video") === "Yes"
 
             property bool selected: ListView.isCurrentItem
@@ -1455,6 +1455,20 @@ id: root
     // Mouse back button: mirrors B in the same order — fullscreen media
     // closes first, then a focused header button returns to the content,
     // then the screen itself.
+    // Clickable prompts (theme.qml helpClick). Buttons, media and tiles take
+    // A themselves; this is the page's own keys. B is left to mouseBack().
+    function helpAction(button) {
+        if (button === "details") { if (game) { playAccept(); game.favorite = !game.favorite; } return true; }
+        if (button === "filters") { settingsScreen(); return true; }
+        if (button === "accept") {
+            if (gv_homebutton.activeFocus)          showcaseScreen();
+            else if (gv_discoverbutton.activeFocus) discoverScreen();
+            else if (gv_settingsbutton.activeFocus) settingsScreen();
+            return true;
+        }
+        return false;
+    }
+
     function mouseBack() {
         if (mediaScreen.visible)  { closeMedia(); return; }
         if (manualScreen.visible) { closeManual(); return; }

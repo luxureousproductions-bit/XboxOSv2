@@ -700,6 +700,8 @@ id: root
         Repeater {
             model: localHelpModel
             delegate: Row {
+                TapHandler { gesturePolicy: TapHandler.WithinBounds; onTapped: helpClick(button) }
+                HoverHandler { cursorShape: Qt.PointingHandCursor }
                 spacing: vpx(6)
                 Image {
                     source: "../assets/images/controller/"
@@ -827,18 +829,34 @@ id: root
         // otherwise the library is searched by normalized title.
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            var raTitle = cheevosData.currentGameDetails.Title || "";
-            var target  = null;
-            if (currentGame && raTitle !== ""
-                && cheevosData.normalizeTitle(currentGame.title) === cheevosData.normalizeTitle(raTitle))
-                target = currentGame;
-            if (!target)
-                target = cheevosData.findLocalGame(raTitle, cheevosData.currentGameDetails.ConsoleName || "");
-            if (target) {
-                playAccept();
-                launchGameFromRA(target);
-            }
+            launchOwnGame();
         }
+    }
+    function launchOwnGame() {
+        var raTitle = cheevosData.currentGameDetails.Title || "";
+        var target  = null;
+        if (currentGame && raTitle !== ""
+            && cheevosData.normalizeTitle(currentGame.title) === cheevosData.normalizeTitle(raTitle))
+            target = currentGame;
+        if (!target)
+            target = cheevosData.findLocalGame(raTitle, cheevosData.currentGameDetails.ConsoleName || "");
+        if (target) {
+            playAccept();
+            launchGameFromRA(target);
+        }
+    }
+    // Clickable prompts: each does what its button does.
+    function helpAction(button) {
+        if (button === "cancel") goBack();
+        else if (button === "filters") { playToggle(); cycleSort(); currentIndex = 0; }
+        else if (button === "details") {
+            playAccept();
+            if (cheevosData.currentGameDetails.Title !== "")
+                cheevosData.loadGameAchievements(cheevosData.currentGameID);
+        }
+        else if (button === "accept") launchOwnGame();
+        else return false;
+        return true;
     }
 
     // The last row dissolves under the help bar (same fade as the grids).
