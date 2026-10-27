@@ -340,8 +340,10 @@ id: root
     MouseArea {
         anchors.fill: parent
         hoverEnabled: settings.MouseHover == "Yes"
-        onEntered: { if (!pointerMoved()) return;   // scrolled under a still pointer
+        function hoverPick() { if (!pointerMoved() || root.selected) return;   // scrolled under a still pointer
             sfxNav.play(); highlighted(); }
+        onEntered: hoverPick()
+        onPositionChanged: hoverPick()   // entered can arrive before the pointer tracker updates (theme.qml pointerMoved); the next nudge counts
         onExited: {}
         onClicked: activated();
     }

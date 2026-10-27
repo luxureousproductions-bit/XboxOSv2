@@ -1283,7 +1283,9 @@ ListView {
                     MouseArea {
                         anchors.fill: parent
                         hoverEnabled: settings.MouseHover == "Yes"
-                        onEntered: if (pointerMoved() && root.quickIndex !== index && !root.hideOpen) { root.quickIndex = index; playNav(); }
+                        function hoverPick() { if (pointerMoved() && root.quickIndex !== index && !root.hideOpen) { root.quickIndex = index; playNav(); } }
+                        onEntered: hoverPick()
+                        onPositionChanged: hoverPick()   // entered can arrive before the pointer tracker updates (theme.qml pointerMoved); the next nudge counts
                         onClicked: { root.quickIndex = index; root.runQuickAction(); }
                     }
                 }

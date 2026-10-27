@@ -4,7 +4,14 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 52)
+## Unreleased — refresh branch (build 53)
+
+### PC fixes from Windows testing
+- **Settings › Library and Previews & sound: mouse hover and wheel work.** Two causes. The wheel went to the page's hidden list (its wheel helper sat over the same area and still took the wheel on the grid pages). Hover picked a card without moving focus off the page list, so nothing showed, and Qt delivers "entered" before the theme's pointer tracker updates, so the first check saw a stale time and ignored the hover. Hover and the wheel now move focus into the grid, and the hover check also runs as the pointer moves inside a card.
+- The same hover fix for Settings list rows (which now get picked by hover too), the Y panel, the drawer's quick menu, Game details' media row and the Achievements lists.
+- **All Games list view: the Start "More Details" prompt is clickable.**
+
+## build 52
 
 ### Xbox proportions
 - **Settings** measured against the Xbox's own: the page list is a quarter of the screen, its rows 64 px tall at 1080p with the text 108 px in (the cog and "Settings" line up with it); the page title sits just past the divider and the settings column is the Xbox's two-card width (Previews & sound gets more room for its five columns). Rows and grid cards are a touch shorter, with the Xbox's wider gaps.

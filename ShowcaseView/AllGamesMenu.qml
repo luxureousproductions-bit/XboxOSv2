@@ -2048,7 +2048,9 @@ id: root
                         MouseArea {
                             x: card.x; y: card.y; width: card.width; height: card.height
                             hoverEnabled: settings.MouseHover == "Yes"
-                            onEntered: { if (pointerMoved() && listRow !== index && !prow.dis) { listRow = index; playNav(); } }
+                            function hoverPick() { if (pointerMoved() && listRow !== index && !prow.dis) { listRow = index; playNav(); } }
+                            onEntered: hoverPick()
+                            onPositionChanged: hoverPick()   // entered can arrive before the pointer tracker updates (theme.qml pointerMoved); the next nudge counts
                             onClicked: {
                                 if (listRow !== index) { listRow = index; playNav(); return; }
                                 listCycle(index, 1);
@@ -2656,6 +2658,9 @@ id: root
         // same nudge — so the two sit on one line.
         anchors { left: parent.left; leftMargin: vpx(150); bottom: parent.bottom; bottomMargin: helpMargin - height }
         spacing: 10; z: 60
+        // Clickable like every other prompt.
+        TapHandler { gesturePolicy: TapHandler.WithinBounds; onTapped: if (currentGame && !currentIsImportedApp) gameDetailsFull(currentGame) }
+        HoverHandler { cursorShape: Qt.PointingHandCursor }
         // The white badge has no padding, so at the glyphs' 30px box it reads
         // larger than their visible circle. 24px, centred in a 30px slot,
         // matches what you see.

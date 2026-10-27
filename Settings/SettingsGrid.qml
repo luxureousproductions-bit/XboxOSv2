@@ -152,6 +152,15 @@ id: grid
     // wantCol only changes on Left/Right, so passing through a wide card
     // and on down brings you back to the column you were in.
     property int wantCol: -1
+    // Mouse wheel: one card per notch, focus moves into the grid first.
+    property int wheelAcc: 0
+    function wheelStep(dy) {
+        if (!activeFocus) forceActiveFocus();
+        editing = false;
+        wheelAcc += dy;
+        while (wheelAcc >= 120)  { wheelAcc -= 120; move(0, -1); }
+        while (wheelAcc <= -120) { wheelAcc += 120; move(0, 1); }
+    }
     function span(c) { return c.span || 1; }
     function covers(c, col) { return col >= c.col && col < c.col + span(c); }
     function colDist(c, col) { return col < c.col ? c.col - col : (col >= c.col + span(c) ? col - (c.col + span(c) - 1) : 0); }
@@ -265,6 +274,8 @@ id: grid
         contentHeight: grid.contentH + grid.edge * 2
         interactive: false
         clip: true
+        // Wheel anywhere over the grid (gaps and headings included).
+        MouseArea { anchors.fill: parent; acceptedButtons: Qt.NoButton; z: -1; onWheel: { wheel.accepted = true; grid.wheelStep(wheel.angleDelta.y); } }
         Behavior on contentY { NumberAnimation { duration: 120; easing.type: Easing.OutQuad } }
 
         Repeater {
@@ -371,7 +382,18 @@ id: grid
                     anchors.fill: parent
                     enabled: grid.interactive(c)
                     hoverEnabled: settings.MouseHover == "Yes"
-                    onEntered: { if (pointerMoved() && index !== grid.current) { grid.wantCol = c.col; grid.current = index; playNav(); } }
+                    // Hover picks the card AND moves focus into the grid (from the
+                    // page list), else the pick happened but showed no ring.
+                    // onPositionChanged too: Qt delivers "entered" before the theme's
+                    // pointer tracker updates, so the first check can see a stale
+                    // time — the next nudge inside the card then counts (as on tiles).
+                    function hoverPick() {
+                        if (!pointerMoved() || grid.editing) return;
+                        if (!grid.activeFocus) grid.forceActiveFocus();
+                        if (index !== grid.current) { grid.wantCol = c.col; grid.current = index; playNav(); }
+                    }
+                    onEntered: hoverPick()
+                    onPositionChanged: hoverPick()
                     onClicked: {
                         grid.forceActiveFocus();
                         if (index !== grid.current) { grid.wantCol = c.col; grid.current = index; playNav(); return; }
@@ -382,7 +404,7 @@ id: grid
                         }
                         else if (c.kind === "item") grid.itemAction(c);
                     }
-                    onWheel: { wheel.accepted = true; grid.move(0, wheel.angleDelta.y > 0 ? -1 : 1); }
+                    onWheel: { wheel.accepted = true; grid.wheelStep(wheel.angleDelta.y); }
                 }
             }
         }

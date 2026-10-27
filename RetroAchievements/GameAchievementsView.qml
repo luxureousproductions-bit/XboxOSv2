@@ -659,8 +659,10 @@ id: root
             MouseArea {
                 anchors.fill: parent
                 hoverEnabled: settings.MouseHover === "Yes"
-                onEntered: { if (!pointerMoved()) return;   // scrolled under a still pointer
+                function hoverPick() { if (!pointerMoved() || root.currentIndex === index) return;   // scrolled under a still pointer
                     playNav(); root.currentIndex = index; }
+                onEntered: hoverPick()
+                onPositionChanged: hoverPick()   // entered can arrive before the pointer tracker updates (theme.qml pointerMoved); the next nudge counts
                 onClicked:  { playNav(); root.currentIndex = index; }
             }
         }

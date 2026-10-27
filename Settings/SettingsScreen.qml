@@ -2204,7 +2204,14 @@ id: root
                     visible: !isDecor
                     anchors.fill: parent
                     hoverEnabled: settings.MouseHover == "Yes"
-                    onEntered: { playNav(); }
+                    // Hover picks the row (and moves focus into the list).
+                    function hoverPick() {
+                        if (!pointerMoved()) return;
+                        if (!settingsList.activeFocus) settingsList.forceActiveFocus();
+                        if (settingsList.currentIndex !== index) { settingsList.currentIndex = index; playNav(); }
+                    }
+                    onEntered: hoverPick()
+                    onPositionChanged: hoverPick()   // see SettingsGrid: entered can arrive before the pointer tracker
                     onClicked: {
                         if (selected) {
                             if (isTip) {
@@ -2261,7 +2268,10 @@ id: root
         anchors.fill: settingsList
         view: settingsList
         columns: 1
-        active: !infoOpen
+        // Off on the grid pages: the list sits hidden under the grid there,
+        // and this used to take the wheel meant for the grid.
+        active: !infoOpen && gridPage === ""
+        visible: gridPage === ""
         onStepped: function(quiet) { if (!quiet) playNav(); }
     }
 
