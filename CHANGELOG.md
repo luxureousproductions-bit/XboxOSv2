@@ -6,6 +6,8 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ## Unreleased — refresh branch (build 63)
 
+- **Test harness in the repo** (`tools/harness/`, no theme change): the setup, scripts, standard performance scenario, an A/B compare script and the build 63 baseline, so later work can be checked against the performance gains of the refresh. Pegasus for it lives on the `harness-pegasus` branch.
+
 - **Home nav buttons restyled to match the Xbox:** each icon sits in a faint, see-through dark pill and stays white. The focused one grows a little and becomes a near-black disc with a glowing ring in your accent colour, its name underneath.
 
 ## build 62
