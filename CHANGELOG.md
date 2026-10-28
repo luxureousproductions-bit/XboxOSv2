@@ -4,9 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 62)
+## Unreleased — refresh branch (build 63)
 
-- **Home nav buttons in round pills, as on the Xbox:** Full Library, Discover, RetroAchievements, Search and Settings each sit in their own dark round pill; the focused one fills with your accent colour (its icon turns dark on a light accent such as Lime).
+- **Home nav buttons restyled to match the Xbox:** each icon sits in a faint, see-through dark pill and stays white. The focused one grows a little and becomes a near-black disc with a glowing ring in your accent colour, its name underneath.
+
+## build 62
+
+- **Home nav buttons in round pills:** each sits in its own round pill; the focused one filled with the accent colour (restyled in build 63).
 - **App Drawer icons no longer pop in on Windows / Linux.** Root cause: build 58 made PC icons *fit* instead of crop, but the pre-loader that decodes every icon once at startup still asked for *crop*. Qt keys its image cache on the fill mode, so the rows never found the pre-decoded icons and decoded each one when it appeared. The pre-loader now asks for the same thing the rows do. No extra cost; Android was never affected.
 - **Accent tints fixed:** theme.accent is stored as text, so every "accent at X% opacity" drew with undefined channels — the Settings rail glow, the drawer's letter tiles and three All Games panel tints. They now use a real colour (`accentA()` in theme.qml). The Settings rail's dark text on light accents (e.g. Lime) works for the same reason.
 

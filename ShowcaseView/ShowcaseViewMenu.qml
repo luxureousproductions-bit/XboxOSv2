@@ -831,18 +831,21 @@ id: root
                 visible: cheevosData.raUserName === ""
             }
         }
-        // Nav buttons: each sits in its own round pill, as on the Xbox; the
-        // focused one fills with your accent colour (icon turns dark on a
-        // light accent such as Lime, so it stays readable).
-        readonly property color navPillColor: showcaseWhiteBackground ? Qt.rgba(1, 1, 1, 0.75) : Qt.rgba(0.14, 0.14, 0.14, 0.78)
-        readonly property color navAccent: theme.accent   // a color, so .r/.g/.b exist (theme.accent is a string)
-        readonly property bool navAccentLight: (0.299 * navAccent.r + 0.587 * navAccent.g + 0.114 * navAccent.b) > 0.62
+        // Nav buttons: each sits in its own round pill, as on the Xbox.
+        readonly property color navPillColor: showcaseWhiteBackground ? Qt.rgba(1, 1, 1, 0.45) : Qt.rgba(0.16, 0.16, 0.16, 0.42)
+        readonly property color navFocusFill: showcaseWhiteBackground ? Qt.rgba(1, 1, 1, 0.92) : Qt.rgba(0.04, 0.04, 0.04, 0.9)
         Rectangle {
         id: homebutton
 
             width:  vpx(36); height: vpx(36); radius: height / 2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(108) }
-            color:   focus ? theme.accent : header.navPillColor   // its own round pill, accent when focused (Xbox)
+            // Xbox: a faint dark pill at rest; focused, a near-black disc with
+            // a glowing accent ring, a little bigger. Icons stay white.
+            color:   focus ? header.navFocusFill : header.navPillColor
+            border.width: focus ? vpx(2.5) : 0
+            border.color: theme.accent
+            scale: focus ? 1.2 : 1
+            Behavior on scale { NumberAnimation { duration: animMs(120); easing.type: Easing.OutCubic } }
             layer.enabled: true
             layer.effect: DropShadow {
                 cached: true   // static: blur once, not every frame
@@ -851,7 +854,7 @@ id: root
                 verticalOffset: 0
                 radius: 8
                 samples: 17
-                color: "#cc000000"
+                color: homebutton.focus ? accentA(0.85) : "#66000000"   // accent glow on focus
             }
 
             onFocusChanged: {
@@ -878,7 +881,7 @@ id: root
                 anchors { fill: parent; margins: vpx(6) }
                 source: "../assets/images/icon_gamesandapps.svg"
                 sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
-                layer.enabled: showcaseWhiteBackground || (homebutton.focus && header.navAccentLight)
+                layer.enabled: showcaseWhiteBackground
                 layer.effect: ColorOverlay { color: "black" }
                 fillMode: Image.PreserveAspectFit
                 smooth: true; asynchronous: true
@@ -891,7 +894,13 @@ id: root
 
             width:  vpx(36); height: vpx(36); radius: height / 2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(54) }
-            color:   focus ? theme.accent : header.navPillColor   // its own round pill, accent when focused (Xbox)
+            // Xbox: a faint dark pill at rest; focused, a near-black disc with
+            // a glowing accent ring, a little bigger. Icons stay white.
+            color:   focus ? header.navFocusFill : header.navPillColor
+            border.width: focus ? vpx(2.5) : 0
+            border.color: theme.accent
+            scale: focus ? 1.2 : 1
+            Behavior on scale { NumberAnimation { duration: animMs(120); easing.type: Easing.OutCubic } }
             layer.enabled: true
             layer.effect: DropShadow {
                 cached: true   // static: blur once, not every frame
@@ -900,7 +909,7 @@ id: root
                 verticalOffset: 0
                 radius: 8
                 samples: 17
-                color: "#cc000000"
+                color: discoverbutton.focus ? accentA(0.85) : "#66000000"   // accent glow on focus
             }
 
             onFocusChanged: {
@@ -926,7 +935,7 @@ id: root
                 source: "../assets/images/icon_discover.svg"
                 // Rasterised above display size so it stays sharp on a TV.
                 sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
-                layer.enabled: showcaseWhiteBackground || (discoverbutton.focus && header.navAccentLight)
+                layer.enabled: showcaseWhiteBackground
                 layer.effect: ColorOverlay { color: "black" }
                 fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
                 opacity: discoverbutton.focus ? 1.0 : 0.85
@@ -938,7 +947,13 @@ id: root
 
             width:  vpx(36); height: vpx(36); radius: height / 2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: 0 }
-            color:   focus ? theme.accent : header.navPillColor   // its own round pill, accent when focused (Xbox)
+            // Xbox: a faint dark pill at rest; focused, a near-black disc with
+            // a glowing accent ring, a little bigger. Icons stay white.
+            color:   focus ? header.navFocusFill : header.navPillColor
+            border.width: focus ? vpx(2.5) : 0
+            border.color: theme.accent
+            scale: focus ? 1.2 : 1
+            Behavior on scale { NumberAnimation { duration: animMs(120); easing.type: Easing.OutCubic } }
             layer.enabled: true
             layer.effect: DropShadow {
                 cached: true   // static: blur once, not every frame
@@ -947,7 +962,7 @@ id: root
                 verticalOffset: 0
                 radius: 8
                 samples: 17
-                color: "#cc000000"
+                color: achievementsbutton.focus ? accentA(0.85) : "#66000000"   // accent glow on focus
             }
 
             onFocusChanged: {
@@ -975,11 +990,12 @@ id: root
             width: vpx(24); height: vpx(24)
             sourceSize: Qt.size(vpx(24), vpx(24))
             source: "../assets/images/trophy.svg"
-            layer.enabled: showcaseWhiteBackground || (achievementsbutton.focus && header.navAccentLight)
+            layer.enabled: showcaseWhiteBackground
             layer.effect: ColorOverlay { color: "black" }
             fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
             anchors.centerIn: achievementsbutton
             opacity: achievementsbutton.focus ? 1 : 0.85
+            scale: achievementsbutton.scale   // drawn outside the pill: follows its grow
         }
 
         // Global library search — opens the shared overlay in theme.qml.
@@ -989,7 +1005,13 @@ id: root
 
             width:  vpx(36); height: vpx(36); radius: height / 2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(54) }
-            color:   focus ? theme.accent : header.navPillColor   // its own round pill, accent when focused (Xbox)
+            // Xbox: a faint dark pill at rest; focused, a near-black disc with
+            // a glowing accent ring, a little bigger. Icons stay white.
+            color:   focus ? header.navFocusFill : header.navPillColor
+            border.width: focus ? vpx(2.5) : 0
+            border.color: theme.accent
+            scale: focus ? 1.2 : 1
+            Behavior on scale { NumberAnimation { duration: animMs(120); easing.type: Easing.OutCubic } }
             layer.enabled: true
             layer.effect: DropShadow {
                 cached: true   // static: blur once, not every frame
@@ -998,7 +1020,7 @@ id: root
                 verticalOffset: 0
                 radius: 8
                 samples: 17
-                color: "#cc000000"
+                color: searchbutton.focus ? accentA(0.85) : "#66000000"   // accent glow on focus
             }
 
             onFocusChanged: {
@@ -1023,7 +1045,7 @@ id: root
                 anchors { fill: parent; margins: vpx(6) }
                 source: "../assets/images/icon_search.svg"
                 sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
-                layer.enabled: showcaseWhiteBackground || (searchbutton.focus && header.navAccentLight)
+                layer.enabled: showcaseWhiteBackground
                 layer.effect: ColorOverlay { color: "black" }
                 fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
                 opacity: searchbutton.focus ? 1.0 : 0.85
@@ -1035,7 +1057,13 @@ id: root
 
             width:  vpx(36); height: vpx(36); radius: height / 2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(108) }
-            color:   focus ? theme.accent : header.navPillColor   // its own round pill, accent when focused (Xbox)
+            // Xbox: a faint dark pill at rest; focused, a near-black disc with
+            // a glowing accent ring, a little bigger. Icons stay white.
+            color:   focus ? header.navFocusFill : header.navPillColor
+            border.width: focus ? vpx(2.5) : 0
+            border.color: theme.accent
+            scale: focus ? 1.2 : 1
+            Behavior on scale { NumberAnimation { duration: animMs(120); easing.type: Easing.OutCubic } }
             layer.enabled: true
             layer.effect: DropShadow {
                 cached: true   // static: blur once, not every frame
@@ -1044,7 +1072,7 @@ id: root
                 verticalOffset: 0
                 radius: 8
                 samples: 17
-                color: "#cc000000"
+                color: settingsbutton.focus ? accentA(0.85) : "#66000000"   // accent glow on focus
             }
 
             onFocusChanged: {
@@ -1071,8 +1099,9 @@ id: root
             width: height; height: vpx(24)
             anchors.centerIn: settingsbutton
             smooth: true; asynchronous: true
+            scale: settingsbutton.scale   // drawn outside the pill: follows its grow
             source: "../assets/images/settingsicon.svg"
-            layer.enabled: showcaseWhiteBackground || (settingsbutton.focus && header.navAccentLight)
+            layer.enabled: showcaseWhiteBackground
             layer.effect: ColorOverlay { color: "black" }
             opacity: settingsbutton.focus ? 1 : 0.85
         }
@@ -1080,7 +1109,7 @@ id: root
         // ── Nav button labels — shown only for the highlighted button ─────
         Text {
             text: "Full Library"
-            anchors { top: homebutton.bottom; topMargin: vpx(3); horizontalCenter: homebutton.horizontalCenter }
+            anchors { top: homebutton.bottom; topMargin: vpx(8); horizontalCenter: homebutton.horizontalCenter }
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: homebutton.focus ? 1 : 0
@@ -1088,7 +1117,7 @@ id: root
         }
         Text {
             text: "Discover"
-            anchors { top: discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: discoverbutton.horizontalCenter }
+            anchors { top: discoverbutton.bottom; topMargin: vpx(8); horizontalCenter: discoverbutton.horizontalCenter }
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: discoverbutton.focus ? 1 : 0
@@ -1096,7 +1125,7 @@ id: root
         }
         Text {
             text: "RetroAchievements"
-            anchors { top: achievementsbutton.bottom; topMargin: vpx(3); horizontalCenter: achievementsbutton.horizontalCenter }
+            anchors { top: achievementsbutton.bottom; topMargin: vpx(8); horizontalCenter: achievementsbutton.horizontalCenter }
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: achievementsbutton.focus ? 1 : 0
@@ -1104,7 +1133,7 @@ id: root
         }
         Text {
             text: "Search"
-            anchors { top: searchbutton.bottom; topMargin: vpx(3); horizontalCenter: searchbutton.horizontalCenter }
+            anchors { top: searchbutton.bottom; topMargin: vpx(8); horizontalCenter: searchbutton.horizontalCenter }
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: searchbutton.focus ? 1 : 0
@@ -1112,7 +1141,7 @@ id: root
         }
         Text {
             text: "Settings"
-            anchors { top: settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: settingsbutton.horizontalCenter }
+            anchors { top: settingsbutton.bottom; topMargin: vpx(8); horizontalCenter: settingsbutton.horizontalCenter }
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: settingsbutton.focus ? 1 : 0
