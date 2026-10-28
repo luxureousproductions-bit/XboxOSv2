@@ -833,7 +833,7 @@ id: root
         Rectangle {
             anchors.fill: parent
             color: (bgArtImg.visible || bgBlurLoader.active) ? Qt.rgba(0, 0, 0, 0.45)
-                                    : Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.06)
+                                    : accentA(0.06)
         }
 
         // Framed square screenshot (shifted slightly right to leave room for the box)
@@ -922,7 +922,7 @@ id: root
                 anchors.fill: parent
                 visible: !artScreenshotImg.shown && !appIconMode
                 radius: vpx(10)
-                color: Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.14)
+                color: accentA(0.14)
             }
             // Video preview — plays over the screenshot once armed (after resting)
             Video {
@@ -1933,7 +1933,7 @@ id: root
                         anchors.verticalCenter: parent.verticalCenter
                         readonly property bool own: { var e = listEpoch; return scoped && sysOwn(); }
                         width: tagText.width + vpx(14); height: vpx(19); radius: vpx(3)
-                        color: own ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.16) : "#2c2c2c"
+                        color: own ? accentA(0.16) : "#2c2c2c"
                         Text {
                         id: tagText
                             anchors.centerIn: parent

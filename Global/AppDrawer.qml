@@ -720,7 +720,9 @@ id: root
                 // provider option). The warmer defaulted to Stretch, so every
                 // decode landed in a different entry from the one the rows
                 // read — the cache was warm and useless, and icons still popped.
-                fillMode: Image.PreserveAspectCrop
+                // ...and the same fill mode on PC, where rows FIT (build 58):
+                // a warmer left on Crop there missed the cache for every icon.
+                fillMode: root.pcMode ? Image.PreserveAspectFit : Image.PreserveAspectCrop
                 asynchronous: true
                 cache: true
             }
@@ -878,7 +880,7 @@ ListView {
                                 anchors.fill: parent
                                 visible: !iconBox.hasArt || appIcon.status === Image.Error
                                 radius: root.iconRadius
-                                color: Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.22)
+                                color: accentA(0.22)
                                 Text {
                                     anchors.centerIn: parent
                                     text: modelData.initial

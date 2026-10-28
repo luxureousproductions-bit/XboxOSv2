@@ -1733,7 +1733,7 @@ id: root
                         cached: true
                         transparentBorder: true
                         radius: 14; samples: 29
-                        color: Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.55)
+                        color: accentA(0.55)
                     }
                 }
                 // In a page: a grey plate, accent edge against the divider.
@@ -1808,7 +1808,8 @@ id: root
         width: Math.max(1, vpx(1.5))
         color: "#2f2f2f"
     }
-    readonly property bool accentIsLight: (0.299 * theme.accent.r + 0.587 * theme.accent.g + 0.114 * theme.accent.b) > 0.62
+    readonly property color accentColor: theme.accent   // a color, so .r/.g/.b exist (theme.accent is a string)
+    readonly property bool accentIsLight: (0.299 * accentColor.r + 0.587 * accentColor.g + 0.114 * accentColor.b) > 0.62
 
     // ── Page title and lead line ──────────────────────────────────────────
     Item {

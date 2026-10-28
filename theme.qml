@@ -1723,6 +1723,12 @@ id: root
         };
     }
 
+    // The accent at a given alpha. theme.accent is a string ("#86c440"), so
+    // theme.accent.r was undefined and Qt.rgba(theme.accent.r, ...) drew
+    // nothing; a color property has real channels.
+    readonly property color accentRgb: theme.accent
+    function accentA(a) { return Qt.rgba(accentRgb.r, accentRgb.g, accentRgb.b, a); }
+
     // ── White-background contrast flags ───────────────────────────────────
     // When the page background is the light "White" color, chrome that is
     // normally white (nav bar, status bar, library logo) should flip to black

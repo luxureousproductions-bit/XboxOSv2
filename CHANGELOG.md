@@ -4,7 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 61)
+## Unreleased — refresh branch (build 62)
+
+- **Home nav buttons in round pills, as on the Xbox:** Full Library, Discover, RetroAchievements, Search and Settings each sit in their own dark round pill; the focused one fills with your accent colour (its icon turns dark on a light accent such as Lime).
+- **App Drawer icons no longer pop in on Windows / Linux.** Root cause: build 58 made PC icons *fit* instead of crop, but the pre-loader that decodes every icon once at startup still asked for *crop*. Qt keys its image cache on the fill mode, so the rows never found the pre-decoded icons and decoded each one when it appeared. The pre-loader now asks for the same thing the rows do. No extra cost; Android was never affected.
+- **Accent tints fixed:** theme.accent is stored as text, so every "accent at X% opacity" drew with undefined channels — the Settings rail glow, the drawer's letter tiles and three All Games panel tints. They now use a real colour (`accentA()` in theme.qml). The Settings rail's dark text on light accents (e.g. Lime) works for the same reason.
+
+## build 61
 
 - **App drawer source (Windows / Linux):** Settings › System › "App drawer source" picks which collection fills the App Drawer. **Auto** (default) is the "PC Apps" collection, as before; or pick any of your collections by name if yours is called something else. The chosen one is kept off the system row by "Hide PC Apps system tile". If the chosen collection disappears, the drawer goes back to Auto. This finishes the PC App Drawer plan.
 
