@@ -495,6 +495,7 @@ id: root
         "Grid Thumbnail":                            "Square",
         "Hide Android System Tile":                  "Yes",
         "PC games in App Drawer":                    "No",
+        "App drawer source":                         "Auto",
         "Hide Android Games System Tile":            "No",
         "Hide logo when thumbnail video plays":      "Yes",
         "High Quality Mode":                         "No",
@@ -915,11 +916,24 @@ id: root
     // Windows / Linux: the drawer reads your "PC Apps" collection instead
     // (shortName pcapps also counts), and it's kept off the system row the
     // same way.
-    readonly property string appsCollectionName: onDesktop ? "PC Apps" : "Android"
+    // Settings › System › "App drawer source" (PC only) picks another
+    // collection by name; "Auto", or a collection that's gone, means PC Apps.
+    readonly property string drawerSourceSetting: {
+        var e = settingsEpoch;
+        if (!onDesktop) return "Auto";
+        var v = settingsStore.get("App drawer source", "Auto") || "Auto";
+        if (v === "Auto") return v;
+        var n = api.collections.count;
+        for (var i = 0; i < n; i++)
+            if (api.collections.get(i).name === v) return v;
+        return "Auto";
+    }
+    readonly property string appsCollectionName: !onDesktop ? "Android"
+                                               : drawerSourceSetting !== "Auto" ? drawerSourceSetting : "PC Apps"
     function isDrawerCollection(c) {
         if (!c) return false;
         if ((c.name || "").toLowerCase() === appsCollectionName.toLowerCase()) return true;
-        return onDesktop && (c.shortName || "").toLowerCase() === "pcapps";
+        return onDesktop && drawerSourceSetting === "Auto" && (c.shortName || "").toLowerCase() === "pcapps";
     }
 
     // ── Android sources: ONE answer to "what is an app" ───────────────────

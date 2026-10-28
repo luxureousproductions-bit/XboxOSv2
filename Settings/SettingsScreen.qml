@@ -730,6 +730,15 @@ id: root
                     remove(i);
                     insert(i, { settingName: "PC games in App Drawer", label: "PC games in the App Drawer",
                                 setting: "No,Yes" });
+                    // Which collection the drawer reads: Auto (PC Apps) or any
+                    // of yours by name (names with a comma can't be listed).
+                    var names = [];
+                    for (var c = 0; c < api.collections.count; c++) {
+                        var nm = api.collections.get(c).name || "";
+                        if (nm !== "" && nm.indexOf(",") < 0) names.push(nm);
+                    }
+                    names.sort(function(a, b) { return a.toLowerCase() < b.toLowerCase() ? -1 : 1; });
+                    insert(i, { settingName: "App drawer source", setting: ["Auto"].concat(names).join(",") });
                     return;
                 }
         }
@@ -1263,6 +1272,13 @@ id: root
                  + "\n"
                  + "Theme reload recommended";
         }
+        if (name === "App drawer source") {
+            return "Which collection fills the App Drawer\n"
+                 + "\n"
+                 + "AUTO reads the collection named \u201cPC Apps\u201d (or with the shortname pcapps) \u2014 the starter files in extras/pc-apps make one\n"
+                 + "\n"
+                 + "Pick another collection if yours has a different name. It's kept off the system row by \u201cHide PC Apps system tile\u201d, and its genres pick the drawer tabs the same way";
+        }
         if (name === "PC games in App Drawer") {
             return "Adds your PC game collections to the App Drawer's Games tab, so you can launch installed PC games from there too\n"
                  + "\n"
@@ -1537,6 +1553,7 @@ id: root
             || name === "Hide Android System Tile"
             || name === "Hide Android Games System Tile"
             || name === "PC games in App Drawer"
+            || name === "App drawer source"
             || name === "Added App Launch"
             || name === "Show WiFi Indicator"
             || name === "Show Battery Percentage"
@@ -1931,17 +1948,22 @@ id: root
                     var i = settingList.indexOf(String(d));
                     return i >= 0 ? i : 0;
                 }
-                property int savedIndex: Math.min(
-                    settingsStore.has(settingName + 'Index') ? (settingsStore.get(settingName + 'Index') || 0) : defaultIndex(),
-                    settingList.length - 1)
+                // App drawer source lists your collections, whose order can
+                // change between runs: it finds its value by name, not position.
+                function restoredIndex() {
+                    if (settingName === "App drawer source") {
+                        var j = settingList.indexOf(String(settingsStore.get(settingName, "Auto")));
+                        return j >= 0 ? j : 0;
+                    }
+                    return Math.min(
+                        settingsStore.has(settingName + 'Index') ? (settingsStore.get(settingName + 'Index') || 0) : defaultIndex(),
+                        settingList.length - 1);
+                }
+                property int savedIndex: restoredIndex()
 
                 Connections {
                     target: settingsList
-                    onSettingsVersionChanged: {
-                        savedIndex = Math.min(
-                            settingsStore.has(settingName + 'Index') ? (settingsStore.get(settingName + 'Index') || 0) : defaultIndex(),
-                            settingList.length - 1);
-                    }
+                    onSettingsVersionChanged: savedIndex = restoredIndex()
                 }
                 property string itemNote: (typeof note !== 'undefined') ? note : ""
                 // Optional friendly display label; storage key remains settingName

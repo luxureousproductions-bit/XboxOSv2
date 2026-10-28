@@ -50,6 +50,12 @@ BUILD 60
 - UI Scale 1.5: Settings text grows right away. Background colour: Settings
   takes it right away (try White: dark text, dark clock).
 
+BUILD 61
+- Settings > System > App drawer source: Auto = your PC Apps collection.
+  Pick another collection: the drawer shows that one instead, and its tile
+  leaves the system row (while "Hide PC Apps system tile" is On). Back to
+  Auto: as before.
+
 WHAT TO SEND BACK
 lastrun.log (in the Pegasus folder) and a short video of anything odd.
 Settings > System > "Write diagnostics to log" first adds the theme build,

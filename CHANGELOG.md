@@ -4,7 +4,11 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 60)
+## Unreleased — refresh branch (build 61)
+
+- **App drawer source (Windows / Linux):** Settings › System › "App drawer source" picks which collection fills the App Drawer. **Auto** (default) is the "PC Apps" collection, as before; or pick any of your collections by name if yours is called something else. The chosen one is kept off the system row by "Hide PC Apps system tile". If the chosen collection disappears, the drawer goes back to Auto. This finishes the PC App Drawer plan.
+
+## build 60
 
 - **Power entries stay out of the library (PC):** Sleep, Restart, Shut down and the rest (genre Power) only live behind the drawer's Power tile now. They no longer show in the Home hero (after you used Sleep it took the hero), Home rows, All Games or the PC Apps page.
 - **"Hide Android Games System Tile" is gone on Windows / Linux**, where it did nothing; "PC games in the App Drawer" takes its place.
