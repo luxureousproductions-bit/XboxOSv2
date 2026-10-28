@@ -94,9 +94,8 @@ Mock up before starting.
 - **Refresh rate:** a theme can't set the display's refresh rate — Pegasus
   draws at the screen's own rate. A frame cap isn't available to themes
   either. (Worth revisiting in the Pegasus fork.)
-- **App drawer blur as its own setting** instead of locked to High Quality:
-  Off / On. Base mode renders the blur at a lower resolution than HQ. The
-  Xbox guide itself doesn't blur when it slides out, so the default is Off.
+- **App drawer blur as its own setting** — done, build 60 (Off by default;
+  base mode blurs at half size).
 
 ## 5. Clean-up and release
 

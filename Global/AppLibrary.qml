@@ -125,6 +125,14 @@ id: lib
         return m;
     }
 
+    // Entries in the Power section (PC): the host keeps them out of the library.
+    readonly property var powerPkgs: {
+        var out = {}, m = categoryMap;
+        if (!pcMode) return out;
+        for (var k in m) if (m[k] === "power") out[k] = true;
+        return out;
+    }
+
     // ── Saved state ───────────────────────────────────────────────────────
     // Favorites, hidden apps and reclassifications are theme-side concepts —
     // Pegasus knows nothing about them — so they live in api.memory, which

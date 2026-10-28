@@ -52,6 +52,10 @@ id: root
             setting: "No,Yes"
         }
         ListElement {
+            settingName: "App drawer blur"
+            setting: "No,Yes"
+        }
+        ListElement {
             settingName: "Launch screen delay"
             setting: "2.0,2.5,3.0,3.5,4.0,4.5,5.0,0.5,1.0,1.5"
         }
@@ -722,8 +726,10 @@ id: root
             if (!onDesktop) return;
             for (var i = 0; i < count; i++)
                 if (get(i).settingName === "Hide Android Games System Tile") {
-                    insert(i + 1, { settingName: "PC games in App Drawer", label: "PC games in the App Drawer",
-                                    setting: "No,Yes" });
+                    // Android games (shortname androidgames) mean nothing on a PC.
+                    remove(i);
+                    insert(i, { settingName: "PC games in App Drawer", label: "PC games in the App Drawer",
+                                setting: "No,Yes" });
                     return;
                 }
         }
@@ -861,7 +867,7 @@ id: root
         r++;
         out.push({ kind: "header", row: r, col: 0, span: 3, text: "Where previews play" }); r++;
         if (!previewsOn) {
-            out.push({ kind: "label", row: r, col: 0, span: 3, h: vpx(64),
+            out.push({ kind: "label", row: r, col: 0, span: 3, h: srow(64),
                        text: "Video previews are off everywhere",
                        sub: "Turn them on to choose where they play. Your choices are kept." });
             r++;
@@ -987,11 +993,16 @@ id: root
                  + "\u2022 Video previews start sooner\n"
                  + "\u2022 Crisper artwork and icons\n"
                  + "\u2022 Smoother transitions\n"
-                 + "\u2022 A blurred backdrop behind the app drawer\n"
+                 + "\u2022 A sharper App drawer blur, if that's on\n"
                  + "\n"
                  + "Off by default\n"
                  + "\n"
                  + "Theme reload recommended";
+        }
+        if (name === "App drawer blur") {
+            return "Blurs the screen behind the App Drawer while it's open\n"
+                 + "\n"
+                 + "The Xbox guide doesn't blur, so it's off by default. With High Quality Mode on the blur is drawn sharper; without it, at half size (lighter on handhelds)";
         }
         if (name === "Launch screen delay") {
             return "How long the launch screen stays up before launching your game,app, or emulator";
@@ -1466,6 +1477,7 @@ id: root
             || name === "Bottom fade"
             || name === "UI Scale"
             || name === "High Quality Mode"
+            || name === "App drawer blur"
             || name === "Launch screen delay"
             || name === "Hide button help"
             || name === "Xbox Logo"
@@ -1532,8 +1544,11 @@ id: root
             || tipTexts.hasOwnProperty(name);
     }
 
-    property real itemheight: vpx(45)   // ~68 px at 1080p
-    property color settingsTextColor: "white"   // locked white: the settings background is locked black, so text must never follow the Color Layout light/dark flip
+    property real itemheight: srow(45)   // ~68 px at 1080p; grows (less than the text) with UI Scale
+    // Text drawn straight on the backdrop (title, rail, page lead); text on
+    // the dark cards stays white.
+    readonly property color settingsTextColor: settingsBgLight ? "#101010" : "white"
+    readonly property color settingsDimColor:  settingsBgLight ? "#3a3a3a" : "#a9a9a9"
 
     // ── On-screen keyboard for text fields (RA credentials) ───────────────
     // Fully controller-driven. NO native Android TextInput/IME (no blue box).
@@ -1581,11 +1596,12 @@ id: root
         settingsList.forceActiveFocus();
     }
 
-    // Settings background — locked dark (independent of Color Background),
-    // the Xbox settings charcoal.
+    // Settings background: your Color Background, live (the cards stay dark,
+    // as on the Xbox; text drawn straight on the backdrop turns dark on the
+    // light ones — settingsBgLight).
     Rectangle {
         anchors.fill: parent
-        color: "#101010"
+        color: settingsBg
         z: -10
     }
 
@@ -1615,6 +1631,9 @@ id: root
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true
+            // White icon: dark on a light backdrop.
+            layer.enabled: settingsBgLight
+            layer.effect: ColorOverlay { color: settingsTextColor }
         }
 
         // Platform title
@@ -1632,7 +1651,7 @@ id: root
             
             color: settingsTextColor
             font.family: titleFont.name
-            font.pixelSize: vpx(27)
+            font.pixelSize: spx(27)
             font.bold: true
             horizontalAlignment: Text.AlignHLeft
             verticalAlignment: Text.AlignVCenter
@@ -1650,7 +1669,7 @@ id: root
     }
 
     // Clock / battery / Wi-Fi, top right, as on every other screen.
-    StatusCluster { anchors.fill: parent; z: 50 }
+    StatusCluster { anchors.fill: parent; z: 50; dark: settingsBgLight }
 
     ListView {
     id: pagelist
@@ -1681,7 +1700,7 @@ id: root
                 property bool selected: ListView.isCurrentItem
 
                 width: ListView.view.width
-                height: vpx(43)            // 64 px at 1080p, the Xbox rail's row
+                height: srow(43)           // 64 px at 1080p, the Xbox rail's row
 
                 readonly property bool railFocused: selected && pagelist.activeFocus
 
@@ -1715,9 +1734,11 @@ id: root
                     anchors { left: parent.left; leftMargin: vpx(72); verticalCenter: parent.verticalCenter }   // 108 px at 1080p
                     text: modelData.pageName
                     // Dark text on a light accent (lime, yellow), white otherwise.
-                    color: railFocused ? (accentIsLight ? "#111111" : "white") : selected ? "white" : "#d2d2d2"
+                    color: railFocused ? (accentIsLight ? "#111111" : "white") : selected ? "white" : (settingsBgLight ? "#1a1a1a" : "#d2d2d2")
+                    width: parent.width - vpx(72) - vpx(8)
+                    elide: Text.ElideRight
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(17.5)
+                    font.pixelSize: spx(17.5)
                 }
 
                 // Mouse/touch functionality
@@ -1784,9 +1805,9 @@ id: root
         Text {
         id: pageTitle
             text: currentPage ? currentPage.pageName : ""
-            color: "white"
+            color: settingsTextColor
             font.family: titleFont.name
-            font.pixelSize: vpx(29)
+            font.pixelSize: spx(29)
             font.bold: true
         }
         Text {
@@ -1794,9 +1815,9 @@ id: root
             anchors { top: pageTitle.bottom; topMargin: vpx(4) }
             width: Math.min(pane.width, vpx(780))
             text: (currentPage && currentPage.lead) ? currentPage.lead : ""
-            color: "#a9a9a9"
+            color: settingsDimColor
             font.family: subtitleFont.name
-            font.pixelSize: vpx(14.5)
+            font.pixelSize: spx(14.5)
             wrapMode: Text.WordWrap
         }
     }
@@ -1851,7 +1872,7 @@ id: root
         }
         wrapMode: Text.WordWrap
         font.family: subtitleFont.name
-        font.pixelSize: vpx(18)
+        font.pixelSize: spx(18)
         opacity: (cheevosData.verifyState === "idle") ? 0 : 1
         color: cheevosData.verifyState === "ok"  ? "#5fd36b"
              : cheevosData.verifyState === "bad" ? "#e06c6c"
@@ -2007,7 +2028,7 @@ id: root
                 }
 
                 width: ListView.view.width - vpx(16)
-                height: isHeader ? vpx(36) : isPanel ? diagCol.height + vpx(26) : (itemNote !== "" ? itemheight + vpx(30) : itemheight)
+                height: isHeader ? srow(36) : isPanel ? diagCol.height + vpx(26) : (itemNote !== "" ? itemheight + vpx(30) : itemheight)
 
                 // Diagnostics panel
                 Rectangle {
@@ -2024,8 +2045,8 @@ id: root
                             model: isPanel ? root.diagLines() : []
                             delegate: Row {
                                 spacing: vpx(12)
-                                Text { width: vpx(118); text: modelData[0]; color: "#8e8e8e"; font { family: subtitleFont.name; pixelSize: vpx(15) } }
-                                Text { text: modelData[1]; color: "white"; font { family: subtitleFont.name; pixelSize: vpx(15) } }
+                                Text { width: spx(118); text: modelData[0]; color: "#8e8e8e"; font { family: subtitleFont.name; pixelSize: spx(15) } }
+                                Text { text: modelData[1]; color: "white"; font { family: subtitleFont.name; pixelSize: spx(15) } }
                             }
                         }
                     }
@@ -2037,7 +2058,7 @@ id: root
                     anchors { left: parent.left; leftMargin: vpx(2); bottom: parent.bottom; bottomMargin: vpx(6) }
                     text: settingName.toUpperCase()
                     color: theme.accent
-                    font { family: subtitleFont.name; pixelSize: vpx(12); bold: true; letterSpacing: vpx(1.2) }
+                    font { family: subtitleFont.name; pixelSize: spx(12); bold: true; letterSpacing: vpx(1.2) }
                 }
 
                 // Card
@@ -2066,7 +2087,7 @@ id: root
                     text: displayLabel
                     color: "white"
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(17)
+                    font.pixelSize: spx(17)
                     verticalAlignment: Text.AlignVCenter
                     opacity: rowDisabled ? 0.38 : 1
 
@@ -2091,7 +2112,7 @@ id: root
                                 : "<font color='#8a8a8a'>\u2039</font>&nbsp;&nbsp;<b>" + shown + "</b>&nbsp;&nbsp;<font color='#8a8a8a'>\u203A</font>"
                     color: "white"
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(16)
+                    font.pixelSize: spx(16)
                     verticalAlignment: Text.AlignVCenter
                     opacity: rowDisabled ? 0.38 : 1
 
@@ -2109,7 +2130,7 @@ id: root
                     text: displayLabel
                     color: "white"
                     font.family: subtitleFont.name
-                    font.pixelSize: vpx(17)
+                    font.pixelSize: spx(17)
                     verticalAlignment: Text.AlignVCenter
 
                     width: contentWidth
@@ -2149,7 +2170,7 @@ id: root
                                  : storedVal)
                         color: storedVal === "" ? "#8a8a8a" : "white"
                         font.family: subtitleFont.name
-                        font.pixelSize: vpx(16)
+                        font.pixelSize: spx(16)
                         verticalAlignment: Text.AlignVCenter
                         elide: Text.ElideRight
                     }
@@ -2179,7 +2200,7 @@ id: root
                         text: itemNote
                         color: theme.accent
                         font.family: bodyFont.name
-                        font.pixelSize: vpx(13)
+                        font.pixelSize: spx(13)
                         font.bold: true
                     }
                 }

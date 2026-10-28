@@ -300,10 +300,22 @@ id: root
     function rebuildHomeHide() {
         if (drawerOpen) { homeHidePending = true; return; }
         homeHidePending = false;
-        var libSig = Object.keys(appLib.libraryHiddenPkgs).sort().join("\n");
+        // PC: the Power entries (Sleep, Restart, ...) live behind the drawer's
+        // Power tile only. They're added here, so Home, the hero, All Games
+        // and the PC Apps page leave them out the way they leave out anything
+        // hidden from the library.
+        var hidden = appLib.libraryHiddenPkgs;
+        var power = onDesktop ? appLib.powerPkgs : noHideTitles;
+        if (Object.keys(power).length > 0) {
+            var merged = {};
+            for (var hk in hidden) merged[hk] = hidden[hk];
+            for (var pk in power) merged[pk] = true;
+            hidden = merged;
+        }
+        var libSig = Object.keys(hidden).sort().join("\n");
         if (libSig !== libraryHiddenSig) {
             libraryHiddenSig = libSig;
-            libraryHiddenLive = appLib.libraryHiddenPkgs;
+            libraryHiddenLive = hidden;
         }
         var set = {};
         if (omitAppsLive)      { var a = homeAppTitleSet;  for (var t in a) set[t] = true; }
@@ -320,6 +332,7 @@ id: root
     Connections {
         target: appLib
         onLibraryHiddenPkgsChanged: Qt.callLater(rebuildHomeHide)
+        onPowerPkgsChanged: Qt.callLater(rebuildHomeHide)
     }
     // After the drawer's slide-out, so the one re-filter doesn't land on it.
     Timer {
@@ -485,6 +498,7 @@ id: root
         "Hide Android Games System Tile":            "No",
         "Hide logo when thumbnail video plays":      "Yes",
         "High Quality Mode":                         "No",
+        "App drawer blur":                           "No",
         "Launch screen delay":                       "2.5",
         "More by Genre Display":                     "Full",
         "Number of columns":                         "3",
@@ -834,7 +848,11 @@ id: root
     readonly property real hqAppTileScrim:  0.30                  // dark wash over it (was 0.42)
 
     // Phase C
-    readonly property bool hqDrawerBlur:    hqMode                // blurred screen behind the app drawer
+    // Blurred screen behind the app drawer: its own setting now (Settings ›
+    // General › App drawer blur), off by default — the Xbox guide doesn't
+    // blur. Base mode blurs a half-size snapshot, High Quality a full one.
+    readonly property bool hqDrawerBlur: { var e = settingsEpoch; return settingsStore.get("App drawer blur", "No") === "Yes"; }
+    readonly property real drawerBlurRes: hqMode ? 1 : 0.5
     readonly property int  hqDrawerSlideMs: hqMode ? 320  : 220   // drawer slide duration
     readonly property bool hqAllGamesWarm:  hqMode                // warm the All Games preview during its rest
     // (No halo size knob: the halo PNG's transparent centre is cut for exactly
@@ -1447,145 +1465,155 @@ id: root
     }
 
     // Theme settings
-    property var theme: {
+    // Background colour -> { background, text, gradientstart, gradientend }.
+    // theme (below) uses the saved one; Settings uses the live one.
+    function backgroundPalette(name) {
         var background    = "#000000";
         var text          = "#ebebeb";
         var gradientstart = "#001f1f1f";
         var gradientend   = "#FF000000";
-        if (settings.ColorBackground === "Black") {
+        if (name === "Black") {
             background    = "#000000";
             gradientstart = "#001f1f1f";
             gradientend   = "#FF000000";
-        } else if (settings.ColorBackground === "Charcoal") {
+        } else if (name === "Charcoal") {
             background    = "#1a1a1a";
             gradientstart = "#001a1a1a";
             gradientend   = "#FF1a1a1a";
-        } else if (settings.ColorBackground === "Dark Gray") {
+        } else if (name === "Dark Gray") {
             background    = "#1f1f1f";
             gradientstart = "#001f1f1f";
             gradientend   = "#FF1F1F1F";
-        } else if (settings.ColorBackground === "Mid Gray") {
+        } else if (name === "Mid Gray") {
             background    = "#2d2d2d";
             gradientstart = "#002d2d2d";
             gradientend   = "#FF2d2d2d";
-        } else if (settings.ColorBackground === "Navy Blue") {
+        } else if (name === "Navy Blue") {
             background    = "#0a0e2e";
             gradientstart = "#000a0e2e";
             gradientend   = "#FF0a0e2e";
-        } else if (settings.ColorBackground === "Dark Blue") {
+        } else if (name === "Dark Blue") {
             background    = "#1d253d";
             gradientstart = "#001d253d";
             gradientend   = "#FF1d253d";
-        } else if (settings.ColorBackground === "Dark Teal") {
+        } else if (name === "Dark Teal") {
             background    = "#041a18";
             gradientstart = "#00041a18";
             gradientend   = "#FF041a18";
-        } else if (settings.ColorBackground === "Dark Green") {
+        } else if (name === "Dark Green") {
             background    = "#054b16";
             gradientstart = "#00054b16";
             gradientend   = "#FF054b16";
-        } else if (settings.ColorBackground === "Forest Green") {
+        } else if (name === "Forest Green") {
             background    = "#0a200a";
             gradientstart = "#000a200a";
             gradientend   = "#FF0a200a";
-        } else if (settings.ColorBackground === "Dark Red") {
+        } else if (name === "Dark Red") {
             background    = "#520000";
             gradientstart = "#00520000";
             gradientend   = "#FF520000";
-        } else if (settings.ColorBackground === "Burgundy") {
+        } else if (name === "Burgundy") {
             background    = "#1c0008";
             gradientstart = "#001c0008";
             gradientend   = "#FF1c0008";
-        } else if (settings.ColorBackground === "Dark Purple") {
+        } else if (name === "Dark Purple") {
             background    = "#120012";
             gradientstart = "#00120012";
             gradientend   = "#FF120012";
-        } else if (settings.ColorBackground === "Indigo") {
+        } else if (name === "Indigo") {
             background    = "#0a0020";
             gradientstart = "#000a0020";
             gradientend   = "#FF0a0020";
-        } else if (settings.ColorBackground === "Dark Brown") {
+        } else if (name === "Dark Brown") {
             background    = "#1a0e00";
             gradientstart = "#001a0e00";
             gradientend   = "#FF1a0e00";
-        } else if (settings.ColorBackground === "Dark Orange") {
+        } else if (name === "Dark Orange") {
             background    = "#1a0800";
             gradientstart = "#001a0800";
             gradientend   = "#FF1a0800";
-        } else if (settings.ColorBackground === "Slate") {
+        } else if (name === "Slate") {
             background    = "#1a1e26";
             gradientstart = "#001a1e26";
             gradientend   = "#FF1a1e26";
-        } else if (settings.ColorBackground === "Midnight Blue") {
+        } else if (name === "Midnight Blue") {
             background    = "#050510";
             gradientstart = "#00050510";
             gradientend   = "#FF050510";
-        } else if (settings.ColorBackground === "Deep Purple") {
+        } else if (name === "Deep Purple") {
             background    = "#0e0018";
             gradientstart = "#000e0018";
             gradientend   = "#FF0e0018";
-        } else if (settings.ColorBackground === "Dark Steel") {
+        } else if (name === "Dark Steel") {
             background    = "#1e2a3a";
             gradientstart = "#001e2a3a";
             gradientend   = "#FF1e2a3a";
-        } else if (settings.ColorBackground === "Gray") {
+        } else if (name === "Gray") {
             background    = "#3a3a3a";
             gradientstart = "#003a3a3a";
             gradientend   = "#FF3a3a3a";
-        } else if (settings.ColorBackground === "Cool Gray") {
+        } else if (name === "Cool Gray") {
             background    = "#4a5060";
             gradientstart = "#004a5060";
             gradientend   = "#FF4a5060";
-        } else if (settings.ColorBackground === "Steel Blue") {
+        } else if (name === "Steel Blue") {
             background    = "#2c4a6e";
             gradientstart = "#002c4a6e";
             gradientend   = "#FF2c4a6e";
-        } else if (settings.ColorBackground === "Teal") {
+        } else if (name === "Teal") {
             background    = "#1a4a4a";
             gradientstart = "#001a4a4a";
             gradientend   = "#FF1a4a4a";
-        } else if (settings.ColorBackground === "Forest") {
+        } else if (name === "Forest") {
             background    = "#1a3a1a";
             gradientstart = "#001a3a1a";
             gradientend   = "#FF1a3a1a";
-        } else if (settings.ColorBackground === "Wine") {
+        } else if (name === "Wine") {
             background    = "#4a1020";
             gradientstart = "#004a1020";
             gradientend   = "#FF4a1020";
-        } else if (settings.ColorBackground === "Plum") {
+        } else if (name === "Plum") {
             background    = "#3a1a3a";
             gradientstart = "#003a1a3a";
             gradientend   = "#FF3a1a3a";
-        } else if (settings.ColorBackground === "Light Gray") {
+        } else if (name === "Light Gray") {
             background    = "#707070";
             gradientstart = "#00707070";
             gradientend   = "#FF707070";
-        } else if (settings.ColorBackground === "Silver") {
+        } else if (name === "Silver") {
             background    = "#909090";
             gradientstart = "#00909090";
             gradientend   = "#FF909090";
-        } else if (settings.ColorBackground === "Light Blue") {
+        } else if (name === "Light Blue") {
             background    = "#4a7aa0";
             gradientstart = "#004a7aa0";
             gradientend   = "#FF4a7aa0";
-        } else if (settings.ColorBackground === "Sage") {
+        } else if (name === "Sage") {
             background    = "#6a8a6a";
             gradientstart = "#006a8a6a";
             gradientend   = "#FF6a8a6a";
-        } else if (settings.ColorBackground === "Tan") {
+        } else if (name === "Tan") {
             background    = "#8a7a5a";
             gradientstart = "#008a7a5a";
             gradientend   = "#FF8a7a5a";
-        } else if (settings.ColorBackground === "Rose") {
+        } else if (name === "Rose") {
             background    = "#a06070";
             gradientstart = "#00a06070";
             gradientend   = "#FFa06070";
-        } else if (settings.ColorBackground === "White") {
+        } else if (name === "White") {
             background    = "#ebebeb";
             gradientstart = "#00ebebeb";
             gradientend   = "#FFebebeb";
             text          = "#101010";
         }
+
+        return { background: background, text: text, gradientstart: gradientstart, gradientend: gradientend };
+    }
+
+    property var theme: {
+        var bp = backgroundPalette(settings.ColorBackground);
+        var background = bp.background, text = bp.text;
+        var gradientstart = bp.gradientstart, gradientend = bp.gradientend;
 
         var accent        = "#107C10";   // default: Dark Green (Xbox brand green)
 
@@ -1701,7 +1729,7 @@ id: root
     // leftPromptNudge) because `root.state` inside ButtonHelpBar.qml is the
     // bar's own root, whose state is always "".
     readonly property color helpPromptColor:
-        (state === "settingsscreen")                              ? "#ebebeb"
+        (state === "settingsscreen")                              ? (settingsBgLight ? "#101010" : "#ebebeb")
       : (state === "showcasescreen" && !showcaseWhiteBackground) ? "#ebebeb"
       : theme.text
 
@@ -1713,6 +1741,15 @@ id: root
     // icons stay on vpx() so layouts tuned at 1.0 can't overflow. Resolves by
     // bare name in child screens and Global/ components, exactly like vpx().
     property real uiScale: parseFloat(settings.UiScale) || 1.0
+    // Settings follows UI Scale and Color Background LIVE (the rest of the
+    // theme picks them up on reload): its text grows with the scale, its rows
+    // a little less, and its backdrop is your background colour.
+    readonly property real settingsScale: { var e = settingsEpoch; return parseFloat(settingsStore.get("UI Scale", "1.0")) || 1.0; }
+    function spx(n) { return vpx(n) * settingsScale; }
+    function srow(n) { return vpx(n) * (1 + (settingsScale - 1) * 0.6); }
+    readonly property color settingsBg: { var e = settingsEpoch; return backgroundPalette(settingsStore.get("Color Background", "Black")).background; }
+    // Light backdrop (White, Silver): text drawn straight on it turns dark.
+    readonly property bool settingsBgLight: (0.299 * settingsBg.r + 0.587 * settingsBg.g + 0.114 * settingsBg.b) > 0.5
     function fpx(n) { return vpx(n) * uiScale; }
     property real helpMargin: buttonbar.height
     property int transitionTime: 100
@@ -2638,7 +2675,7 @@ id: root
                 live: drawerOpen && drawerSlide < 1
                 hideSource: false
                 visible: false
-                textureSize: Qt.size(Math.round(width / hiResScale), Math.round(height / hiResScale))
+                textureSize: Qt.size(Math.round(width * drawerBlurRes / hiResScale), Math.round(height * drawerBlurRes / hiResScale))
             }
             FastBlur {
                 // Big desktop screens: blur at 1080p size and scale up — same

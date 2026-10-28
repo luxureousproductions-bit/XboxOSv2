@@ -33,9 +33,9 @@ id: grid
     property var colWidths: [1]
     property real gap: vpx(8)
     readonly property real edge: vpx(8)
-    property real rowH: vpx(45)
-    property real headerH: vpx(34)
-    property real colHeadH: vpx(24)
+    property real rowH: srow(45)
+    property real headerH: srow(34)
+    property real colHeadH: srow(24)
     property color accent: theme.accent
     // Host hooks
     property var isDisabled: function(cell) { return false; }
@@ -296,15 +296,15 @@ id: grid
                     anchors { left: parent.left; bottom: parent.bottom; bottomMargin: vpx(6) }
                     text: (c.text || "").toUpperCase()
                     color: grid.accent
-                    font { family: subtitleFont.name; pixelSize: vpx(13); bold: true; letterSpacing: vpx(1.2) }
+                    font { family: subtitleFont.name; pixelSize: spx(13); bold: true; letterSpacing: vpx(1.2) }
                 }
                 // Column heading (Previews & sound): grey caps.
                 Text {
                     visible: c.kind === "colhead"
                     anchors { left: parent.left; leftMargin: vpx(6); bottom: parent.bottom; bottomMargin: vpx(2) }
                     text: (c.text || "").toUpperCase()
-                    color: "#8e8e8e"
-                    font { family: subtitleFont.name; pixelSize: vpx(12); bold: true; letterSpacing: vpx(1.2) }
+                    color: settingsBgLight ? "#3a3a3a" : "#8e8e8e"
+                    font { family: subtitleFont.name; pixelSize: spx(12); bold: true; letterSpacing: vpx(1.2) }
                 }
 
                 // Card
@@ -333,8 +333,8 @@ id: grid
                     anchors.horizontalCenter: c.dim ? parent.horizontalCenter : undefined
                     anchors.verticalCenter: parent.verticalCenter
                     spacing: vpx(2)
-                    Text { text: c.text || ""; color: c.dim ? "#5c5c5c" : "white"; font { family: subtitleFont.name; pixelSize: vpx(17) } }
-                    Text { visible: !!c.sub; text: c.sub || ""; color: "#9a9a9a"; font { family: subtitleFont.name; pixelSize: vpx(12) } }
+                    Text { text: c.text || ""; color: c.dim ? "#5c5c5c" : "white"; font { family: subtitleFont.name; pixelSize: spx(17) } }
+                    Text { visible: !!c.sub; text: c.sub || ""; color: "#9a9a9a"; font { family: subtitleFont.name; pixelSize: spx(12) } }
                 }
                 // Item action prompt (e.g. "X  Back to Systems")
                 Row {
@@ -348,7 +348,7 @@ id: grid
                         sourceSize { width: 36; height: 36 }
                         asynchronous: true
                     }
-                    Text { anchors.verticalCenter: parent.verticalCenter; text: c.action || ""; color: "#cfcfcf"; font { family: subtitleFont.name; pixelSize: vpx(14) } }
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: c.action || ""; color: "#cfcfcf"; font { family: subtitleFont.name; pixelSize: spx(14) } }
                 }
 
                 // Value card: optional name left, value right (or centred)
@@ -357,7 +357,7 @@ id: grid
                     anchors { left: parent.left; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
                     text: c.label || ""
                     color: "white"; opacity: card.dis ? 0.38 : 1
-                    font { family: subtitleFont.name; pixelSize: vpx(17) }
+                    font { family: subtitleFont.name; pixelSize: spx(17) }
                 }
                 Row {
                     visible: c.kind === "value"
@@ -368,14 +368,14 @@ id: grid
                     spacing: vpx(10)
                     opacity: card.dis ? 0.38 : 1
                     // Editing: the arrows light up — Left/Right now change the value.
-                    Text { id: leftArrow; text: "‹"; color: card.editing ? grid.accent : "#8a8a8a"; font { family: subtitleFont.name; pixelSize: vpx(17); bold: card.editing } anchors.verticalCenter: parent.verticalCenter }
+                    Text { id: leftArrow; text: "‹"; color: card.editing ? grid.accent : "#8a8a8a"; font { family: subtitleFont.name; pixelSize: spx(17); bold: card.editing } anchors.verticalCenter: parent.verticalCenter }
                     Text {
                         anchors.verticalCenter: parent.verticalCenter
                         text: { var e = grid.rev; var ee = settingsEpoch; return c.kind === "value" ? grid.display(c) : ""; }
                         color: "white"
-                        font { family: subtitleFont.name; pixelSize: vpx(16); bold: true }
+                        font { family: subtitleFont.name; pixelSize: spx(16); bold: true }
                     }
-                    Text { id: rightArrow; text: "›"; color: card.editing ? grid.accent : "#8a8a8a"; font { family: subtitleFont.name; pixelSize: vpx(17); bold: card.editing } anchors.verticalCenter: parent.verticalCenter }
+                    Text { id: rightArrow; text: "›"; color: card.editing ? grid.accent : "#8a8a8a"; font { family: subtitleFont.name; pixelSize: spx(17); bold: card.editing } anchors.verticalCenter: parent.verticalCenter }
                 }
 
                 MouseArea {

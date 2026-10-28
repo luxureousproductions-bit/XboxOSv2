@@ -41,6 +41,15 @@ APP DRAWER (PC)
 - Settings > System > "PC games in the App Drawer" = On: your Steam / GOG /
   Playnite games appear in the drawer's Games tab (restart not needed).
 
+BUILD 60
+- Use Sleep (or any Power entry) from the drawer, come back: the Home hero
+  is a game again, and no Power entry shows on Home or in All Games.
+- Settings > System: no "Hide Android Games System Tile" row.
+- Settings > General > App drawer blur = On: the screen behind the drawer
+  blurs. Off (default): plain dim.
+- UI Scale 1.5: Settings text grows right away. Background colour: Settings
+  takes it right away (try White: dark text, dark clock).
+
 WHAT TO SEND BACK
 lastrun.log (in the Pegasus folder) and a short video of anything odd.
 Settings > System > "Write diagnostics to log" first adds the theme build,

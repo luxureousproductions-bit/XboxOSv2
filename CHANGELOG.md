@@ -4,7 +4,15 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 59)
+## Unreleased — refresh branch (build 60)
+
+- **Power entries stay out of the library (PC):** Sleep, Restart, Shut down and the rest (genre Power) only live behind the drawer's Power tile now. They no longer show in the Home hero (after you used Sleep it took the hero), Home rows, All Games or the PC Apps page.
+- **"Hide Android Games System Tile" is gone on Windows / Linux**, where it did nothing; "PC games in the App Drawer" takes its place.
+- **App drawer blur is its own setting** (Settings › General, off by default, on Android and PC): it used to come only with High Quality Mode. With High Quality Mode on, the blur is drawn sharper; without it, at half size.
+- **Settings follows UI Scale:** the text grows with it and the rows a little less, straight away (no reload).
+- **Settings follows your background colour** instead of a locked charcoal, straight away. The cards stay dark; on White and Silver the title, the page list, the clock and the button prompts turn dark.
+
+## build 59
 
 ### App Drawer on Windows / Linux (part 3)
 - **PC games in the App Drawer (optional, off by default):** Settings › System › "PC games in the App Drawer" adds your Steam, GOG and Lutris imports, Playnite's PC collections, and collections of your own with a PC shortname (steam, gog, epic, heroic, lutris, pc, windows, linux) to the drawer's **Games** tab. The row only exists on Windows / Linux.
