@@ -335,7 +335,7 @@ Every setting has a **More info** page — press **X** on any row for a plain-la
 | **All Games Menu** | List/Grid view, video previews, blur, scanlines, grid tiles, Match Platform |
 | **Game details** | Box art style, More by Genre, background, logo, default to full details, video, blur, scanlines |
 | **Media Carousel** | Turn each media type on or off |
-| **Audio** | Menu sounds, startup chime, volume, and video audio for each screen |
+| **Audio** | Menu sounds, Achievement/Welcome Toast sound, volume, and video audio for each screen |
 | **Retro Achievements** | Username and API key |
 | **Advanced** | Hide apps / emulators from Home, Android system tiles, Added App Launch, status bar indicators |
 | **Tips & Tricks** | Lesser-known features that have no button prompt, each with a short explanation |

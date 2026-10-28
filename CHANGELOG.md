@@ -4,7 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 63)
+## Unreleased — seriesSX branch (build 64)
+
+The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **"Startup chime" is now "Achievement/Welcome Toast"** (Settings › Previews & sound), the sound's real name. Only the label changed: your on/off choice is kept. The card spans two columns so the longer name fits.
+
+## refresh branch (build 63)
 
 - **Test harness in the repo** (`tools/harness/`, no theme change): the setup, scripts, standard performance scenario, an A/B compare script and the build 63 baseline, so later work can be checked against the performance gains of the refresh. Pegasus for it lives on the `harness-pegasus` branch.
 

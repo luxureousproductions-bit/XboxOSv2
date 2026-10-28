@@ -652,7 +652,7 @@ id: root
         }
         ListElement {
             settingName: "Start up chime"
-            label: "Startup chime"
+            label: "Achievement/Welcome Toast"
             setting: "Yes,No"
         }
     }
@@ -914,7 +914,7 @@ id: root
         v(r, 0, "Menu sounds", { label: "Menu sounds" });
         v(r, 1, "Menu Volume", { label: "Volume", span: 2, show: volumeShow });
         r++;
-        v(r, 0, "Start up chime", { label: "Startup chime" });
+        v(r, 0, "Start up chime", { label: "Achievement/Welcome Toast", span: 2 });
         return out;
     }
 
