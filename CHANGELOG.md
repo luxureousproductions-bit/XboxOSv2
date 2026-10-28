@@ -4,7 +4,14 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 57)
+## Unreleased — refresh branch (build 58)
+
+### App Drawer: mouse (part 2 of the PC drawer)
+- **Hover** picks an app, a nav row (Home, My games & apps) or a tile in the bottom bar; the **wheel** steps through the app list; **click** launches.
+- **Right-click an app** opens its quick menu (as Start does); right-click again, or the mouse Back button, closes the innermost thing first — the Hide panel, then the quick menu, then the drawer.
+- **Wide art on a PC** (Steam headers and the like) sits whole on the icon plate instead of being cropped to its middle. Android icons are unchanged.
+
+## build 57
 
 ### App Drawer on Windows / Linux (part 1)
 - **On a PC the drawer reads a collection called "PC Apps"** (shortname `pcapps`) instead of Android's apps, and keeps it off the system row the same way (Settings › System › "Hide PC Apps system tile").

@@ -2560,7 +2560,7 @@ id: root
             else                              librarySearch.closeSearch();
             return;
         }
-        if (drawerOpen) { closeAppDrawer(); return; }
+        if (drawerOpen) { appDrawerLoader.item.backPress(); return; }   // menus first, then the drawer
         if (state === "launchgamescreen") { previousScreen(); return; }
         // Otherwise hand it to the screen showing, if it knows what B means.
         var scr = activeScreenItem ? activeScreenItem.item : null;
@@ -2582,7 +2582,13 @@ id: root
         acceptedButtons: root.mouseBackButtons
         propagateComposedEvents: true
         onPressed:  mouse.accepted = true
-        onReleased: { mouse.accepted = true; root.mouseBack(); }
+        onReleased: {
+            mouse.accepted = true;
+            // Right-click inside the open drawer: an app's quick menu.
+            if (mouse.button === Qt.RightButton && drawerOpen
+                && appDrawerLoader.item.contextAt(mouse.x, mouse.y)) return;
+            root.mouseBack();
+        }
     }
 
     // ── HQ: blurred screen behind the app drawer ─────────────────────────

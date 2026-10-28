@@ -272,6 +272,29 @@ id: root
         open = true;
         forceActiveFocus();
     }
+    // Mouse Back / right-click (theme.qml routes them here while open):
+    // close the innermost thing — hide panel, quick menu, then the drawer.
+    function backPress() {
+        if (hideOpen)  { playBack(); closeHidePanel(); return; }
+        if (quickOpen) { playBack(); closeQuickMenu(); return; }
+        closeDrawer(true);
+    }
+    // Right-click at (x, y) in the drawer: over an app, its quick menu (as
+    // Start does); with a menu open, close it. False = not handled here.
+    function contextAt(x, y) {
+        if (quickOpen) { backPress(); return true; }
+        if (!list.visible) return false;
+        var p = list.mapFromItem(root, x, y);
+        if (p.x < 0 || p.y < 0 || p.x > list.width || p.y > list.height) return false;
+        var i = list.indexAt(p.x + list.contentX, p.y + list.contentY);
+        if (i < 0) return false;
+        zone = zoneApps;
+        list.currentIndex = i;
+        playToggle();
+        openQuickMenu();
+        return true;
+    }
+
     function closeDrawer(byUser) {
         if (byUser === undefined) byUser = true;   // plain close = dismissal
         open = false;
@@ -617,6 +640,14 @@ id: root
 
                     MouseArea {
                         anchors.fill: parent
+                        hoverEnabled: settings.MouseHover == "Yes"
+                        function hoverPick() {
+                            if (!pointerMoved() || root.quickOpen) return;
+                            if (root.zone === root.zoneNav && root.navIndex === index) return;
+                            root.zone = root.zoneNav; root.navIndex = index; playNav();
+                        }
+                        onEntered: hoverPick()
+                        onPositionChanged: hoverPick()   // entered can arrive before the pointer tracker (theme.qml pointerMoved)
                         onClicked: {
                             root.zone = root.zoneNav;
                             root.navIndex = index;
@@ -807,10 +838,13 @@ ListView {
                                         width: Math.round(root.iconSize * root.iconZoom * hqIconScale)
                                         height: Math.round(root.iconSize * root.iconZoom * hqIconScale)
                                     }
-                                    fillMode: Image.PreserveAspectCrop
+                                    // PC entries: fit, so a wide Steam header sits whole on
+                                    // the plate instead of being cropped to its middle.
+                                    // Android: crop + zoom (adaptive icons are circles).
+                                    fillMode: root.pcMode ? Image.PreserveAspectFit : Image.PreserveAspectCrop
                                     // Scales about the centre; the surrounding
                                     // layer clips the overflow.
-                                    scale: root.iconZoom
+                                    scale: root.pcMode ? 1 : root.iconZoom
                                     // Async is safe here: the blank-tile race
                                     // came from layer.enabled tracking load
                                     // status, and that's keyed to hasArt now.
@@ -879,6 +913,16 @@ ListView {
 
                     MouseArea {
                         anchors.fill: parent
+                        hoverEnabled: settings.MouseHover == "Yes"
+                        function hoverPick() {
+                            if (!pointerMoved() || root.quickOpen) return;
+                            if (root.zone === root.zoneApps && list.currentIndex === index) return;
+                            root.zone = root.zoneApps; list.currentIndex = index; playNav();
+                        }
+                        onEntered: hoverPick()
+                        onPositionChanged: hoverPick()   // entered can arrive before the pointer tracker (theme.qml pointerMoved)
+                        // Right-click (the quick menu) is caught by theme.qml's
+                        // mouse-back layer, which hands it to contextAt().
                         onClicked: {
                             list.currentIndex = index;
                             root.chooseCurrent();
@@ -886,6 +930,15 @@ ListView {
                     }
                 }
             }
+        }
+
+        // The mouse wheel steps the app list a row per notch.
+        WheelNav {
+            anchors.fill: list
+            view: list
+            columns: 1
+            active: root.open && !root.quickOpen && list.visible
+            onStepped: function(quiet) { root.zone = root.zoneApps; if (!quiet) playNav(); }
         }
 
         // ── Action bar ────────────────────────────────────────────────────
@@ -950,6 +1003,14 @@ ListView {
 
                     MouseArea {
                         anchors.fill: parent
+                        hoverEnabled: settings.MouseHover == "Yes"
+                        function hoverPick() {
+                            if (!pointerMoved() || root.quickOpen) return;
+                            if (root.zone === root.zoneActions && root.actionIndex === index) return;
+                            root.zone = root.zoneActions; root.actionIndex = index; playNav();
+                        }
+                        onEntered: hoverPick()
+                        onPositionChanged: hoverPick()   // entered can arrive before the pointer tracker (theme.qml pointerMoved)
                         onClicked: {
                             root.zone = root.zoneActions;
                             root.actionIndex = index;
