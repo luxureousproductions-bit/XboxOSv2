@@ -485,7 +485,7 @@ id: root
         "Collection 6 - Size":                       "Large",
         "Collection 6 - Thumbnail":                  "Square",
         "Color Background":                          "Black",
-        "Color Layout":                              "Lime",
+        "Color Layout":                              "Xbox Green",
         "Custom Background":                         "Yes",
         "Discover video audio":                      "Yes",
         "Dynamic Background":                        "No",
@@ -587,7 +587,7 @@ id: root
             HideLogo:                      settingsStore.get("Hide logo when thumbnail video plays", "Yes"),
             HideButtonHelp:                settingsStore.get("Hide button help", "No"),
             // "Gradient" was removed as an option; a stale saved value falls back to the default.
-            ColorLayout:                   (api.memory.has("Color Layout") && api.memory.get("Color Layout") !== "Gradient") ? api.memory.get("Color Layout") : "Lime",
+            ColorLayout:                   (api.memory.has("Color Layout") && api.memory.get("Color Layout") !== "Gradient") ? api.memory.get("Color Layout") : "Xbox Green",
             MouseHover:                    settingsStore.get("Enable mouse hover"),
             AlwaysShowTitles:              settingsStore.get("Always show titles"),
             AllowVideoPreviewAudio:        gateSound(settingsStore.get("Game details video preview audio", "Yes")),
@@ -1624,97 +1624,84 @@ id: root
         return { background: background, text: text, gradientstart: gradientstart, gradientend: gradientend };
     }
 
+    // Accent presets: name -> [main, mid, dark]. Order = the Settings list.
+    readonly property var accentPresets: ({
+        "Xbox Green": ["#107c10", "#155715", "#102b14"],
+        "Ocean Blue": ["#1081ca", "#105080", "#10314f"],
+        "Azure":      ["#1073d6", "#134e8a", "#133157"],
+        "Cobalt":     ["#193e91", "#102c69", "#101836"],
+        "Purple":     ["#744da9", "#4c208a", "#24153b"],
+        "Orchid":     ["#b144c0", "#671a73", "#38163d"],
+        "Magenta":    ["#bf1077", "#731247", "#4a102e"],
+        "Crimson":    ["#a21025", "#691117", "#450710"],
+        "Red":        ["#e31123", "#851414", "#471010"],
+        "Orange":     ["#eb8c10", "#a55f10", "#4f300e"],
+        "Brown":      ["#724f2f", "#553518", "#301d01"],
+        "Steel":      ["#677488", "#3e4b61", "#222b38"],
+        "Lime":       ["#54a81b", "#107c10", "#103610"],
+        "Teal":       ["#108272", "#115e50", "#102b26"],
+        "Sea Teal":   ["#148282", "#13585e", "#103033"],
+        "Flame":      ["#eb4910", "#ab2d11", "#692015"],
+        "Pink":       ["#ed5588", "#9e2950", "#57172d"],
+        "Graphite":   ["#4c4a4b", "#373737", "#191919"],
+        "Khaki":      ["#7e715c", "#574b38", "#362f24"],
+        "Sage":       ["#547a72", "#294a42", "#1c2b28"],
+        "Gray":       ["#737373", "#4f4f4f", "#262626"]
+    })
+    readonly property string accentOrder: "Xbox Green,Ocean Blue,Azure,Cobalt,Purple,Orchid,Magenta,Crimson,Red,Orange,Brown,Steel,Lime,Teal,Sea Teal,Flame,Pink,Graphite,Khaki,Sage,Gray"
+    // Accent names from before build 65 -> the closest preset. Names that
+    // exist in both lists (Purple, Cobalt, Lime, ...) keep their name.
+    readonly property var legacyAccent: ({
+        "White": "Gray", "Silver": "Steel", "Light Gray": "Gray",
+        "Stone": "Steel", "Mid Gray": "Gray", "Slate": "Steel",
+        "Dark Gray": "Graphite", "Gunmetal": "Graphite", "Charcoal": "Graphite",
+        "Onyx": "Graphite", "Ice Blue": "Ocean Blue", "Arctic": "Ocean Blue",
+        "Sky Blue": "Ocean Blue", "Light Blue": "Ocean Blue", "Cyan": "Ocean Blue",
+        "Royal Blue": "Azure", "Sapphire": "Cobalt", "Dark Blue": "Cobalt",
+        "Navy Blue": "Cobalt", "Seafoam": "Sea Teal", "Turquoise": "Sea Teal",
+        "Dark Teal": "Teal", "Mint": "Sea Teal", "Light Green": "Lime",
+        "Jade": "Teal", "Emerald": "Teal", "Olive": "Khaki",
+        "Dark Green": "Xbox Green", "Forest Green": "Xbox Green", "Yellow": "Orange",
+        "Gold": "Orange", "Amber": "Orange", "Dark Gold": "Brown",
+        "Dark Orange": "Flame", "Coral": "Flame", "Salmon": "Pink",
+        "Copper": "Flame", "Bronze": "Khaki", "Rust": "Flame",
+        "Sienna": "Brown", "Light Pink": "Pink", "Hot Pink": "Magenta",
+        "Rose": "Pink", "Dark Pink": "Magenta", "Light Red": "Red",
+        "Ruby": "Crimson", "Dark Red": "Crimson", "Brick Red": "Crimson",
+        "Maroon": "Crimson", "Burgundy": "Crimson", "Lavender": "Orchid",
+        "Violet": "Purple", "Dark Purple": "Purple", "Indigo": "Purple",
+        "Tan": "Khaki", "Light Brown": "Khaki", "Dark Brown": "Khaki"
+    })
+    // Once per start: a pre-65 name is saved as its preset, and the row index
+    // Settings draws from is rewritten in the new list's order.
+    function migrateAccent() {
+        if (!api.memory.has("Color Layout")) return;
+        var v = api.memory.get("Color Layout");
+        var nv = legacyAccent[v] || (accentPresets[v] ? v : "Xbox Green");
+        var i = accentOrder.split(",").indexOf(nv);
+        if (nv !== v) api.memory.set("Color Layout", nv);
+        if (api.memory.get("Color LayoutIndex") !== i) api.memory.set("Color LayoutIndex", i);
+    }
+
     property var theme: {
         var bp = backgroundPalette(settings.ColorBackground);
         var background = bp.background, text = bp.text;
         var gradientstart = bp.gradientstart, gradientend = bp.gradientend;
 
-        var accent        = "#107C10";   // default: Dark Green (Xbox brand green)
-
-        // ── Full color palette ───────────────────────────────────────────
-        switch (settings.ColorLayout) {
-            // Greens
-            case "Dark Green":    accent = "#107C10"; break;   // Xbox brand green (Pantone 362 C)
-            case "Light Green":   accent = "#9BF00B"; break;   // Xbox bright green
-            case "Lime":          accent = "#86c440"; break;
-            case "Mint":          accent = "#3eb489"; break;
-            case "Sage":          accent = "#7d9e7a"; break;
-            case "Forest Green":  accent = "#2d6a2d"; break;
-            case "Olive":         accent = "#6b7a2a"; break;
-            // Teals / Cyans
-            case "Turquoise":     accent = "#288e80"; break;
-            case "Teal":          accent = "#3f8f86"; break;
-            case "Dark Teal":     accent = "#1a5f5a"; break;
-            case "Cyan":          accent = "#19c6d1"; break;
-            case "Arctic":        accent = "#5bc8d4"; break;
-            case "Seafoam":       accent = "#3cb4a0"; break;
-            // Blues
-            case "Dark Blue":     accent = "#30519c"; break;
-            case "Light Blue":    accent = "#288dcf"; break;
-            case "Navy Blue":     accent = "#1a2f6e"; break;
-            case "Royal Blue":    accent = "#2952c4"; break;
-            case "Sky Blue":      accent = "#4ab0e0"; break;
-            case "Ice Blue":      accent = "#7ac4df"; break;
-            case "Cobalt":        accent = "#0047ab"; break;
-            case "Sapphire":      accent = "#1a4fa0"; break;
-            // Reds
-            case "Dark Red":      accent = "#ab283b"; break;
-            case "Light Red":     accent = "#e52939"; break;
-            case "Crimson":       accent = "#c6283c"; break;
-            case "Burgundy":      accent = "#7a1c2e"; break;
-            case "Maroon":        accent = "#7c2020"; break;
-            case "Brick Red":     accent = "#b53a2f"; break;
-            case "Ruby":          accent = "#c0192c"; break;
-            // Pinks
-            case "Dark Pink":     accent = "#c52884"; break;
-            case "Light Pink":    accent = "#ee6694"; break;
-            case "Hot Pink":      accent = "#e0287a"; break;
-            case "Rose":          accent = "#c2466e"; break;
-            case "Coral":         accent = "#e8583a"; break;
-            case "Salmon":        accent = "#e07060"; break;
-            // Purples
-            case "Magenta":       accent = "#b857c6"; break;
-            case "Purple":        accent = "#825fb1"; break;
-            case "Dark Purple":   accent = "#5a2d82"; break;
-            case "Violet":        accent = "#7d4bc4"; break;
-            case "Lavender":      accent = "#9b7fd4"; break;
-            case "Indigo":        accent = "#4b3a9a"; break;
-            // Oranges / Yellows
-            case "Orange":        accent = "#ed5b28"; break;
-            case "Dark Orange":   accent = "#c44a18"; break;
-            case "Amber":         accent = "#e09820"; break;
-            case "Yellow":        accent = "#ed9728"; break;
-            case "Gold":          accent = "#c8961a"; break;
-            case "Dark Gold":     accent = "#a07010"; break;
-            case "Bronze":        accent = "#a0722a"; break;
-            // Browns
-            case "Dark Brown":    accent = "#806044"; break;
-            case "Light Brown":   accent = "#7e715c"; break;
-            case "Copper":        accent = "#b5602a"; break;
-            case "Rust":          accent = "#b04020"; break;
-            case "Sienna":        accent = "#a0522d"; break;
-            case "Tan":           accent = "#c8a878"; break;
-            // Grays / Neutrals
-            case "Dark Gray":     accent = "#5e5c5d"; break;
-            case "Mid Gray":      accent = "#6e6e6e"; break;
-            case "Light Gray":    accent = "#818181"; break;
-            case "Silver":        accent = "#a8a8a8"; break;
-            case "Steel":         accent = "#768294"; break;
-            case "Slate":         accent = "#5a6478"; break;
-            case "Stone":         accent = "#658780"; break;
-            case "Charcoal":      accent = "#454545"; break;
-            case "Gunmetal":      accent = "#4a5060"; break;
-            // Gems / Specials
-            case "Emerald":       accent = "#1a7a4a"; break;
-            case "Jade":          accent = "#2a8a5a"; break;
-            case "Onyx":          accent = "#353535"; break;
-            case "White":         accent = "#e8e8e8"; break;
-            default:              accent = "#107C10"; break;
-        }
+        // Xbox's 21 preset colours, in Xbox's own order, each with the mid and
+        // dark shades Xbox pairs with it (dlassets-ssl.xboxlive.com/public/
+        // content/ppl/colors/00000-00020.json). The names are ours: Xbox
+        // shows unnamed swatches. Names saved before build 65 go through
+        // legacyAccent first (see migrateAccent).
+        var p = accentPresets[legacyAccent[settings.ColorLayout] || settings.ColorLayout]
+                || accentPresets["Xbox Green"];
+        var accent = p[0];
         return {
             main:          background,
             secondary:     "#303030",
             accent:        accent,
+            accentMid:     p[1],     // toasts, pills (Xbox "tertiary")
+            accentDark:    p[2],     // header bands, e.g. the RA page top (Xbox "secondary")
             highlight:     accent,
             text:          text,
             button:        accent,
@@ -2156,6 +2143,7 @@ id: root
             }
         });
         migrateSettingsV2();
+        migrateAccent();
         // Rows removed in build 36 (the Xbox frame is the only frame; no
         // Highlight animation; no Featured box) and keys nothing ever read.
         // Saved values are dropped once so they can't linger in the file.

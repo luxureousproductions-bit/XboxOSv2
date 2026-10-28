@@ -94,7 +94,7 @@ id: root
         ListElement {
             settingName: "Color Layout"
             label: "Accent color"
-            setting: "White,Silver,Light Gray,Stone,Mid Gray,Steel,Slate,Dark Gray,Gunmetal,Charcoal,Onyx,Ice Blue,Arctic,Sky Blue,Light Blue,Cyan,Royal Blue,Cobalt,Sapphire,Dark Blue,Navy Blue,Seafoam,Turquoise,Teal,Dark Teal,Mint,Lime,Light Green,Jade,Emerald,Sage,Olive,Dark Green,Forest Green,Yellow,Gold,Amber,Dark Gold,Orange,Dark Orange,Coral,Salmon,Copper,Bronze,Rust,Sienna,Light Pink,Hot Pink,Rose,Dark Pink,Magenta,Light Red,Ruby,Crimson,Dark Red,Brick Red,Maroon,Burgundy,Lavender,Violet,Purple,Dark Purple,Indigo,Tan,Light Brown,Dark Brown"
+            setting: "Xbox Green,Ocean Blue,Azure,Cobalt,Purple,Orchid,Magenta,Crimson,Red,Orange,Brown,Steel,Lime,Teal,Sea Teal,Flame,Pink,Graphite,Khaki,Sage,Gray"
         }
         ListElement {
             settingName: "Grid background dimming"

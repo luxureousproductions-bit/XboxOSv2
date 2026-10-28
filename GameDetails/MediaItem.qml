@@ -104,16 +104,6 @@ id: root
     readonly property bool videoShowing: selected && isVideo
                                          && videoPreviewLoader.item !== null
                                          && videoPreviewLoader.item.started === true
-    function mapLayoutImage(layoutName) {
-        if (layoutName === "Cyan") return "Turquoise";
-        if (layoutName === "Crimson") return "Dark Red";
-        if (layoutName === "Lime") return "Light Green";
-        if (layoutName === "Gold") return "Yellow";
-        if (layoutName === "Violet") return "Purple";
-        if (layoutName === "Teal") return "Stone";
-        return layoutName;
-    }
-
     scale: selected ? 1.05 : 1
     Behavior on scale { NumberAnimation { duration: 100 } }
     z: selected ? 10 : 1
@@ -269,15 +259,15 @@ id: root
         layer.enabled: selected && (!isVideo || videoShowing)
         layer.effect: accentTraceEffect
 
-        Image {
+        // The film glyph's fill: the accent itself. It used to be one solid
+        // PNG per accent name (assets/images/colorspng), which can't follow a
+        // custom colour; a Rectangle is the same pixels with nothing to load.
+        Rectangle {
         id: iconFill
 
             anchors.fill: parent
-            // Only video tiles draw the film glyph; others load nothing.
-            source: isVideo ? "../assets/images/colorspng/" + mapLayoutImage(settings.ColorLayout) + ".png" : ""
-            fillMode: Image.PreserveAspectCrop
+            color: theme.accent
             visible: false
-            asynchronous: true
         }
 
         Image {

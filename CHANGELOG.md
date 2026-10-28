@@ -4,9 +4,15 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 64)
+## Unreleased — seriesSX branch (build 65)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Accent colours are now Xbox's own 21 presets**, in Xbox's order, with the exact values the console uses (Xbox Green, Ocean Blue, Azure, Cobalt, Purple, Orchid, Magenta, Crimson, Red, Orange, Brown, Steel, Lime, Teal, Sea Teal, Flame, Pink, Graphite, Khaki, Sage, Gray; Xbox shows them unnamed, so the names are ours). Each comes with the darker shades Xbox pairs it with, for headers and toasts in later pages. The default is Xbox Green (was Lime).
+- **Your old accent carries over** to the closest preset on first start (e.g. Indigo → Purple, Sky Blue → Ocean Blue). Names in both lists keep their name.
+- **Video glyph on Game details media tiles** is filled with the accent directly. Root cause it had to change: it was one solid PNG per colour name (66 files in assets/images/colorspng), which can't follow new or custom colours. Those files are gone.
+
+## build 64
 
 - **"Startup chime" is now "Achievement/Welcome Toast"** (Settings › Previews & sound), the sound's real name. Only the label changed: your on/off choice is kept. The card spans two columns so the longer name fits.
 
