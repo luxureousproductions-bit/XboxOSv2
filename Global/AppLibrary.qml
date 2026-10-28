@@ -23,6 +23,9 @@ id: lib
     property var collections: []
     // Windows / Linux: the drawer holds PC entries from your "PC Apps"
     // collection, sorted into PC tabs by the genre you give each one.
+    // PC game collections (names) the host added to `collections`: their
+    // entries always land in Games.
+    property var pcGameCollections: []
     property bool pcMode: false
     property string collectionMatch: "Android"
 
@@ -77,6 +80,7 @@ id: lib
             var gl = cols[ci].games;
             if (!gl) continue;
             var gamesCol = ((cols[ci].shortName || "").toLowerCase() === "androidgames");
+            var pcGamesCol = pcMode && pcGameCollections.indexOf(cols[ci].name) >= 0;
             for (var i = 0; i < gl.count; i++) {
                 var g = gl.get(i);
                 var t = g.title || "";
@@ -90,7 +94,7 @@ id: lib
                     title: t,
                     initial: t.length > 0 ? t.charAt(0).toUpperCase() : "?",
                     imported: imported,
-                    hint: categoryHint(g, gamesCol, imported)
+                    hint: pcGamesCol ? "game" : categoryHint(g, gamesCol, imported)
                 };
                 var prev = (t !== "") ? at[t] : undefined;
                 if (prev === undefined) {

@@ -4,7 +4,16 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 58)
+## Unreleased — refresh branch (build 59)
+
+### App Drawer on Windows / Linux (part 3)
+- **PC games in the App Drawer (optional, off by default):** Settings › System › "PC games in the App Drawer" adds your Steam, GOG and Lutris imports, Playnite's PC collections, and collections of your own with a PC shortname (steam, gog, epic, heroic, lutris, pc, windows, linux) to the drawer's **Games** tab. The row only exists on Windows / Linux.
+- **No Discover tile in the drawer on a PC.** The Hidden tile stays.
+- **Icon set for the starter files:** every starter entry now has its own icon (generic glyphs on category colours: blue tools, grey power, purple launchers, green emulators, orange apps; no brand logos). The icons ship in each folder's `icons/`, so copy the whole folder.
+- **PC Apps system tile** has its own logo and background art.
+- Android is unchanged.
+
+## build 58
 
 ### App Drawer: mouse (part 2 of the PC drawer)
 - **Hover** picks an app, a nav row (Home, My games & apps) or a tile in the bottom bar; the **wheel** steps through the app list; **click** launches.

@@ -33,6 +33,14 @@ KEYBOARD AND MOUSE
   Keyboard: Enter starts/finishes changing, arrows change, Esc finishes.
 - Y panel (All Games / a system): hover picks a row, click changes it.
 
+APP DRAWER (PC)
+- Copy the WHOLE extras/pc-apps/windows folder (it has an icons folder now).
+  Entries show their icons; the PC Apps system tile has its own logo/art.
+- No Discover tile at the foot of the drawer; Hidden, Achievements, Search,
+  Settings and Power are there.
+- Settings > System > "PC games in the App Drawer" = On: your Steam / GOG /
+  Playnite games appear in the drawer's Games tab (restart not needed).
+
 WHAT TO SEND BACK
 lastrun.log (in the Pegasus folder) and a short video of anything odd.
 Settings > System > "Write diagnostics to log" first adds the theme build,

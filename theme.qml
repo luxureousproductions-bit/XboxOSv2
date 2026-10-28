@@ -481,6 +481,7 @@ id: root
         "Game details video preview audio":          "Yes",
         "Grid Thumbnail":                            "Square",
         "Hide Android System Tile":                  "Yes",
+        "PC games in App Drawer":                    "No",
         "Hide Android Games System Tile":            "No",
         "Hide logo when thumbnail video plays":      "Yes",
         "High Quality Mode":                         "No",
@@ -927,11 +928,30 @@ id: root
     readonly property var drawerCollections: {
         var out = [];
         var n = api.collections.count;          // referenced so this re-runs if collections reload
+        var pcGames = pcGamesInDrawer;
         for (var i = 0; i < n; i++) {
             var c = api.collections.get(i);
-            if (isAndroidSourceCollection(c)) out.push(c);
+            if (isAndroidSourceCollection(c) || (pcGames && isPcGamesCollection(c))) out.push(c);
         }
         return out;
+    }
+
+    // Windows / Linux, optional (Settings › System › "PC games in the App
+    // Drawer", off by default): your PC game collections join the drawer's
+    // Games tab. Pegasus's providers name them "Steam", "GOG" and "Lutris";
+    // Playnite's are named after the platform ("PC (Windows)" and the like).
+    // Shortnames steam / gog / epic / lutris / heroic / pc / windows / linux
+    // count too, for collections of your own.
+    readonly property bool pcGamesInDrawer: {
+        var e = settingsEpoch;
+        return onDesktop && settingsStore.get("PC games in App Drawer", "No") === "Yes";
+    }
+    readonly property var pcGameCollectionNames: ["steam", "gog", "gog.com", "lutris", "heroic", "epic",
+        "epic games", "pc", "pc (windows)", "pc (linux)", "pc (dos)", "windows", "linux"]
+    function isPcGamesCollection(c) {
+        if (!c || !onDesktop || isDrawerCollection(c)) return false;
+        return pcGameCollectionNames.indexOf((c.name || "").toLowerCase()) >= 0
+            || pcGameCollectionNames.indexOf((c.shortName || "").toLowerCase()) >= 0;
     }
 
     // What an entry is, judged by the collections it's actually IN (not its
@@ -2656,6 +2676,14 @@ id: root
         // which stays only as the fallback when none of them exist.
         collections: drawerCollections
         pcMode: onDesktop
+        // Names of the PC game collections in that list: their entries go to
+        // the Games tab whatever their genre says.
+        pcGameCollections: {
+            var out = [], cols = drawerCollections;
+            for (var i = 0; i < cols.length; i++)
+                if (isPcGamesCollection(cols[i])) out.push(cols[i].name);
+            return out;
+        }
     }
 
     // The drawer's SCREEN is created the first time it's opened (it used to be

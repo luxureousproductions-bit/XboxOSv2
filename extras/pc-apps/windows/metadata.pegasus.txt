@@ -20,124 +20,148 @@ shortname: pcapps
 # ── Tools (on every Windows PC) ────────────────────────────────────────────
 game: File Explorer
 file: pcapps:file-explorer
+assets.boxFront: icons/file-explorer.png
 genre: Tool
 launch: cmd /c start "" explorer.exe
 
 game: Task Manager
 file: pcapps:task-manager
+assets.boxFront: icons/task-manager.png
 genre: Tool
 launch: cmd /c start "" taskmgr.exe
 
 game: Windows Settings
 file: pcapps:windows-settings
+assets.boxFront: icons/windows-settings.png
 genre: Tool
 launch: cmd /c start "" ms-settings:
 
 # game: DS4Windows
 # file: pcapps:ds4windows
+# assets.boxFront: icons/ds4windows.png
 # genre: Tool
 # launch: cmd /c start "" "C:\Program Files\DS4Windows\DS4Windows.exe"
 
 # ── Power (the Power tile at the foot of the drawer) ───────────────────────
 game: Sleep
 file: pcapps:sleep
+assets.boxFront: icons/sleep.png
 genre: Power
 launch: rundll32.exe powrprof.dll,SetSuspendState 0,1,0
 
 game: Restart
 file: pcapps:restart
+assets.boxFront: icons/restart.png
 genre: Power
 launch: shutdown /r /t 0
 
 game: Shut down
 file: pcapps:shut-down
+assets.boxFront: icons/shut-down.png
 genre: Power
 launch: shutdown /s /t 0
 
 game: Exit to desktop
 file: pcapps:exit-to-desktop
+assets.boxFront: icons/exit-to-desktop.png
 genre: Power
 launch: taskkill /im pegasus-fe.exe
 
 # ── Launchers ──────────────────────────────────────────────────────────────
 # game: Steam
 # file: pcapps:steam
+# assets.boxFront: icons/steam.png
 # genre: Launcher
 # launch: cmd /c start "" "C:\Program Files (x86)\Steam\steam.exe"
 
 # game: Steam Big Picture
 # file: pcapps:steam-big-picture
+# assets.boxFront: icons/steam-big-picture.png
 # genre: Launcher
 # launch: cmd /c start "" steam://open/bigpicture
 
 # game: Epic Games
 # file: pcapps:epic-games
+# assets.boxFront: icons/epic-games.png
 # genre: Launcher
 # launch: cmd /c start "" "C:\Program Files (x86)\Epic Games\Launcher\Portal\Binaries\Win32\EpicGamesLauncher.exe"
 
 # game: GOG Galaxy
 # file: pcapps:gog-galaxy
+# assets.boxFront: icons/gog-galaxy.png
 # genre: Launcher
 # launch: cmd /c start "" "C:\Program Files (x86)\GOG Galaxy\GalaxyClient.exe"
 
 # game: Playnite
 # file: pcapps:playnite
+# assets.boxFront: icons/playnite.png
 # genre: Launcher
 # launch: cmd /c start "" "%LOCALAPPDATA%\Playnite\Playnite.FullscreenApp.exe"
 
 # game: EA app
 # file: pcapps:ea-app
+# assets.boxFront: icons/ea-app.png
 # genre: Launcher
 # launch: cmd /c start "" "C:\Program Files\Electronic Arts\EA Desktop\EA Desktop\EALauncher.exe"
 
 # game: Battle.net
 # file: pcapps:battle-net
+# assets.boxFront: icons/battle-net.png
 # genre: Launcher
 # launch: cmd /c start "" "C:\Program Files (x86)\Battle.net\Battle.net Launcher.exe"
 
 # ── Emulators ──────────────────────────────────────────────────────────────
 # game: RetroArch
 # file: pcapps:retroarch
+# assets.boxFront: icons/retroarch.png
 # genre: Emulator
 # launch: cmd /c start "" "C:\RetroArch-Win64\retroarch.exe"
 
 # game: Dolphin
 # file: pcapps:dolphin
+# assets.boxFront: icons/dolphin.png
 # genre: Emulator
 # launch: cmd /c start "" "C:\Program Files\Dolphin\Dolphin.exe"
 
 # game: PCSX2
 # file: pcapps:pcsx2
+# assets.boxFront: icons/pcsx2.png
 # genre: Emulator
 # launch: cmd /c start "" "C:\Program Files\PCSX2\pcsx2-qt.exe"
 
 # game: DuckStation
 # file: pcapps:duckstation
+# assets.boxFront: icons/duckstation.png
 # genre: Emulator
 # launch: cmd /c start "" "C:\DuckStation\duckstation-qt-x64-ReleaseLTCG.exe"
 
 # game: PPSSPP
 # file: pcapps:ppsspp
+# assets.boxFront: icons/ppsspp.png
 # genre: Emulator
 # launch: cmd /c start "" "C:\Program Files\PPSSPP\PPSSPPWindows64.exe"
 
 # ── Apps ───────────────────────────────────────────────────────────────────
 # game: Discord
 # file: pcapps:discord
+# assets.boxFront: icons/discord.png
 # genre: App
 # launch: cmd /c start "" "%LOCALAPPDATA%\Discord\Update.exe" --processStart Discord.exe
 
 # game: Spotify
 # file: pcapps:spotify
+# assets.boxFront: icons/spotify.png
 # genre: App
 # launch: cmd /c start "" "%APPDATA%\Spotify\Spotify.exe"
 
 # game: Browser
 # file: pcapps:browser
+# assets.boxFront: icons/browser.png
 # genre: App
 # launch: cmd /c start "" https://www.google.com
 
 # game: OBS Studio
 # file: pcapps:obs-studio
+# assets.boxFront: icons/obs-studio.png
 # genre: App
 # launch: cmd /c start "" /d "C:\Program Files\obs-studio\bin\64bit" obs64.exe

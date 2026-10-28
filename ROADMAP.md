@@ -52,8 +52,8 @@ entries (sleep, restart, shut down). Same look, same tabs, same quick menu
    tile" on a PC.
 
 Builds: (A) source collection + tab mapping + PC icon — done, build 57; (B) starter
-file — done, build 57 (icon set still to come); (C) mouse, right-click and wide art — done, build 58;
-(D) optional PC games; the "App drawer source" setting.
+file — done, build 57, icon set and PC Apps tile art build 59; (C) mouse, right-click and wide art — done, build 58;
+(D) optional PC games — done, build 59 (no Discover tile on PC either); still to do: the "App drawer source" setting.
 
 ## 2. All Games as the Xbox "Full library" (big phase, after the PC drawer)
 

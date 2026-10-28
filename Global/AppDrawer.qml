@@ -96,11 +96,13 @@ id: root
     readonly property var actions: [
         { act: "toggleHidden", icon: "../assets/images/icon_hidden.svg",   scale: 0.84,
           on: root.showHiddenTab },
-        { act: "discover",     icon: "../assets/images/icon_discover.svg", scale: 0.80 },
+    ].concat(pcMode ? [] : [            // no Discover tile on Windows / Linux
+        { act: "discover",     icon: "../assets/images/icon_discover.svg", scale: 0.80 }
+    ]).concat([
         { act: "achievements", icon: "../assets/images/trophy.svg",       scale: 0.92 },
         { act: "search",       icon: "../assets/images/icon_search.svg",   scale: 0.84 },
         { act: "settings",     icon: "../assets/images/settingsicon.svg",  scale: 0.92 }
-    ].concat((pcMode && powerApps.length > 0)
+    ]).concat((pcMode && powerApps.length > 0)
              ? [{ act: "power", icon: "../assets/images/icon_power.svg", scale: 0.84 }] : [])
 
     // The host owns navigation; the drawer just says which tile was pressed.

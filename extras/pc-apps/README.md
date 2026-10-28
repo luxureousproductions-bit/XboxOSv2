@@ -24,5 +24,7 @@ launch: cmd /c start "" "C:\Path\To\MyApp.exe"     (Windows)
 launch: setsid -f myapp                            (Linux)
 ```
 
-Give an entry art with `assets.boxFront: myapp.png` (a file next to the
-metadata file); without art it shows its first letter.
+Each starter entry has an icon in the folder's `icons/` (copy the whole
+folder, not just the text file). Give your own entries art the same way:
+`assets.boxFront: icons/myapp.png`. Without art an entry shows its first
+letter.

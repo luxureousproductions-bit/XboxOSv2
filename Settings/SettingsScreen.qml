@@ -715,6 +715,18 @@ id: root
             setting: "No,Yes"
         }
         ListElement { settingName: "Write diagnostics to log"; setting: ""; tip: true }
+
+        // Windows / Linux only: the row isn't in the Android list at all, so
+        // nothing about it (navigation, the explanation) exists there.
+        Component.onCompleted: {
+            if (!onDesktop) return;
+            for (var i = 0; i < count; i++)
+                if (get(i).settingName === "Hide Android Games System Tile") {
+                    insert(i + 1, { settingName: "PC games in App Drawer", label: "PC games in the App Drawer",
+                                    setting: "No,Yes" });
+                    return;
+                }
+        }
     }
 
     property var advancedPage: {
@@ -1240,6 +1252,16 @@ id: root
                  + "\n"
                  + "Theme reload recommended";
         }
+        if (name === "PC games in App Drawer") {
+            return "Adds your PC game collections to the App Drawer's Games tab, so you can launch installed PC games from there too\n"
+                 + "\n"
+                 + "COVERS\n"
+                 + "\u2022 What Pegasus imports from Steam, GOG and Lutris\n"
+                 + "\u2022 Playnite's collections (named after the platform, like \u201cPC (Windows)\u201d)\n"
+                 + "\u2022 Collections of your own with the shortname steam, gog, epic, heroic, lutris, pc, windows or linux\n"
+                 + "\n"
+                 + "Off by default: they're already in your library. Launchers themselves (the Steam app and so on) come from your PC Apps file, not from this";
+        }
         if (name === "Added App Launch") {
             return "What happens when you pick an app or Android game you added yourself, anywhere outside the App Drawer\n"
                  + "\n"
@@ -1502,6 +1524,7 @@ id: root
             || name === "Omit genre: Emulator from Showcase"
             || name === "Hide Android System Tile"
             || name === "Hide Android Games System Tile"
+            || name === "PC games in App Drawer"
             || name === "Added App Launch"
             || name === "Show WiFi Indicator"
             || name === "Show Battery Percentage"

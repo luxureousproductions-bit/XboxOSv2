@@ -21,59 +21,70 @@ shortname: pcapps
 # ── Tools ──────────────────────────────────────────────────────────────────
 game: Files
 file: pcapps:files
+assets.boxFront: icons/files.png
 genre: Tool
 launch: setsid -f xdg-open .
 
 # game: System Monitor
 # file: pcapps:system-monitor
+# assets.boxFront: icons/system-monitor.png
 # genre: Tool
 # launch: setsid -f gnome-system-monitor
 
 # game: Settings
 # file: pcapps:settings
+# assets.boxFront: icons/settings.png
 # genre: Tool
 # launch: setsid -f gnome-control-center
 
 # ── Power (the Power tile at the foot of the drawer) ───────────────────────
 game: Sleep
 file: pcapps:sleep
+assets.boxFront: icons/sleep.png
 genre: Power
 launch: systemctl suspend
 
 game: Restart
 file: pcapps:restart
+assets.boxFront: icons/restart.png
 genre: Power
 launch: systemctl reboot
 
 game: Shut down
 file: pcapps:shut-down
+assets.boxFront: icons/shut-down.png
 genre: Power
 launch: systemctl poweroff
 
 game: Exit to desktop
 file: pcapps:exit-to-desktop
+assets.boxFront: icons/exit-to-desktop.png
 genre: Power
 launch: pkill -x pegasus-fe
 
 # ── Launchers ──────────────────────────────────────────────────────────────
 # game: Steam
 # file: pcapps:steam
+# assets.boxFront: icons/steam.png
 # genre: Launcher
 # launch: setsid -f steam
 
 # game: Steam Big Picture
 # file: pcapps:steam-big-picture
+# assets.boxFront: icons/steam-big-picture.png
 # genre: Launcher
 # launch: setsid -f steam steam://open/bigpicture
 
 # game: Lutris
 # file: pcapps:lutris
+# assets.boxFront: icons/lutris.png
 # genre: Launcher
 # launch: setsid -f lutris
 # (Flathub: setsid -f flatpak run net.lutris.Lutris)
 
 # game: Heroic
 # file: pcapps:heroic
+# assets.boxFront: icons/heroic.png
 # genre: Launcher
 # launch: setsid -f heroic
 # (Flathub: setsid -f flatpak run com.heroicgameslauncher.hgl)
@@ -81,30 +92,35 @@ launch: pkill -x pegasus-fe
 # ── Emulators ──────────────────────────────────────────────────────────────
 # game: RetroArch
 # file: pcapps:retroarch
+# assets.boxFront: icons/retroarch.png
 # genre: Emulator
 # launch: setsid -f retroarch
 # (Flathub: setsid -f flatpak run org.libretro.RetroArch)
 
 # game: Dolphin
 # file: pcapps:dolphin
+# assets.boxFront: icons/dolphin.png
 # genre: Emulator
 # launch: setsid -f dolphin-emu
 # (Flathub: setsid -f flatpak run org.DolphinEmu.dolphin-emu)
 
 # game: PCSX2
 # file: pcapps:pcsx2
+# assets.boxFront: icons/pcsx2.png
 # genre: Emulator
 # launch: setsid -f pcsx2-qt
 # (Flathub: setsid -f flatpak run net.pcsx2.PCSX2)
 
 # game: DuckStation
 # file: pcapps:duckstation
+# assets.boxFront: icons/duckstation.png
 # genre: Emulator
 # launch: setsid -f duckstation-qt
 # (Flathub: setsid -f flatpak run org.duckstation.DuckStation)
 
 # game: PPSSPP
 # file: pcapps:ppsspp
+# assets.boxFront: icons/ppsspp.png
 # genre: Emulator
 # launch: setsid -f PPSSPPSDL
 # (Flathub: setsid -f flatpak run org.ppsspp.PPSSPP)
@@ -112,11 +128,13 @@ launch: pkill -x pegasus-fe
 # ── Apps ───────────────────────────────────────────────────────────────────
 # game: Discord
 # file: pcapps:discord
+# assets.boxFront: icons/discord.png
 # genre: App
 # launch: setsid -f discord
 # (Flathub: setsid -f flatpak run com.discordapp.Discord)
 
 # game: Browser
 # file: pcapps:browser
+# assets.boxFront: icons/browser.png
 # genre: App
 # launch: setsid -f xdg-open https://www.google.com
