@@ -1,24 +1,24 @@
 // XboxOSv2 – GameAchievementsView.qml
 // One game's achievements, after the Xbox Series game Progress page.
 //
-//   Hero: your fanart for this game (when you came from its details page),
-//         otherwise RA's in-game screenshot, dimmed and fading into the band
-//         colour of your accent. Game art + title top left; the "Path to
-//         Mythic" card (or the Mythic star once it's 100%); Points,
-//         Achievements and Overall progress on the right.
-//   Body: rail (Achievements; Stats joins it next), Sort and Filter, and
-//         every achievement as a card: wide art (the badge on a soft blow-up
-//         of its own colours), name, description, how many players have it,
-//         when you unlocked it, points with a diamond when it's rare (<10%).
+//   Hero: the game's fanart at 30% over near-black; a 100% (Mythic) game
+//         sits on your accent band and fades into it. Box art top left, then
+//         the title, the "Path to Mythic" card (or the Mythic Achievement
+//         star), Points / Achievements / Overall progress and Launch game.
+//   Body: rail (Achievements, Stats), Sort and Filter, and every achievement
+//         as a card: the badge at full card height, name, description, how
+//         many players have it, when you unlocked it, points with a diamond
+//         when it's rare (<10%).
 //
 // Keys: Up/Down move; Up from the first card reaches Sort / Filter (A
-// changes them). Shortcuts kept from before: Y sort, LB/RB filter, X refresh,
-// A on a card launches the game when it's in your library, B back (one press
-// to Game details when you came from there, else back to the RA page).
+// changes them), Up again Launch game. Shortcuts kept from before: Y sort,
+// LB/RB filter, X refresh, B back (one press to Game details when you came
+// from there, else back to the RA page).
 
 import QtQuick 2.15
 import QtGraphicalEffects 1.15
 import "../Global"
+import "../GameDetails" as GD
 import "raEmblems.js" as Emb
 
 FocusScope {
@@ -49,11 +49,12 @@ id: root
     readonly property bool mythic:   det.Award === "mastered" || det.Award === "completed" || (total > 0 && unlocked >= total)
     function fmtDate(ts) { return ts > 0 ? Qt.formatDate(new Date(ts), "MMM d, yyyy") : ""; }
 
-    // Your fanart for this game when it's the one Game details was showing.
-    readonly property string localArt: {
-        if (!currentGame || !det.Title) return "";
-        if (cheevosData.normalizeTitle(currentGame.title) !== cheevosData.normalizeTitle(det.Title)) return "";
-        return currentGame.assets.background || currentGame.assets.screenshot || "";
+    // Your fanart and box art for this game, when it's in your library.
+    readonly property string localArt: localGame ? (localGame.assets.background || localGame.assets.screenshot || "") : ""
+    readonly property string boxArt: {
+        if (localGame && localGame.assets.boxFront) return localGame.assets.boxFront;
+        if (det.ImageBoxArt) return "https://media.retroachievements.org" + det.ImageBoxArt;
+        return det.ImageIcon ? "https://media.retroachievements.org" + det.ImageIcon : "";
     }
 
     // ── Sort / Filter ────────────────────────────────────────────────────
@@ -72,9 +73,11 @@ id: root
         currentIndex = 0;
     }
 
-    // Focus zones: 1 Sort/Filter, 2 the list. railFocus: on the rail, where
-    // Up/Down switch between Achievements and Stats straight away.
+    // Focus zones: 0 Launch game, 1 Sort/Filter, 2 the list. railFocus: on
+    // the rail, where Up/Down switch between Achievements and Stats.
     property int zone: 2
+    onZoneChanged: updateHelp()
+    onRailFocusChanged: updateHelp()
     property int toolIndex: 0
     property bool railFocus: false
     property int railIndex: 0                    // 0 Achievements, 1 Stats
@@ -82,21 +85,27 @@ id: root
     readonly property bool onStats: railIndex === 1
     readonly property bool accentIsLight: (0.299 * cAccent.r + 0.587 * cAccent.g + 0.114 * cAccent.b) > 0.62
 
-    // Stats: your copy of the game in Pegasus (time played and so on),
-    // looked up once per game the first time Stats opens.
+    // Your copy of the game in Pegasus: box art, fanart, the Launch button
+    // and the Pegasus stats. Looked up once per game, when its details load
+    // (currentGame when it's the same title, else the library by title).
     property var localGame: null
-    property int localFor: 0
-    onOnStatsChanged: if (onStats) prepareStats()
-    function prepareStats() {
-        var id = cheevosData.currentGameID;
-        cheevosData.loadGameRank(id);
-        if (localFor === id) return;
-        localFor = id;
+    property string localFor: ""
+    onDetChanged: resolveLocal()
+    Component.onCompleted: { resolveLocal(); updateHelp(); }
+    function resolveLocal() {
         var t = det.Title || "";
-        if (currentGame && t !== "" && cheevosData.normalizeTitle(currentGame.title) === cheevosData.normalizeTitle(t))
+        var key = t + "|" + (det.ConsoleName || "");
+        if (key === localFor) return;
+        localFor = key;
+        if (t === "") { localGame = null; return; }
+        if (currentGame && cheevosData.normalizeTitle(currentGame.title) === cheevosData.normalizeTitle(t))
             localGame = currentGame;
         else
             localGame = cheevosData.findLocalGame(t, det.ConsoleName || "");
+    }
+    onOnStatsChanged: {
+        if (onStats) { cheevosData.loadGameRank(cheevosData.currentGameID); if (!railFocus) zone = 0; }
+        updateHelp();
     }
     function playTimeText(sec) {
         if (!sec || sec <= 0) return "0 m";
@@ -135,7 +144,9 @@ id: root
         height: vpx(270)
         clip: true
 
-        Rectangle { anchors.fill: parent; color: root.band }
+        // Near-black, with the fanart at 30% over it. A 100% game (Mythic)
+        // sits on the accent band instead and fades into it at the bottom.
+        Rectangle { anchors.fill: parent; color: root.mythic ? root.band : "#141414" }
         Image {
             anchors.fill: parent
             source: root.localArt !== "" ? root.localArt
@@ -144,36 +155,43 @@ id: root
             asynchronous: true
             smooth: true
             sourceSize: Qt.size(hrpx(640), hrpx(360))
-            opacity: status === Image.Ready ? 1 : 0
+            opacity: status === Image.Ready ? 0.3 : 0
             Behavior on opacity { NumberAnimation { duration: 200 } }
         }
-        // Dimmed at the top, fading into the band colour at the bottom.
         Rectangle {
             anchors.fill: parent
+            visible: root.mythic
             gradient: Gradient {
-                GradientStop { position: 0.0;  color: Qt.rgba(0.04, 0.04, 0.04, 0.74) }
-                GradientStop { position: 0.38; color: Qt.rgba(0.04, 0.04, 0.04, 0.55) }
-                GradientStop { position: 0.80; color: Qt.rgba(root.band.r, root.band.g, root.band.b, 0.9) }
+                GradientStop { position: 0.0;  color: Qt.rgba(root.band.r, root.band.g, root.band.b, 0.0) }
+                GradientStop { position: 0.55; color: Qt.rgba(root.band.r, root.band.g, root.band.b, 0.25) }
                 GradientStop { position: 1.0;  color: root.band }
             }
         }
 
-        // Game art + title
-        Rectangle {
+        // Box art, top left: yours when the game is in your library, else
+        // RA's; as big as the hero allows, in its own shape.
+        Item {
         id: gameArt
             x: vpx(67); y: vpx(24)
-            width: vpx(56); height: width; radius: vpx(4)
-            color: Qt.rgba(0, 0, 0, 0.35)
+            width: vpx(150); height: vpx(222)
             Image {
+            id: boxImg
                 anchors.fill: parent
-                source: det.ImageIcon ? "https://media.retroachievements.org" + det.ImageIcon : ""
-                fillMode: Image.PreserveAspectCrop
-                asynchronous: true; smooth: true
-                sourceSize: Qt.size(hrpx(64), hrpx(64))
+                source: root.boxArt
+                fillMode: Image.PreserveAspectFit
+                horizontalAlignment: Image.AlignLeft
+                verticalAlignment: Image.AlignTop
+                asynchronous: true; smooth: true; mipmap: true
+                sourceSize: Qt.size(hrpx(300), hrpx(444))
+            }
+            Rectangle {
+                visible: boxImg.status !== Image.Ready
+                width: parent.width; height: parent.height
+                radius: vpx(4); color: Qt.rgba(1, 1, 1, 0.08)
             }
         }
         Column {
-            anchors { left: gameArt.right; leftMargin: vpx(13); right: parent.right; rightMargin: vpx(200); verticalCenter: gameArt.verticalCenter }
+            anchors { left: gameArt.right; leftMargin: vpx(24); right: parent.right; rightMargin: vpx(200); top: gameArt.top; topMargin: vpx(4) }
             Text {
                 width: parent.width; elide: Text.ElideRight
                 text: det.Title || (cheevosData.statusText || "Loading…")
@@ -189,8 +207,8 @@ id: root
         // Path to Mythic / Mythic card
         Item {
         id: mythicCard
-            x: vpx(67); y: vpx(112)
-            width: vpx(467); height: vpx(113)
+            x: gameArt.x + gameArt.width + vpx(24); y: vpx(112)
+            width: vpx(400); height: vpx(113)
             Rectangle { anchors.fill: parent; anchors.margins: -vpx(8); radius: vpx(12); color: root.light(root.cAccent, 0.35); opacity: 0.12 }
             Rectangle { anchors.fill: parent; anchors.margins: -vpx(4); radius: vpx(9);  color: root.light(root.cAccent, 0.35); opacity: 0.25 }
             Rectangle {
@@ -211,7 +229,7 @@ id: root
                 anchors { left: mythicIcon.right; leftMargin: vpx(10); right: parent.right; rightMargin: vpx(20); verticalCenter: parent.verticalCenter }
                 spacing: vpx(3)
                 Text {
-                    text: root.mythic ? "Mythic" : "Path to Mythic"
+                    text: root.mythic ? "Mythic Achievement" : "Path to Mythic"
                     color: "white"; font.family: titleFont.name; font.pixelSize: fpx(16)
                 }
                 Text {
@@ -233,8 +251,9 @@ id: root
 
         // Points / Achievements / Overall progress
         Row {
-            x: vpx(600); y: vpx(137)
-            spacing: vpx(60)
+        id: heroStats
+            x: mythicCard.x + mythicCard.width + vpx(44); y: vpx(112)
+            spacing: vpx(44)
             Column {
                 Text { text: "Points"; color: "white"; font.family: titleFont.name; font.pixelSize: fpx(15) }
                 Row {
@@ -258,6 +277,20 @@ id: root
                 Text { text: "Overall progress"; color: "white"; font.family: titleFont.name; font.pixelSize: fpx(15) }
                 Text { text: root.pct + "%"; color: "white"; font.family: bodyFont.name; font.pixelSize: fpx(26) }
             }
+        }
+
+        // Launch game: the Game details button. Up from Sort / Filter (or
+        // Right from the rail on Stats) reaches it. Greyed out, and says so,
+        // when the game isn't in your library.
+        GD.Button {
+        id: launchBtn
+            x: heroStats.x; y: mythicCard.y + mythicCard.height - height
+            height: vpx(50)
+            text: root.localGame ? "Launch game" : "Not in your library"
+            icon: "../assets/images/icon_play.svg"
+            selected: root.zone === 0 && !root.railFocus && root.activeFocus
+            opacity: root.localGame ? 1 : 0.75
+            onActivated: { root.zone = 0; root.railFocus = false; root.forceActiveFocus(); root.launchOwnGame(); }
         }
     }
 
@@ -385,29 +418,16 @@ id: root
             Rectangle { anchors.fill: parent; radius: vpx(4); color: root.cardColor }
             RAFocus { on: card.selected }
 
-            // Wide art: the badge on a soft blow-up of itself. The blow-up is
-            // the same image rendered into a 12x7 texture and stretched: one
-            // download, one decode, no blur pass.
+            // The badge, clear and as big as the card: RA badges are square,
+            // so it fills the card's height (a wide picture would need art RA
+            // doesn't have). Locked ones are RA's grey version, with a lock.
             Item {
             id: wideArt
-                width: vpx(222); height: parent.height
-                clip: true
+                width: parent.height; height: parent.height
                 Image {
                     anchors.fill: parent
                     source: card.badge
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                    sourceSize: Qt.size(hrpx(64), hrpx(64))
-                    mipmap: true            // the shrink averages, instead of sampling a few pixels (blocks)
-                    layer.enabled: true
-                    layer.smooth: true
-                    layer.textureSize: Qt.size(12, 7)
-                }
-                Rectangle { anchors.fill: parent; color: "black"; opacity: card.earned ? 0.35 : 0.55 }
-                Image {
-                    anchors.centerIn: parent
-                    width: vpx(84); height: width
-                    source: card.badge
+                    fillMode: Image.PreserveAspectFit
                     asynchronous: true; smooth: true
                     sourceSize: Qt.size(hrpx(64), hrpx(64))
                 }
@@ -457,10 +477,7 @@ id: root
                 color: card.earned ? root.light(root.cAccent, whiteBackground ? 0 : 0.15) : (whiteBackground ? "#d8d8d8" : "#3e3e3e")
             }
             TapHandler {
-                onTapped: {
-                    if (card.selected) root.launchOwnGame();
-                    else { root.zone = 2; root.currentIndex = index; root.forceActiveFocus(); }
-                }
+                onTapped: { root.zone = 2; root.railFocus = false; root.currentIndex = index; root.forceActiveFocus(); }
             }
         }
     }
@@ -543,13 +560,22 @@ id: root
             }
         }
     }
+    // A shows only where it does something: Launch on the button, Change on
+    // Sort / Filter, Select on the rail.
     ListModel {
     id: localHelpModel
-        ListElement { name: "Launch";  button: "accept"  }
         ListElement { name: "Refresh"; button: "details" }
         ListElement { name: "Sort";    button: "filters" }
         ListElement { name: "Back";    button: "cancel"  }
     }
+    function updateHelp() {
+        var a = railFocus ? (onStats ? "" : "Select") : zone === 0 ? (localGame ? "Launch" : "") : zone === 1 ? "Change" : "";
+        var has = localHelpModel.count > 0 && localHelpModel.get(0).button === "accept";
+        if (a === "" && has) localHelpModel.remove(0);
+        else if (a !== "" && !has) localHelpModel.insert(0, { name: a, button: "accept" });
+        else if (a !== "" && has) localHelpModel.setProperty(0, "name", a);
+    }
+    onLocalGameChanged: updateHelp()
 
     // ── Keys ─────────────────────────────────────────────────────────────
     Keys.onUpPressed: {
@@ -560,16 +586,19 @@ id: root
             if (currentIndex > 0) { currentIndex--; playNav(); }
             else { zone = 1; playNav(); }
         }
+        else if (zone === 1) { zone = 0; playNav(); }
     }
     Keys.onDownPressed: {
         event.accepted = true;
         if (railFocus) { if (railIndex < railNames.length - 1) { railIndex++; playNav(); } return; }
         if (onStats) return;
-        if (zone === 1) { if (displayList.length > 0) { zone = 2; playNav(); } }
+        if (zone === 0) { zone = 1; playNav(); }
+        else if (zone === 1) { if (displayList.length > 0) { zone = 2; playNav(); } }
         else if (currentIndex < displayList.length - 1) { currentIndex++; playNav(); }
     }
-    // Left reaches the rail (from the list, or the first of Sort/Filter);
-    // Right leaves it again (Stats has nothing to focus, so it stays).
+    // Left reaches the rail (from the list, the button, or the first of
+    // Sort/Filter); Right leaves it again: to the list, or on Stats (nothing
+    // else to focus there) to the Launch button.
     Keys.onLeftPressed: {
         event.accepted = true;
         if (railFocus) return;
@@ -578,7 +607,7 @@ id: root
     }
     Keys.onRightPressed: {
         event.accepted = true;
-        if (railFocus) { if (!onStats) { railFocus = false; playNav(); } return; }
+        if (railFocus) { railFocus = false; if (onStats) zone = 0; playNav(); return; }
         if (zone === 1 && toolIndex < 1) { toolIndex++; playNav(); }
     }
 
@@ -605,34 +634,28 @@ id: root
         if (api.keys.isDetails(event) && !event.isAutoRepeat)  { event.accepted = true; refresh(); }
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (railFocus) { if (!onStats) { railFocus = false; playNav(); } }
+            if (railFocus) { railFocus = false; if (onStats) zone = 0; playNav(); }
+            else if (zone === 0) launchOwnGame();
             else if (zone === 1) { playToggle(); if (toolIndex === 0) cycleSort(1); else cycleFilter(1); }
-            else launchOwnGame();
         }
     }
 
-    // A — launch the game these achievements belong to, when a matching game
-    // exists locally: currentGame if it's the same title (RA was entered from
-    // that game or via search), otherwise the library by normalized title.
+    // Launch game: your copy in Pegasus (resolveLocal), when there is one.
     function launchOwnGame() {
-        var raTitle = cheevosData.currentGameDetails.Title || "";
-        var target  = null;
-        if (currentGame && raTitle !== ""
-            && cheevosData.normalizeTitle(currentGame.title) === cheevosData.normalizeTitle(raTitle))
-            target = currentGame;
-        if (!target)
-            target = cheevosData.findLocalGame(raTitle, cheevosData.currentGameDetails.ConsoleName || "");
-        if (target) {
-            playAccept();
-            launchGameFromRA(target);
-        }
+        if (!localGame) return;
+        playAccept();
+        launchGameFromRA(localGame);
     }
     // Clickable prompts: each does what its button does.
     function helpAction(button) {
         if (button === "cancel") goBack();
         else if (button === "filters") { playToggle(); cycleSort(1); }
         else if (button === "details") refresh();
-        else if (button === "accept") launchOwnGame();
+        else if (button === "accept") {
+            if (railFocus) { railFocus = false; if (onStats) zone = 0; }
+            else if (zone === 0) launchOwnGame();
+            else if (zone === 1) { playToggle(); if (toolIndex === 0) cycleSort(1); else cycleFilter(1); }
+        }
         else return false;
         return true;
     }

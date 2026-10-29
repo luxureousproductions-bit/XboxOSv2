@@ -521,6 +521,7 @@ id: root
                     "PossibleScore":            parseInt(resp.PossibleScore)            || 0,
                     "ScoreAchieved":            parseInt(resp.ScoreAchieved)            || 0,
                     "ImageIngame":              resp.ImageIngame || resp.ImageTitle || "",
+                    "ImageBoxArt":              resp.ImageBoxArt || "",
                     "Players":                  parseInt(resp.NumDistinctPlayersCasual || resp.NumDistinctPlayers) || 0,
                     "PlayersHardcore":          parseInt(resp.NumDistinctPlayersHardcore) || 0,
                     "Award":                    resp.HighestAwardKind || "",
@@ -644,6 +645,22 @@ id: root
     // the same normalized form as the RA lookup, and prefers a game whose
     // collection maps to the expected RA console so same-named titles on
     // different systems don't get crossed.
+    // Normalized title -> library indexes, built once on first use: one pass
+    // over the library instead of one per lookup (the Launch button and the
+    // Awards photos look up many games).
+    property var _localIndex: null
+    function localIndex() {
+        if (_localIndex && _localIndex.count === api.allGames.count) return _localIndex.map;
+        var map = {};
+        for (var i = 0; i < api.allGames.count; i++) {
+            var k = normalizeTitle(api.allGames.get(i).title);
+            if (k === "") continue;
+            (map[k] = map[k] || []).push(i);
+        }
+        _localIndex = { count: api.allGames.count, map: map };
+        return map;
+    }
+
     function findLocalGame(raTitle, consoleName) {
         if (!raTitle) return null;
         var want = normalizeTitle(raTitle);
@@ -651,10 +668,10 @@ id: root
 
         var wantConsole = (consoleName || "").toLowerCase();
         var loose = null;
+        var hits = localIndex()[want] || [];
 
-        for (var i = 0; i < api.allGames.count; i++) {
-            var g = api.allGames.get(i);
-            if (normalizeTitle(g.title) !== want) continue;
+        for (var h = 0; h < hits.length; h++) {
+            var g = api.allGames.get(hits[h]);
             if (!loose) loose = g;                     // first title match, any system
             if (wantConsole === "") return g;
 

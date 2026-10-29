@@ -40,6 +40,25 @@ for i in range(620):
         "MostRecentAwardedDate": f"2026-10-{day:02d}T12:00:00+00:00",
         "HighestAwardKind": kind, "HighestAwardDate": (f"2026-09-{day:02d}T12:00:00+00:00" if kind else None)})
 
+# FAKE_RA_LIB=<harness testenv/lib>: the newest two games take titles from
+# the fake library (one mastered, one in progress), so "in your library"
+# paths (Launch game, box art, fanart, Pegasus stats) can be checked.
+import os
+_lib = os.environ.get("FAKE_RA_LIB")
+if _lib:
+    _t = []
+    for root, _, files in sorted(os.walk(_lib)):
+        if "metadata.pegasus.txt" in files:
+            for line in open(os.path.join(root, "metadata.pegasus.txt"), encoding="utf-8"):
+                if line.startswith("game: "): _t.append(line[6:].strip())
+                if len(_t) >= 2: break
+        if len(_t) >= 2: break
+    for g, t, done in zip((GAMES[0], GAMES[28]), _t, (True, False)):
+        g["Title"] = t
+        if done: g.update(NumAwarded=g["MaxPossible"], NumAwardedHardcore=g["MaxPossible"], HighestAwardKind="mastered",
+                          HighestAwardDate="2026-10-27T12:00:00+00:00")
+        else: g.update(NumAwarded=g["MaxPossible"] // 2, NumAwardedHardcore=0, HighestAwardKind=None, HighestAwardDate=None)
+
 def awards():
     vis = []
     for g in GAMES:
@@ -59,12 +78,12 @@ def awards():
 def media_png(path):
     # Stand-in for media.retroachievements.org: a made-up picture per path.
     # /Badge/*  64x64 badge (grey when it ends in _lock); anything else a
-    # 320x240 "screenshot".
+    # 320x240 "screenshot" (230x320 "box art" for *_box).
     import io, zlib
     from PIL import Image, ImageDraw
     r = random.Random(zlib.crc32(path.replace("_lock", "").encode()))
     badge = "/Badge/" in path
-    w, h = (64, 64) if badge else (320, 240)
+    w, h = (64, 64) if badge else (230, 320) if "_box" in path else (320, 240)
     a = (r.randint(40, 230), r.randint(40, 230), r.randint(40, 230))
     im = Image.new("RGB", (w, h), tuple(v // 3 for v in a)); d = ImageDraw.Draw(im)
     for _ in range(4 if badge else 9):
@@ -115,7 +134,8 @@ class H(BaseHTTPRequestHandler):
                                  "DisplayOrder": i, "NumAwarded": rr.randint(20, 5000), "NumAwardedHardcore": rr.randint(5, 2000),
                                  "Type": rr.choice(["", "", "progression", "win_condition", "missable"]),
                                  **({"DateEarned": when} if earned else {}), **({"DateEarnedHardcore": when} if hc else {})}
-            body = {"Title": g["Title"], "ImageIcon": g["ImageIcon"], "ImageIngame": "/Images/000002.png", "ConsoleName": g["ConsoleName"],
+            body = {"Title": g["Title"], "ImageIcon": g["ImageIcon"], "ImageIngame": "/Images/000002.png",
+                    "ImageBoxArt": f"/Images/{g['GameID']}_box.png", "ConsoleName": g["ConsoleName"],
                     "NumAchievements": g["MaxPossible"], "NumAwardedToUser": g["NumAwarded"],
                     "NumAwardedToUserHardcore": g["NumAwardedHardcore"], "NumDistinctPlayersCasual": 5000, "NumDistinctPlayersHardcore": 1800,
                     "HighestAwardKind": g["HighestAwardKind"], "HighestAwardDate": g["HighestAwardDate"], "Achievements": ach}

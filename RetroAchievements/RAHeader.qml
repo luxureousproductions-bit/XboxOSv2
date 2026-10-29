@@ -199,7 +199,7 @@ id: header
     Column {
         anchors { left: statMastery.right; leftMargin: vpx(0); verticalCenter: statMastery.verticalCenter }
         spacing: vpx(2)
-        Text { text: "Mythic Games"; color: "#f5f5f5"; font.family: titleFont.name; font.pixelSize: fpx(17) }
+        Text { text: "Mythic Achievements"; color: "#f5f5f5"; font.family: titleFont.name; font.pixelSize: fpx(17) }
         Text {
             text: cheevosData.awardsLoaded ? cheevosData.raFmt(cheevosData.masteredCount + cheevosData.completedCount) : "—"
             color: "white"; font.family: bodyFont.name; font.pixelSize: fpx(28)

@@ -4,9 +4,17 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 79)
+## Unreleased — seriesSX branch (build 80)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Game achievements page, revised.** Top left is now the game's **box art** (yours when the game is in your library, else RA's), as big as the top allows in its own shape. The fanart behind it is at **30%** over near-black, and only a **100% (Mythic) game** gets the accent background and fade; that card now reads **Mythic Achievement**. A **Launch game** button sits under the stats (Up from Sort / Filter, or Right from the rail on Stats); it says "Not in your library" and is greyed out when there's no copy to launch. A on an achievement no longer launches the game, and the A prompt only shows where A does something (Launch, Change, Select).
+- **Achievement art** is the badge itself, clear, at the card's full height; the blurred blow-up behind it is gone.
+- RA header: **Mythic Achievements** instead of Mythic Games.
+- Looking up your copy of an RA game uses a title index built once (instead of one pass over the library per lookup); box art, fanart, Launch and the Pegasus stats all share that lookup.
+- Test harness: the fake RA server serves box art, and `FAKE_RA_LIB=<testenv/lib>` gives two of its games titles from the fake library (one mastered) so in-library paths can be checked.
+
+## build 79
 
 - **Stats for each game** (left from the achievement list, then down to Stats on the rail): tiles with **time played, times launched and last played** (from Pegasus, when the game is in your library), points (hardcore and softcore), RetroPoints, unlocked in hardcore, your rarest unlock, first and latest unlock, your award and when, how many people play it, and **your rank** among them (one RA request, only when Stats opens). The rail works like the Settings page list: an accent plate while you're on it, Up/Down switch views straight away, Right goes back to the list.
 
