@@ -4,9 +4,14 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 71)
+## Unreleased — seriesSX branch (build 72)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **RetroAchievements redesign, step 3 of 5: the Gaming tab** (the RA page now opens on it; tabs are Recent · Gaming · Search). Every game you've played as a card: RA icon, name, system, achievements unlocked, a big percentage and a progress bar, with MASTERED / COMPLETED / BEATEN labels. **Mastered games wear a Mythic-style frame** in your accent (light rim, soft glow, star seal) and their card warms toward the accent, as on the Xbox. Above the list: quick buttons (**Closest to mastery**, **Recently unlocked**, **Mastered**), **Sort** (Recent, Completion, Title, Unlocked) and **Filter** (All, In progress, Mastered, Beaten, Completed); A changes them, Up/Down move between rows. Cards show achievements rather than points: RA's completion list has no per-game points without one request per game. Left rail: Achievements; Followed users comes in its own step.
+- **RA pages on Light:** the dimming layer is kept to 40% there too (as the Library got in build 69), so the page stays light.
+
+## build 71
 
 - **RetroAchievements redesign, step 2 of 5: the header**, after the Xbox Series Gaming tab. A band in your accent's dark shades (the ones Xbox pairs with each colour) with your avatar, name and points top left, the tabs in the middle and three stats: **Total Points** with a bar to the next 5,000-point milestone and your rank, **Total Achievements** out of everything in the games you've played, and **Mastered Games** (RA's 100% in hardcore, Xbox's "Mythic") with your beaten and completed counts. LB/RB change tabs; for now they're Recent and Search (Search opens the RA search, like X). Gaming and Awards arrive in the next steps. Y (Refresh) reloads the new totals too.
 

@@ -212,7 +212,7 @@ id: root
     // Content surface: everything below the band sits on the dimmed layer.
     Rectangle {
         anchors { top: entryHeader.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
-        color: "#000000"; opacity: gridDimOpacity; visible: opacity > 0   // no z: order places it above the page fill, below the lists
+        color: "#000000"; opacity: gridDimOpacity * surfaceShade; visible: opacity > 0   // no z: order places it above the page fill, below the lists
     }
 
     // ── Body ─────────────────────────────────────────────────────────────

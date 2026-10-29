@@ -77,8 +77,9 @@ id: root
     // ── Header (Xbox "Gaming" tab style) ─────────────────────────────────
     // Tabs grow as the redesign lands: Gaming and Awards come next. Search
     // isn't a page of its own: choosing it opens the library search (X).
-    readonly property var raTabs: ["Recent", "Search"]
-    property int raTab: 0
+    readonly property var raTabs: ["Recent", "Gaming", "Search"]
+    property int raTab: 1                       // opens on Gaming, as on the Xbox
+    readonly property string tabName: raTabs[raTab]
     function selectTab(i) {
         if (i < 0 || i >= raTabs.length) return;
         if (raTabs[i] === "Search") { openLibrarySearch("ra"); return; }
@@ -117,7 +118,7 @@ id: root
     // Content surface: everything below the band sits on the dimmed layer.
     Rectangle {
         anchors { top: achievementsHeader.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
-        color: "#000000"; opacity: gridDimOpacity; visible: opacity > 0   // no z: order places it above the page fill, below the lists
+        color: "#000000"; opacity: gridDimOpacity * surfaceShade; visible: opacity > 0   // no z: order places it above the page fill, below the lists
     }
 
     // ── No-credentials placeholder ───────────────────────────────────────
@@ -147,7 +148,7 @@ id: root
     ListView {
     id: gameList
 
-        visible: cheevosData.raUserName !== ""
+        visible: cheevosData.raUserName !== "" && tabName === "Recent"
         focus:   visible
 
         anchors {
@@ -386,8 +387,16 @@ id: root
         anchors.fill: gameList
         view: gameList
         columns: 1
-        active: !searchOpen
+        active: !searchOpen && gameList.visible
         onStepped: function(quiet) { if (!quiet) playNav(); }
+    }
+
+    // ── Gaming tab: every game you've played (RAGamingTab.qml) ───────────
+    RAGamingTab {
+    id: gamingTab
+        anchors { top: achievementsHeader.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
+        visible: cheevosData.raUserName !== "" && tabName === "Gaming"
+        focus: visible
     }
 
     // ── Page counter ─────────────────────────────────────────────────────
@@ -395,7 +404,7 @@ id: root
     // bottom row crowded once the shared Apps prompt appeared bottom-left on
     // every screen.
     Text {
-        visible: cheevosData.raUserName !== "" && cheevosData.raRecentGames.count > 0
+        visible: gameList.visible && cheevosData.raRecentGames.count > 0
         anchors {
             right:  parent.right; rightMargin: globalMargin
             bottom: gameList.top; bottomMargin: vpx(4)
