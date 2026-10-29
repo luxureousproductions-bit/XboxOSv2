@@ -34,6 +34,12 @@ patch("Global/FrameCounter.qml", [
 patch("RetroAchievements/CheevosData.qml", [
     ('readonly property string apiBase: "https://retroachievements.org/API/API_"',
      'readonly property string apiBase: "http://127.0.0.1:8765/API/API_" // TEST HARNESS')], optional=True)
+# RA images: the fake server's /media/ instead of media.retroachievements.org.
+import glob, os
+for f in glob.glob(f"{H}/RetroAchievements/*.qml") + [f"{H}/theme.qml"]:
+    t = open(f).read()
+    if "https://media.retroachievements.org" in t:
+        open(f, "w").write(t.replace("https://media.retroachievements.org", "http://127.0.0.1:8765/media"))
 patch("Global/DynamicGridItem.qml", [
     ('import QtQuick 2.15', 'import QtQuick 2.15\nimport "probe.js" as Probe'),
     ('    Component.onCompleted: takeGame()', '    Component.onCompleted: { takeGame(); Probe.created++; }\n    Component.onDestruction: Probe.destroyed++')])

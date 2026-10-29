@@ -2,7 +2,9 @@
 """Fake retroachievements.org web API for the harness (cloud sessions can't
 reach the real one). Serves the endpoints the theme calls with made-up but
 well-formed data: 620 played games (two pages of GetUserCompletionProgress),
-awards with every kind (mastered, completed, beaten hardcore/softcore).
+awards with every kind (mastered, completed, beaten hardcore/softcore), each
+game's achievements, and made-up badges/screenshots under /media/ (sync.sh
+points media.retroachievements.org there).
 
     python3 tools/harness/fake_ra.py [port]      # default 8765
 
@@ -54,10 +56,32 @@ def awards():
             "BeatenSoftcoreAwardsCount": c("beaten-softcore"), "EventAwardsCount": 2, "SiteAwardsCount": 1,
             "VisibleUserAwards": vis}
 
+def media_png(path):
+    # Stand-in for media.retroachievements.org: a made-up picture per path.
+    # /Badge/*  64x64 badge (grey when it ends in _lock); anything else a
+    # 320x240 "screenshot".
+    import io, zlib
+    from PIL import Image, ImageDraw
+    r = random.Random(zlib.crc32(path.replace("_lock", "").encode()))
+    badge = "/Badge/" in path
+    w, h = (64, 64) if badge else (320, 240)
+    a = (r.randint(40, 230), r.randint(40, 230), r.randint(40, 230))
+    im = Image.new("RGB", (w, h), tuple(v // 3 for v in a)); d = ImageDraw.Draw(im)
+    for _ in range(4 if badge else 9):
+        cx, cy, rr = r.randint(0, w), r.randint(0, h), r.randint(w // 6, w // 2)
+        d.ellipse([cx - rr, cy - rr, cx + rr, cy + rr], fill=tuple(min(255, v + r.randint(0, 60)) for v in a))
+    if badge: d.rectangle([0, 0, w - 1, h - 1], outline=(255, 255, 255), width=2)
+    if "_lock" in path: im = im.convert("L").convert("RGB")
+    b = io.BytesIO(); im.save(b, "PNG"); return b.getvalue()
+
 class H(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
     def do_GET(self):
         u = urllib.parse.urlparse(self.path); q = dict(urllib.parse.parse_qsl(u.query))
+        if u.path.startswith("/media/"):
+            data = media_png(u.path)
+            self.send_response(200); self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Length", str(len(data))); self.end_headers(); self.wfile.write(data); return
         name = u.path.rsplit("/API_", 1)[-1].replace(".php", "")
         user = q.get("u") or q.get("z") or "Tester"
         if name == "GetUserProfile":
@@ -79,10 +103,20 @@ class H(BaseHTTPRequestHandler):
             body = awards()
         elif name == "GetGameInfoAndUserProgress":
             g = next((x for x in GAMES if str(x["GameID"]) == q.get("g")), GAMES[0])
-            body = {"Title": g["Title"], "ImageIcon": g["ImageIcon"], "ConsoleName": g["ConsoleName"],
+            rr = random.Random(g["GameID"]); ach = {}
+            for i in range(g["MaxPossible"]):
+                aid = g["GameID"] * 100 + i; earned = i < g["NumAwarded"]
+                hc = earned and i < g["NumAwardedHardcore"]
+                when = f"2026-{rr.randint(7,10):02d}-{rr.randint(1,28):02d} 12:00:00"
+                ach[str(aid)] = {"ID": aid, "Title": f"{rr.choice(WORDS)} {rr.choice(WORDS)}", "Description": "Do the thing in the level without getting hit.",
+                                 "Points": rr.choice([1, 2, 3, 5, 10, 25, 50]), "TrueRatio": rr.randint(2, 200), "BadgeName": str(100000 + aid % 900000),
+                                 "DisplayOrder": i, "NumAwarded": rr.randint(20, 5000), "NumAwardedHardcore": rr.randint(5, 2000),
+                                 "Type": rr.choice(["", "", "progression", "win_condition", "missable"]),
+                                 **({"DateEarned": when} if earned else {}), **({"DateEarnedHardcore": when} if hc else {})}
+            body = {"Title": g["Title"], "ImageIcon": g["ImageIcon"], "ImageIngame": "/Images/000002.png", "ConsoleName": g["ConsoleName"],
                     "NumAchievements": g["MaxPossible"], "NumAwardedToUser": g["NumAwarded"],
-                    "NumAwardedToUserHardcore": g["NumAwardedHardcore"], "PossibleScore": g["MaxPossible"] * 10,
-                    "ScoreAchieved": g["NumAwarded"] * 10, "NumDistinctPlayers": 5000, "Achievements": {}}
+                    "NumAwardedToUserHardcore": g["NumAwardedHardcore"], "NumDistinctPlayersCasual": 5000, "NumDistinctPlayersHardcore": 1800,
+                    "HighestAwardKind": g["HighestAwardKind"], "HighestAwardDate": g["HighestAwardDate"], "Achievements": ach}
         else:
             body = {}
         data = json.dumps(body).encode()

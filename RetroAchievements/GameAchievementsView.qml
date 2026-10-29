@@ -1,716 +1,433 @@
 // XboxOSv2 – GameAchievementsView.qml
-// Per-game achievements list with filter tabs and sort controls.
+// One game's achievements, after the Xbox Series game Progress page.
 //
-// Enhancements over v1:
-//   • Filter tabs: All / Earned / Locked  (L1 / R1 or left bumper / right bumper)
-//   • Sort toggle: Default / Points / Rarity / Date  (Y button)
-//   • Rarity % label on each achievement row
-//   • TrueRatio (RetroPoints) shown alongside regular points
-//   • Animated progress bar already existed — kept and improved
-//   • Shared RAStatusBar — no duplicate clock/battery timer
-//   • cacheBuffer on ListView for smooth Android scrolling
-//   • sourceSize on all network images
+//   Hero: your fanart for this game (when you came from its details page),
+//         otherwise RA's in-game screenshot, dimmed and fading into the band
+//         colour of your accent. Game art + title top left; the "Path to
+//         Mythic" card (or the Mythic star once it's 100%); Points,
+//         Achievements and Overall progress on the right.
+//   Body: rail (Achievements; Stats joins it next), Sort and Filter, and
+//         every achievement as a card: wide art (the badge on a soft blow-up
+//         of its own colours), name, description, how many players have it,
+//         when you unlocked it, points with a diamond when it's rare (<10%).
+//
+// Keys: Up/Down move; Up from the first card reaches Sort / Filter (A
+// changes them). Shortcuts kept from before: Y sort, LB/RB filter, X refresh,
+// A on a card launches the game when it's in your library, B back (one press
+// to Game details when you came from there, else back to the RA page).
 
 import QtQuick 2.15
 import QtGraphicalEffects 1.15
 import "../Global"
+import "raEmblems.js" as Emb
 
 FocusScope {
 id: root
 
     anchors.fill: parent
 
-    property int currentIndex: 0
-
-    // Resolved list used by the ListView (from CheevosData.filteredCheevos)
+    // The list's own index: one value for keys, wheel and taps alike.
+    property alias currentIndex: list.currentIndex
     property var displayList: cheevosData.filteredCheevos
+    readonly property var det: cheevosData.currentGameDetails
+    onDisplayListChanged: if (currentIndex >= displayList.length) currentIndex = Math.max(0, displayList.length - 1)
 
-    onDisplayListChanged: {
-        // Clamp index when the filtered list shrinks
-        if (currentIndex >= displayList.length && displayList.length > 0)
-            currentIndex = displayList.length - 1;
+    // ── Colours ──────────────────────────────────────────────────────────
+    readonly property color cAccent: theme.accent
+    readonly property color cMid:    theme.accentMid
+    readonly property color cDark:   theme.accentDark
+    function mixc(a, b, t) { return Qt.rgba(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, 1); }
+    function light(c, t)   { return mixc(c, Qt.rgba(1, 1, 1, 1), t); }
+    readonly property color band: mixc(cDark, cMid, 0.45)
+    readonly property color cardColor: whiteBackground ? "#ffffff" : "#2e2e2e"
+    readonly property color railSel:   whiteBackground ? "#ffffff" : "#2b2b2b"
+
+    // ── Numbers for the hero ─────────────────────────────────────────────
+    readonly property int  unlocked: det.NumAwardedToUser || 0
+    readonly property int  total:    det.NumAchievements || 0
+    readonly property int  pct:      total > 0 ? Math.floor(unlocked * 100 / total) : 0
+    readonly property bool mythic:   det.Award === "mastered" || det.Award === "completed" || (total > 0 && unlocked >= total)
+    function fmtDate(ts) { return ts > 0 ? Qt.formatDate(new Date(ts), "MMM d, yyyy") : ""; }
+
+    // Your fanart for this game when it's the one Game details was showing.
+    readonly property string localArt: {
+        if (!currentGame || !det.Title) return "";
+        if (cheevosData.normalizeTitle(currentGame.title) !== cheevosData.normalizeTitle(det.Title)) return "";
+        return currentGame.assets.background || currentGame.assets.screenshot || "";
     }
 
-    // ── Relative time helpers ─────────────────────────────────────────────
-    function earnedText(ts) {
-        if (!ts || ts === 0) return "Locked";
-        var s = Math.floor((Date.now() - ts) / 1000);
-        if (s < 120)  return "Just now";
-        var m = Math.floor(s / 60);
-        if (m < 60)   return m + " min ago";
-        var h = Math.floor(m / 60);
-        if (h < 24)   return h === 1 ? "1 hr ago" : h + " hrs ago";
-        var d = Math.floor(h / 24);
-        if (d === 1)  return "Yesterday";
-        if (d < 365)  return d + " days ago";
-        return Qt.formatDate(new Date(ts), "MMM d, yyyy");
+    // ── Sort / Filter ────────────────────────────────────────────────────
+    readonly property var sortKeys:    ["default", "points", "rarity", "date"]
+    readonly property var sortNames:   ["Default", "Points", "Rarity", "Date unlocked"]
+    readonly property var filterKeys:  ["all", "earned", "locked", "missable"]
+    readonly property var filterNames: ["All", "Unlocked", "Locked", "Missable"]
+    function cycleSort(d) {
+        var i = sortKeys.indexOf(cheevosData.sortMode); if (i < 0) i = 0;
+        cheevosData.sortMode = sortKeys[(i + (d || 1) + sortKeys.length) % sortKeys.length];
+        currentIndex = 0;
+    }
+    function cycleFilter(d) {
+        var i = filterKeys.indexOf(cheevosData.filterMode); if (i < 0) i = 0;
+        cheevosData.filterMode = filterKeys[(i + d + filterKeys.length) % filterKeys.length];
+        currentIndex = 0;
     }
 
-    function rarityLabel(pct) {
-        if (pct <= 0)   return "";
-        if (pct < 5)    return "Ultra Rare  " + pct + "%";
-        if (pct < 15)   return "Very Rare  "  + pct + "%";
-        if (pct < 30)   return "Rare  "        + pct + "%";
-        if (pct < 55)   return "Uncommon  "    + pct + "%";
-        return "Common  " + pct + "%";
-    }
+    // Focus zones: 1 Sort/Filter, 2 the list.
+    property int zone: 2
+    property int toolIndex: 0
 
-    function rarityColor(pct) {
-        if (pct <= 0)  return theme.text;
-        if (pct < 5)   return "#FFD700";   // gold   — ultra rare
-        if (pct < 15)  return "#E040FB";   // purple — very rare
-        if (pct < 30)  return "#29B6F6";   // blue   — rare
-        if (pct < 55)  return "#66BB6A";   // green  — uncommon
-        return theme.text;                  // default — common
-    }
-
-    // ── Lifecycle ─────────────────────────────────────────────────────────
     onActiveFocusChanged: {
         if (activeFocus) {
             currentHelpbarModel = null;
             currentIndex = 0;
+            zone = 2;
         }
     }
 
-    // ── Background ───────────────────────────────────────────────────────
-    Rectangle {
-        anchors.fill: parent
-        color: theme.main
-    }
-
-    // Touch/click blocker — these RA pages are shown full-screen over whatever
-    // was on screen before; absorb pointer input so taps on empty areas can't
-    // fall through to the screen behind. Sits below all page content (declared
-    // after this), so the page's own controls still receive input on top.
+    // ── Page fill and pointer blocker ────────────────────────────────────
+    Rectangle { anchors.fill: parent; color: theme.main }
+    // These RA pages sit over whatever was on screen before: absorb pointer
+    // input so taps on empty areas don't reach the screen behind.
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.AllButtons
         hoverEnabled: true
         onPressed: mouse.accepted = true
-        onWheel: wheel.accepted = true   // the wheel stops here too, not on the screen behind
+        onWheel: wheel.accepted = true
         onClicked: mouse.accepted = true
         onReleased: mouse.accepted = true
     }
 
-    // ── Header: RA logo + avatar + name + points ─────────────────────────
+    // ── Hero ─────────────────────────────────────────────────────────────
     Item {
-    id: brandHeader
-
+    id: hero
         anchors { top: parent.top; left: parent.left; right: parent.right }
-        height: vpx(120)   // the header band, same as every other screen
+        height: vpx(270)
+        clip: true
 
-        // Header band: the theme colour; the content surface below is dimmed,
-        // and that contrast is the separator — no accent lines.
-        Rectangle { anchors.fill: parent; color: theme.main; z: -1 }
-
+        Rectangle { anchors.fill: parent; color: root.band }
         Image {
-        id: gaRaLogo
-            anchors {
-                left: parent.left; leftMargin: vpx(5)
-                top: parent.top; bottom: parent.bottom
-                topMargin: vpx(4); bottomMargin: vpx(4)
-            }
-            width: height
-            source: "../assets/images/icon_ra.svg"
-            fillMode: Image.PreserveAspectFit
-            smooth: true
+            anchors.fill: parent
+            source: root.localArt !== "" ? root.localArt
+                  : (det.ImageIngame ? "https://media.retroachievements.org" + det.ImageIngame : "")
+            fillMode: Image.PreserveAspectCrop
             asynchronous: true
-            sourceSize { width: hrpx(96); height: hrpx(96) }
+            smooth: true
+            sourceSize: Qt.size(hrpx(640), hrpx(360))
+            opacity: status === Image.Ready ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 200 } }
+        }
+        // Dimmed at the top, fading into the band colour at the bottom.
+        Rectangle {
+            anchors.fill: parent
+            gradient: Gradient {
+                GradientStop { position: 0.0;  color: Qt.rgba(0.04, 0.04, 0.04, 0.74) }
+                GradientStop { position: 0.38; color: Qt.rgba(0.04, 0.04, 0.04, 0.55) }
+                GradientStop { position: 0.80; color: Qt.rgba(root.band.r, root.band.g, root.band.b, 0.9) }
+                GradientStop { position: 1.0;  color: root.band }
+            }
         }
 
-        Row {
-            anchors {
-                left: gaRaLogo.right; leftMargin: vpx(12)
-                verticalCenter: parent.verticalCenter
+        // Game art + title
+        Rectangle {
+        id: gameArt
+            x: vpx(67); y: vpx(24)
+            width: vpx(56); height: width; radius: vpx(4)
+            color: Qt.rgba(0, 0, 0, 0.35)
+            Image {
+                anchors.fill: parent
+                source: det.ImageIcon ? "https://media.retroachievements.org" + det.ImageIcon : ""
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true; smooth: true
+                sourceSize: Qt.size(hrpx(64), hrpx(64))
             }
-            spacing: vpx(12)
+        }
+        Column {
+            anchors { left: gameArt.right; leftMargin: vpx(13); right: parent.right; rightMargin: vpx(200); verticalCenter: gameArt.verticalCenter }
+            Text {
+                width: parent.width; elide: Text.ElideRight
+                text: det.Title || (cheevosData.statusText || "Loading…")
+                color: "white"; font.family: titleFont.name; font.pixelSize: fpx(20)
+            }
+            Text {
+                text: det.ConsoleName || ""
+                color: "#d0d0d0"; font.family: bodyFont.name; font.pixelSize: fpx(13)
+            }
+        }
+        StatusCluster { anchors.fill: parent; z: 50; dark: false }
 
-            // Circular avatar (OpacityMask clip) + accent ring
+        // Path to Mythic / Mythic card
+        Item {
+        id: mythicCard
+            x: vpx(67); y: vpx(112)
+            width: vpx(467); height: vpx(113)
+            Rectangle { anchors.fill: parent; anchors.margins: -vpx(8); radius: vpx(12); color: root.light(root.cAccent, 0.35); opacity: 0.12 }
+            Rectangle { anchors.fill: parent; anchors.margins: -vpx(4); radius: vpx(9);  color: root.light(root.cAccent, 0.35); opacity: 0.25 }
+            Rectangle {
+                anchors.fill: parent; radius: vpx(6)
+                color: Qt.rgba(0, 0, 0, 0.42)
+                border.width: vpx(2); border.color: root.light(root.cAccent, 0.3)
+            }
+            Image {
+            id: mythicIcon
+                x: vpx(10); anchors.verticalCenter: parent.verticalCenter
+                width: vpx(84); height: width
+                sourceSize: Qt.size(hrpx(84), hrpx(84))
+                smooth: true
+                opacity: root.mythic ? 1 : 0.55
+                source: Emb.dataUrl(Emb.mythic(theme.accent, "g"))
+            }
+            Column {
+                anchors { left: mythicIcon.right; leftMargin: vpx(10); right: parent.right; rightMargin: vpx(20); verticalCenter: parent.verticalCenter }
+                spacing: vpx(3)
+                Text {
+                    text: root.mythic ? "Mythic" : "Path to Mythic"
+                    color: "white"; font.family: titleFont.name; font.pixelSize: fpx(16)
+                }
+                Text {
+                    width: parent.width; elide: Text.ElideRight
+                    text: root.mythic
+                          ? ((det.Award === "mastered" ? "Mastered in hardcore" : det.Award === "completed" ? "Completed in softcore" : "Every achievement unlocked")
+                             + (det.AwardDate ? "  ·  " + Qt.formatDate(new Date(Date.parse(det.AwardDate)), "MMM d, yyyy") : ""))
+                          : (root.total > 0 ? root.unlocked + " of " + root.total + " achievements  ·  " + (root.total - root.unlocked) + " to go" : "")
+                    color: "#dddddd"; font.family: bodyFont.name; font.pixelSize: fpx(13)
+                }
+                Item {
+                    visible: !root.mythic
+                    width: parent.width; height: vpx(4)
+                    Rectangle { anchors.fill: parent; color: root.cDark }
+                    Rectangle { width: parent.width * root.pct / 100; height: parent.height; color: root.light(root.cAccent, 0.4) }
+                }
+            }
+        }
+
+        // Points / Achievements / Overall progress
+        Row {
+            x: vpx(600); y: vpx(137)
+            spacing: vpx(60)
+            Column {
+                Text { text: "Points"; color: "white"; font.family: titleFont.name; font.pixelSize: fpx(15) }
+                Row {
+                    spacing: vpx(6)
+                    PointsGlyph { size: vpx(18); fill: "#ececec"; textColor: root.band; anchors.verticalCenter: parent.verticalCenter }
+                    Text { text: (det.ScoreAchieved || 0) + "/" + (det.PossibleScore || 0); color: "white"; font.family: bodyFont.name; font.pixelSize: fpx(26) }
+                }
+            }
+            Column {
+                Text { text: "Achievements"; color: "white"; font.family: titleFont.name; font.pixelSize: fpx(15) }
+                Row {
+                    spacing: vpx(6)
+                    Image {
+                        width: vpx(22); height: width; anchors.verticalCenter: parent.verticalCenter
+                        source: "../assets/images/trophy_outline.svg"; sourceSize: Qt.size(hrpx(28), hrpx(28))
+                    }
+                    Text { text: root.unlocked + "/" + root.total; color: "white"; font.family: bodyFont.name; font.pixelSize: fpx(26) }
+                }
+            }
+            Column {
+                Text { text: "Overall progress"; color: "white"; font.family: titleFont.name; font.pixelSize: fpx(15) }
+                Text { text: root.pct + "%"; color: "white"; font.family: bodyFont.name; font.pixelSize: fpx(26) }
+            }
+        }
+    }
+
+    // ── Rail ─────────────────────────────────────────────────────────────
+    Item {
+    id: rail
+        anchors { left: parent.left; top: hero.bottom; bottom: parent.bottom }
+        width: vpx(322)
+        Rectangle {
+            y: vpx(33); width: parent.width; height: vpx(42)
+            color: root.railSel
+            Rectangle { anchors { right: parent.right; top: parent.top; bottom: parent.bottom } width: vpx(5); color: theme.accent }
+            Text {
+                anchors { left: parent.left; leftMargin: vpx(97); verticalCenter: parent.verticalCenter }
+                text: "Achievements"
+                color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(17)
+            }
+        }
+    }
+    Rectangle {
+        anchors { left: rail.right; top: hero.bottom; bottom: parent.bottom }
+        width: vpx(1); color: theme.text; opacity: 0.12
+    }
+
+    // ── Sort and Filter ──────────────────────────────────────────────────
+    Item {
+    id: toolRow
+        anchors { left: rail.right; leftMargin: vpx(31); right: parent.right; rightMargin: vpx(67); top: hero.bottom; topMargin: vpx(23) }
+        height: vpx(39)
+        Rectangle {
+        id: sortBox
+            readonly property bool hot: root.zone === 1 && root.toolIndex === 0 && root.activeFocus
+            width: vpx(280); height: parent.height
+            color: root.cardColor; radius: vpx(4)
+            RAFocus { on: sortBox.hot }
+            Text {
+                anchors { left: parent.left; leftMargin: vpx(13); verticalCenter: parent.verticalCenter }
+                text: "Sort: " + root.sortNames[Math.max(0, root.sortKeys.indexOf(cheevosData.sortMode))]
+                color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(16)
+            }
+            RAIcon { anchors { right: parent.right; rightMargin: vpx(13); verticalCenter: parent.verticalCenter } source: "../assets/images/fluent/chevron_down.svg" }
+            TapHandler { onTapped: { playToggle(); root.cycleSort(1); } }
+        }
+        Text {
+            anchors { left: sortBox.right; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
+            text: root.displayList.length + (root.displayList.length === 1 ? " achievement" : " achievements")
+            color: theme.text; opacity: 0.6
+            font.family: bodyFont.name; font.pixelSize: fpx(15)
+        }
+        Rectangle {
+        id: filterBox
+            readonly property bool hot: root.zone === 1 && root.toolIndex === 1 && root.activeFocus
+            anchors.right: parent.right
+            width: filterRow.implicitWidth + vpx(30); height: parent.height
+            color: root.cardColor; radius: vpx(4)
+            RAFocus { on: filterBox.hot }
+            Row {
+            id: filterRow
+                anchors.centerIn: parent
+                spacing: vpx(8)
+                RAIcon { source: "../assets/images/fluent/filter.svg"; anchors.verticalCenter: parent.verticalCenter }
+                Text {
+                    text: "Filter: " + root.filterNames[Math.max(0, root.filterKeys.indexOf(cheevosData.filterMode))]
+                    color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(16)
+                }
+            }
+            TapHandler { onTapped: { playToggle(); root.cycleFilter(1); } }
+        }
+    }
+
+    // ── Achievements ─────────────────────────────────────────────────────
+    ListView {
+    id: list
+        // Padding = the focus frame's reach, so the clip never cuts it; the
+        // focused card stays in the top slot; the list ends above the prompts.
+        anchors { left: rail.right; leftMargin: vpx(17); right: parent.right; rightMargin: vpx(53); top: toolRow.bottom; topMargin: vpx(0); bottom: parent.bottom; bottomMargin: helpMargin }
+        leftMargin: vpx(14); rightMargin: vpx(14); topMargin: vpx(14); bottomMargin: vpx(14)
+        clip: true
+        model: root.displayList
+        spacing: vpx(14)
+        keyNavigationEnabled: false
+        cacheBuffer: vpx(300)
+        highlightMoveDuration: 120
+        preferredHighlightBegin: vpx(14)
+        preferredHighlightEnd: vpx(14) + vpx(125)
+        highlightRangeMode: ListView.StrictlyEnforceRange
+
+        Text {
+            anchors { top: parent.top; topMargin: vpx(30); horizontalCenter: parent.horizontalCenter }
+            visible: root.displayList.length === 0
+            text: cheevosData.statusText || "Nothing here"
+            color: theme.text; opacity: 0.55
+            font.family: bodyFont.name; font.pixelSize: fpx(18)
+        }
+
+        delegate: Item {
+        id: card
+            readonly property var ach: modelData
+            readonly property bool earned: ach.DateEarned > 0
+            readonly property bool rare: ach.Rarity > 0 && ach.Rarity < 10
+            readonly property bool selected: index === root.currentIndex && root.zone === 2 && root.activeFocus
+            readonly property string badge: ach.BadgeName !== ""
+                ? "https://media.retroachievements.org/Badge/" + ach.BadgeName + (earned ? "" : "_lock") + ".png" : ""
+            width: list.width - vpx(28); height: vpx(125)
+
+            Rectangle { anchors.fill: parent; radius: vpx(4); color: root.cardColor }
+            RAFocus { on: card.selected }
+
+            // Wide art: the badge on a soft blow-up of itself. The blow-up is
+            // the same image rendered into a 12x7 texture and stretched: one
+            // download, one decode, no blur pass.
             Item {
-                width: vpx(56); height: vpx(56)
-                visible: cheevosData.avatarUrl !== ""
+            id: wideArt
+                width: vpx(222); height: parent.height
+                clip: true
                 Image {
-                id: raGameAvatar
                     anchors.fill: parent
-                    source: cheevosData.avatarUrl
+                    source: card.badge
                     fillMode: Image.PreserveAspectCrop
-                    smooth: true
                     asynchronous: true
-                    sourceSize { width: hrpx(64); height: hrpx(64) }
+                    sourceSize: Qt.size(hrpx(64), hrpx(64))
+                    mipmap: true            // the shrink averages, instead of sampling a few pixels (blocks)
                     layer.enabled: true
                     layer.smooth: true
-                    layer.effect: OpacityMask {
-                        maskSource: Rectangle {
-                            width: raGameAvatar.width; height: raGameAvatar.height
-                            radius: width / 2
-                        }
-                    }
+                    layer.textureSize: Qt.size(12, 7)
                 }
-                Rectangle {
-                    anchors.fill: parent
-                    color: "transparent"
-                    border.color: theme.accent
-                    border.width: vpx(2)
-                    radius: width / 2
+                Rectangle { anchors.fill: parent; color: "black"; opacity: card.earned ? 0.35 : 0.55 }
+                Image {
+                    anchors.centerIn: parent
+                    width: vpx(84); height: width
+                    source: card.badge
+                    asynchronous: true; smooth: true
+                    sourceSize: Qt.size(hrpx(64), hrpx(64))
+                }
+                Image {
+                    visible: !card.earned
+                    anchors { right: parent.right; bottom: parent.bottom; margins: vpx(8) }
+                    width: vpx(18); height: width
+                    source: "../assets/images/fluent/lock.svg"; sourceSize: Qt.size(hrpx(24), hrpx(24))
                 }
             }
 
             Column {
-                anchors.verticalCenter: parent.verticalCenter
+                anchors { left: wideArt.right; leftMargin: vpx(17); right: parent.right; rightMargin: vpx(90); top: parent.top; topMargin: vpx(11) }
                 spacing: vpx(2)
-                visible: cheevosData.raUserName !== ""
-
+                opacity: card.earned ? 1 : 0.8
                 Text {
-                    text: cheevosData.raUserName
-                    color: theme.text
-                    font.family: titleFont.name
-                    font.pixelSize: fpx(24)
-                    font.bold: true
-                }
-                // Points, alternating with Rank # when RA has one.
-                RAStatLine {
-                    color: theme.text
-                    fontFamily: bodyFont.name
-                    pixelSize: fpx(15)
-                    opacity: 0.65
+                    width: parent.width; elide: Text.ElideRight
+                    text: ach.Title
+                    color: theme.text; font.family: titleFont.name; font.pixelSize: fpx(17)
                 }
                 Text {
-                    text: cheevosData.memberText
-                    color: theme.text
-                    font.family: bodyFont.name
-                    font.pixelSize: fpx(13)
-                    opacity: 0.45
-                    visible: cheevosData.memberText !== ""
+                    width: parent.width; elide: Text.ElideRight; maximumLineCount: 1
+                    text: ach.Description
+                    color: theme.text; opacity: 0.85; font.family: bodyFont.name; font.pixelSize: fpx(14)
+                }
+                Text {
+                    topPadding: vpx(4)
+                    text: ach.Rarity > 0 ? ach.Rarity + "% of players unlocked this" + (card.rare ? "  ·  rare" : "") : ""
+                    color: theme.text; opacity: 0.55; font.family: bodyFont.name; font.pixelSize: fpx(13)
+                }
+                Text {
+                    text: card.earned ? "Unlocked " + root.fmtDate(ach.DateEarned) + (ach.Hardcore ? "  ·  hardcore" : "  ·  softcore")
+                                      : ("Locked" + (ach.Type === "missable" ? "  ·  missable" : ""))
+                    color: theme.text; opacity: 0.85; font.family: bodyFont.name; font.pixelSize: fpx(13)
                 }
             }
-        }
-
-        // Shared status cluster (clock / battery / wifi) — same component and
-        // ShowClock/ShowBattery/ShowWifi settings as every other page.
-        StatusCluster {
-            anchors.fill: parent
-            z: 50
-            dark: whiteBackground
-        }
-
-        Rectangle {
-            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-            height: vpx(1); color: theme.text; opacity: 0.1
-        }
-    }
-
-    // ── 2. Depth under the header band ────────────────────────────────────
-    // A few pixels of soft darkening on the surface just below the band, so
-    // the band reads as sitting ON the content rather than beside it. Not an
-    // accent line — a shadow. Goes away with dimming Off.
-    Rectangle {
-        anchors { top: brandHeader.bottom; left: parent.left; right: parent.right }
-        height: vpx(14)
-        z: 4
-        visible: gridDimOpacity > 0
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.35) }
-            GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.0) }
-        }
-    }
-
-    // Content surface: everything below the band sits on the dimmed layer.
-    Rectangle {
-        anchors { top: brandHeader.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
-        color: "#000000"; opacity: gridDimOpacity * surfaceShade; visible: opacity > 0   // no z: order places it above the page fill, below the lists
-    }
-
-    // ── Game summary bar ─────────────────────────────────────────────────
-    Item {
-    id: gameSummary
-
-        anchors { top: brandHeader.bottom; left: parent.left; right: parent.right }
-        height: vpx(110)
-
-        Rectangle { anchors.fill: parent; color: theme.secondary; opacity: 0.10 }
-
-        // Game icon — far right
-        Item {
-        id: summaryIcon
-            anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
-            width: height
-
-            Rectangle { anchors.fill: parent; color: theme.secondary; opacity: 0.4 }
-            Image {
-                anchors.fill: parent
-                source: cheevosData.currentGameDetails.ImageIcon
-                        ? "https://media.retroachievements.org"
-                          + cheevosData.currentGameDetails.ImageIcon
-                        : ""
-                fillMode: Image.PreserveAspectFit
-                smooth: true
-                asynchronous: true
-                sourceSize { width: hrpx(120); height: hrpx(120) }
+            Row {
+                anchors { right: parent.right; rightMargin: vpx(17); top: parent.top; topMargin: vpx(13) }
+                spacing: vpx(6)
+                RAIcon { visible: card.rare; size: vpx(16); source: "../assets/images/fluent/diamond.svg"; anchors.verticalCenter: parent.verticalCenter }
+                PointsGlyph { size: vpx(15); fill: whiteBackground ? "#303030" : "#e6e6e6"; textColor: root.cardColor; anchors.verticalCenter: parent.verticalCenter }
+                Text { text: ach.Points; color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(16) }
             }
-        }
-
-        // Completion stats — right of icon area
-        Column {
-        id: statsCol
-            visible: cheevosData.currentGameDetails.NumAchievements > 0
-            anchors {
-                right: summaryIcon.left; rightMargin: vpx(20)
-                verticalCenter: parent.verticalCenter
-            }
-            spacing: vpx(4)
-
-            property int awarded:  cheevosData.currentGameDetails.NumAwardedToUser
-            property int total:    cheevosData.currentGameDetails.NumAchievements
-            property int hardcore: cheevosData.currentGameDetails.NumAwardedToUserHardcore
-
-            Text {
-                text: statsCol.total > 0
-                      ? Math.floor(statsCol.awarded * 100 / statsCol.total) + "%"
-                      : ""
-                color: {
-                    if (statsCol.total === 0) return theme.accent;
-                    var p = Math.floor(statsCol.awarded * 100 / statsCol.total);
-                    return p >= 100 ? "#FFD700" : theme.accent;
-                }
-                font.family: titleFont.name
-                font.pixelSize: fpx(40)
-                font.bold: true
-                horizontalAlignment: Text.AlignRight
-                anchors.right: parent.right
-            }
-            Text {
-                text: {
-                    var s = statsCol.awarded + " of " + statsCol.total;
-                    if (statsCol.hardcore > 0) s += "  ·  " + statsCol.hardcore + " HC";
-                    return s;
-                }
-                color: theme.text
-                font.family: subtitleFont.name
-                font.pixelSize: fpx(17)
-                font.bold: true
-                opacity: 0.75
-                horizontalAlignment: Text.AlignRight
-                anchors.right: parent.right
-            }
-        }
-
-        // Game title + platform — left side
-        Column {
-            anchors {
-                left:  parent.left; leftMargin: globalMargin
-                right: cheevosData.currentGameDetails.NumAchievements > 0
-                       ? statsCol.left : summaryIcon.left
-                rightMargin: vpx(12)
-                verticalCenter: parent.verticalCenter
-            }
-            spacing: vpx(5)
-
-            Text {
-                text: cheevosData.currentGameDetails.Title
-                color: theme.text
-                font.family: titleFont.name
-                font.pixelSize: fpx(26)
-                font.bold: true
-                elide: Text.ElideRight
-                width: parent.width
-            }
-            Text {
-                text: cheevosData.currentGameDetails.ConsoleName
-                color: theme.text
-                font.family: subtitleFont.name
-                font.pixelSize: fpx(17)
-                font.bold: true
-                opacity: 0.65
-                elide: Text.ElideRight
-                width: parent.width
-            }
-        }
-
-        // Animated progress bar — bottom edge of summary bar
-        Item {
-            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-            height: vpx(5)
-            visible: cheevosData.currentGameDetails.NumAchievements > 0
-
-            Rectangle { anchors.fill: parent; color: theme.text; opacity: 0.12 }
             Rectangle {
-                anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
-                width: cheevosData.currentGameDetails.NumAchievements > 0
-                       ? parent.width
-                         * (cheevosData.currentGameDetails.NumAwardedToUser
-                            / cheevosData.currentGameDetails.NumAchievements)
-                       : 0
-                color: {
-                    if (cheevosData.currentGameDetails.NumAchievements === 0) return theme.accent;
-                    var p = cheevosData.currentGameDetails.NumAwardedToUser
-                            / cheevosData.currentGameDetails.NumAchievements;
-                    return p >= 1.0 ? "#FFD700" : theme.accent;
+                anchors { left: wideArt.right; leftMargin: vpx(17); right: parent.right; rightMargin: vpx(17); bottom: parent.bottom; bottomMargin: vpx(10) }
+                height: vpx(3)
+                color: card.earned ? root.light(root.cAccent, whiteBackground ? 0 : 0.15) : (whiteBackground ? "#d8d8d8" : "#3e3e3e")
+            }
+            TapHandler {
+                onTapped: {
+                    if (card.selected) root.launchOwnGame();
+                    else { root.zone = 2; root.currentIndex = index; root.forceActiveFocus(); }
                 }
-                Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
             }
         }
     }
-
-    // ── Filter tabs + sort button ─────────────────────────────────────────
-    Item {
-    id: filterBar
-
-        anchors { top: gameSummary.bottom; left: parent.left; right: parent.right }
-        height: vpx(44)
-
-        Rectangle { anchors.fill: parent; color: theme.secondary; opacity: 0.06 }
-
-        Row {
-            anchors { left: parent.left; leftMargin: globalMargin; verticalCenter: parent.verticalCenter }
-            spacing: vpx(6)
-
-            Repeater {
-                model: [
-                    { label: "All",    mode: "all",    count: cheevosData.raGameCheevos.count },
-                    { label: "Earned", mode: "earned", count: cheevosData.countEarned },
-                    { label: "Locked", mode: "locked", count: cheevosData.countLocked }
-                ]
-
-                delegate: Rectangle {
-                    property bool active: cheevosData.filterMode === modelData.mode
-                    width:  tabLabel.implicitWidth + vpx(20)
-                    height: vpx(28)
-                    radius: vpx(4)
-                    color:  active ? theme.accent : theme.secondary
-                    opacity: active ? 1.0 : 0.5
-
-                    Behavior on color   { ColorAnimation  { duration: 150 } }
-                    Behavior on opacity { NumberAnimation  { duration: 150 } }
-
-                    Text {
-                    id: tabLabel
-                        anchors.centerIn: parent
-                        text: modelData.label + " (" + modelData.count + ")"
-                        color: theme.text
-                        font.family: subtitleFont.name
-                        font.pixelSize: fpx(14)
-                        font.bold: active
-                    }
-                    // Click picks this filter, same as LB/RB reaching it.
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: if (!active) { playToggle(); cheevosData.filterMode = modelData.mode; root.currentIndex = 0; }
-                    }
-                }
-            }
-        }
-
-        // Sort toggle — right side
-        Row {
-            anchors { right: parent.right; rightMargin: globalMargin; verticalCenter: parent.verticalCenter }
-            spacing: vpx(6)
-
-            Text {
-                text: "Sort:"
-                color: theme.text
-                font.family: subtitleFont.name
-                font.pixelSize: fpx(14)
-                opacity: 0.55
-                anchors.verticalCenter: parent.verticalCenter
-            }
-
-            Repeater {
-                model: [
-                    { label: "Default", mode: "default" },
-                    { label: "Points",  mode: "points"  },
-                    { label: "Rarity",  mode: "rarity"  },
-                    { label: "Date",    mode: "date"     }
-                ]
-
-                delegate: Rectangle {
-                    property bool active: cheevosData.sortMode === modelData.mode
-                    width:  sortLbl.implicitWidth + vpx(14)
-                    height: vpx(24)
-                    radius: vpx(3)
-                    color:  active ? theme.accent : "transparent"
-                    opacity: active ? 1.0 : 0.45
-
-                    Behavior on color   { ColorAnimation { duration: 120 } }
-                    Behavior on opacity { NumberAnimation { duration: 120 } }
-
-                    Text {
-                    id: sortLbl
-                        anchors.centerIn: parent
-                        text: modelData.label
-                        color: theme.text
-                        font.family: subtitleFont.name
-                        font.pixelSize: fpx(13)
-                        font.bold: active
-                    }
-                    // Click picks this sort, same as Y reaching it.
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: if (!active) { playToggle(); cheevosData.sortMode = modelData.mode; root.currentIndex = 0; }
-                    }
-                }
-            }
-        }
-
-        Rectangle {
-            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-            height: vpx(1); color: theme.text; opacity: 0.07
-        }
-    }
-
-    // ── Achievement list ─────────────────────────────────────────────────
-    ListView {
-    id: achievementList
-
-        anchors {
-            top:    filterBar.bottom;  topMargin:    vpx(0)
-            bottom: parent.bottom;     bottomMargin: vpx(56)
-            left:   parent.left
-            right:  parent.right
-        }
-
-        model:        root.displayList
-        currentIndex: root.currentIndex
-        clip:         true
-        cacheBuffer:  vpx(300)
-
-        highlightMoveDuration: 100
-        preferredHighlightBegin: vpx(96)
-        preferredHighlightEnd:   height - vpx(96)
-        highlightRangeMode: ListView.ApplyRange
-
-        highlight: Rectangle {
-            color:   theme.accent
-            opacity: 0.45
-            width:   achievementList.width
-        }
-
-        // Empty / loading state
-        Text {
-            anchors.centerIn: parent
-            visible: root.displayList.length === 0
-            text:    cheevosData.statusText || "No achievements to show"
-            color:   theme.text
-            font.family: bodyFont.name
-            font.pixelSize: fpx(18)
-            opacity: 0.5
-        }
-
-        delegate: Item {
-        id: achievementRow
-
-            // JS array model — access via modelData
-            property var  ach:        modelData
-            property bool isSelected: ListView.isCurrentItem && achievementList.focus
-            property bool isEarned:   ach.DateEarned > 0
-
-            width:  achievementList.width
-            height: vpx(100)
-
-            Item {
-                anchors { fill: parent; rightMargin: vpx(globalMargin) }
-
-                // Badge — square, left edge
-                Item {
-                id: badge
-                    anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
-                    width: height
-
-                    Rectangle {
-                        anchors.fill: parent
-                        color:        theme.secondary
-                        opacity:      isEarned ? 0.2 : 0.45
-                    }
-                    Image {
-                        anchors.fill: parent
-                        source: ach.BadgeName !== ""
-                                ? "https://media.retroachievements.org/Badge/"
-                                  + ach.BadgeName + (isEarned ? "" : "_lock") + ".png"
-                                : ""
-                        fillMode:    Image.PreserveAspectFit
-                        smooth:      true
-                        asynchronous: true
-                        sourceSize { width: hrpx(64); height: hrpx(64) }
-                        opacity: isEarned ? 1.0 : 0.28
-                    }
-                }
-
-                // Points + rarity + earned status — right column
-                Column {
-                id: pointsCol
-                    anchors {
-                        right: parent.right; rightMargin: vpx(0)
-                        verticalCenter: parent.verticalCenter
-                    }
-                    width: vpx(130)
-                    spacing: vpx(4)
-
-                    // Points (+ TrueRatio if different)
-                    Text {
-                        text: {
-                            var s = ach.Points + " pts";
-                            if (ach.TrueRatio && ach.TrueRatio !== ach.Points)
-                                s += "  (" + ach.TrueRatio + ")";
-                            return s;
-                        }
-                        color: isEarned ? theme.accent : theme.text
-                        font.family:    subtitleFont.name
-                        font.pixelSize: fpx(17)
-                        font.bold:      true
-                        horizontalAlignment: Text.AlignRight
-                        width: parent.width
-                        opacity: isEarned ? (isSelected ? 1.0 : 0.9) : 0.35
-                    }
-
-                    // Rarity label
-                    Text {
-                        text: root.rarityLabel(ach.Rarity)
-                        color: root.rarityColor(ach.Rarity)
-                        font.family:    bodyFont.name
-                        font.pixelSize: fpx(12)
-                        horizontalAlignment: Text.AlignRight
-                        width: parent.width
-                        opacity: isSelected ? 0.95 : 0.6
-                        visible: ach.Rarity > 0
-                    }
-
-                    // Earned time or "Locked"
-                    Text {
-                        text: root.earnedText(ach.DateEarned)
-                        color: theme.text
-                        font.family:    bodyFont.name
-                        font.pixelSize: fpx(13)
-                        horizontalAlignment: Text.AlignRight
-                        width: parent.width
-                        wrapMode: Text.WordWrap
-                        opacity: isEarned ? (isSelected ? 0.75 : 0.5) : 0.28
-                    }
-                }
-
-                // Title + description — centre
-                Column {
-                    anchors {
-                        left:  badge.right;     leftMargin:  vpx(14)
-                        right: pointsCol.left;  rightMargin: vpx(10)
-                        verticalCenter: parent.verticalCenter
-                    }
-                    spacing: vpx(5)
-
-                    // Title + optional HC pill
-                    Row {
-                        spacing: vpx(6)
-                        width:   parent.width
-
-                        Text {
-                        id: achievTitle
-                            text:  ach.Title
-                            color: theme.text
-                            font.family:    titleFont.name
-                            font.pixelSize: fpx(19)
-                            font.bold:      true
-                            elide: Text.ElideRight
-                            width: parent.width - (hcPill.visible ? hcPill.width + vpx(6) : 0)
-                            opacity: isEarned
-                                     ? (isSelected ? 1.0 : 0.9)
-                                     : (isSelected ? 0.65 : 0.4)
-                        }
-
-                        Rectangle {
-                        id: hcPill
-                            visible: isEarned && ach.Hardcore
-                            width:   vpx(26); height: vpx(16)
-                            radius:  vpx(3)
-                            color:   theme.accent
-                            anchors.verticalCenter: achievTitle.verticalCenter
-
-                            Text {
-                                anchors.centerIn: parent
-                                text:  "HC"
-                                color: theme.text
-                                font.family:    bodyFont.name
-                                font.pixelSize: fpx(9)
-                                font.bold:      true
-                            }
-                        }
-                    }
-
-                    Text {
-                        text:  ach.Description
-                        color: theme.text
-                        font.family:    bodyFont.name
-                        font.pixelSize: fpx(14)
-                        elide: Text.ElideRight
-                        width: parent.width
-                        opacity: isEarned
-                                 ? (isSelected ? 0.75 : 0.55)
-                                 : (isSelected ? 0.45 : 0.28)
-                    }
-                }
-            }
-
-            // Row divider
-            Rectangle {
-                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                height:  vpx(1); color: theme.text; opacity: 0.08
-            }
-
-            // Touch
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: settings.MouseHover === "Yes"
-                function hoverPick() { if (!pointerMoved() || root.currentIndex === index) return;   // scrolled under a still pointer
-                    playNav(); root.currentIndex = index; }
-                onEntered: hoverPick()
-                onPositionChanged: hoverPick()   // entered can arrive before the pointer tracker updates (theme.qml pointerMoved); the next nudge counts
-                onClicked:  { playNav(); root.currentIndex = index; }
-            }
-        }
-    }
-
-    // Wheel moves the selection (see Global/WheelNav.qml) — a sibling of the
-    // view, never a child: a MouseArea inside a Flickable is reparented into
-    // its contentItem and scrolls away with it.
     WheelNav {
-        anchors.fill: achievementList
-        view: achievementList
+        anchors.fill: list
+        view: list
         columns: 1
-        active: true
+        active: !searchOpen
         onStepped: function(quiet) { if (!quiet) playNav(); }
     }
 
-    // ── Page counter ─────────────────────────────────────────────────────
-    // Top right, directly above the game icon. It used to sit bottom-right,
-    // which left the bottom row crowded once the shared Apps prompt appeared
-    // on the left of every screen.
-    Text {
-        visible: root.displayList.length > 0
-        // Anchored to parent, not to summaryIcon: that icon is a child of
-        // gameSummary, and QML can only anchor to a parent or a sibling. The
-        // cross-parent anchor was ignored, dropping this to x=0 on the left.
-        anchors {
-            right:  parent.right; rightMargin: globalMargin
-            bottom: gameSummary.top; bottomMargin: vpx(6)
-        }
-        text: (root.currentIndex + 1) + " of " + root.displayList.length
-        color: theme.text
-        font.family: bodyFont.name
-        font.pixelSize: fpx(20)
-        font.bold: true
-        opacity: 0.75
-    }
-
-    // ── Local help bar ────────────────────────────────────────────────────
-    // Right-aligned: the shared button bar puts the Apps prompt bottom-left on
-    // every screen, and these used to start there too and overlap it.
+    // ── Local help bar ───────────────────────────────────────────────────
     Row {
-        z: 5   // above the bottom fade
-        anchors {
-            right: parent.right; rightMargin: globalMargin
-            bottom: parent.bottom; bottomMargin: vpx(10)
-        }
+        z: 5
+        anchors { right: parent.right; rightMargin: globalMargin; bottom: parent.bottom; bottomMargin: vpx(10) }
         spacing: vpx(16)
-
         Repeater {
             model: localHelpModel
             delegate: Row {
@@ -718,81 +435,48 @@ id: root
                 HoverHandler { cursorShape: Qt.PointingHandCursor }
                 spacing: vpx(6)
                 Image {
-                    source: "../assets/images/controller/"
-                            + buttonbar.processButtonArt(button) + ".png"
+                    source: "../assets/images/controller/" + buttonbar.processButtonArt(button) + ".png"
                     width: vpx(32); height: vpx(32)
                     asynchronous: true
                     sourceSize { width: hrpx(48); height: hrpx(48) }
                 }
                 Text {
                     text: name
-                    font.family: subtitleFont.name
-                    font.pixelSize: fpx(19)
+                    font.family: subtitleFont.name; font.pixelSize: fpx(19)
                     color: theme.text
-                    height: vpx(32)
-                    verticalAlignment: Text.AlignVCenter
+                    height: vpx(32); verticalAlignment: Text.AlignVCenter
                 }
             }
         }
     }
-
     ListModel {
     id: localHelpModel
-        ListElement { name: "Launch";    button: "accept"  }
-        ListElement { name: "Refresh";   button: "details" }
-        ListElement { name: "Sort";      button: "filters" }
-        ListElement { name: "Back";      button: "cancel"  }
+        ListElement { name: "Launch";  button: "accept"  }
+        ListElement { name: "Refresh"; button: "details" }
+        ListElement { name: "Sort";    button: "filters" }
+        ListElement { name: "Back";    button: "cancel"  }
     }
 
-    // ── Key handling ─────────────────────────────────────────────────────
-
-    // Cycle filter: all → earned → locked → all  (L1 / R1)
-    function cycleFilterForward() {
-        if      (cheevosData.filterMode === "all")    cheevosData.filterMode = "earned";
-        else if (cheevosData.filterMode === "earned") cheevosData.filterMode = "locked";
-        else                                          cheevosData.filterMode = "all";
-        currentIndex = 0;
-    }
-    function cycleFilterBack() {
-        if      (cheevosData.filterMode === "all")    cheevosData.filterMode = "locked";
-        else if (cheevosData.filterMode === "locked") cheevosData.filterMode = "earned";
-        else                                          cheevosData.filterMode = "all";
-        currentIndex = 0;
-    }
-
-    // Cycle sort: default → points → rarity → date → default  (Y)
-    function cycleSort() {
-        if      (cheevosData.sortMode === "default") cheevosData.sortMode = "points";
-        else if (cheevosData.sortMode === "points")  cheevosData.sortMode = "rarity";
-        else if (cheevosData.sortMode === "rarity")  cheevosData.sortMode = "date";
-        else                                         cheevosData.sortMode = "default";
-        currentIndex = 0;
-    }
-
-    // Up/Down — scroll achievement list
+    // ── Keys ─────────────────────────────────────────────────────────────
     Keys.onUpPressed: {
         event.accepted = true;
-        playNav();
-        if (currentIndex > 0) currentIndex--;
+        if (zone === 2) {
+            if (currentIndex > 0) { currentIndex--; playNav(); }
+            else { zone = 1; playNav(); }
+        }
     }
     Keys.onDownPressed: {
         event.accepted = true;
-        playNav();
-        if (currentIndex < root.displayList.length - 1) currentIndex++;
+        if (zone === 1) { if (displayList.length > 0) { zone = 2; playNav(); } }
+        else if (currentIndex < displayList.length - 1) { currentIndex++; playNav(); }
     }
-
-    // D-pad Left/Right — cycle filter tabs
     Keys.onLeftPressed: {
         event.accepted = true;
-        playNav();
-        cycleFilterBack();
-        currentIndex = 0;
+        if (zone === 1 && toolIndex > 0) { toolIndex--; playNav(); }
     }
     Keys.onRightPressed: {
         event.accepted = true;
-        playNav();
-        cycleFilterForward();
-        currentIndex = 0;
+        if (zone === 1 && toolIndex < 1) { toolIndex++; playNav(); }
     }
 
     // B / mouse back. Opened from Game details (the RA button): straight back
@@ -804,48 +488,28 @@ id: root
     }
     function mouseBack() { goBack(); }
 
+    function refresh() {
+        playAccept();
+        if (cheevosData.currentGameDetails.Title !== "")
+            cheevosData.loadGameAchievements(cheevosData.currentGameID);
+    }
+
     Keys.onPressed: {
-        if (api.keys.isCancel(event) && !event.isAutoRepeat) {
-            event.accepted = true;
-            goBack();
-        }
-        // LB — cycle filter backward
-        if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {
-            event.accepted = true;
-            playToggle();
-            cycleFilterBack();
-            currentIndex = 0;
-        }
-        // RB — cycle filter forward
-        if (api.keys.isNextPage(event) && !event.isAutoRepeat) {
-            event.accepted = true;
-            playToggle();
-            cycleFilterForward();
-            currentIndex = 0;
-        }
-        // Y / Filters — cycle sort mode
-        if (api.keys.isFilters(event) && !event.isAutoRepeat) {
-            event.accepted = true;
-            playToggle();
-            cycleSort();
-            currentIndex = 0;
-        }
-        // X / Details — refresh current game
-        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
-            event.accepted = true;
-            playAccept();
-            if (cheevosData.currentGameDetails.Title !== "")
-                cheevosData.loadGameAchievements(cheevosData.currentGameID);
-        }
-        // A — launch the game these achievements belong to, when a matching
-        // game exists locally. currentGame is used directly if it's already
-        // the right title (RA was entered from that game or via search);
-        // otherwise the library is searched by normalized title.
+        if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; goBack(); }
+        if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playToggle(); cycleFilter(-1); }
+        if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playToggle(); cycleFilter(1); }
+        if (api.keys.isFilters(event) && !event.isAutoRepeat)  { event.accepted = true; playToggle(); cycleSort(1); }
+        if (api.keys.isDetails(event) && !event.isAutoRepeat)  { event.accepted = true; refresh(); }
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            launchOwnGame();
+            if (zone === 1) { playToggle(); if (toolIndex === 0) cycleSort(1); else cycleFilter(1); }
+            else launchOwnGame();
         }
     }
+
+    // A — launch the game these achievements belong to, when a matching game
+    // exists locally: currentGame if it's the same title (RA was entered from
+    // that game or via search), otherwise the library by normalized title.
     function launchOwnGame() {
         var raTitle = cheevosData.currentGameDetails.Title || "";
         var target  = null;
@@ -862,31 +526,23 @@ id: root
     // Clickable prompts: each does what its button does.
     function helpAction(button) {
         if (button === "cancel") goBack();
-        else if (button === "filters") { playToggle(); cycleSort(); currentIndex = 0; }
-        else if (button === "details") {
-            playAccept();
-            if (cheevosData.currentGameDetails.Title !== "")
-                cheevosData.loadGameAchievements(cheevosData.currentGameID);
-        }
+        else if (button === "filters") { playToggle(); cycleSort(1); }
+        else if (button === "details") refresh();
         else if (button === "accept") launchOwnGame();
         else return false;
         return true;
     }
 
-    // The last row dissolves under the help bar (same fade as the grids).
+    // The last card dissolves under the help bar (same fade as the grids).
     Rectangle {
         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-        height: helpMargin + vpx(120)
-        // Below this page's own prompt row (it draws the right-hand prompts
-        // itself; only "Apps" comes from the theme's bar above the page).
+        height: helpMargin + vpx(40)
         z: 1
-        opacity: gridFadeOpacity    // part of "Background dimming": Off = no fade
+        opacity: gridFadeOpacity
         visible: opacity > 0
         gradient: Gradient {
             GradientStop { position: 0.0;  color: mainA(0.0)  }
-            GradientStop { position: 0.25; color: mainA(0.12) }
-            GradientStop { position: 0.5;  color: mainA(0.45) }
-            GradientStop { position: 0.75; color: mainA(0.85) }
+            GradientStop { position: 0.5;  color: mainA(0.6) }
             GradientStop { position: 1.0;  color: theme.main }
         }
     }

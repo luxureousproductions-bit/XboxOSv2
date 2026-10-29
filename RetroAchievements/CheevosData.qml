@@ -247,6 +247,7 @@ id: root
             var a = raGameCheevos.get(i);
             if (filterMode === "earned" && !(a.DateEarned > 0)) continue;
             if (filterMode === "locked" &&  (a.DateEarned > 0)) continue;
+            if (filterMode === "missable" && a.Type !== "missable") continue;
             list.push({
                 Title:        a.Title,
                 Description:  a.Description,
@@ -256,7 +257,8 @@ id: root
                 DateEarned:   a.DateEarned,
                 Hardcore:     a.Hardcore,
                 Rarity:       a.Rarity,
-                TrueRatio:    a.TrueRatio
+                TrueRatio:    a.TrueRatio,
+                Type:         a.Type
             });
         }
         // Sort
@@ -498,14 +500,18 @@ id: root
             "Title": "", "ImageIcon": "", "ConsoleName": "",
             "NumAchievements": 0, "NumAwardedToUser": 0,
             "NumAwardedToUserHardcore": 0,
-            "PossibleScore": 0, "ScoreAchieved": 0
+            "PossibleScore": 0, "ScoreAchieved": 0,
+            "ImageIngame": "", "Players": 0, "PlayersHardcore": 0,
+            "Award": "", "AwardDate": "", "PointsHardcore": 0, "PointsSoftcore": 0,
+            "TrueRatioEarned": 0, "FirstUnlock": 0, "LatestUnlock": 0,
+            "RarestPct": 0, "RarestTitle": "", "Loaded": false
         };
 
         raRequest(
             "GetGameInfoAndUserProgress",
-            "u=" + encodeURIComponent(raUserName) + "&g=" + gameID,
+            "u=" + encodeURIComponent(raUserName) + "&g=" + gameID + "&a=1",   // a=1: award kind + date
             function(resp) {
-                currentGameDetails = {
+                var det = {
                     "Title":                    resp.Title       || "",
                     "ImageIcon":                resp.ImageIcon   || "",
                     "ConsoleName":              resp.ConsoleName  || "",
@@ -513,8 +519,16 @@ id: root
                     "NumAwardedToUser":         parseInt(resp.NumAwardedToUser)         || 0,
                     "NumAwardedToUserHardcore": parseInt(resp.NumAwardedToUserHardcore) || 0,
                     "PossibleScore":            parseInt(resp.PossibleScore)            || 0,
-                    "ScoreAchieved":            parseInt(resp.ScoreAchieved)            || 0
+                    "ScoreAchieved":            parseInt(resp.ScoreAchieved)            || 0,
+                    "ImageIngame":              resp.ImageIngame || resp.ImageTitle || "",
+                    "Players":                  parseInt(resp.NumDistinctPlayersCasual || resp.NumDistinctPlayers) || 0,
+                    "PlayersHardcore":          parseInt(resp.NumDistinctPlayersHardcore) || 0,
+                    "Award":                    resp.HighestAwardKind || "",
+                    "AwardDate":                resp.HighestAwardDate || "",
+                    "Loaded":                   true
                 };
+                // Worked out once here for the page and its Stats view.
+                var ptsHc = 0, ptsSc = 0, trueEarned = 0, first = 0, latest = 0, rarest = 101, rarestTitle = "", possible = 0;
 
                 var list = [];
                 var achievements = resp.Achievements || {};
@@ -541,6 +555,14 @@ id: root
                                       ? Math.round((numAwarded / totalPlayers) * 1000) / 10
                                       : 100.0;
 
+                    possible += parseInt(a.Points) || 0;
+                    if (ts > 0) {
+                        if (isHardcore) ptsHc += parseInt(a.Points) || 0; else ptsSc += parseInt(a.Points) || 0;
+                        trueEarned += parseInt(a.TrueRatio) || 0;
+                        if (first === 0 || ts < first) first = ts;
+                        if (ts > latest) latest = ts;
+                        if (rarityPct < rarest) { rarest = rarityPct; rarestTitle = a.Title || ""; }
+                    }
                     list.push({
                         "Title":        a.Title        || "",
                         "Description":  a.Description  || "",
@@ -550,7 +572,8 @@ id: root
                         "DisplayOrder": parseInt(a.DisplayOrder) || 0,
                         "DateEarned":   ts,
                         "Hardcore":     isHardcore,
-                        "Rarity":       rarityPct      // 0.0–100.0
+                        "Rarity":       rarityPct,     // 0.0–100.0
+                        "Type":         a.Type || a.type || ""   // "progression" | "win_condition" | "missable" | ""
                     });
                 }
 
@@ -562,8 +585,17 @@ id: root
                     return a.DisplayOrder - b.DisplayOrder;
                 });
 
-                for (var i = 0; i < list.length; i++)
-                    raGameCheevos.append(list[i]);
+                det.PointsHardcore  = ptsHc;
+                det.PointsSoftcore  = ptsSc;
+                det.TrueRatioEarned = trueEarned;
+                det.FirstUnlock     = first;
+                det.LatestUnlock    = latest;
+                det.RarestPct       = rarest <= 100 ? rarest : 0;
+                det.RarestTitle     = rarestTitle;
+                if (!det.PossibleScore) det.PossibleScore = possible;
+                if (!det.ScoreAchieved) det.ScoreAchieved = ptsHc + ptsSc;
+                currentGameDetails = det;
+                raGameCheevos.append(list);
 
                 statusText = (raGameCheevos.count === 0) ? "No achievements for this game" : "";
                 rebuildFilteredCheevos();
