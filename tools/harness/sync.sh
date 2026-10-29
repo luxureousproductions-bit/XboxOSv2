@@ -14,10 +14,12 @@ printf '.pragma library\nvar created = 0, destroyed = 0, loads = 0;\n' > "$H/Glo
 python3 - "$H" <<'PY'
 import sys
 H=sys.argv[1]
-def patch(rel, pairs):
+def patch(rel, pairs, optional=False):
     p=f"{H}/{rel}"; s=open(p).read()
     for old,new in pairs:
-        if old not in s: sys.exit(f"harness patch no longer applies: {rel}: {old[:60]!r}")
+        if old not in s:
+            if optional: return     # older builds (compare.sh) predate this line
+            sys.exit(f"harness patch no longer applies: {rel}: {old[:60]!r}")
         s=s.replace(old,new,1)
     open(p,'w').write(s)
 patch("theme.qml", [('        return (settingsStore.get("Frame counter", "No")) === "Yes";',
@@ -28,6 +30,10 @@ patch("Global/FrameCounter.qml", [
     ('''            if (!counter.idle)
                 console.log("[perf]", Qt.formatTime(new Date(), "hh:mm:ss"), "fps", counter.frames, "worst", Math.round(counter.worstMs));''',
      '''            console.log('[perf]', Qt.formatTime(new Date(), 'hh:mm:ss'), 'fps', counter.frames, 'worst', Math.round(counter.worstMs), 'tiles', Probe.created, Probe.destroyed, 'alive', Probe.created-Probe.destroyed, 'arms', Probe.loads);''')])
+# RetroAchievements: the fake API (fake_ra.py) instead of retroachievements.org.
+patch("RetroAchievements/CheevosData.qml", [
+    ('readonly property string apiBase: "https://retroachievements.org/API/API_"',
+     'readonly property string apiBase: "http://127.0.0.1:8765/API/API_" // TEST HARNESS')], optional=True)
 patch("Global/DynamicGridItem.qml", [
     ('import QtQuick 2.15', 'import QtQuick 2.15\nimport "probe.js" as Probe'),
     ('    Component.onCompleted: takeGame()', '    Component.onCompleted: { takeGame(); Probe.created++; }\n    Component.onDestruction: Probe.destroyed++')])

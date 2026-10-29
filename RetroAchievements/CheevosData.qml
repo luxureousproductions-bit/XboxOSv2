@@ -10,6 +10,27 @@ id: root
     // ── Public properties ────────────────────────────────────────────────
     property alias raRecentGames: raRecentGames
     property alias raGameCheevos: raGameCheevos
+    property alias raLibrary:     raLibrary
+
+    // Where the web API lives. One property so the test harness can point
+    // it at a local fake server (tools/harness/sync.sh); never changed here.
+    readonly property string apiBase: "https://retroachievements.org/API/API_"
+
+    // ── Every game you've played (Gaming tab) and your awards (Awards tab) ─
+    // Loaded the first time the RA page opens, not at startup. Totals are
+    // worked out once per load, not bound per row.
+    property bool   libraryLoaded:    false
+    property bool   libraryLoading:   false
+    property int    libraryTotal:     0      // games RA says you've played
+    property int    totalAwarded:     0      // achievements unlocked, softcore or hardcore
+    property int    totalPossible:    0      // achievements in those games
+    property bool   awardsLoaded:     false
+    property int    awardsTotal:      0
+    property int    masteredCount:    0      // 100% in hardcore (Xbox "Mythic")
+    property int    completedCount:   0      // 100% in softcore
+    property int    beatenCount:      0      // beaten, hardcore + softcore
+    property int    eventAwardsCount: 0      // event + site awards
+    property var    awardsList:       []     // newest first
 
     property string raUserName:      ""
     property string raApiKey:        ""
@@ -61,7 +82,7 @@ id: root
         u = u.trim();
         if (u === "" || k === "") { verifyState = "empty"; verifyName = ""; return; }
         verifyState = "checking";
-        var url = "https://retroachievements.org/API/API_GetUserProfile.php?z=" + encodeURIComponent(u)
+        var url = apiBase + "GetUserProfile.php?z=" + encodeURIComponent(u)
                 + "&y=" + encodeURIComponent(k) + "&u=" + encodeURIComponent(u);
         var xhr = new XMLHttpRequest();
         xhr.open("GET", url, true);
@@ -213,6 +234,7 @@ id: root
     // ── Internal models ──────────────────────────────────────────────────
     ListModel { id: raRecentGames }
     ListModel { id: raGameCheevos }
+    ListModel { id: raLibrary }
 
     // ── Filtered / sorted view of raGameCheevos ───────────────────────────
     // JS array rebuilt whenever the model, filter, or sort changes.
@@ -300,7 +322,7 @@ id: root
             if (errorHandler) errorHandler();
             return;
         }
-        var url = "https://retroachievements.org/API/API_" + apiName
+        var url = apiBase + apiName
                   + ".php?z=" + encodeURIComponent(raUserName)
                   + "&y=" + encodeURIComponent(raApiKey)
                   + (args !== "" ? "&" + args : "");
@@ -330,6 +352,80 @@ id: root
     }
 
     // ── API calls ────────────────────────────────────────────────────────
+
+    // Every game with progress, 500 per request (RA's maximum), newest
+    // activity first. A load that's overtaken by a newer one is dropped.
+    property int _libGen: 0
+    function loadLibrary() {
+        if (libraryLoading) return;
+        var gen = ++_libGen;
+        libraryLoading = true;
+        raLibrary.clear();
+        var awarded = 0, possible = 0;
+        function page(offset) {
+            raRequest("GetUserCompletionProgress",
+                "u=" + encodeURIComponent(raUserName) + "&c=500&o=" + offset,
+                function(resp) {
+                    if (gen !== _libGen) return;
+                    var rows = resp.Results || resp.results || [];
+                    var total = parseInt(resp.Total !== undefined ? resp.Total : resp.total) || 0;
+                    var batch = [];     // one append per page: 500 single appends cost a visible hitch
+                    for (var i = 0; i < rows.length; i++) {
+                        var g = rows[i];
+                        var max = parseInt(g.MaxPossible) || 0;
+                        var n   = parseInt(g.NumAwarded)  || 0;
+                        var hc  = parseInt(g.NumAwardedHardcore) || 0;
+                        awarded += n; possible += max;
+                        batch.push({
+                            "GameID":       parseInt(g.GameID) || 0,
+                            "Title":        g.Title       || "",
+                            "ImageIcon":    g.ImageIcon   || "",
+                            "ConsoleID":    parseInt(g.ConsoleID) || 0,
+                            "ConsoleName":  g.ConsoleName || "",
+                            "MaxPossible":  max,
+                            "NumAwarded":   n,
+                            "NumAwardedHardcore": hc,
+                            // "mastered" | "completed" | "beaten-hardcore" | "beaten-softcore" | ""
+                            "Award":        g.HighestAwardKind || "",
+                            "AwardDate":    g.HighestAwardDate || "",
+                            "LastUnlock":   g.MostRecentAwardedDate || "",
+                            "Progress":     max > 0 ? n / max : 0.0
+                        });
+                    }
+                    raLibrary.append(batch);
+                    var next = offset + rows.length;
+                    if (rows.length > 0 && next < total) { page(next); return; }
+                    libraryTotal  = total > 0 ? total : raLibrary.count;
+                    totalAwarded  = awarded;
+                    totalPossible = possible;
+                    libraryLoaded = true;
+                    libraryLoading = false;
+                    console.log("[RA] library: " + raLibrary.count + " games, "
+                                + awarded + "/" + possible + " achievements");
+                },
+                function() { if (gen === _libGen) libraryLoading = false; });
+        }
+        page(0);
+    }
+
+    // Award counts and the visible awards, newest first.
+    function loadAwards() {
+        raRequest("GetUserAwards", "u=" + encodeURIComponent(raUserName),
+            function(resp) {
+                function n(k) { return parseInt(resp[k]) || 0; }
+                awardsTotal      = n("TotalAwardsCount");
+                masteredCount    = n("MasteryAwardsCount");
+                completedCount   = n("CompletionAwardsCount");
+                beatenCount      = n("BeatenHardcoreAwardsCount") + n("BeatenSoftcoreAwardsCount");
+                eventAwardsCount = n("EventAwardsCount") + n("SiteAwardsCount");
+                var list = (resp.VisibleUserAwards || []).slice(0);
+                list.sort(function(a, b) { return String(b.AwardedAt).localeCompare(String(a.AwardedAt)); });
+                awardsList = list;
+                awardsLoaded = true;
+                console.log("[RA] awards: " + awardsTotal + " total, " + masteredCount + " mastered, "
+                            + beatenCount + " beaten, " + completedCount + " completed");
+            });
+    }
 
     function loadUserProfile() {
         profileLoaded = true;

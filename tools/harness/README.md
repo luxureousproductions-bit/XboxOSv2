@@ -59,6 +59,22 @@ settings files write keys as `<name>` plus `<name>Index`. The json in
 `drawerrun.sh` writes only the value, so a Settings row can show its default
 there while the theme uses your value.
 
+## RetroAchievements (fake API)
+
+Cloud sessions can't reach retroachievements.org, so `sync.sh` points the
+theme's `apiBase` (RetroAchievements/CheevosData.qml) at a local fake:
+
+```bash
+python3 tools/harness/fake_ra.py &          # port 8765
+bash tools/harness/drawerrun.sh ra '{"RA Username":"Tester","RA API Key":"x"}' \
+     wait:4000 up right right enter wait:4000 shot:ra
+```
+
+It serves 620 played games (two pages of GetUserCompletionProgress), awards
+of every kind, profile, rank and recent games. Box art and avatars don't
+load (they come from media.retroachievements.org). Real data still needs a
+check on a device.
+
 ## The standard scenario
 
 `scenario.sh` boots, rests on Home, opens a system and holds Down for 5 s.

@@ -4,9 +4,14 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 69)
+## Unreleased — seriesSX branch (build 70)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **RetroAchievements redesign, step 1 of 5: the data** (nothing new on screen yet). The first time you open the RA page, the theme now also loads every game you've played with your progress and award level (RA's completion list, 500 games per request), and your award counts: mastered, completed, beaten, events. These feed the Gaming and Awards tabs in the next steps. Loaded once per session, not at startup.
+- **Test harness: a fake RetroAchievements server** (`tools/harness/fake_ra.py`, 620 games, every award kind), so the RA pages can be tested in cloud sessions. The theme's API address is one property now (`apiBase`) for this.
+
+## build 69
 
 - **Bottom fades fade into your background, not black.** Root cause: `theme.main` is stored as text, so the fades in the Library, Game details and the three RetroAchievements pages built their colour from channels that don't exist and drew black on every background. Barely visible on Dark; a black smear on Light. They use a real colour now (`mainA()` in theme.qml), the same fix as the accent tints in build 62.
 - **Light polish:**

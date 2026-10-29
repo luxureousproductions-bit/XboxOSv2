@@ -48,6 +48,9 @@ id: root
                 cheevosData.loadUserProfile();
                 cheevosData.loadRecentGames();
             }
+            // Gaming and Awards tabs: once per session, the first time here.
+            if (cheevosData.raUserName !== "" && !cheevosData.libraryLoaded) cheevosData.loadLibrary();
+            if (cheevosData.raUserName !== "" && !cheevosData.awardsLoaded)  cheevosData.loadAwards();
         }
     }
 
