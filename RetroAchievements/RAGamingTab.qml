@@ -140,24 +140,27 @@ id: tab
                     text: "Sort: " + tab.sortNames[tab.sortIndex]
                     color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(16)
                 }
-                Text {
+                RAIcon {
                     anchors { right: parent.right; rightMargin: vpx(14); verticalCenter: parent.verticalCenter }
-                    text: "›"; rotation: 90
-                    color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(22)
+                    source: "../assets/images/fluent/chevron_down.svg"
                 }
                 TapHandler { onTapped: { tab.sortIndex = (tab.sortIndex + 1) % tab.sortNames.length; playToggle(); } }
             }
             Rectangle {
                 readonly property bool hot: tab.zone === 1 && tab.toolIndex === 1 && tab.activeFocus
                 anchors.right: parent.right
-                width: filterText.implicitWidth + vpx(32); height: parent.height
+                width: filterRow.implicitWidth + vpx(32); height: parent.height
                 color: tab.cardColor
                 border.width: hot ? vpx(3) : 0; border.color: theme.text
-                Text {
-                id: filterText
+                Row {
+                id: filterRow
                     anchors.centerIn: parent
-                    text: "Filter: " + tab.filterNames[tab.filterIndex]
-                    color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(16)
+                    spacing: vpx(8)
+                    RAIcon { source: "../assets/images/fluent/filter.svg"; anchors.verticalCenter: parent.verticalCenter }
+                    Text {
+                        text: "Filter: " + tab.filterNames[tab.filterIndex]
+                        color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(16)
+                    }
                 }
                 TapHandler { onTapped: { tab.filterIndex = (tab.filterIndex + 1) % tab.filterNames.length; playToggle(); } }
             }
@@ -265,8 +268,16 @@ id: tab
                                 color: theme.text
                                 font.family: bodyFont.name; font.pixelSize: fpx(16)
                             }
+                            Item { width: vpx(10); height: 1; visible: g.Award === "beaten-hardcore" || g.Award === "beaten-softcore" }
+                            RAIcon {
+                                size: vpx(14)
+                                visible: g.Award === "beaten-hardcore" || g.Award === "beaten-softcore"
+                                anchors.verticalCenter: parent.verticalCenter
+                                source: "../assets/images/fluent/flag.svg"
+                                opacity: 0.7
+                            }
                             Text {
-                                leftPadding: vpx(18)
+                                leftPadding: (g.Award === "beaten-hardcore" || g.Award === "beaten-softcore") ? 0 : vpx(18)
                                 visible: g.Award !== ""
                                 text: g.Award === "mastered" ? "MASTERED"
                                     : g.Award === "completed" ? "COMPLETED"

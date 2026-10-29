@@ -4,9 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 73)
+## Unreleased — seriesSX branch (build 74)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **RetroAchievements redesign, step 5 of 5: icons.** Sort gets a proper dropdown chevron, Filter its funnel icon, and beaten games a flag (on the Gaming cards and the Awards tiles). They're Microsoft's Fluent UI System Icons, the family Xbox's own menus are drawn in (MIT licence, credited in THIRD_PARTY_NOTICES.md); white on Dark, dark on Light. The header's mastery star, achievements hexagon and points mark are original shapes drawn for the theme, not Xbox's artwork.
+
+## build 73
 
 - **RetroAchievements redesign, step 4 of 5: the Awards tab** (tabs are now Recent · Gaming · Awards · Search). Your trophy case, newest first: each award as a tile with the game's icon, name, the kind of award and its date; mastered games keep the Mythic-style frame. The rail filters by kind with counts: All awards, Mastered, Beaten, Completed, Events & site. Left from the first column reaches the rail, Up/Down there change the filter, Right goes back; A opens the game's achievements.
 - **Gaming and Awards lists no longer slide over the header or the Sort row when scrolled** (they're clipped, with room left for the focus outline and the frame's glow).

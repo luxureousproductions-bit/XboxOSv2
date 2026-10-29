@@ -170,17 +170,26 @@ id: tab
                         color: theme.text
                         font.family: titleFont.name; font.pixelSize: fpx(15)
                     }
-                    Text {
-                        width: parent.width
-                        horizontalAlignment: Text.AlignHCenter
-                        text: (t.kind === "mastered" ? "MASTERED"
-                              : t.kind === "completed" ? "COMPLETED · softcore"
-                              : t.kind === "beaten-hardcore" ? "BEATEN"
-                              : t.kind === "beaten-softcore" ? "BEATEN · softcore" : "AWARD")
-                              + "  ·  " + tab.dateText(t.date)
-                        color: t.kind === "mastered" ? tab.mixc(tab.cAccent, Qt.rgba(1, 1, 1, 1), whiteBackground ? 0 : 0.5) : theme.text
-                        opacity: t.kind === "mastered" ? 1 : 0.7
-                        font.family: bodyFont.name; font.pixelSize: fpx(12)
+                    Row {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        spacing: vpx(5)
+                        RAIcon {
+                            size: vpx(12)
+                            visible: t.kind === "beaten-hardcore" || t.kind === "beaten-softcore"
+                            anchors.verticalCenter: parent.verticalCenter
+                            source: "../assets/images/fluent/flag.svg"
+                            opacity: 0.7
+                        }
+                        Text {
+                            text: (t.kind === "mastered" ? "MASTERED"
+                                  : t.kind === "completed" ? "COMPLETED · softcore"
+                                  : t.kind === "beaten-hardcore" ? "BEATEN"
+                                  : t.kind === "beaten-softcore" ? "BEATEN · softcore" : "AWARD")
+                                  + "  ·  " + tab.dateText(t.date)
+                            color: t.kind === "mastered" ? tab.mixc(tab.cAccent, Qt.rgba(1, 1, 1, 1), whiteBackground ? 0 : 0.5) : theme.text
+                            opacity: t.kind === "mastered" ? 1 : 0.7
+                            font.family: bodyFont.name; font.pixelSize: fpx(12)
+                        }
                     }
                 }
             }
