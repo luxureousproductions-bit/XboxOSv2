@@ -4,9 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 67)
+## Unreleased — seriesSX branch (build 68)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Merged refresh build 64** (the NavPill nav buttons, below). refresh takes no more changes; everything continues here.
+
+## build 67
 
 - **Background is Dark or Light, like the Xbox** (Settings › Appearance). Dark is the dashboard's own surface, #1F1F1F; Light is #F2F2F2. The other 31 backgrounds are gone: on first start White becomes Light and every other one becomes Dark. The default is Dark (was Black).
 
@@ -23,6 +27,13 @@ The Xbox Series dashboard redesign, page by page, branched from refresh build 63
 ## build 64
 
 - **"Startup chime" is now "Achievement/Welcome Toast"** (Settings › Previews & sound), the sound's real name. Only the label changed: your on/off choice is kept. The card spans two columns so the longer name fits.
+
+## refresh branch (build 64), merged into seriesSX build 68
+
+- **Nav icons go from outline to filled, as on the Xbox:** in every nav bar (Home, Library, Game details) the library, RetroAchievements, settings and home icons are outlines at rest and fill in white when focused. The App Drawer's RetroAchievements and settings tiles do the same. Discover and Search stay outlines, as on the Xbox.
+- **New home icon:** an outline house (filled when focused), also in the App Drawer's Home row.
+- **Focus ring:** a thin accent ring with a hair of dark gap before the black disc. Its glow now follows Settings › Frame glow (off = a plain ring).
+- One shared component draws every nav button now (Global/NavPill.qml), so the three bars can't drift apart. Measured against build 63 with the test harness: no performance change.
 
 ## refresh branch (build 63)
 
