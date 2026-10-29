@@ -77,7 +77,7 @@ id: root
     // ── Header (Xbox "Gaming" tab style) ─────────────────────────────────
     // Tabs grow as the redesign lands: Gaming and Awards come next. Search
     // isn't a page of its own: choosing it opens the library search (X).
-    readonly property var raTabs: ["Recent", "Gaming", "Search"]
+    readonly property var raTabs: ["Recent", "Gaming", "Awards", "Search"]
     property int raTab: 1                       // opens on Gaming, as on the Xbox
     readonly property string tabName: raTabs[raTab]
     function selectTab(i) {
@@ -396,6 +396,14 @@ id: root
     id: gamingTab
         anchors { top: achievementsHeader.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
         visible: cheevosData.raUserName !== "" && tabName === "Gaming"
+        focus: visible
+    }
+
+    // ── Awards tab: your trophy case (RAAwardsTab.qml) ───────────────────
+    RAAwardsTab {
+    id: awardsTab
+        anchors { top: achievementsHeader.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
+        visible: cheevosData.raUserName !== "" && tabName === "Awards"
         focus: visible
     }
 

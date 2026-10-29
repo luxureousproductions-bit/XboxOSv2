@@ -172,15 +172,20 @@ id: tab
         // ── The games ────────────────────────────────────────────────────
         ListView {
         id: list
-            anchors { left: parent.left; right: parent.right; top: parent.top; topMargin: vpx(131); bottom: parent.bottom }
+            // Clipped so scrolled cards don't slide over Sort/Filter; the
+            // padding keeps the focus outline and the frame glow inside.
+            // The tab's Keys do all moves (keyNavigationEnabled off).
+            anchors { left: parent.left; leftMargin: -vpx(10); right: parent.right; rightMargin: -vpx(10); top: parent.top; topMargin: vpx(121); bottom: parent.bottom }
+            leftMargin: vpx(10); rightMargin: vpx(10); topMargin: vpx(10)
             model: tab.games
             spacing: vpx(10)
-            clip: false
+            clip: true
+            keyNavigationEnabled: false
             cacheBuffer: vpx(300)
             focus: tab.zone === 2
             highlightMoveDuration: 120
-            preferredHighlightBegin: vpx(6)
-            preferredHighlightEnd: vpx(140)
+            preferredHighlightBegin: vpx(10)
+            preferredHighlightEnd: vpx(144)
             highlightRangeMode: ListView.ApplyRange
             property bool navReady: false
             Component.onCompleted: navReady = true
@@ -201,7 +206,7 @@ id: tab
                 readonly property bool mastered: g.Award === "mastered"
                 readonly property bool selected: ListView.isCurrentItem && tab.zone === 2 && tab.activeFocus
                 readonly property int pct: g.MaxPossible > 0 ? Math.floor(g.NumAwarded * 100 / g.MaxPossible) : 0
-                width: list.width; height: vpx(124)
+                width: list.width - vpx(20); height: vpx(124)
 
                 Rectangle {
                     anchors.fill: parent
