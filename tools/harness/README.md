@@ -88,6 +88,11 @@ worst_ms. One round of `compare.sh` isn't enough either: builds 62 and 63
 (which differ only in the nav pills) were 6 fps apart on platform_race in
 a single round.
 
+**The machine's speed changes between sessions, and even within a day.** On
+the evening of Oct 28 the same build 63 hit the 60 fps cap on every segment
+except home_race (~46 fps). So the table above shows the shape, not numbers
+to match: always measure with `compare.sh` in the same session.
+
 **What counts as a regression:** run `compare.sh <previous build> 2`.
 - A race segment's interleaved average down more than ~10% (single runs swing
   ±3 fps).

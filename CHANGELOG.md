@@ -4,7 +4,14 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — refresh branch (build 63)
+## Unreleased — refresh branch (build 64)
+
+- **Nav icons go from outline to filled, as on the Xbox:** in every nav bar (Home, Library, Game details) the library, RetroAchievements, settings and home icons are outlines at rest and fill in white when focused. The App Drawer's RetroAchievements and settings tiles do the same. Discover and Search stay outlines, as on the Xbox.
+- **New home icon:** an outline house (filled when focused), also in the App Drawer's Home row.
+- **Focus ring:** a thin accent ring with a hair of dark gap before the black disc. Its glow now follows Settings › Frame glow (off = a plain ring).
+- One shared component draws every nav button now (Global/NavPill.qml), so the three bars can't drift apart. Measured against build 63 with the test harness: no performance change.
+
+## build 63
 
 - **Test harness in the repo** (`tools/harness/`, no theme change): the setup, scripts, standard performance scenario, an A/B compare script and the build 63 baseline, so later work can be checked against the performance gains of the refresh. Pegasus for it lives on the `harness-pegasus` branch.
 

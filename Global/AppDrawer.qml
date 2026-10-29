@@ -99,9 +99,9 @@ id: root
     ].concat(pcMode ? [] : [            // no Discover tile on Windows / Linux
         { act: "discover",     icon: "../assets/images/icon_discover.svg", scale: 0.80 }
     ]).concat([
-        { act: "achievements", icon: "../assets/images/trophy.svg",       scale: 0.92 },
+        { act: "achievements", icon: "../assets/images/trophy_outline.svg", iconFill: "../assets/images/trophy_fill.svg", scale: 0.92 },
         { act: "search",       icon: "../assets/images/icon_search.svg",   scale: 0.84 },
-        { act: "settings",     icon: "../assets/images/settingsicon.svg",  scale: 0.92 }
+        { act: "settings",     icon: "../assets/images/settingsicon.svg",  iconFill: "../assets/images/settingsicon_fill.svg", scale: 0.92 }
     ]).concat((pcMode && powerApps.length > 0)
              ? [{ act: "power", icon: "../assets/images/icon_power.svg", scale: 0.84 }] : [])
 
@@ -992,6 +992,20 @@ ListView {
                         sourceSize { width: Math.round(width * 2); height: Math.round(width * 2) }
                         fillMode: Image.PreserveAspectFit
                         smooth: true
+                        // Outline at rest; the filled twin below shows on focus
+                        // (both stay loaded, so the swap never blanks a frame).
+                        visible: !(parent.current && modelData.iconFill !== undefined)
+                    }
+                    Image {
+                        anchors.centerIn: parent
+                        width: actionBar.tileSize * 0.5
+                               * (modelData.scale !== undefined ? modelData.scale : 1)
+                        height: width
+                        source: modelData.iconFill !== undefined ? modelData.iconFill : ""
+                        sourceSize { width: Math.round(width * 2); height: Math.round(width * 2) }
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                        visible: parent.current && modelData.iconFill !== undefined
                     }
 
                     // Accent pip marks the toggle's on-state; the icon itself

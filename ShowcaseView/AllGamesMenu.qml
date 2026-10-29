@@ -1167,9 +1167,10 @@ id: root
         // Nav buttons (home / discover / achievements / settings)
         Rectangle {
         id: homebutton
+            color: "transparent"
+            NavPill { focused: homebutton.focus; light: whiteBackground; icon: "../assets/images/icon_home.svg"; iconFilled: "../assets/images/icon_home_fill.svg" }
             width: vpx(36); height: vpx(36); radius: height/2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(81) }
-            color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
             Keys.onDownPressed:  { playNav(); focusGames(); }
             Keys.onRightPressed: { playNav(); discoverbutton.focus = true; }
             Keys.onPressed: {
@@ -1179,23 +1180,14 @@ id: root
                 if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); settingsbutton.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: showcaseScreen(); }
-            Image {
-                anchors.centerIn: parent
-                width: vpx(24); height: vpx(24)
-                sourceSize: Qt.size(vpx(24), vpx(24))
-                source: "../assets/images/icon_home.svg"
-                layer.enabled: whiteBackground
-                layer.effect: ColorOverlay { color: "black" }
-                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
-                opacity: homebutton.focus ? 1 : 0.7
-            }
         }
 
         Rectangle {
         id: discoverbutton
+            color: "transparent"
+            NavPill { focused: discoverbutton.focus; light: whiteBackground; icon: "../assets/images/icon_discover.svg" }
             width: vpx(36); height: vpx(36); radius: height/2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(27) }
-            color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
             Keys.onDownPressed:  { playNav(); focusGames(); }
             Keys.onLeftPressed:  { playNav(); homebutton.focus = true; }
             Keys.onRightPressed: { playNav(); achievementsbutton.focus = true; }
@@ -1206,23 +1198,14 @@ id: root
                 if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); homebutton.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: discoverScreen(scopedColl); }
-            Image {
-                anchors { fill: parent; margins: vpx(6) }
-                source: "../assets/images/icon_discover.svg"
-                // Rasterised above display size so it stays sharp on a TV.
-                sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
-                layer.enabled: whiteBackground
-                layer.effect: ColorOverlay { color: "black" }
-                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
-                opacity: discoverbutton.focus ? 1.0 : 0.85
-            }
         }
 
         Rectangle {
         id: achievementsbutton
+            color: "transparent"
+            NavPill { focused: achievementsbutton.focus; light: whiteBackground; icon: "../assets/images/trophy_outline.svg"; iconFilled: "../assets/images/trophy_fill.svg" }
             width: vpx(36); height: vpx(36); radius: height/2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(27) }
-            color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
             Keys.onDownPressed:  { playNav(); focusGames(); }
             Keys.onLeftPressed:  { playNav(); discoverbutton.focus = true; }
             Keys.onRightPressed: { playNav(); settingsbutton.focus = true; }
@@ -1233,23 +1216,14 @@ id: root
                 if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); discoverbutton.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: achievementsScreen(); }
-            Image {
-                anchors.centerIn: parent
-                width: vpx(24); height: vpx(24)
-                sourceSize: Qt.size(vpx(24), vpx(24))
-                source: "../assets/images/trophy.svg"
-                layer.enabled: whiteBackground
-                layer.effect: ColorOverlay { color: "black" }
-                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
-                opacity: achievementsbutton.focus ? 1 : 0.7
-            }
         }
 
         Rectangle {
         id: settingsbutton
+            color: "transparent"
+            NavPill { focused: settingsbutton.focus; light: whiteBackground; icon: "../assets/images/settingsicon.svg"; iconFilled: "../assets/images/settingsicon_fill.svg" }
             width: vpx(36); height: vpx(36); radius: height/2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(81) }
-            color: focus ? theme.accent : "transparent"; opacity: focus ? 1 : 0.6
             Keys.onDownPressed: { playNav(); focusGames(); }
             Keys.onLeftPressed: { playNav(); achievementsbutton.focus = true; }
             Keys.onPressed: {
@@ -1259,21 +1233,12 @@ id: root
                 if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playNav(); achievementsbutton.focus = true; }
             }
             MouseArea { anchors.fill: parent; onClicked: settingsScreen(); }
-            Image {
-                anchors.centerIn: parent
-                width: vpx(24); height: vpx(24)
-                sourceSize: Qt.size(vpx(24), vpx(24))
-                source: "../assets/images/settingsicon.svg"
-                layer.enabled: whiteBackground
-                layer.effect: ColorOverlay { color: "black" }
-                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
-            }
         }
 
         // Nav button labels — shown only when the button is highlighted
         Text {
             text: "Home"
-            anchors { top: homebutton.bottom; topMargin: vpx(3); horizontalCenter: homebutton.horizontalCenter }
+            anchors { top: homebutton.bottom; topMargin: vpx(8); horizontalCenter: homebutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: homebutton.focus ? 1 : 0
@@ -1281,7 +1246,7 @@ id: root
         }
         Text {
             text: "Discover"
-            anchors { top: discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: discoverbutton.horizontalCenter }
+            anchors { top: discoverbutton.bottom; topMargin: vpx(8); horizontalCenter: discoverbutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: discoverbutton.focus ? 1 : 0
@@ -1289,7 +1254,7 @@ id: root
         }
         Text {
             text: "RetroAchievements"
-            anchors { top: achievementsbutton.bottom; topMargin: vpx(3); horizontalCenter: achievementsbutton.horizontalCenter }
+            anchors { top: achievementsbutton.bottom; topMargin: vpx(8); horizontalCenter: achievementsbutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: achievementsbutton.focus ? 1 : 0
@@ -1297,7 +1262,7 @@ id: root
         }
         Text {
             text: "Settings"
-            anchors { top: settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: settingsbutton.horizontalCenter }
+            anchors { top: settingsbutton.bottom; topMargin: vpx(8); horizontalCenter: settingsbutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: settingsbutton.focus ? 1 : 0

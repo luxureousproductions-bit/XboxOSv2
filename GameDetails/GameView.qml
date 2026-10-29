@@ -927,20 +927,10 @@ id: root
         // 4 nav buttons — centered in header
         Rectangle {
         id: gv_homebutton
+            color: "transparent"
+            NavPill { focused: gv_homebutton.focus; light: whiteBackground; icon: "../assets/images/icon_home.svg"; iconFilled: "../assets/images/icon_home_fill.svg" }
             width: vpx(32); height: vpx(32); radius: height / 2
             anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(48) }
-            color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.6
-            layer.enabled: true
-            layer.effect: DropShadow {
-                cached: true   // static: blur once, not every frame
-                transparentBorder: true
-                horizontalOffset: 0
-                verticalOffset: 0
-                radius: 8
-                samples: 17
-                color: "#cc000000"
-            }
 
             onFocusChanged: if (focus) playNav();
             Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
@@ -956,34 +946,14 @@ id: root
                 onEntered: gv_homebutton.focus = true; onExited: gv_homebutton.focus = false;
                 onClicked: showcaseScreen();
             }
-            Image {
-                anchors.centerIn: parent
-                width: vpx(24); height: vpx(24)
-                sourceSize: Qt.size(vpx(24), vpx(24))
-                source: "../assets/images/icon_home.svg"
-                layer.enabled: whiteBackground
-                layer.effect: ColorOverlay { color: "black" }
-                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
-                opacity: parent.focus ? 1 : 0.7
-            }
         }
 
         Rectangle {
         id: gv_discoverbutton
+            color: "transparent"
+            NavPill { focused: gv_discoverbutton.focus; light: whiteBackground; icon: "../assets/images/icon_discover.svg" }
             width: vpx(32); height: vpx(32); radius: height / 2
             anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(0) }
-            color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.6
-            layer.enabled: true
-            layer.effect: DropShadow {
-                cached: true   // static: blur once, not every frame
-                transparentBorder: true
-                horizontalOffset: 0
-                verticalOffset: 0
-                radius: 8
-                samples: 17
-                color: "#cc000000"
-            }
 
             onFocusChanged: if (focus) playNav();
             Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
@@ -1000,35 +970,15 @@ id: root
                 onEntered: gv_discoverbutton.focus = true; onExited: gv_discoverbutton.focus = false;
                 onClicked: discoverScreen();
             }
-            Image {
-                anchors { fill: parent; margins: vpx(5) }
-                source: "../assets/images/icon_discover.svg"
-                // Rasterised above display size so it stays sharp on a TV.
-                sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
-                layer.enabled: whiteBackground
-                layer.effect: ColorOverlay { color: "black" }
-                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
-                opacity: gv_discoverbutton.focus ? 1.0 : 0.85
-            }
         }
 
 
         Rectangle {
         id: gv_settingsbutton
+            color: "transparent"
+            NavPill { focused: gv_settingsbutton.focus; light: whiteBackground; icon: "../assets/images/settingsicon.svg"; iconFilled: "../assets/images/settingsicon_fill.svg" }
             width: vpx(32); height: vpx(32); radius: height / 2
             anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(48) }
-            color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.6
-            layer.enabled: true
-            layer.effect: DropShadow {
-                cached: true   // static: blur once, not every frame
-                transparentBorder: true
-                horizontalOffset: 0
-                verticalOffset: 0
-                radius: 8
-                samples: 17
-                color: "#cc000000"
-            }
 
             onFocusChanged: if (focus) playNav();
             Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
@@ -1044,21 +994,12 @@ id: root
                 onEntered: gv_settingsbutton.focus = true; onExited: gv_settingsbutton.focus = false;
                 onClicked: settingsScreen();
             }
-            Image {
-                anchors.centerIn: parent
-                width: vpx(24); height: vpx(24)
-                sourceSize: Qt.size(vpx(24), vpx(24))
-                source: "../assets/images/settingsicon.svg"; smooth: true; asynchronous: true
-                layer.enabled: whiteBackground
-                layer.effect: ColorOverlay { color: "black" }
-                opacity: parent.focus ? 1 : 0.7
-            }
         }
 
         // Nav button labels — shown only when the button is highlighted
         Text {
             text: "Home"
-            anchors { top: gv_homebutton.bottom; topMargin: vpx(3); horizontalCenter: gv_homebutton.horizontalCenter }
+            anchors { top: gv_homebutton.bottom; topMargin: vpx(8); horizontalCenter: gv_homebutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: titleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: gv_homebutton.focus ? 1 : 0
@@ -1066,7 +1007,7 @@ id: root
         }
         Text {
             text: "Discover"
-            anchors { top: gv_discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: gv_discoverbutton.horizontalCenter }
+            anchors { top: gv_discoverbutton.bottom; topMargin: vpx(8); horizontalCenter: gv_discoverbutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: titleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: gv_discoverbutton.focus ? 1 : 0
@@ -1074,7 +1015,7 @@ id: root
         }
         Text {
             text: "Settings"
-            anchors { top: gv_settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: gv_settingsbutton.horizontalCenter }
+            anchors { top: gv_settingsbutton.bottom; topMargin: vpx(8); horizontalCenter: gv_settingsbutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: titleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: gv_settingsbutton.focus ? 1 : 0
