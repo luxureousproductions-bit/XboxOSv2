@@ -143,9 +143,10 @@ function mythic(a, k) {
     var b = '<circle r="70" fill="url(#' + k + 'aura)"/>';
     for (var r = -90 + 22.5; r < 270; r += 45)
         b += '<polygon points="' + pt(pol(16, r - 2.5)) + ' ' + pt(pol(68, r)) + ' ' + pt(pol(16, r + 2.5)) + '" fill="url(#' + k + 'ray)"/>';
-    // Back star at 45°, darker and slimmer.
-    b += armHalves(k, "b", 46, 15, -45, [L(a, .45), L(a, .1)], [D(a, .1), D(a, .45)], d);
-    b += '<polygon points="' + pts(star(46, 15, -45)) + '" fill="none" stroke="' + D(a, .55) + '" stroke-width=".8" stroke-opacity=".8"/>';
+    // Back star at 45°, darker; long and thick enough to read beside the front arms.
+    b += armHalves(k, "b", 55, 22, -45, [L(a, .5), L(a, .12)], [D(a, .08), D(a, .45)], d);
+    b += '<polygon points="' + pts(star(55, 22, -45)) + '" fill="none" stroke="' + D(a, .55) + '" stroke-width="1" stroke-opacity=".85"/>';
+    b += '<polygon points="' + pts(star(53.5, 21, -45)) + '" fill="none" stroke="' + L(a, .7) + '" stroke-width=".6" stroke-opacity=".6"/>';
     // Main star: thick arms (waist 25 for tips at 62), lit/shaded halves.
     b += armHalves(k, "f", 62, 25, -90, ["#ffffff", L(a, .5)], [L(a, .35), D(a, .25)], d);
     b += '<polygon points="' + pts(star(62, 25, -90)) + '" fill="none" stroke="' + D(a, .5) + '" stroke-width="1.2"/>';

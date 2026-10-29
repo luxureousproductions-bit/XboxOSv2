@@ -4,9 +4,14 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 76)
+## Unreleased — seriesSX branch (build 77)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Mythic star:** the four smaller points behind the main star are longer and thicker.
+- **Awards rail** focuses like the Settings page list instead of with the accent frame: an accent plate while you're on the rail, a grey plate with an accent edge while you're in the tiles.
+
+## build 76
 
 - **Detailed RA header emblems**, drawn from your accent colour so every preset and custom colour gets its own metal and gem shades: **Total Points** is a scalloped medallion with an engraved ring, studs, a cut-gem coin and a raised P; **Total Achievements** a gem-cut hexagon with rivets, shaded facets and a glossy trophy in laurels; **Mythic Games** a thick bevelled four-point star with a cut diamond, a slimmer star behind it, rays and sparkles. Original designs (RetroAchievements/raEmblems.js), drawn as SVG once per accent; opening the RA page costs the same as before.
 - **The selected tab glows** softly in your accent, as on the console.

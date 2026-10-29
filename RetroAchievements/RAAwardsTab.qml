@@ -62,6 +62,7 @@ id: tab
     readonly property color cardColor: whiteBackground ? "#ffffff" : "#303030"
     readonly property color railSel:   whiteBackground ? "#ffffff" : "#2b2b2b"
     readonly property color cAccent:   theme.accent
+    readonly property bool  accentIsLight: (0.299 * cAccent.r + 0.587 * cAccent.g + 0.114 * cAccent.b) > 0.62
     function mixc(a, b, t) { return Qt.rgba(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, 1); }
     onActiveFocusChanged: if (activeFocus) grid.forceActiveFocus()
 
@@ -78,23 +79,25 @@ id: tab
                     readonly property bool on: index === tab.railIndex
                     readonly property bool hot: on && tab.railFocus && tab.activeFocus
                     width: rail.width; height: vpx(42)
-                    color: on ? tab.railSel : "transparent"
-                    RAFocus { on: parent.hot; radius: 0 }
+                    // As in Settings: an accent plate while the rail has focus,
+                    // a grey plate with an accent edge while you're in the grid.
+                    color: hot ? theme.accent : (on ? tab.railSel : "transparent")
+                    readonly property color ink: hot ? (tab.accentIsLight ? "#111111" : "white") : theme.text
                     Rectangle {
-                        visible: parent.on
+                        visible: parent.on && !parent.hot
                         anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
                         width: vpx(5); color: theme.accent
                     }
                     Text {
                         anchors { left: parent.left; leftMargin: vpx(74); verticalCenter: parent.verticalCenter }
                         text: modelData
-                        color: theme.text; opacity: parent.on ? 1 : 0.8
+                        color: parent.ink; opacity: parent.on ? 1 : 0.8
                         font.family: bodyFont.name; font.pixelSize: fpx(17)
                     }
                     Text {
                         anchors { right: parent.right; rightMargin: vpx(28); verticalCenter: parent.verticalCenter }
                         text: tab.counts[index]
-                        color: theme.text; opacity: 0.6
+                        color: parent.ink; opacity: parent.hot ? 0.85 : 0.6
                         font.family: bodyFont.name; font.pixelSize: fpx(15)
                     }
                     TapHandler { onTapped: { tab.railIndex = index; playNav(); } }
