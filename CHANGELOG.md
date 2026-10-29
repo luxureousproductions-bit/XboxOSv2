@@ -4,9 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 70)
+## Unreleased — seriesSX branch (build 71)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **RetroAchievements redesign, step 2 of 5: the header**, after the Xbox Series Gaming tab. A band in your accent's dark shades (the ones Xbox pairs with each colour) with your avatar, name and points top left, the tabs in the middle and three stats: **Total Points** with a bar to the next 5,000-point milestone and your rank, **Total Achievements** out of everything in the games you've played, and **Mastered Games** (RA's 100% in hardcore, Xbox's "Mythic") with your beaten and completed counts. LB/RB change tabs; for now they're Recent and Search (Search opens the RA search, like X). Gaming and Awards arrive in the next steps. Y (Refresh) reloads the new totals too.
+
+## build 70
 
 - **RetroAchievements redesign, step 1 of 5: the data** (nothing new on screen yet). The first time you open the RA page, the theme now also loads every game you've played with your progress and award level (RA's completion list, 500 games per request), and your award counts: mastered, completed, beaten, events. These feed the Gaming and Awards tabs in the next steps. Loaded once per session, not at startup.
 - **Test harness: a fake RetroAchievements server** (`tools/harness/fake_ra.py`, 620 games, every award kind), so the RA pages can be tested in cloud sessions. The theme's API address is one property now (`apiBase`) for this.

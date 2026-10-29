@@ -74,115 +74,29 @@ id: root
         onReleased: mouse.accepted = true
     }
 
-    // ── Header ───────────────────────────────────────────────────────────
-    Item {
+    // ── Header (Xbox "Gaming" tab style) ─────────────────────────────────
+    // Tabs grow as the redesign lands: Gaming and Awards come next. Search
+    // isn't a page of its own: choosing it opens the library search (X).
+    readonly property var raTabs: ["Recent", "Search"]
+    property int raTab: 0
+    function selectTab(i) {
+        if (i < 0 || i >= raTabs.length) return;
+        if (raTabs[i] === "Search") { openLibrarySearch("ra"); return; }
+        if (i !== raTab) { raTab = i; playNav(); }
+    }
+    function stepTab(d) {
+        var i = raTab + d;
+        if (i < 0 || i >= raTabs.length) return;
+        selectTab(i);
+    }
+
+    RAHeader {
     id: achievementsHeader
-
         anchors { top: parent.top; left: parent.left; right: parent.right }
-        height: vpx(120)   // the header band, same as every other screen
-
-        // Header band: the theme colour; the content surface below is dimmed,
-        // and that contrast is the separator — no accent lines.
-        Rectangle { anchors.fill: parent; color: theme.main; z: -1 }
-
-        // RA logo
-        Image {
-        id: raLogo
-            anchors {
-                left: parent.left; leftMargin: vpx(5)
-                top: parent.top; bottom: parent.bottom
-                topMargin: vpx(4); bottomMargin: vpx(4)
-            }
-            width: height
-            source: "../assets/images/icon_ra.svg"
-            fillMode: Image.PreserveAspectFit
-            smooth: true
-            asynchronous: true
-            sourceSize { width: hrpx(96); height: hrpx(96) }
-        }
-
-        // Avatar + username + points + rank + member since
-        Row {
-            anchors {
-                left: raLogo.right; leftMargin: vpx(12)
-                verticalCenter: parent.verticalCenter
-            }
-            spacing: vpx(12)
-
-            // Circular avatar (OpacityMask clip) + accent ring
-            Item {
-                width: vpx(56); height: vpx(56)
-                visible: cheevosData.avatarUrl !== ""
-                Image {
-                id: raOverviewAvatar
-                    anchors.fill: parent
-                    source: cheevosData.avatarUrl
-                    fillMode: Image.PreserveAspectCrop
-                    smooth: true
-                    asynchronous: true
-                    sourceSize { width: hrpx(64); height: hrpx(64) }
-                    layer.enabled: true
-                    layer.smooth: true
-                    layer.effect: OpacityMask {
-                        maskSource: Rectangle {
-                            width: raOverviewAvatar.width; height: raOverviewAvatar.height
-                            radius: width / 2
-                        }
-                    }
-                }
-                Rectangle {
-                    anchors.fill: parent
-                    color: "transparent"
-                    border.color: theme.accent
-                    border.width: vpx(2)
-                    radius: width / 2
-                }
-            }
-
-            Column {
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: vpx(2)
-                visible: cheevosData.raUserName !== ""
-
-                Text {
-                    text: cheevosData.raUserName
-                    color: theme.text
-                    font.family: titleFont.name
-                    font.pixelSize: fpx(24)
-                    font.bold: true
-                }
-                // Points, alternating with Rank # when RA has one.
-                RAStatLine {
-                    color: theme.text
-                    fontFamily: bodyFont.name
-                    pixelSize: fpx(15)
-                    opacity: 0.65
-                }
-                Text {
-                    text: cheevosData.memberText
-                    color: theme.text
-                    font.family: bodyFont.name
-                    font.pixelSize: fpx(13)
-                    opacity: 0.45
-                    visible: cheevosData.memberText !== ""
-                }
-            }
-        }
-
-        // Shared status cluster (clock / battery / wifi) — same component and
-        // ShowClock/ShowBattery/ShowWifi settings as every other page.
-        StatusCluster {
-            anchors.fill: parent
-            z: 50
-            dark: whiteBackground
-        }
-
-        Rectangle {
-            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-            height: vpx(1)
-            color: theme.text
-            opacity: 0.1
-        }
+        visible: cheevosData.raUserName !== ""
+        tabs: raTabs
+        current: raTab
+        onTabClicked: selectTab(index)
     }
 
     // ── 2. Depth under the header band ────────────────────────────────────
@@ -487,7 +401,7 @@ id: root
             bottom: gameList.top; bottomMargin: vpx(4)
         }
         text: (gameList.currentIndex + 1) + " of " + cheevosData.raRecentGames.count
-        color: theme.text
+        color: "#ececec"    // sits on the header band, which is always dark
         font.family: bodyFont.name
         font.pixelSize: fpx(20)
         font.bold: true
@@ -593,6 +507,9 @@ id: root
             event.accepted = true;
             previousScreen();
         }
+        // LB / RB — tabs, as on the Xbox
+        if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; stepTab(-1); return; }
+        if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; stepTab(1);  return; }
         // Y — refresh
         if (api.keys.isFilters(event) && !event.isAutoRepeat) {
             event.accepted = true;
