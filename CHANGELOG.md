@@ -4,9 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 80)
+## Unreleased — seriesSX branch (build 81)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Awards tiles are photos.** Each tile is filled by your fanart for the game when it's in your library (else its screenshot or box art), or RA's game icon cropped to fill it when it isn't (those are small, so they look softer). The name and award sit on a dark fade at the bottom, white in both themes. Mythic tiles get an accent rim and the Mythic star in the corner; beaten ones keep the flag.
+
+## build 80
 
 - **Game achievements page, revised.** Top left is now the game's **box art** (yours when the game is in your library, else RA's), as big as the top allows in its own shape. The fanart behind it is at **30%** over near-black, and only a **100% (Mythic) game** gets the accent background and fade; that card now reads **Mythic Achievement**. A **Launch game** button sits under the stats (Up from Sort / Filter, or Right from the rail on Stats); it says "Not in your library" and is greyed out when there's no copy to launch. A on an achievement no longer launches the game, and the A prompt only shows where A does something (Launch, Change, Select).
 - **Achievement art** is the badge itself, clear, at the card's full height; the blurred blow-up behind it is gone.

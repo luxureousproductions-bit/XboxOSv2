@@ -1,7 +1,9 @@
 // XboxOSv2 – RAAwardsTab.qml
 // The Awards tab of the RetroAchievements page: your trophy case, newest
 // first, as tiles. The rail on the left filters by kind, with counts.
-// Mastered games keep their Mythic-style frame (RAMythicFrame.qml).
+// Each tile is a photo: your fanart for the game when it's in your library,
+// else RA's game icon, cropped to fill it. Mythic tiles get an accent
+// rim and the Mythic star.
 //
 // Data: cheevosData.awardsList (CheevosData.loadAwards, RA's visible
 // awards). Kinds, from AwardType + AwardDataExtra (1 = hardcore):
@@ -14,6 +16,7 @@
 
 import QtQuick 2.15
 import "../Global"
+import "raEmblems.js" as Emb
 
 FocusScope {
 id: tab
@@ -41,11 +44,23 @@ id: tab
             var a = src[i], k = kindOf(a), r = railOf(k);
             c[r]++;
             if (railIndex === 0 || railIndex === r)
-                out.push({ title: a.Title || "", icon: a.ImageIcon || "", kind: k, date: a.AwardedAt || "", gameID: parseInt(a.AwardData) || 0 });
+                out.push({ title: a.Title || "", icon: a.ImageIcon || "", kind: k, date: a.AwardedAt || "", gameID: parseInt(a.AwardData) || 0,
+                           art: k === "other" ? "" : localArt(a.Title, a.ConsoleName) });
         }
         counts = c;
         tiles = out;
         grid.currentIndex = 0;
+    }
+    // Your fanart (else screenshot, else box art) when the game is in your
+    // library; cached per title so switching filters doesn't look it up again.
+    property var artCache: ({})
+    function localArt(title, consoleName) {
+        var key = (title || "") + "|" + (consoleName || "");
+        if (artCache.hasOwnProperty(key)) return artCache[key];
+        var g = cheevosData.findLocalGame(title || "", consoleName || "");
+        var art = g ? (g.assets.background || g.assets.screenshot || g.assets.boxFront || "") : "";
+        artCache[key] = art;
+        return art;
     }
     onRailIndexChanged: rebuild()
     Connections {
@@ -153,37 +168,59 @@ id: tab
             width: grid.cellWidth; height: grid.cellHeight
             Rectangle {
             id: tile
+                readonly property bool mythic: t.kind === "mastered" || t.kind === "completed"
                 anchors { fill: parent; rightMargin: vpx(14); bottomMargin: vpx(14) }
-                color: tab.cardColor
+                color: whiteBackground ? "#2a2a2a" : "#262626"
                 radius: vpx(4)
-                RAFocus { on: cell.selected }
-                RAMythicFrame {
-                id: art
-                    anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: vpx(14) }
-                    width: vpx(110); height: width
-                    mastered: t.kind === "mastered" || t.kind === "completed"
-                    source: t.icon ? "https://media.retroachievements.org" + t.icon : ""
+                // The photo fills the tile: your art for the game when it's in
+                // your library, else RA's game icon (small, so it's softer).
+                Item {
+                    anchors.fill: parent
+                    clip: true
+                    Image {
+                        anchors.fill: parent
+                        source: t.art !== "" ? t.art : (t.icon ? "https://media.retroachievements.org" + t.icon : "")
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true; smooth: true; mipmap: t.art !== ""
+                        sourceSize: t.art !== "" ? Qt.size(hrpx(400), hrpx(240)) : Qt.size(hrpx(96), hrpx(96))
+                    }
+                }
+                // Text sits on a dark fade at the bottom, white in both themes.
+                Rectangle {
+                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                    height: vpx(84)
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0) }
+                        GradientStop { position: 0.45; color: Qt.rgba(0, 0, 0, 0.62) }
+                        GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.85) }
+                    }
+                }
+                Image {
+                    visible: tile.mythic
+                    anchors { right: parent.right; top: parent.top; margins: vpx(4) }
+                    width: vpx(50); height: width
+                    sourceSize: Qt.size(hrpx(50), hrpx(50))
+                    smooth: true
+                    source: tile.mythic ? Emb.dataUrl(Emb.mythic(theme.accent, "w")) : ""
                 }
                 Column {
-                    anchors { left: parent.left; right: parent.right; leftMargin: vpx(10); rightMargin: vpx(10); top: art.bottom; topMargin: art.mastered ? vpx(16) : vpx(10) }
-                    spacing: vpx(2)
+                    anchors { left: parent.left; right: parent.right; leftMargin: vpx(12); rightMargin: vpx(12); bottom: parent.bottom; bottomMargin: vpx(9) }
+                    spacing: vpx(1)
                     Text {
                         width: parent.width
-                        horizontalAlignment: Text.AlignHCenter
                         text: t.title
                         elide: Text.ElideRight
-                        color: theme.text
+                        color: "white"
                         font.family: titleFont.name; font.pixelSize: fpx(15)
                     }
                     Row {
-                        anchors.horizontalCenter: parent.horizontalCenter
                         spacing: vpx(5)
-                        RAIcon {
-                            size: vpx(12)
+                        Image {
                             visible: t.kind === "beaten-hardcore" || t.kind === "beaten-softcore"
+                            width: vpx(12); height: width
                             anchors.verticalCenter: parent.verticalCenter
-                            source: "../assets/images/fluent/flag.svg"
-                            opacity: 0.7
+                            source: "../assets/images/fluent/flag.svg"; sourceSize: Qt.size(hrpx(16), hrpx(16))
+                            opacity: 0.8
                         }
                         Text {
                             text: (t.kind === "mastered" ? "MASTERED"
@@ -191,12 +228,25 @@ id: tab
                                   : t.kind === "beaten-hardcore" ? "BEATEN"
                                   : t.kind === "beaten-softcore" ? "BEATEN · softcore" : "AWARD")
                                   + "  ·  " + tab.dateText(t.date)
-                            color: (t.kind === "mastered" || t.kind === "completed") ? tab.mixc(tab.cAccent, Qt.rgba(1, 1, 1, 1), whiteBackground ? 0 : 0.5) : theme.text
-                            opacity: (t.kind === "mastered" || t.kind === "completed") ? 1 : 0.7
+                            color: tile.mythic ? tab.mixc(tab.cAccent, Qt.rgba(1, 1, 1, 1), 0.55) : "#dddddd"
                             font.family: bodyFont.name; font.pixelSize: fpx(12)
                         }
                     }
                 }
+                // Mythic: an accent rim with a soft glow, inside the focus frame.
+                Rectangle {
+                    visible: tile.mythic
+                    anchors.fill: parent
+                    color: "transparent"; radius: vpx(4)
+                    border.width: vpx(2); border.color: tab.mixc(tab.cAccent, Qt.rgba(1, 1, 1, 1), 0.3)
+                }
+                Rectangle {
+                    visible: tile.mythic
+                    anchors.fill: parent; anchors.margins: vpx(2)
+                    color: "transparent"; radius: vpx(3)
+                    border.width: vpx(3); border.color: tab.cAccent; opacity: 0.35
+                }
+                RAFocus { on: cell.selected }
             }
             TapHandler {
                 onTapped: {
