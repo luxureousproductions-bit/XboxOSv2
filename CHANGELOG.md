@@ -4,9 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 78)
+## Unreleased — seriesSX branch (build 79)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Stats for each game** (left from the achievement list, then down to Stats on the rail): tiles with **time played, times launched and last played** (from Pegasus, when the game is in your library), points (hardcore and softcore), RetroPoints, unlocked in hardcore, your rarest unlock, first and latest unlock, your award and when, how many people play it, and **your rank** among them (one RA request, only when Stats opens). The rail works like the Settings page list: an accent plate while you're on it, Up/Down switch views straight away, Right goes back to the list.
+
+## build 78
 
 - **A game's achievements page, redesigned after the Xbox Series game Progress page.** The top shows your fanart for the game (when you came from its details page; otherwise RA's in-game screenshot), dimmed and fading into your accent, with the game's art and title, a **Path to Mythic** card (achievements to go and a bar, or the full Mythic star with how and when once it's 100%), and Points, Achievements and Overall progress. Below: a rail, Sort (Default, Points, Rarity, Date unlocked) and Filter (All, Unlocked, Locked, **Missable**), then every achievement as a card with **wide art** (the badge on a soft blow-up of its own colours), name, description, how many players have it, when you unlocked it and in which mode, and its points with a diamond when it's rare (under 10%). Locked ones use RA's grey badge with a lock. Focus is the accent frame. Same buttons as before: A launches the game if it's in your library, X refreshes, Y sorts, LB/RB filter, B goes back.
 - Test harness: the fake RA server also serves each game's achievements and stand-in badges and screenshots, so RA pages show pictures in cloud sessions.

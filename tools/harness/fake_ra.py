@@ -101,6 +101,8 @@ class H(BaseHTTPRequestHandler):
             body = {"Count": len(GAMES[o:o + c]), "Total": len(GAMES), "Results": GAMES[o:o + c]}
         elif name == "GetUserAwards":
             body = awards()
+        elif name == "GetUserGameRankAndScore":
+            body = [{"User": user, "TotalScore": 315, "LastAward": "2026-10-22 12:00:00", "UserRank": 412}]
         elif name == "GetGameInfoAndUserProgress":
             g = next((x for x in GAMES if str(x["GameID"]) == q.get("g")), GAMES[0])
             rr = random.Random(g["GameID"]); ach = {}

@@ -603,6 +603,23 @@ id: root
         );
     }
 
+    // Your rank among this game's players (Stats view). One request per
+    // game, only when Stats is opened; -1 while unknown, 0 if unranked.
+    property int gameRank: -1
+    property int gameRankFor: 0
+    function loadGameRank(gameID) {
+        if (gameRankFor === gameID && gameRank >= 0) return;
+        gameRankFor = gameID; gameRank = -1;
+        raRequest("GetUserGameRankAndScore",
+            "u=" + encodeURIComponent(raUserName) + "&g=" + gameID,
+            function(resp) {
+                if (gameRankFor !== gameID) return;
+                var r = (resp && resp.length > 0) ? parseInt(resp[0].UserRank) : 0;
+                gameRank = isNaN(r) ? 0 : r;
+            },
+            function() { if (gameRankFor === gameID) gameRank = 0; });
+    }
+
     function refreshAll() {
         loadUserProfile();
         loadRecentGames();

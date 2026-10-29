@@ -72,15 +72,45 @@ id: root
         currentIndex = 0;
     }
 
-    // Focus zones: 1 Sort/Filter, 2 the list.
+    // Focus zones: 1 Sort/Filter, 2 the list. railFocus: on the rail, where
+    // Up/Down switch between Achievements and Stats straight away.
     property int zone: 2
     property int toolIndex: 0
+    property bool railFocus: false
+    property int railIndex: 0                    // 0 Achievements, 1 Stats
+    readonly property var railNames: ["Achievements", "Stats"]
+    readonly property bool onStats: railIndex === 1
+    readonly property bool accentIsLight: (0.299 * cAccent.r + 0.587 * cAccent.g + 0.114 * cAccent.b) > 0.62
+
+    // Stats: your copy of the game in Pegasus (time played and so on),
+    // looked up once per game the first time Stats opens.
+    property var localGame: null
+    property int localFor: 0
+    onOnStatsChanged: if (onStats) prepareStats()
+    function prepareStats() {
+        var id = cheevosData.currentGameID;
+        cheevosData.loadGameRank(id);
+        if (localFor === id) return;
+        localFor = id;
+        var t = det.Title || "";
+        if (currentGame && t !== "" && cheevosData.normalizeTitle(currentGame.title) === cheevosData.normalizeTitle(t))
+            localGame = currentGame;
+        else
+            localGame = cheevosData.findLocalGame(t, det.ConsoleName || "");
+    }
+    function playTimeText(sec) {
+        if (!sec || sec <= 0) return "0 m";
+        var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+        return h > 0 ? h + " h " + m + " m" : m + " m";
+    }
 
     onActiveFocusChanged: {
         if (activeFocus) {
             currentHelpbarModel = null;
             currentIndex = 0;
             zone = 2;
+            railFocus = false;
+            railIndex = 0;
         }
     }
 
@@ -236,14 +266,31 @@ id: root
     id: rail
         anchors { left: parent.left; top: hero.bottom; bottom: parent.bottom }
         width: vpx(322)
-        Rectangle {
-            y: vpx(33); width: parent.width; height: vpx(42)
-            color: root.railSel
-            Rectangle { anchors { right: parent.right; top: parent.top; bottom: parent.bottom } width: vpx(5); color: theme.accent }
-            Text {
-                anchors { left: parent.left; leftMargin: vpx(97); verticalCenter: parent.verticalCenter }
-                text: "Achievements"
-                color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(17)
+        Column {
+            y: vpx(33); width: parent.width
+            Repeater {
+                model: root.railNames
+                // As in Settings: an accent plate while the rail has focus, a
+                // grey plate with an accent edge otherwise.
+                delegate: Rectangle {
+                    readonly property bool on: index === root.railIndex
+                    readonly property bool hot: on && root.railFocus && root.activeFocus
+                    readonly property color ink: hot ? (root.accentIsLight ? "#111111" : "white") : theme.text
+                    width: rail.width; height: vpx(42)
+                    color: hot ? theme.accent : (on ? root.railSel : "transparent")
+                    Rectangle {
+                        visible: parent.on && !parent.hot
+                        anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
+                        width: vpx(5); color: theme.accent
+                    }
+                    Text {
+                        anchors { left: parent.left; leftMargin: vpx(97); verticalCenter: parent.verticalCenter }
+                        text: modelData
+                        color: parent.ink; opacity: parent.on ? 1 : 0.8
+                        font.family: bodyFont.name; font.pixelSize: fpx(17)
+                    }
+                    TapHandler { onTapped: { root.railIndex = index; playNav(); } }
+                }
             }
         }
     }
@@ -255,11 +302,12 @@ id: root
     // ── Sort and Filter ──────────────────────────────────────────────────
     Item {
     id: toolRow
+        visible: !root.onStats
         anchors { left: rail.right; leftMargin: vpx(31); right: parent.right; rightMargin: vpx(67); top: hero.bottom; topMargin: vpx(23) }
         height: vpx(39)
         Rectangle {
         id: sortBox
-            readonly property bool hot: root.zone === 1 && root.toolIndex === 0 && root.activeFocus
+            readonly property bool hot: root.zone === 1 && root.toolIndex === 0 && !root.railFocus && root.activeFocus
             width: vpx(280); height: parent.height
             color: root.cardColor; radius: vpx(4)
             RAFocus { on: sortBox.hot }
@@ -279,7 +327,7 @@ id: root
         }
         Rectangle {
         id: filterBox
-            readonly property bool hot: root.zone === 1 && root.toolIndex === 1 && root.activeFocus
+            readonly property bool hot: root.zone === 1 && root.toolIndex === 1 && !root.railFocus && root.activeFocus
             anchors.right: parent.right
             width: filterRow.implicitWidth + vpx(30); height: parent.height
             color: root.cardColor; radius: vpx(4)
@@ -301,6 +349,7 @@ id: root
     // ── Achievements ─────────────────────────────────────────────────────
     ListView {
     id: list
+        visible: !root.onStats
         // Padding = the focus frame's reach, so the clip never cuts it; the
         // focused card stays in the top slot; the list ends above the prompts.
         anchors { left: rail.right; leftMargin: vpx(17); right: parent.right; rightMargin: vpx(53); top: toolRow.bottom; topMargin: vpx(0); bottom: parent.bottom; bottomMargin: helpMargin }
@@ -328,7 +377,7 @@ id: root
             readonly property var ach: modelData
             readonly property bool earned: ach.DateEarned > 0
             readonly property bool rare: ach.Rarity > 0 && ach.Rarity < 10
-            readonly property bool selected: index === root.currentIndex && root.zone === 2 && root.activeFocus
+            readonly property bool selected: index === root.currentIndex && root.zone === 2 && !root.railFocus && root.activeFocus
             readonly property string badge: ach.BadgeName !== ""
                 ? "https://media.retroachievements.org/Badge/" + ach.BadgeName + (earned ? "" : "_lock") + ".png" : ""
             width: list.width - vpx(28); height: vpx(125)
@@ -423,6 +472,51 @@ id: root
         onStepped: function(quiet) { if (!quiet) playNav(); }
     }
 
+    // ── Stats ────────────────────────────────────────────────────────────
+    // Tiles with what RA and Pegasus know about you and this game. Pegasus
+    // tiles need the game in your library; RA's rank is fetched on opening.
+    readonly property var statTiles: {
+        var lg = localGame, d = det, out = [];
+        var dateOf = function(s) { var ms = Date.parse(s); return isNaN(ms) ? "" : Qt.formatDate(new Date(ms), "MMM d, yyyy"); };
+        out.push(["Time played",    lg ? playTimeText(lg.playTime) : "\u2014", lg ? "from Pegasus" : "not in your library"]);
+        out.push(["Times launched", lg ? String(lg.playCount || 0) : "\u2014", lg ? "from Pegasus" : ""]);
+        out.push(["Last played",    (lg && lg.lastPlayed && !isNaN(lg.lastPlayed.getTime()) && lg.lastPlayed.getTime() > 0) ? Qt.formatDate(lg.lastPlayed, "MMM d, yyyy") : "\u2014", lg ? "from Pegasus" : ""]);
+        out.push(["Points", (d.ScoreAchieved || 0) + " / " + (d.PossibleScore || 0), "hardcore " + (d.PointsHardcore || 0) + "  \u00B7  softcore " + (d.PointsSoftcore || 0)]);
+        out.push(["RetroPoints", cheevosData.raFmt(d.TrueRatioEarned || 0), "weighted by rarity"]);
+        out.push(["Unlocked in hardcore", (d.NumAwardedToUserHardcore || 0) + " / " + (d.NumAchievements || 0), ""]);
+        out.push(["Rarest unlock", d.RarestPct > 0 ? d.RarestPct + "%" : "\u2014", d.RarestTitle || ""]);
+        out.push(["First unlock", d.FirstUnlock > 0 ? fmtDate(d.FirstUnlock) : "\u2014", ""]);
+        out.push(["Latest unlock", d.LatestUnlock > 0 ? fmtDate(d.LatestUnlock) : "\u2014", ""]);
+        var aw = d.Award === "mastered" ? "Mastered" : d.Award === "completed" ? "Completed" : d.Award === "beaten-hardcore" ? "Beaten"
+               : d.Award === "beaten-softcore" ? "Beaten \u00B7 softcore" : "None yet";
+        out.push(["Award", aw, d.AwardDate ? dateOf(d.AwardDate) : ""]);
+        out.push(["Players", cheevosData.raFmt(d.Players || 0), cheevosData.raFmt(d.PlayersHardcore || 0) + " in hardcore"]);
+        out.push(["Your rank", cheevosData.gameRank > 0 ? "#" + cheevosData.raFmt(cheevosData.gameRank) : (cheevosData.gameRank < 0 ? "\u2026" : "\u2014"), "of this game's players"]);
+        return out;
+    }
+    Grid {
+    id: statsGrid
+        visible: root.onStats
+        anchors { left: rail.right; leftMargin: vpx(31); right: parent.right; rightMargin: vpx(67); top: hero.bottom; topMargin: vpx(23) }
+        columns: 3
+        spacing: vpx(10)
+        Repeater {
+            model: root.onStats ? root.statTiles : []
+            delegate: Rectangle {
+                width: (statsGrid.width - 2 * statsGrid.spacing) / 3; height: vpx(80)
+                radius: vpx(4); color: root.cardColor
+                Column {
+                    anchors { left: parent.left; leftMargin: vpx(16); right: parent.right; rightMargin: vpx(12); verticalCenter: parent.verticalCenter }
+                    spacing: vpx(1)
+                    Text { text: modelData[0]; color: theme.text; opacity: 0.7; font.family: bodyFont.name; font.pixelSize: fpx(13) }
+                    Text { width: parent.width; elide: Text.ElideRight; text: modelData[1]; color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(22) }
+                    // Always there (blank when empty) so every tile's lines sit at the same height.
+                    Text { width: parent.width; elide: Text.ElideRight; text: modelData[2] || " "; color: theme.text; opacity: 0.5; font.family: bodyFont.name; font.pixelSize: fpx(11) }
+                }
+            }
+        }
+    }
+
     // ── Local help bar ───────────────────────────────────────────────────
     Row {
         z: 5
@@ -460,6 +554,8 @@ id: root
     // ── Keys ─────────────────────────────────────────────────────────────
     Keys.onUpPressed: {
         event.accepted = true;
+        if (railFocus) { if (railIndex > 0) { railIndex--; playNav(); } return; }
+        if (onStats) return;
         if (zone === 2) {
             if (currentIndex > 0) { currentIndex--; playNav(); }
             else { zone = 1; playNav(); }
@@ -467,15 +563,22 @@ id: root
     }
     Keys.onDownPressed: {
         event.accepted = true;
+        if (railFocus) { if (railIndex < railNames.length - 1) { railIndex++; playNav(); } return; }
+        if (onStats) return;
         if (zone === 1) { if (displayList.length > 0) { zone = 2; playNav(); } }
         else if (currentIndex < displayList.length - 1) { currentIndex++; playNav(); }
     }
+    // Left reaches the rail (from the list, or the first of Sort/Filter);
+    // Right leaves it again (Stats has nothing to focus, so it stays).
     Keys.onLeftPressed: {
         event.accepted = true;
+        if (railFocus) return;
         if (zone === 1 && toolIndex > 0) { toolIndex--; playNav(); }
+        else { railFocus = true; playNav(); }
     }
     Keys.onRightPressed: {
         event.accepted = true;
+        if (railFocus) { if (!onStats) { railFocus = false; playNav(); } return; }
         if (zone === 1 && toolIndex < 1) { toolIndex++; playNav(); }
     }
 
@@ -502,7 +605,8 @@ id: root
         if (api.keys.isDetails(event) && !event.isAutoRepeat)  { event.accepted = true; refresh(); }
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (zone === 1) { playToggle(); if (toolIndex === 0) cycleSort(1); else cycleFilter(1); }
+            if (railFocus) { if (!onStats) { railFocus = false; playNav(); } }
+            else if (zone === 1) { playToggle(); if (toolIndex === 0) cycleSort(1); else cycleFilter(1); }
             else launchOwnGame();
         }
     }
