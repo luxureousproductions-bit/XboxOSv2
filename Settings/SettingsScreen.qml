@@ -89,7 +89,7 @@ id: root
         ListElement {
             settingName: "Color Background"
             label: "Background color"
-            setting: "White,Light Gray,Silver,Cool Gray,Gray,Mid Gray,Dark Gray,Charcoal,Black,Light Blue,Steel Blue,Slate,Dark Steel,Dark Blue,Navy Blue,Midnight Blue,Teal,Dark Teal,Sage,Forest,Forest Green,Dark Green,Rose,Dark Red,Wine,Burgundy,Plum,Dark Purple,Deep Purple,Indigo,Tan,Dark Orange,Dark Brown"
+            setting: "Dark,Light"
         }
         ListElement {
             settingName: "Color Layout"

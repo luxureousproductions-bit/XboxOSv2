@@ -4,9 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 66)
+## Unreleased — seriesSX branch (build 67)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Background is Dark or Light, like the Xbox** (Settings › Appearance). Dark is the dashboard's own surface, #1F1F1F; Light is #F2F2F2. The other 31 backgrounds are gone: on first start White becomes Light and every other one becomes Dark. The default is Dark (was Black).
+
+## build 66
 
 - **Custom accent colour** (Settings › Appearance › Custom color): type any hex code on the on-screen keyboard (107C10, #EB4910, or 3 digits like #1C1). Saving it switches the accent to Custom, as on the Xbox. A code that isn't a colour is refused with a short message and nothing changes. Its darker shades are worked out the way Xbox's presets are: same hue, lightness ×0.68 and ×0.39.
 

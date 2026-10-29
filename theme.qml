@@ -484,7 +484,7 @@ id: root
         "Collection 6":                              "Top by Developer",
         "Collection 6 - Size":                       "Large",
         "Collection 6 - Thumbnail":                  "Square",
-        "Color Background":                          "Black",
+        "Color Background":                          "Dark",
         "Color Layout":                              "Xbox Green",
         "Custom Background":                         "Yes",
         "Discover video audio":                      "Yes",
@@ -629,7 +629,7 @@ id: root
             ShowcaseCollection6_Size:      settingsStore.get("Collection 6 - Size", "Large"),
             ShowcaseCollection6_Ratio:     settingsStore.get("Collection 6 - Ratio", "0.66"),
             GridRatio:                     settingsStore.get("Grid Ratio", "0.66"),
-            ColorBackground:               (api.memory.has("Color Background") && api.memory.get("Color Background") !== "Gradient") ? api.memory.get("Color Background") : "Black",
+            ColorBackground:               (api.memory.has("Color Background") && api.memory.get("Color Background") !== "Gradient") ? api.memory.get("Color Background") : "Dark",
             XboxLogo:                      settingsStore.get("Xbox Logo", "Logo1"),
             LogoColorMatch:                settingsStore.get("Logo Color Match", "No"),
             BoxArtStyle:                   settingsStore.get("Box Art", "3D"),
@@ -1479,149 +1479,26 @@ id: root
     }
 
     // Theme settings
-    // Background colour -> { background, text, gradientstart, gradientend }.
+    // Background -> { background, text, gradientstart, gradientend }.
+    // Xbox has two: Dark and Light. Dark is the dashboard's own surface
+    // (#1F1F1F, sampled from the Series achievements page); Light is an
+    // estimate (#F2F2F2), Xbox doesn't publish it. Names saved before
+    // build 67 are read as Dark, except White, which is Light.
     // theme (below) uses the saved one; Settings uses the live one.
     function backgroundPalette(name) {
-        var background    = "#000000";
-        var text          = "#ebebeb";
-        var gradientstart = "#001f1f1f";
-        var gradientend   = "#FF000000";
-        if (name === "Black") {
-            background    = "#000000";
-            gradientstart = "#001f1f1f";
-            gradientend   = "#FF000000";
-        } else if (name === "Charcoal") {
-            background    = "#1a1a1a";
-            gradientstart = "#001a1a1a";
-            gradientend   = "#FF1a1a1a";
-        } else if (name === "Dark Gray") {
-            background    = "#1f1f1f";
-            gradientstart = "#001f1f1f";
-            gradientend   = "#FF1F1F1F";
-        } else if (name === "Mid Gray") {
-            background    = "#2d2d2d";
-            gradientstart = "#002d2d2d";
-            gradientend   = "#FF2d2d2d";
-        } else if (name === "Navy Blue") {
-            background    = "#0a0e2e";
-            gradientstart = "#000a0e2e";
-            gradientend   = "#FF0a0e2e";
-        } else if (name === "Dark Blue") {
-            background    = "#1d253d";
-            gradientstart = "#001d253d";
-            gradientend   = "#FF1d253d";
-        } else if (name === "Dark Teal") {
-            background    = "#041a18";
-            gradientstart = "#00041a18";
-            gradientend   = "#FF041a18";
-        } else if (name === "Dark Green") {
-            background    = "#054b16";
-            gradientstart = "#00054b16";
-            gradientend   = "#FF054b16";
-        } else if (name === "Forest Green") {
-            background    = "#0a200a";
-            gradientstart = "#000a200a";
-            gradientend   = "#FF0a200a";
-        } else if (name === "Dark Red") {
-            background    = "#520000";
-            gradientstart = "#00520000";
-            gradientend   = "#FF520000";
-        } else if (name === "Burgundy") {
-            background    = "#1c0008";
-            gradientstart = "#001c0008";
-            gradientend   = "#FF1c0008";
-        } else if (name === "Dark Purple") {
-            background    = "#120012";
-            gradientstart = "#00120012";
-            gradientend   = "#FF120012";
-        } else if (name === "Indigo") {
-            background    = "#0a0020";
-            gradientstart = "#000a0020";
-            gradientend   = "#FF0a0020";
-        } else if (name === "Dark Brown") {
-            background    = "#1a0e00";
-            gradientstart = "#001a0e00";
-            gradientend   = "#FF1a0e00";
-        } else if (name === "Dark Orange") {
-            background    = "#1a0800";
-            gradientstart = "#001a0800";
-            gradientend   = "#FF1a0800";
-        } else if (name === "Slate") {
-            background    = "#1a1e26";
-            gradientstart = "#001a1e26";
-            gradientend   = "#FF1a1e26";
-        } else if (name === "Midnight Blue") {
-            background    = "#050510";
-            gradientstart = "#00050510";
-            gradientend   = "#FF050510";
-        } else if (name === "Deep Purple") {
-            background    = "#0e0018";
-            gradientstart = "#000e0018";
-            gradientend   = "#FF0e0018";
-        } else if (name === "Dark Steel") {
-            background    = "#1e2a3a";
-            gradientstart = "#001e2a3a";
-            gradientend   = "#FF1e2a3a";
-        } else if (name === "Gray") {
-            background    = "#3a3a3a";
-            gradientstart = "#003a3a3a";
-            gradientend   = "#FF3a3a3a";
-        } else if (name === "Cool Gray") {
-            background    = "#4a5060";
-            gradientstart = "#004a5060";
-            gradientend   = "#FF4a5060";
-        } else if (name === "Steel Blue") {
-            background    = "#2c4a6e";
-            gradientstart = "#002c4a6e";
-            gradientend   = "#FF2c4a6e";
-        } else if (name === "Teal") {
-            background    = "#1a4a4a";
-            gradientstart = "#001a4a4a";
-            gradientend   = "#FF1a4a4a";
-        } else if (name === "Forest") {
-            background    = "#1a3a1a";
-            gradientstart = "#001a3a1a";
-            gradientend   = "#FF1a3a1a";
-        } else if (name === "Wine") {
-            background    = "#4a1020";
-            gradientstart = "#004a1020";
-            gradientend   = "#FF4a1020";
-        } else if (name === "Plum") {
-            background    = "#3a1a3a";
-            gradientstart = "#003a1a3a";
-            gradientend   = "#FF3a1a3a";
-        } else if (name === "Light Gray") {
-            background    = "#707070";
-            gradientstart = "#00707070";
-            gradientend   = "#FF707070";
-        } else if (name === "Silver") {
-            background    = "#909090";
-            gradientstart = "#00909090";
-            gradientend   = "#FF909090";
-        } else if (name === "Light Blue") {
-            background    = "#4a7aa0";
-            gradientstart = "#004a7aa0";
-            gradientend   = "#FF4a7aa0";
-        } else if (name === "Sage") {
-            background    = "#6a8a6a";
-            gradientstart = "#006a8a6a";
-            gradientend   = "#FF6a8a6a";
-        } else if (name === "Tan") {
-            background    = "#8a7a5a";
-            gradientstart = "#008a7a5a";
-            gradientend   = "#FF8a7a5a";
-        } else if (name === "Rose") {
-            background    = "#a06070";
-            gradientstart = "#00a06070";
-            gradientend   = "#FFa06070";
-        } else if (name === "White") {
-            background    = "#ebebeb";
-            gradientstart = "#00ebebeb";
-            gradientend   = "#FFebebeb";
-            text          = "#101010";
-        }
-
-        return { background: background, text: text, gradientstart: gradientstart, gradientend: gradientend };
+        if (name === "Light" || name === "White")
+            return { background: "#f2f2f2", text: "#101010", gradientstart: "#00f2f2f2", gradientend: "#FFf2f2f2" };
+        return { background: "#1f1f1f", text: "#ebebeb", gradientstart: "#001f1f1f", gradientend: "#FF1f1f1f" };
+    }
+    // Once per start: a pre-67 background is saved as Dark or Light, with
+    // the row index Settings draws from in the new order.
+    function migrateBackground() {
+        if (!api.memory.has("Color Background")) return;
+        var v = api.memory.get("Color Background");
+        var nv = (v === "Light" || v === "White") ? "Light" : "Dark";
+        if (nv !== v) api.memory.set("Color Background", nv);
+        var i = nv === "Light" ? 1 : 0;
+        if (api.memory.get("Color BackgroundIndex") !== i) api.memory.set("Color BackgroundIndex", i);
     }
 
     // Accent presets: name -> [main, mid, dark]. Order = the Settings list.
@@ -1750,7 +1627,7 @@ id: root
     function accentA(a) { return Qt.rgba(accentRgb.r, accentRgb.g, accentRgb.b, a); }
 
     // ── White-background contrast flags ───────────────────────────────────
-    // When the page background is the light "White" color, chrome that is
+    // When the page background is Light (pre-67 "White"), chrome that is
     // normally white (nav bar, status bar, library logo) should flip to black
     // so it stays visible. theme.text already flips on its own for light
     // backgrounds; these flags drive the hardcoded-white chrome.
@@ -1758,11 +1635,11 @@ id: root
     //   showcaseWhiteBackground  → Showcase, but ONLY when no fanart/custom
     //                              image is covering theme.main (otherwise the
     //                              visible backdrop is the image, not white)
-    property bool whiteBackground: settings.ColorBackground === "White"
+    property bool whiteBackground: settings.ColorBackground === "Light" || settings.ColorBackground === "White"
     property bool showcaseWhiteBackground: whiteBackground
                                            && settings.ShowcaseBackgroundArt === "No"
                                            && settings.CustomBackground === "No"
-    // Help-bar prompt colour. theme.text goes dark for the White background,
+    // Help-bar prompt colour. theme.text goes dark for the Light background,
     // but the bar does not always sit on theme.main: Settings draws its own
     // hard-coded dark chrome, and Showcase is covered by fanart / a custom
     // image unless both are off. Passed into the bar from here (like
@@ -1787,7 +1664,7 @@ id: root
     readonly property real settingsScale: { var e = settingsEpoch; return parseFloat(settingsStore.get("UI Scale", "1.0")) || 1.0; }
     function spx(n) { return vpx(n) * settingsScale; }
     function srow(n) { return vpx(n) * (1 + (settingsScale - 1) * 0.6); }
-    readonly property color settingsBg: { var e = settingsEpoch; return backgroundPalette(settingsStore.get("Color Background", "Black")).background; }
+    readonly property color settingsBg: { var e = settingsEpoch; return backgroundPalette(settingsStore.get("Color Background", "Dark")).background; }
     // Light backdrop (White, Silver): text drawn straight on it turns dark.
     readonly property bool settingsBgLight: (0.299 * settingsBg.r + 0.587 * settingsBg.g + 0.114 * settingsBg.b) > 0.5
     function fpx(n) { return vpx(n) * uiScale; }
@@ -2177,6 +2054,7 @@ id: root
         });
         migrateSettingsV2();
         migrateAccent();
+        migrateBackground();
         // Rows removed in build 36 (the Xbox frame is the only frame; no
         // Highlight animation; no Featured box) and keys nothing ever read.
         // Saved values are dropped once so they can't linger in the file.
