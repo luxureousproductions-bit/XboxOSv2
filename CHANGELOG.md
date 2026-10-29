@@ -4,9 +4,16 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 74)
+## Unreleased — seriesSX branch (build 75)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **RA pages focus like the rest of the theme:** the Xbox frame in your accent (rounded, with a soft glow that follows Settings › Frame glow) instead of a white box, on the game cards, award tiles, quick buttons, Sort, Filter and the Awards rail. Cards and tiles have rounded corners.
+- **Mythic now means 100%, as on the Xbox.** A game you've completed in softcore (RA "Completed") gets the Mythic frame and accent fade too, not only hardcore "Mastered" games. The label still says which. The header stat is now **Mythic Games** (with how many are in hardcore), and the quick button, Filter and Awards rail say Mythic.
+- **Awards: the left column's focus frame was cut off.** Root cause: the grid is clipped (so tiles don't slide over the header) but had no inner padding on the left, so the frame's ring and glow, which draw outside the tile, were clipped. Every side now has padding the size of the frame.
+- **Gaming list:** the focused card stays in the top slot while scrolling (no sliver of the card above), and both lists stop above the button prompts instead of running under them.
+
+## build 74
 
 - **RetroAchievements redesign, step 5 of 5: icons.** Sort gets a proper dropdown chevron, Filter its funnel icon, and beaten games a flag (on the Gaming cards and the Awards tiles). They're Microsoft's Fluent UI System Icons, the family Xbox's own menus are drawn in (MIT licence, credited in THIRD_PARTY_NOTICES.md); white on Dark, dark on Light. The header's mastery star, achievements hexagon and points mark are original shapes drawn for the theme, not Xbox's artwork.
 

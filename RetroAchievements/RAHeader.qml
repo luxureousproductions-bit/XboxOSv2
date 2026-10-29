@@ -198,7 +198,8 @@ id: header
         }
     }
 
-    // 3. Mastered games: RA's 100% in hardcore, Xbox's Mythic.
+    // 3. Mythic games: 100% of a game, as on the Xbox. RA splits it into
+    //    Mastered (hardcore) and Completed (softcore); both count here.
     Item {
     id: statMastery
         x: parent.width * 0.69; y: vpx(106)
@@ -233,14 +234,14 @@ id: header
     Column {
         anchors { left: statMastery.right; leftMargin: vpx(14); verticalCenter: statMastery.verticalCenter }
         spacing: vpx(2)
-        Text { text: "Mastered Games"; color: "#f5f5f5"; font.family: titleFont.name; font.pixelSize: fpx(17) }
+        Text { text: "Mythic Games"; color: "#f5f5f5"; font.family: titleFont.name; font.pixelSize: fpx(17) }
         Text {
-            text: cheevosData.awardsLoaded ? cheevosData.raFmt(cheevosData.masteredCount) : "—"
+            text: cheevosData.awardsLoaded ? cheevosData.raFmt(cheevosData.masteredCount + cheevosData.completedCount) : "—"
             color: "white"; font.family: bodyFont.name; font.pixelSize: fpx(28)
         }
         Text {
             text: cheevosData.awardsLoaded
-                  ? cheevosData.raFmt(cheevosData.beatenCount) + " beaten  ·  " + cheevosData.raFmt(cheevosData.completedCount) + " completed"
+                  ? cheevosData.raFmt(cheevosData.masteredCount) + " in hardcore  ·  " + cheevosData.raFmt(cheevosData.beatenCount) + " beaten"
                   : ""
             color: "#d4ddd4"; font.family: bodyFont.name; font.pixelSize: fpx(13)
         }

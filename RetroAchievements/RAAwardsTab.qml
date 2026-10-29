@@ -18,7 +18,9 @@ import "../Global"
 FocusScope {
 id: tab
 
-    readonly property var railNames: ["All awards", "Mastered", "Beaten", "Completed", "Events & site"]
+    // Mythic = 100% of a game, RA's Mastered (hardcore) or Completed
+    // (softcore), as on the Xbox; each tile still says which.
+    readonly property var railNames: ["All awards", "Mythic", "Beaten", "Events & site"]
     property int railIndex: 0
     property bool railFocus: false
     property var counts: [0, 0, 0, 0, 0]
@@ -31,10 +33,10 @@ id: tab
         return "other";
     }
     function railOf(k) {
-        return k === "mastered" ? 1 : (k === "beaten-hardcore" || k === "beaten-softcore") ? 2 : k === "completed" ? 3 : 4;
+        return (k === "mastered" || k === "completed") ? 1 : (k === "beaten-hardcore" || k === "beaten-softcore") ? 2 : 3;
     }
     function rebuild() {
-        var src = cheevosData.awardsList || [], out = [], c = [src.length, 0, 0, 0, 0];
+        var src = cheevosData.awardsList || [], out = [], c = [src.length, 0, 0, 0];
         for (var i = 0; i < src.length; i++) {
             var a = src[i], k = kindOf(a), r = railOf(k);
             c[r]++;
@@ -77,7 +79,7 @@ id: tab
                     readonly property bool hot: on && tab.railFocus && tab.activeFocus
                     width: rail.width; height: vpx(42)
                     color: on ? tab.railSel : "transparent"
-                    border.width: hot ? vpx(3) : 0; border.color: theme.text
+                    RAFocus { on: parent.hot; radius: 0 }
                     Rectangle {
                         visible: parent.on
                         anchors { right: parent.right; top: parent.top; bottom: parent.bottom }
@@ -112,18 +114,21 @@ id: tab
         // top padding keeps the focus outline and the frame glow inside it.
         // keyNavigationEnabled off: the tab's Keys do all moves (the grid's
         // own Left jumped to the previous row instead of reaching the rail).
-        anchors { left: rail.right; leftMargin: vpx(46); right: parent.right; rightMargin: vpx(45); top: parent.top; topMargin: vpx(12); bottom: parent.bottom }
+        // Padding on every side = the focus frame's reach, so the clip never
+        // cuts it (the left edge of the first column used to be cut off).
+        anchors { left: rail.right; leftMargin: vpx(32); right: parent.right; rightMargin: vpx(31); top: parent.top; topMargin: vpx(10); bottom: parent.bottom; bottomMargin: helpMargin }
+        leftMargin: vpx(14); rightMargin: vpx(14); bottomMargin: vpx(14)
         clip: true
-        topMargin: vpx(12)
+        topMargin: vpx(14)
         keyNavigationEnabled: false
         readonly property int cols: 3
-        cellWidth: Math.floor(width / cols)
+        cellWidth: Math.floor((width - leftMargin - rightMargin) / cols)
         cellHeight: vpx(214)
         model: tab.tiles
         focus: !tab.railFocus
         cacheBuffer: vpx(220)
         highlightMoveDuration: 120
-        preferredHighlightBegin: vpx(12)
+        preferredHighlightBegin: vpx(14)
         preferredHighlightEnd: vpx(228)
         highlightRangeMode: GridView.ApplyRange
         property bool navReady: false
@@ -147,16 +152,13 @@ id: tab
             id: tile
                 anchors { fill: parent; rightMargin: vpx(14); bottomMargin: vpx(14) }
                 color: tab.cardColor
-                Rectangle {
-                    anchors.fill: parent; anchors.margins: -vpx(4)
-                    visible: cell.selected
-                    color: "transparent"; border.width: vpx(3); border.color: theme.text
-                }
+                radius: vpx(4)
+                RAFocus { on: cell.selected }
                 RAMythicFrame {
                 id: art
                     anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: vpx(14) }
                     width: vpx(110); height: width
-                    mastered: t.kind === "mastered"
+                    mastered: t.kind === "mastered" || t.kind === "completed"
                     source: t.icon ? "https://media.retroachievements.org" + t.icon : ""
                 }
                 Column {
@@ -186,8 +188,8 @@ id: tab
                                   : t.kind === "beaten-hardcore" ? "BEATEN"
                                   : t.kind === "beaten-softcore" ? "BEATEN · softcore" : "AWARD")
                                   + "  ·  " + tab.dateText(t.date)
-                            color: t.kind === "mastered" ? tab.mixc(tab.cAccent, Qt.rgba(1, 1, 1, 1), whiteBackground ? 0 : 0.5) : theme.text
-                            opacity: t.kind === "mastered" ? 1 : 0.7
+                            color: (t.kind === "mastered" || t.kind === "completed") ? tab.mixc(tab.cAccent, Qt.rgba(1, 1, 1, 1), whiteBackground ? 0 : 0.5) : theme.text
+                            opacity: (t.kind === "mastered" || t.kind === "completed") ? 1 : 0.7
                             font.family: bodyFont.name; font.pixelSize: fpx(12)
                         }
                     }

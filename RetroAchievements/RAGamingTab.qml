@@ -19,12 +19,16 @@ id: tab
 
     // ── Sort / Filter state ──────────────────────────────────────────────
     readonly property var sortNames:   ["Recent", "Completion", "Title", "Unlocked"]
-    readonly property var filterNames: ["All", "In progress", "Mastered", "Beaten", "Completed"]
+    readonly property var filterNames: ["All", "In progress", "Mythic", "Beaten"]
     property int sortIndex:   0
     property int filterIndex: 0
     property var games: []
 
-    readonly property var chips: ["Closest to mastery", "Recently unlocked", "Mastered"]
+    readonly property var chips: ["Closest to mastery", "Recently unlocked", "Mythic"]
+    // Mythic, as on the Xbox, is 100% of a game's achievements: RA's
+    // Mastered (hardcore) or Completed (softcore). The card label still
+    // says which.
+    function isMythic(g) { return g.Award === "mastered" || g.Award === "completed"; }
     function applyChip(i) {
         if (i === 0)      { sortIndex = 1; filterIndex = 1; }   // highest % that isn't done yet
         else if (i === 1) { sortIndex = 0; filterIndex = 0; }
@@ -34,10 +38,9 @@ id: tab
 
     function keep(g) {
         switch (filterNames[filterIndex]) {
-        case "In progress": return g.Award !== "mastered" && g.Award !== "completed" && g.Progress < 1;
-        case "Mastered":    return g.Award === "mastered";
+        case "In progress": return !isMythic(g) && g.Progress < 1;
+        case "Mythic":      return isMythic(g);
         case "Beaten":      return g.Award === "beaten-hardcore" || g.Award === "beaten-softcore";
-        case "Completed":   return g.Award === "completed";
         default:            return true;
         }
     }
@@ -111,7 +114,8 @@ id: tab
                     readonly property bool hot: tab.zone === 0 && tab.chipIndex === index && tab.activeFocus
                     width: chipText.implicitWidth + vpx(32); height: vpx(40)
                     color: tab.cardColor
-                    border.width: hot ? vpx(3) : 0; border.color: theme.text
+                    radius: vpx(4)
+                    RAFocus { on: parent.hot }
                     Text {
                     id: chipText
                         anchors.centerIn: parent
@@ -134,7 +138,8 @@ id: tab
                 readonly property bool hot: tab.zone === 1 && tab.toolIndex === 0 && tab.activeFocus
                 width: vpx(390); height: parent.height
                 color: tab.cardColor
-                border.width: hot ? vpx(3) : 0; border.color: theme.text
+                radius: vpx(4)
+                RAFocus { on: sortBox.hot }
                 Text {
                     anchors { left: parent.left; leftMargin: vpx(14); verticalCenter: parent.verticalCenter }
                     text: "Sort: " + tab.sortNames[tab.sortIndex]
@@ -149,9 +154,11 @@ id: tab
             Rectangle {
                 readonly property bool hot: tab.zone === 1 && tab.toolIndex === 1 && tab.activeFocus
                 anchors.right: parent.right
+            id: filterBox
                 width: filterRow.implicitWidth + vpx(32); height: parent.height
                 color: tab.cardColor
-                border.width: hot ? vpx(3) : 0; border.color: theme.text
+                radius: vpx(4)
+                RAFocus { on: filterBox.hot }
                 Row {
                 id: filterRow
                     anchors.centerIn: parent
@@ -178,18 +185,22 @@ id: tab
             // Clipped so scrolled cards don't slide over Sort/Filter; the
             // padding keeps the focus outline and the frame glow inside.
             // The tab's Keys do all moves (keyNavigationEnabled off).
-            anchors { left: parent.left; leftMargin: -vpx(10); right: parent.right; rightMargin: -vpx(10); top: parent.top; topMargin: vpx(121); bottom: parent.bottom }
-            leftMargin: vpx(10); rightMargin: vpx(10); topMargin: vpx(10)
+            // Padding = the focus frame's reach (gap + ring + glow), so the
+            // clip never cuts it; the list ends above the button prompts.
+            anchors { left: parent.left; leftMargin: -vpx(14); right: parent.right; rightMargin: -vpx(14); top: parent.top; topMargin: vpx(117); bottom: parent.bottom; bottomMargin: helpMargin }
+            leftMargin: vpx(14); rightMargin: vpx(14); topMargin: vpx(14); bottomMargin: vpx(14)
             model: tab.games
-            spacing: vpx(10)
+            spacing: vpx(14)          // = the top padding, so no sliver of the card above shows
             clip: true
             keyNavigationEnabled: false
             cacheBuffer: vpx(300)
             focus: tab.zone === 2
             highlightMoveDuration: 120
-            preferredHighlightBegin: vpx(10)
-            preferredHighlightEnd: vpx(144)
-            highlightRangeMode: ListView.ApplyRange
+            // The focused card sits in the top slot while scrolling, so the
+            // card above is always fully out of view (no sliver in the padding).
+            preferredHighlightBegin: vpx(14)
+            preferredHighlightEnd: vpx(14) + vpx(124)
+            highlightRangeMode: ListView.StrictlyEnforceRange
             property bool navReady: false
             Component.onCompleted: navReady = true
             onCurrentIndexChanged: if (navReady && tab.activeFocus) playNav()
@@ -206,13 +217,14 @@ id: tab
             delegate: Item {
             id: card
                 readonly property var g: modelData
-                readonly property bool mastered: g.Award === "mastered"
+                readonly property bool mastered: tab.isMythic(g)     // the Mythic look
                 readonly property bool selected: ListView.isCurrentItem && tab.zone === 2 && tab.activeFocus
                 readonly property int pct: g.MaxPossible > 0 ? Math.floor(g.NumAwarded * 100 / g.MaxPossible) : 0
-                width: list.width - vpx(20); height: vpx(124)
+                width: list.width - vpx(28); height: vpx(124)
 
                 Rectangle {
                     anchors.fill: parent
+                    radius: vpx(4)
                     color: tab.cardColor
                     // A mastered card warms toward your accent on the right, as on the Xbox.
                     gradient: card.mastered ? masteredGrad : null
@@ -223,11 +235,7 @@ id: tab
                         GradientStop { position: 1.0; color: tab.mixc(tab.cardColor, tab.cAccent, 0.22) }
                     }
                 }
-                Rectangle {
-                    anchors.fill: parent; anchors.margins: -vpx(4)
-                    visible: card.selected
-                    color: "transparent"; border.width: vpx(3); border.color: theme.text
-                }
+                RAFocus { on: card.selected }
                 RAMythicFrame {
                 id: artBox
                     x: vpx(5); anchors.verticalCenter: parent.verticalCenter
