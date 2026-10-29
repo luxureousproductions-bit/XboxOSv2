@@ -4,9 +4,17 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 68)
+## Unreleased — seriesSX branch (build 69)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Bottom fades fade into your background, not black.** Root cause: `theme.main` is stored as text, so the fades in the Library, Game details and the three RetroAchievements pages built their colour from channels that don't exist and drew black on every background. Barely visible on Dark; a black smear on Light. They use a real colour now (`mainA()` in theme.qml), the same fix as the accent tints in build 62.
+- **Light polish:**
+  - **Library list:** unselected names are readable (60% instead of 28%), and the dimming and the list column's darker strip are kept to 40% strength, so the page stays light instead of turning mid-grey.
+  - **Game details:** the round buttons beside Play game sit on a dark see-through disc, and the row titles ("Media" and the rest) turn dark.
+  - Still dark on Light, to restyle later: the Filters pop-up and the App Drawer.
+
+## build 68
 
 - **Merged refresh build 64** (the NavPill nav buttons, below). refresh takes no more changes; everything continues here.
 

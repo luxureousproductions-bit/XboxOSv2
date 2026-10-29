@@ -41,11 +41,14 @@ id: root
         }
         Behavior on width { NumberAnimation { duration: 100 } }
         height: vpx(50)
-        color: selected ? theme.accent : "transparent"
+        // On Light the white outline at 20% vanished into the page's fade, so
+        // there a resting button is a dark see-through disc the white icon
+        // reads on, over art and over the light page alike.
+        color: selected ? theme.accent : (whiteBackground ? Qt.rgba(0, 0, 0, 0.45) : "transparent")
         radius: height/2
         border.width: selected ? 0 : 2
         border.color: "white"
-        opacity: selected ? 1 : 0.2
+        opacity: selected ? 1 : (whiteBackground ? 0.8 : 0.2)
         
         Image {
         id: buttonicon

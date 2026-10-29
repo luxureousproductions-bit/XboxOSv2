@@ -1333,10 +1333,10 @@ id: root
         opacity: (scrolledPast ? 1 : 0) * viewerGate * gridFadeOpacity   // z:6 would otherwise paint over the viewer; scaled by Background dimming
         Behavior on opacity { NumberAnimation { duration: chromeFadeMs; easing.type: chromeEasing } }
         gradient: Gradient {
-            GradientStop { position: 0.0;  color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.0)  }
-            GradientStop { position: 0.25; color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.12) }
-            GradientStop { position: 0.5;  color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.45) }
-            GradientStop { position: 0.75; color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.85) }
+            GradientStop { position: 0.0;  color: mainA(0.0)  }
+            GradientStop { position: 0.25; color: mainA(0.12) }
+            GradientStop { position: 0.5;  color: mainA(0.45) }
+            GradientStop { position: 0.75; color: mainA(0.85) }
             GradientStop { position: 1.0;  color: theme.main }
         }
     }

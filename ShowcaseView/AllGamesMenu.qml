@@ -1286,10 +1286,10 @@ id: root
         gradient: Gradient {
             // Eased: several stops so the fade starts imperceptibly and only
             // becomes solid under the prompts themselves.
-            GradientStop { position: 0.0;  color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.0)  }
-            GradientStop { position: 0.25; color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.12) }
-            GradientStop { position: 0.5;  color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.45) }
-            GradientStop { position: 0.75; color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.85) }
+            GradientStop { position: 0.0;  color: mainA(0.0)  }
+            GradientStop { position: 0.25; color: mainA(0.12) }
+            GradientStop { position: 0.5;  color: mainA(0.45) }
+            GradientStop { position: 0.75; color: mainA(0.85) }
             GradientStop { position: 1.0;  color: theme.main }
         }
     }
@@ -1321,7 +1321,7 @@ id: root
         // dimmed preview you saw). This file has no root-level fill, so
         // sending the surface to the bottom is safe. (The RA pages differ —
         // they have a root fill, so there order is used instead.)
-        color: "#000000"; opacity: gridDimOpacity; visible: opacity > 0; z: -1
+        color: "#000000"; opacity: gridDimOpacity * surfaceShade; visible: opacity > 0; z: -1
     }
     Rectangle {
     id: listSurface
@@ -1333,7 +1333,7 @@ id: root
         // this surface (so the highlight spans the column), and deriving this
         // from the list made a loop that collapsed both to zero.
         width: vpx(400) + globalMargin - vpx(16)
-        color: "#000000"; opacity: 0.16; z: -1
+        color: "#000000"; opacity: 0.16 * surfaceShade; z: -1
     }
 
     // ── Game list ─────────────────────────────────────────────────────────
@@ -1470,7 +1470,7 @@ id: root
                         font.pixelSize: selected ? fpx(25) : fpx(19)
                         font.bold: selected
                         verticalAlignment: Text.AlignVCenter
-                        opacity: selected ? 1 : 0.28
+                        opacity: selected ? 1 : (whiteBackground ? 0.6 : 0.28)   // dark text needs more to read on Light
                         Behavior on font.pixelSize { NumberAnimation { duration: 90 } }
                         // Only the highlighted row scrolls, and only when it overflows.
                         property real overflow: titleMetrics.width - titleClip.width

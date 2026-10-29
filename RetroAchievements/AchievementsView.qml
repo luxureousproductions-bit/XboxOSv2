@@ -617,10 +617,10 @@ id: root
         opacity: gridFadeOpacity    // part of "Background dimming": Off = no fade
         visible: opacity > 0
         gradient: Gradient {
-            GradientStop { position: 0.0;  color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.0)  }
-            GradientStop { position: 0.25; color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.12) }
-            GradientStop { position: 0.5;  color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.45) }
-            GradientStop { position: 0.75; color: Qt.rgba(theme.main.r, theme.main.g, theme.main.b, 0.85) }
+            GradientStop { position: 0.0;  color: mainA(0.0)  }
+            GradientStop { position: 0.25; color: mainA(0.12) }
+            GradientStop { position: 0.5;  color: mainA(0.45) }
+            GradientStop { position: 0.75; color: mainA(0.85) }
             GradientStop { position: 1.0;  color: theme.main }
         }
     }

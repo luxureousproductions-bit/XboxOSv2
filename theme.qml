@@ -1625,6 +1625,15 @@ id: root
     // nothing; a color property has real channels.
     readonly property color accentRgb: theme.accent
     function accentA(a) { return Qt.rgba(accentRgb.r, accentRgb.g, accentRgb.b, a); }
+    // Same for the page background: theme.main is a string too, and the
+    // bottom fades built Qt.rgba(theme.main.r, ...) from undefined channels,
+    // so they faded to black on every background (only visible on Light).
+    readonly property color mainRgb: theme.main
+    function mainA(a) { return Qt.rgba(mainRgb.r, mainRgb.g, mainRgb.b, a); }
+    // The black "depth" layers (Background dimming, the list column) at
+    // full strength on Dark; on Light the same black turns #F2F2F2 into a
+    // muddy mid-grey, so they're kept to 40% there.
+    readonly property real surfaceShade: whiteBackground ? 0.4 : 1.0
 
     // ── White-background contrast flags ───────────────────────────────────
     // When the page background is Light (pre-67 "White"), chrome that is

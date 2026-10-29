@@ -92,8 +92,9 @@ id: root
         font.pixelSize: fpx(18)
         font.bold: true
         // Over fanart / a custom image the text stays light; only when the
-        // White colour itself is showing does it follow theme.text.
-        color: showcaseWhiteBackground ? theme.text : "#ebebeb"
+        // Light background itself is showing does it follow theme.text. On
+        // Game details the rows sit on the page's own fade, so Light counts.
+        color: (ownScreen === "gameviewscreen" ? whiteBackground : showcaseWhiteBackground) ? theme.text : "#ebebeb"
         opacity: root.focus ? 1 : 0.2
         anchors { left: parent.left; leftMargin: vpx(10) }
 
