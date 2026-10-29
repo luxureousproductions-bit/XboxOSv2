@@ -6,13 +6,14 @@
 // Colours: the band mixes Xbox's dark and mid shades of the accent
 // (theme.accentDark / theme.accentMid), which is how the console's own
 // header reads. Everything on it is light text: the band is always dark.
-// The emblems are flat white SVGs (assets/images/ra) tinted with
-// ColorOverlay; layers are static textures, redrawn only when the accent
+// The emblems are drawn as SVG from the accent (raEmblems.js: metal,
+// facets, glows), rendered once at their size, again only if the accent
 // changes.
 
 import QtQuick 2.15
 import QtGraphicalEffects 1.15
 import "../Global"
+import "raEmblems.js" as Emb
 
 Item {
 id: header
@@ -90,11 +91,26 @@ id: header
             delegate: Item {
                 readonly property bool on: index === header.current
                 width: tabLabel.implicitWidth + vpx(24); height: vpx(32)
+                // The selected tab glows softly, as on the console: two
+                // translucent halos behind the pill (no blur pass).
+                Rectangle {
+                    anchors.fill: parent; anchors.margins: -vpx(6)
+                    visible: parent.on
+                    radius: vpx(9)
+                    color: header.light(header.cAccent, 0.5); opacity: 0.16
+                }
+                Rectangle {
+                    anchors.fill: parent; anchors.margins: -vpx(3)
+                    visible: parent.on
+                    radius: vpx(6)
+                    color: header.light(header.cAccent, 0.55); opacity: 0.32
+                }
                 Rectangle {
                     anchors.fill: parent
                     visible: parent.on
                     radius: vpx(4)
                     color: header.light(header.cAccent, 0.62)
+                    border.width: vpx(1); border.color: header.light(header.cAccent, 0.85)
                 }
                 Text {
                 id: tabLabel
@@ -115,23 +131,16 @@ id: header
 
     // ── Stats ────────────────────────────────────────────────────────────
     // 1. Points, with the next 5,000-point milestone and your rank.
-    Item {
+    Image {
     id: statPoints
-        x: parent.width * 0.068; y: vpx(108)
-        width: vpx(100); height: width
-        Rectangle { anchors.fill: parent; radius: width / 2; color: header.light(header.cAccent, 0.45) }
-        Rectangle { anchors.centerIn: parent; width: parent.width * 0.82; height: width; radius: width / 2; color: header.cDark }
-        Rectangle { anchors.centerIn: parent; width: parent.width * 0.54; height: width; radius: width / 2; color: header.cAccent }
-        Text {
-            anchors.centerIn: parent
-            text: "P"
-            color: header.light(header.cAccent, 0.7)
-            font.family: titleFont.name
-            font.pixelSize: fpx(30)
-        }
+        x: parent.width * 0.068 - vpx(12); y: vpx(96)
+        width: vpx(124); height: width
+        sourceSize: Qt.size(hrpx(124), hrpx(124))
+        smooth: true
+        source: Emb.dataUrl(Emb.medallion(theme.accent, "m"))
     }
     Column {
-        anchors { left: statPoints.right; leftMargin: vpx(18); verticalCenter: statPoints.verticalCenter }
+        anchors { left: statPoints.right; leftMargin: vpx(6); verticalCenter: statPoints.verticalCenter }
         spacing: vpx(2)
         Text { text: "Total Points"; color: "#f5f5f5"; font.family: titleFont.name; font.pixelSize: fpx(17) }
         Row {
@@ -155,37 +164,16 @@ id: header
     }
 
     // 2. Achievements unlocked, of everything in the games you've played.
-    Item {
+    Image {
     id: statAch
-        x: parent.width * 0.415; y: vpx(118)
-        width: vpx(80); height: vpx(88)
-        Image {
-            anchors.fill: parent
-            source: "../assets/images/ra/ra_hex.svg"
-            sourceSize: Qt.size(hrpx(96), hrpx(106))
-            smooth: true
-            layer.enabled: true
-            layer.effect: ColorOverlay { color: header.light(header.cAccent, 0.45) }
-        }
-        Image {
-            anchors.centerIn: parent
-            width: parent.width * 0.93; height: parent.height * 0.93
-            source: "../assets/images/ra/ra_hex.svg"
-            sourceSize: Qt.size(hrpx(96), hrpx(106))
-            smooth: true
-            layer.enabled: true
-            layer.effect: ColorOverlay { color: header.cDark }
-        }
-        Image {
-            anchors.centerIn: parent
-            width: vpx(40); height: width
-            source: "../assets/images/trophy_fill.svg"
-            sourceSize: Qt.size(hrpx(48), hrpx(48))
-            smooth: true
-        }
+        x: parent.width * 0.415 - vpx(18); y: vpx(102)
+        width: vpx(120); height: width
+        sourceSize: Qt.size(hrpx(120), hrpx(120))
+        smooth: true
+        source: Emb.dataUrl(Emb.hexgem(theme.accent, "h"))
     }
     Column {
-        anchors { left: statAch.right; leftMargin: vpx(20); verticalCenter: statAch.verticalCenter }
+        anchors { left: statAch.right; leftMargin: vpx(4); verticalCenter: statAch.verticalCenter }
         spacing: vpx(2)
         Text { text: "Total Achievements"; color: "#f5f5f5"; font.family: titleFont.name; font.pixelSize: fpx(17) }
         Text {
@@ -200,39 +188,16 @@ id: header
 
     // 3. Mythic games: 100% of a game, as on the Xbox. RA splits it into
     //    Mastered (hardcore) and Completed (softcore); both count here.
-    Item {
+    Image {
     id: statMastery
-        x: parent.width * 0.69; y: vpx(106)
-        width: vpx(124); height: width
-        Image {
-            anchors.fill: parent
-            source: "../assets/images/ra/ra_star.svg"
-            sourceSize: Qt.size(hrpx(128), hrpx(128))
-            smooth: true
-            layer.enabled: true
-            layer.effect: ColorOverlay { color: header.light(header.cAccent, 0.55) }
-        }
-        Image {
-            anchors.centerIn: parent
-            width: parent.width * 0.54; height: width
-            source: "../assets/images/ra/ra_star.svg"
-            sourceSize: Qt.size(hrpx(72), hrpx(72))
-            smooth: true
-            layer.enabled: true
-            layer.effect: ColorOverlay { color: header.cDark }
-        }
-        Image {
-            anchors.centerIn: parent
-            width: parent.width * 0.26; height: width
-            source: "../assets/images/ra/ra_star.svg"
-            sourceSize: Qt.size(hrpx(40), hrpx(40))
-            smooth: true
-            layer.enabled: true
-            layer.effect: ColorOverlay { color: header.light(header.cAccent, 0.75) }
-        }
+        x: parent.width * 0.69 - vpx(12); y: vpx(93)
+        width: vpx(150); height: width
+        sourceSize: Qt.size(hrpx(150), hrpx(150))
+        smooth: true
+        source: Emb.dataUrl(Emb.mythic(theme.accent, "y"))
     }
     Column {
-        anchors { left: statMastery.right; leftMargin: vpx(14); verticalCenter: statMastery.verticalCenter }
+        anchors { left: statMastery.right; leftMargin: vpx(0); verticalCenter: statMastery.verticalCenter }
         spacing: vpx(2)
         Text { text: "Mythic Games"; color: "#f5f5f5"; font.family: titleFont.name; font.pixelSize: fpx(17) }
         Text {

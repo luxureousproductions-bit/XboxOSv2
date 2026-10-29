@@ -4,9 +4,14 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 75)
+## Unreleased — seriesSX branch (build 76)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Detailed RA header emblems**, drawn from your accent colour so every preset and custom colour gets its own metal and gem shades: **Total Points** is a scalloped medallion with an engraved ring, studs, a cut-gem coin and a raised P; **Total Achievements** a gem-cut hexagon with rivets, shaded facets and a glossy trophy in laurels; **Mythic Games** a thick bevelled four-point star with a cut diamond, a slimmer star behind it, rays and sparkles. Original designs (RetroAchievements/raEmblems.js), drawn as SVG once per accent; opening the RA page costs the same as before.
+- **The selected tab glows** softly in your accent, as on the console.
+
+## build 75
 
 - **RA pages focus like the rest of the theme:** the Xbox frame in your accent (rounded, with a soft glow that follows Settings › Frame glow) instead of a white box, on the game cards, award tiles, quick buttons, Sort, Filter and the Awards rail. Cards and tiles have rounded corners.
 - **Mythic now means 100%, as on the Xbox.** A game you've completed in softcore (RA "Completed") gets the Mythic frame and accent fade too, not only hardcore "Mastered" games. The label still says which. The header stat is now **Mythic Games** (with how many are in hardcore), and the quick button, Filter and Awards rail say Mythic.
