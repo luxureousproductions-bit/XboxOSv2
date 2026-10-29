@@ -94,7 +94,14 @@ id: root
         ListElement {
             settingName: "Color Layout"
             label: "Accent color"
-            setting: "Xbox Green,Ocean Blue,Azure,Cobalt,Purple,Orchid,Magenta,Crimson,Red,Orange,Brown,Steel,Lime,Teal,Sea Teal,Flame,Pink,Graphite,Khaki,Sage,Gray"
+            setting: "Xbox Green,Ocean Blue,Azure,Cobalt,Purple,Orchid,Magenta,Crimson,Red,Orange,Brown,Steel,Lime,Teal,Sea Teal,Flame,Pink,Graphite,Khaki,Sage,Gray,Custom"
+        }
+        ListElement {
+            settingName: "Custom accent"
+            label: "Custom color"
+            setting: ""
+            inputType: "text"
+            note: "A hex code, like #107C10. Saving it picks Custom above."
         }
         ListElement {
             settingName: "Grid background dimming"
@@ -2381,6 +2388,19 @@ id: root
 
             onTextEdited:  editText = newText
             onAccepted: {
+                // Custom color: only a real hex code is saved, and saving one
+                // switches the accent to Custom (like typing one on the Xbox).
+                if (editSettingName === "Custom accent") {
+                    var hex = normalizeHex(editText);
+                    if (hex === "") {
+                        kbOpen = false;     // the info panel sits under the keyboard (z 60 vs 100)
+                        root.openInfo("Not a colour", "Type 6 hex digits, like 107C10 or #EB4910 (3 digits work too: #1C1).");
+                        return;
+                    }
+                    editText = hex;
+                    settingsStore.set("Color Layout", "Custom");
+                    settingsStore.set("Color LayoutIndex", accentOrder.split(",").indexOf("Custom"));
+                }
                 api.memory.set(editSettingName, editText);
                 memRevision++;
                 kbOpen = false;

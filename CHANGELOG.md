@@ -4,9 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 65)
+## Unreleased — seriesSX branch (build 66)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Custom accent colour** (Settings › Appearance › Custom color): type any hex code on the on-screen keyboard (107C10, #EB4910, or 3 digits like #1C1). Saving it switches the accent to Custom, as on the Xbox. A code that isn't a colour is refused with a short message and nothing changes. Its darker shades are worked out the way Xbox's presets are: same hue, lightness ×0.68 and ×0.39.
+
+## build 65
 
 - **Accent colours are now Xbox's own 21 presets**, in Xbox's order, with the exact values the console uses (Xbox Green, Ocean Blue, Azure, Cobalt, Purple, Orchid, Magenta, Crimson, Red, Orange, Brown, Steel, Lime, Teal, Sea Teal, Flame, Pink, Graphite, Khaki, Sage, Gray; Xbox shows them unnamed, so the names are ours). Each comes with the darker shades Xbox pairs it with, for headers and toasts in later pages. The default is Xbox Green (was Lime).
 - **Your old accent carries over** to the closest preset on first start (e.g. Indigo → Purple, Sky Blue → Ocean Blue). Names in both lists keep their name.

@@ -1648,7 +1648,38 @@ id: root
         "Sage":       ["#547a72", "#294a42", "#1c2b28"],
         "Gray":       ["#737373", "#4f4f4f", "#262626"]
     })
-    readonly property string accentOrder: "Xbox Green,Ocean Blue,Azure,Cobalt,Purple,Orchid,Magenta,Crimson,Red,Orange,Brown,Steel,Lime,Teal,Sea Teal,Flame,Pink,Graphite,Khaki,Sage,Gray"
+    readonly property string accentOrder: "Xbox Green,Ocean Blue,Azure,Cobalt,Purple,Orchid,Magenta,Crimson,Red,Orange,Brown,Steel,Lime,Teal,Sea Teal,Flame,Pink,Graphite,Khaki,Sage,Gray,Custom"
+    // "#RRGGBB" from what was typed ("107c10", "#107C10", "#1c1"), or "" if
+    // it isn't a colour. Settings uses it to check the entry before saving.
+    function normalizeHex(t) {
+        var h = String(t || "").replace(/^\s*#?/, "").replace(/\s+$/, "");
+        if (/^[0-9a-fA-F]{3}$/.test(h)) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+        return /^[0-9a-fA-F]{6}$/.test(h) ? "#" + h.toUpperCase() : "";
+    }
+    // A typed colour gets mid and dark shades the way Xbox's presets do:
+    // same hue and saturation, lightness x0.68 (mid) and x0.39 (dark) -
+    // the average across Xbox's 21 presets. Not a colour: Xbox Green.
+    function customAccent(t) {
+        var hex = normalizeHex(t);
+        if (hex === "") return accentPresets["Xbox Green"];
+        var r = parseInt(hex.substr(1, 2), 16) / 255, g = parseInt(hex.substr(3, 2), 16) / 255,
+            b = parseInt(hex.substr(5, 2), 16) / 255;
+        var mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, hh = 0, ss = 0, d = mx - mn;
+        if (d > 0) {
+            ss = d / (1 - Math.abs(2 * l - 1));
+            hh = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+            hh = (hh * 60 + 360) % 360;
+        }
+        function shade(k) {
+            var L = l * k, C = (1 - Math.abs(2 * L - 1)) * ss, X = C * (1 - Math.abs((hh / 60) % 2 - 1)), m = L - C / 2;
+            var rgb = hh < 60 ? [C, X, 0] : hh < 120 ? [X, C, 0] : hh < 180 ? [0, C, X]
+                    : hh < 240 ? [0, X, C] : hh < 300 ? [X, 0, C] : [C, 0, X];
+            return "#" + rgb.map(function(v) {
+                var n = Math.round((v + m) * 255); return (n < 16 ? "0" : "") + n.toString(16);
+            }).join("");
+        }
+        return [hex, shade(0.68), shade(0.39)];
+    }
     // Accent names from before build 65 -> the closest preset. Names that
     // exist in both lists (Purple, Cobalt, Lime, ...) keep their name.
     readonly property var legacyAccent: ({
@@ -1677,7 +1708,7 @@ id: root
     function migrateAccent() {
         if (!api.memory.has("Color Layout")) return;
         var v = api.memory.get("Color Layout");
-        var nv = legacyAccent[v] || (accentPresets[v] ? v : "Xbox Green");
+        var nv = legacyAccent[v] || ((accentPresets[v] || v === "Custom") ? v : "Xbox Green");
         var i = accentOrder.split(",").indexOf(nv);
         if (nv !== v) api.memory.set("Color Layout", nv);
         if (api.memory.get("Color LayoutIndex") !== i) api.memory.set("Color LayoutIndex", i);
@@ -1693,8 +1724,10 @@ id: root
         // content/ppl/colors/00000-00020.json). The names are ours: Xbox
         // shows unnamed swatches. Names saved before build 65 go through
         // legacyAccent first (see migrateAccent).
-        var p = accentPresets[legacyAccent[settings.ColorLayout] || settings.ColorLayout]
-                || accentPresets["Xbox Green"];
+        var p = (settings.ColorLayout === "Custom")
+                ? customAccent(settingsStore.get("Custom accent", ""))
+                : (accentPresets[legacyAccent[settings.ColorLayout] || settings.ColorLayout]
+                   || accentPresets["Xbox Green"]);
         var accent = p[0];
         return {
             main:          background,
