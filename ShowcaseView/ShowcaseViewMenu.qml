@@ -1888,33 +1888,48 @@ id: root
             id: glideTop
             target: mainList; property: "contentY"; to: mainList.originY
             duration: 220; easing.type: Easing.OutCubic
+            // Row snapping back on once the glide has landed (see glideMode).
+            onRunningChanged: if (!running) mainList.snapMode = ListView.SnapOneItem
+        }
+        // The page moves two ways: following the focused row (ApplyRange) and
+        // the glide to the top strip (NoHighlightRange + glideTop). Row
+        // snapping (SnapOneItem, for the wheel and touch) is OFF while the
+        // glide runs: changing highlightRangeMode makes the list re-snap to a
+        // whole row, which jumped the page ~40 px the wrong way as the glide
+        // began. On a fast screen that landed a frame into the glide, drawn
+        // at the old position: the whole strip flashed. (Measured: switching
+        // the mode alone moved contentY 231 -> 270 before the glide started.)
+        function glideMode() {
+            snapMode = ListView.NoSnap;
+            highlightRangeMode = ListView.NoHighlightRange;
+        }
+        function followMode() {
+            glideTop.stop();
+            highlightRangeMode = ListView.ApplyRange;
+            snapMode = ListView.SnapOneItem;
         }
         onCurrentIndexChanged: {
             if (navJump) return;            // jumping to/from the nav bar: leave scroll position alone
             if (currentIndex <= 1) {
-                highlightRangeMode = ListView.NoHighlightRange;
-                glideTop.restart();
+                glideTop.stop();            // stopping turns snapping back on, so first
+                glideMode();
+                glideTop.start();
             } else {
-                glideTop.stop();
-                highlightRangeMode = ListView.ApplyRange;
+                followMode();
             }
         }
 
         Keys.onUpPressed: {
             if (currentIndex <= 1) { homebutton.focus = true; return; }
             // Work out where we're going first, then go there in ONE step.
-            // It used to step a row at a time past hidden rows, and only
-            // pre-switched to NoHighlightRange when leaving row 2. From any
-            // other row (or across a hidden one) the list briefly ran in
-            // ApplyRange and started its own scroll before the glide took
-            // over; on a fast screen that left one frame drawn at the OLD
-            // position mid-glide: the whole strip flashed back and forth.
+            // (It used to step a row at a time past hidden rows, and only
+            // switched to glide mode when leaving row 2.)
             var dest = navNextEnabled(currentIndex, -1);
             if (dest === currentIndex) return;
             navPreset(dest, navRowCenterX());   // seat nearest column before moving
             playNav();
             // Landing on the strip: the glide owns the whole move.
-            if (dest <= 1) highlightRangeMode = ListView.NoHighlightRange;
+            if (dest <= 1) glideMode();
             currentIndex = dest;
         }
         Keys.onDownPressed: {
@@ -1924,10 +1939,7 @@ id: root
             // index changes, otherwise the list's internal repositioning runs
             // while still in NoHighlightRange and never scrolls down. (At index
             // 0 we leave it alone so landing on the first row stays glued to top.)
-            if (currentIndex >= 1) {
-                glideTop.stop();
-                highlightRangeMode = ListView.ApplyRange;
-            }
+            if (currentIndex >= 1) followMode();
             var before = currentIndex;
             do {
                 incrementCurrentIndex();
@@ -1944,8 +1956,9 @@ id: root
             // rest half off-screen. Settle the top zone explicitly instead.
             if (currentIndex < before) {
                 glideTop.stop();
-                highlightRangeMode = ListView.NoHighlightRange;
+                glideMode();
                 positionViewAtBeginning();
+                snapMode = ListView.SnapOneItem;
             }
         }
     }

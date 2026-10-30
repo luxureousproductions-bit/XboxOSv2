@@ -4,9 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 86)
+## Unreleased — seriesSX branch (build 87)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Fixed (for real this time): the system tiles flashing when you go up to the strip.** Build 86's change didn't touch the cause. Measured on your recording: the strip glides down, jumps back to where it started for one frame, then carries on. Measured in the harness: switching the page into "glide" mode moved it ~40 px the wrong way before the glide began. Root cause: Home's page list snaps to whole rows (for the wheel and touch), and changing how it follows focus makes it re-snap; on a fast screen that snap landed a frame into the glide. Row snapping is now off while the glide runs and back on when it lands. Build 86's one-step Up is kept.
+
+## build 86
 
 - **Fixed: the system tiles flashing when you go up from a row to the strip.** Root cause: as the page glides down to the strip, one frame was drawn back at the starting position (measured in a screen recording: the strip moved down smoothly, then jumped back once, then carried on), which reads as every tile flashing. Up only switched the page to "glide" mode before changing rows when you were on the row right below the strip; from any other row, or across a hidden row, it stepped one row at a time in "follow the focused row" mode, and the list started its own scroll before the glide took over. Up now works out the destination first, switches to glide mode, and goes straight there.
 - RA game page: the fanart behind the top is at **50%** (was 30%).
