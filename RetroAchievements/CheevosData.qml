@@ -744,11 +744,14 @@ id: root
     // collection maps to the expected RA console so same-named titles on
     // different systems don't get crossed.
     // ── Your own matches ─────────────────────────────────────────────────
-    // Exact pairs that beat title matching, in both directions:
-    //   1. "x-retroachievements: <RA game ID>" in the game's Pegasus
-    //      metadata (x-ra-id and x-raid work too);
-    //   2. a pair picked in the theme (Change match / Find in your library),
-    //      kept in the theme's settings as "RA Pairs" { local key: RA ID }.
+    // Exact pairs that beat title matching, in both directions, strongest
+    // first:
+    //   1. a pair picked in the theme (Change match / Find in your library),
+    //      kept in the theme's settings as "RA Pairs" { local key: RA ID };
+    //   2. "x-ra-id: <RA game ID>" in the game's Pegasus metadata, which
+    //      Pegasus X writes from the ROM's hash (x-retroachievements and
+    //      x-raid work too). "x-ra-id: 0" means Pegasus X checked the ROM and
+    //      it isn't on RA: no RA button, and no guessing by title.
     property var raPairs: ({})
     property bool _pairsLoaded: false
     function _loadPairs() {
@@ -766,25 +769,28 @@ id: root
         var sn = (g.collections && g.collections.count > 0) ? (g.collections.get(0).shortName || "") : "";
         return sn + "|" + (g.title || "");
     }
+    // >0 the RA ID in the metadata, -1 checked and not on RA, 0 not there.
     function metadataId(g) {
         if (!g || !g.extra) return 0;
-        var keys = ["retroachievements", "ra-id", "raid"];
+        var keys = ["ra-id", "retroachievements", "raid"];
         for (var i = 0; i < keys.length; i++) {
             var v = g.extra[keys[i]];
             if (v === undefined || v === null || v === "") continue;
             if (typeof v !== "string" && v.length !== undefined) v = v[0];
             var id = parseInt(v);
             if (id > 0) return id;
+            if (id === 0) return -1;
         }
         return 0;
     }
-    // >0 when you've said which RA game this is, else 0 (title matching).
+    // >0 the RA game you (or Pegasus X) said this is, -1 not on RA, 0 not
+    // known (title matching decides).
     function pairedId(g) {
-        var m = metadataId(g);
-        if (m > 0) return m;
+        if (!g) return 0;
         _loadPairs();
         var p = parseInt(raPairs[localKey(g)]) || 0;
-        return p > 0 ? p : 0;
+        if (p > 0) return p;
+        return metadataId(g);
     }
     function setPair(g, raId) {
         if (!g || !(raId > 0)) return;
@@ -813,9 +819,10 @@ id: root
             var g = api.allGames.get(i);
             var k = titleKey(g.title);
             if (k !== "") (map[k] = map[k] || []).push(i);
-            var pid = metadataId(g);
-            if (!pid && anyPairs) pid = parseInt(raPairs[localKey(g)]) || 0;
-            if (pid > 0) { (ids[pid] = ids[pid] || []).push(i); paired[i] = pid; }
+            var pid = anyPairs ? (parseInt(raPairs[localKey(g)]) || 0) : 0;
+            if (pid <= 0) pid = metadataId(g);
+            if (pid > 0) (ids[pid] = ids[pid] || []).push(i);
+            if (pid !== 0) paired[i] = pid;         // -1: not on RA, never title-matched
         }
         _localIndex = { count: api.allGames.count, map: map, ids: ids, paired: paired };
         return _localIndex;
@@ -1001,6 +1008,7 @@ id: root
         if (!title || !hasCredentials()) return 0;
         var paired = pairedId(game);
         if (paired > 0) return paired;
+        if (paired < 0) return 0;                   // Pegasus X: not on RA
 
         // Recently played on RA: known without any list
         var normTitle = titleKey(title);
@@ -1072,6 +1080,11 @@ id: root
         // Your own match (metadata ID or a pair you picked) needs no lookup.
         var paired = pairedId(game);
         if (paired > 0) { pendingGameID = paired; return; }
+        if (paired < 0) {
+            lookupStatusMsg = "Not on RetroAchievements (its ROM was checked by Pegasus X)";
+            pendingGameID = 0;
+            return;
+        }
 
 
         var consoleID = consoleMappings[shortName.toLowerCase()] || 0;

@@ -4,9 +4,14 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 83)
+## Unreleased — seriesSX branch (build 84)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Works with Pegasus X's RetroAchievements matching.** Pegasus X hashes your ROMs the way RA does and writes the result into your metadata as `x-ra-id`, which the theme uses as the match everywhere (Game details' RA button, Launch game, box art and fanart on the achievements page, the Awards photos). When Pegasus X found a ROM isn't on RA (`x-ra-id: 0`), the theme no longer guesses by title, so the game gets no RA button and isn't paired with a look-alike. Without Pegasus X, title matching works as before.
+- A match you pick in the theme (Change match / Find in your library) now beats the metadata ID, so the picker always wins over an older or title-based match.
+
+## build 83
 
 - **Tell the theme which RA game a game is, two ways.** Both beat title matching, in both directions (Game details' RA button, and Launch game / box art / fanart on the achievements page and the Awards photos):
   - **In your metadata:** add `x-retroachievements: <RA game ID>` to a game in its `metadata.pegasus.txt` (the number in the game's retroachievements.org address). `x-ra-id` works too.
