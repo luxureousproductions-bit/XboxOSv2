@@ -238,7 +238,7 @@ id: root
 
     function refreshRa() {
         if (!extrasWanted) return;
-        raGameId = cheevosData.quickGameId(game.title, collectionShortName);
+        raGameId = cheevosData.quickGameId(game.title, collectionShortName, game);
         if (raGameId < 0) cheevosData.prefetchList(collectionShortName);
     }
 

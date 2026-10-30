@@ -1,11 +1,12 @@
 // XboxOSv2 – RAFilterDialog.qml
 // The Filters pop-up on a game's achievements page, after the Xbox Series
-// one: two columns of radio rows and an Apply button, over a dimmed page.
+// one: columns of radio rows and an Apply button, over a dimmed page.
 //
-//   Left:  RA's achievement types   All / Progression / Win condition / Missable
-//          (the console's Original / Add-on column)
-//   Right: status and rarity        All / Locked / Unlocked / Rare / Common
-//          (rare: under 10% of players have it)
+//   Set:    All / Base set / Subsets / Unofficial     (the console's
+//           Original / Add-on column: RA subsets are its add-ons; All is
+//           the base set plus subsets, unofficial ones only show on their own)
+//   Status: All / Locked / Unlocked / Rare / Common   (rare: under 10%)
+//   Type:   All / Progression / Win condition / Missable
 //
 // Picks stay pending until Apply; B (or a tap outside) closes without
 // changing anything. Up/Down move in a column, Left/Right switch columns,
@@ -20,14 +21,20 @@ id: dlg
     visible: false
     z: 100
 
-    readonly property var typeKeys:    ["all", "progression", "win_condition", "missable"]
-    readonly property var typeNames:   ["All", "Progression", "Win condition", "Missable"]
+    readonly property var setKeys:     ["all", "base", "subsets", "unofficial"]
+    readonly property var setNames:    ["All", "Base set", "Subsets", "Unofficial"]
     readonly property var statusKeys:  ["all", "locked", "earned", "rare", "common"]
     readonly property var statusNames: ["All", "Locked", "Unlocked", "Rare", "Common"]
+    readonly property var typeKeys:    ["all", "progression", "win_condition", "missable"]
+    readonly property var typeNames:   ["All", "Progression", "Win condition", "Missable"]
+    readonly property var columns: [
+        { keys: setKeys,    names: setNames },
+        { keys: statusKeys, names: statusNames },
+        { keys: typeKeys,   names: typeNames }
+    ]
 
-    property string pendingType:   "all"
-    property string pendingStatus: "all"
-    property int col: 1                 // 0 types, 1 status, 2 Apply
+    property var pending: ["all", "all", "all"]      // set, status, type
+    property int col: 1                 // 0-2 the columns, 3 Apply
     property int row: 0
     property int lastCol: 1             // the column Up from Apply returns to
 
@@ -37,29 +44,29 @@ id: dlg
     readonly property color applyColor: whiteBackground ? "#e2e2e2" : "#3a3a3a"
 
     function open() {
-        pendingType   = cheevosData.typeFilter;
-        pendingStatus = cheevosData.filterMode;
+        pending = [cheevosData.setFilter, cheevosData.filterMode, cheevosData.typeFilter];
         col = 1; lastCol = 1;
-        row = Math.max(0, statusKeys.indexOf(pendingStatus));
+        row = Math.max(0, statusKeys.indexOf(pending[1]));
         visible = true;
         forceActiveFocus();
         playAccept();
     }
     function close(apply) {
-        if (apply) { playAccept(); cheevosData.setFilters(pendingStatus, pendingType); }
+        if (apply) { playAccept(); cheevosData.setFilters(pending[1], pending[2], pending[0]); }
         else playBack();
         visible = false;
         closed();
     }
-    function rows(c) { return c === 0 ? typeKeys.length : statusKeys.length; }
+    function rows(c) { return columns[c].keys.length; }
     function pick(c, r) {
-        if (c === 0) pendingType = typeKeys[r];
-        else pendingStatus = statusKeys[r];
+        var p = pending.slice();
+        p[c] = columns[c].keys[r];
+        pending = p;
         playToggle();
     }
     // A, from the key or the help bar.
     function accept() {
-        if (col === 2) close(true);
+        if (col === 3) close(true);
         else pick(col, row);
     }
 
@@ -73,7 +80,7 @@ id: dlg
     Rectangle {
     id: panel
         anchors.centerIn: parent
-        width: vpx(600)
+        width: vpx(860)
         height: content.height + vpx(48)
         radius: vpx(4)
         color: dlg.panelColor
@@ -96,34 +103,37 @@ id: dlg
                 width: parent.width
                 spacing: vpx(20)
                 Repeater {
-                    model: 2
+                    model: dlg.columns.length
                     delegate: Column {
                     id: column
                         readonly property int c: index
-                        width: (cols.width - cols.spacing) / 2
+                        width: (cols.width - cols.spacing * (dlg.columns.length - 1)) / dlg.columns.length
                         spacing: vpx(6)
                         Repeater {
-                            model: column.c === 0 ? dlg.typeNames : dlg.statusNames
+                            model: dlg.columns[column.c].names
                             delegate: Item {
-                                readonly property bool chosen: column.c === 0 ? dlg.typeKeys[index] === dlg.pendingType
-                                                                                : dlg.statusKeys[index] === dlg.pendingStatus
+                                readonly property bool chosen: dlg.columns[column.c].keys[index] === dlg.pending[column.c]
                                 readonly property bool hot: dlg.col === column.c && dlg.row === index && dlg.activeFocus
+                                // Subsets is dim when this game has none.
+                                readonly property bool empty: column.c === 0 && index === 2 && cheevosData.subsetNames.length === 0
                                 width: column.width; height: vpx(44)
                                 RAFocus { on: parent.hot }
                                 Text {
-                                    anchors { left: parent.left; leftMargin: vpx(12); verticalCenter: parent.verticalCenter }
+                                    anchors { left: parent.left; leftMargin: vpx(12); right: radio.left; rightMargin: vpx(8); verticalCenter: parent.verticalCenter }
+                                    elide: Text.ElideRight
                                     text: modelData
-                                    color: theme.text
+                                    color: theme.text; opacity: parent.empty ? 0.45 : 1
                                     font.family: bodyFont.name; font.pixelSize: fpx(17)
                                 }
-                                // Radio
                                 Rectangle {
+                                id: radio
                                     anchors { right: parent.right; rightMargin: vpx(14); verticalCenter: parent.verticalCenter }
                                     width: vpx(20); height: width; radius: width / 2
                                     color: "transparent"
                                     border.width: vpx(2); border.color: theme.text
+                                    opacity: parent.empty ? 0.45 : 1
                                     Rectangle {
-                                        visible: parent.parent.chosen
+                                        visible: radio.parent.chosen
                                         anchors.centerIn: parent
                                         width: vpx(10); height: width; radius: width / 2
                                         color: theme.text
@@ -139,7 +149,7 @@ id: dlg
             // Apply
             Rectangle {
             id: applyBtn
-                readonly property bool hot: dlg.col === 2 && dlg.activeFocus
+                readonly property bool hot: dlg.col === 3 && dlg.activeFocus
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: vpx(210); height: vpx(42)
                 radius: vpx(4)
@@ -154,35 +164,39 @@ id: dlg
                 TapHandler { onTapped: dlg.close(true) }
             }
         }
-        // The divider between the columns.
-        Rectangle {
-            x: content.x + cols.x + (cols.width - cols.spacing) / 2 + cols.spacing / 2
-            y: content.y + cols.y
-            width: vpx(1); height: cols.height
-            color: theme.text; opacity: 0.15
+        // Dividers between the columns.
+        Repeater {
+            model: dlg.columns.length - 1
+            delegate: Rectangle {
+                readonly property real colW: (cols.width - cols.spacing * (dlg.columns.length - 1)) / dlg.columns.length
+                x: content.x + cols.x + (index + 1) * colW + index * cols.spacing + cols.spacing / 2
+                y: content.y + cols.y
+                width: vpx(1); height: cols.height
+                color: theme.text; opacity: 0.15
+            }
         }
     }
 
     // ── Keys: everything stays in the pop-up while it's open ─────────────
     Keys.onUpPressed: {
         event.accepted = true;
-        if (col === 2) { col = lastCol; row = rows(col) - 1; playNav(); }
+        if (col === 3) { col = lastCol; row = rows(col) - 1; playNav(); }
         else if (row > 0) { row--; playNav(); }
     }
     Keys.onDownPressed: {
         event.accepted = true;
-        if (col === 2) return;
+        if (col === 3) return;
         if (row < rows(col) - 1) row++;
-        else { lastCol = col; col = 2; }
+        else { lastCol = col; col = 3; }
         playNav();
     }
     Keys.onLeftPressed: {
         event.accepted = true;
-        if (col === 1) { col = 0; lastCol = 0; row = Math.min(row, rows(0) - 1); playNav(); }
+        if (col > 0 && col < 3) { col--; lastCol = col; row = Math.min(row, rows(col) - 1); playNav(); }
     }
     Keys.onRightPressed: {
         event.accepted = true;
-        if (col === 0) { col = 1; lastCol = 1; row = Math.min(row, rows(1) - 1); playNav(); }
+        if (col < 2) { col++; lastCol = col; row = Math.min(row, rows(col) - 1); playNav(); }
     }
     Keys.onPressed: {
         if (event.isAutoRepeat) { event.accepted = true; return; }

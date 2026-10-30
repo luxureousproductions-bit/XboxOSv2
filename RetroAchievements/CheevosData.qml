@@ -63,8 +63,11 @@ id: root
     // typeFilter: "all" | "progression" | "win_condition" | "missable"
     //             (RA's achievement types; untyped ones only show under All)
     // sortMode:   "default" | "points" | "rarity" | "date"
+    // setFilter:  "all" | "base" | "subsets" | "unofficial"
+    //             (All = base set + subsets; unofficial ones only on their own)
     property string filterMode: "all"
     property string typeFilter: "all"
+    property string setFilter:  "all"
     property string sortMode:   "default"
 
     // ── Game lookup state (used by RAGameEntryView) ──────────────────────
@@ -254,6 +257,9 @@ id: root
             if (filterMode === "rare"   && !(a.Rarity > 0 && a.Rarity < 10)) continue;
             if (filterMode === "common" &&  (a.Rarity > 0 && a.Rarity < 10)) continue;
             if (typeFilter !== "all" && a.Type !== typeFilter) continue;
+            var set = a.Set || "";
+            if (set === "Unofficial") { if (setFilter !== "unofficial") continue; }
+            else if (setFilter === "unofficial" || (setFilter === "base" && set !== "") || (setFilter === "subsets" && set === "")) continue;
             list.push({
                 Title:        a.Title,
                 Description:  a.Description,
@@ -264,7 +270,8 @@ id: root
                 Hardcore:     a.Hardcore,
                 Rarity:       a.Rarity,
                 TrueRatio:    a.TrueRatio,
-                Type:         a.Type
+                Type:         a.Type,
+                Set:          a.Set || ""
             });
         }
         // Sort
@@ -295,11 +302,13 @@ id: root
 
     // Both filters at once (the Filters pop-up's Apply): one rebuild.
     property bool _settingFilters: false
-    function setFilters(status, type) {
+    function setFilters(status, type, set) {
         _settingFilters = true;
         filterMode = status;
         typeFilter = type;
+        setFilter  = set || "all";
         _settingFilters = false;
+        if (setFilter === "unofficial") loadUnofficial();
         rebuildFilteredCheevos();
     }
     onFilterModeChanged: if (!_settingFilters) rebuildFilteredCheevos()
@@ -509,6 +518,10 @@ id: root
         currentGameID = gameID;
         filterMode    = "all";      // reset filters on each new game
         typeFilter    = "all";
+        setFilter     = "all";
+        subsetNames   = [];
+        unofficialState = 0;
+        unofficialCount = 0;
         sortMode      = "default";
         statusText    = "Loading...";
         raGameCheevos.clear();
@@ -532,6 +545,7 @@ id: root
                     "Title":                    resp.Title       || "",
                     "ImageIcon":                resp.ImageIcon   || "",
                     "ConsoleName":              resp.ConsoleName  || "",
+                    "ConsoleID":                parseInt(resp.ConsoleID)                || 0,
                     "NumAchievements":          parseInt(resp.NumAchievements)          || 0,
                     "NumAwardedToUser":         parseInt(resp.NumAwardedToUser)         || 0,
                     "NumAwardedToUserHardcore": parseInt(resp.NumAwardedToUserHardcore) || 0,
@@ -553,46 +567,16 @@ id: root
                 var totalPlayers = parseInt(resp.NumDistinctPlayersCasual) || 1;
 
                 for (var key in achievements) {
-                    var a = achievements[key];
-
-                    // Earn date — prefer hardcore, fall back to softcore
-                    var dateEarned = "";
-                    var isHardcore = false;
-                    if (a.DateEarnedHardcore && a.DateEarnedHardcore !== "") {
-                        dateEarned = a.DateEarnedHardcore;
-                        isHardcore = true;
-                    } else if (a.DateEarned && a.DateEarned !== "") {
-                        dateEarned = a.DateEarned;
+                    var it = _achItem(achievements[key], totalPlayers, "");
+                    possible += it.Points;
+                    if (it.DateEarned > 0) {
+                        if (it.Hardcore) ptsHc += it.Points; else ptsSc += it.Points;
+                        trueEarned += it.TrueRatio;
+                        if (first === 0 || it.DateEarned < first) first = it.DateEarned;
+                        if (it.DateEarned > latest) latest = it.DateEarned;
+                        if (it.Rarity < rarest) { rarest = it.Rarity; rarestTitle = it.Title; }
                     }
-                    var ts = Date.parse(dateEarned);
-                    if (isNaN(ts)) ts = 0;
-
-                    // Rarity: % of tracked players who earned it (lower = rarer)
-                    var numAwarded  = parseInt(a.NumAwarded) || 0;
-                    var rarityPct   = totalPlayers > 0
-                                      ? Math.round((numAwarded / totalPlayers) * 1000) / 10
-                                      : 100.0;
-
-                    possible += parseInt(a.Points) || 0;
-                    if (ts > 0) {
-                        if (isHardcore) ptsHc += parseInt(a.Points) || 0; else ptsSc += parseInt(a.Points) || 0;
-                        trueEarned += parseInt(a.TrueRatio) || 0;
-                        if (first === 0 || ts < first) first = ts;
-                        if (ts > latest) latest = ts;
-                        if (rarityPct < rarest) { rarest = rarityPct; rarestTitle = a.Title || ""; }
-                    }
-                    list.push({
-                        "Title":        a.Title        || "",
-                        "Description":  a.Description  || "",
-                        "Points":       parseInt(a.Points)       || 0,
-                        "TrueRatio":    parseInt(a.TrueRatio)    || 0,
-                        "BadgeName":    a.BadgeName    || "",
-                        "DisplayOrder": parseInt(a.DisplayOrder) || 0,
-                        "DateEarned":   ts,
-                        "Hardcore":     isHardcore,
-                        "Rarity":       rarityPct,     // 0.0–100.0
-                        "Type":         a.Type || a.type || ""   // "progression" | "win_condition" | "missable" | ""
-                    });
+                    list.push(it);
                 }
 
                 // Default sort: earned (most recent first), then unearned by DisplayOrder
@@ -617,8 +601,94 @@ id: root
 
                 statusText = (raGameCheevos.count === 0) ? "No achievements for this game" : "";
                 rebuildFilteredCheevos();
+                loadSubsets(gameID, det.ConsoleID, det.Title);
             }
         );
+    }
+
+    // One achievement from RA's game info, in the shape the page uses. set:
+    // "" for the base set, the subset's name, or "Unofficial".
+    function _achItem(a, totalPlayers, set) {
+        var dateEarned = "", hc = false;
+        if (a.DateEarnedHardcore) { dateEarned = a.DateEarnedHardcore; hc = true; }
+        else if (a.DateEarned) dateEarned = a.DateEarned;
+        var ts = Date.parse(dateEarned);
+        if (isNaN(ts)) ts = 0;
+        var n = parseInt(a.NumAwarded) || 0;
+        return {
+            "Title":        a.Title        || "",
+            "Description":  a.Description  || "",
+            "Points":       parseInt(a.Points)       || 0,
+            "TrueRatio":    parseInt(a.TrueRatio)    || 0,
+            "BadgeName":    a.BadgeName    || "",
+            "DisplayOrder": parseInt(a.DisplayOrder) || 0,
+            "DateEarned":   ts,
+            "Hardcore":     hc,
+            // % of the game's players who have it (lower = rarer)
+            "Rarity":       totalPlayers > 0 ? Math.round((n / totalPlayers) * 1000) / 10 : 100.0,
+            "Type":         a.Type || a.type || "",     // "progression" | "win_condition" | "missable" | ""
+            "Set":          set || ""
+        };
+    }
+
+    // ── Subsets and unofficial achievements ──────────────────────────────
+    // RA keeps subsets as games of their own, "<title> [Subset - Bonus]",
+    // linked to the base game (multiset). They're found in the console's
+    // game list (the same list the Game details RA button uses) and loaded
+    // after the base set, with your progress; the page's numbers and the
+    // Mythic card stay the base set's, as RA's mastery does.
+    property var subsetNames: []        // subsets loaded for the current game
+    function loadSubsets(gameID, consoleID, baseTitle) {
+        if (!consoleID || !baseTitle) return;
+        withList(consoleID, function(list) {
+            if (currentGameID !== gameID) return;
+            var want = titleKey(baseTitle), found = [];
+            for (var i = 0; i < list.length; i++) {
+                var m = /^(.*?)\s*\[Subset\s*-\s*([^\]]+)\]\s*$/i.exec(list[i].Title || "");
+                if (m && list[i].ID !== gameID && titleKey(m[1]) === want) found.push({ id: list[i].ID, name: m[2].trim() });
+            }
+            found.forEach(function(sub) {
+                raRequest("GetGameInfoAndUserProgress",
+                    "u=" + encodeURIComponent(raUserName) + "&g=" + sub.id,
+                    function(resp) {
+                        if (currentGameID !== gameID) return;
+                        var players = parseInt(resp.NumDistinctPlayersCasual) || 1, out = [];
+                        var ach = resp.Achievements || {};
+                        for (var k in ach) out.push(_achItem(ach[k], players, sub.name));
+                        if (out.length === 0) return;
+                        raGameCheevos.append(out);
+                        subsetNames = subsetNames.concat([sub.name]);
+                        rebuildFilteredCheevos();
+                    }, function() {});
+            });
+        });
+    }
+
+    // Unofficial (demoted / in-development) achievements: one request, only
+    // when the Unofficial filter is picked. They can't be earned, so they
+    // always show locked.
+    property int unofficialState: 0     // 0 not asked, 1 loading, 2 loaded
+    property int unofficialCount: 0
+    function loadUnofficial() {
+        if (unofficialState !== 0) return;
+        var gameID = currentGameID;
+        unofficialState = 1;
+        raRequest("GetGameExtended", "i=" + gameID + "&f=5",
+            function(resp) {
+                if (currentGameID !== gameID) return;
+                var players = parseInt(resp.NumDistinctPlayers || resp.NumDistinctPlayersCasual) || currentGameDetails.Players || 1;
+                var ach = resp.Achievements || {}, out = [];
+                for (var k in ach) {
+                    var it = _achItem(ach[k], players, "Unofficial");
+                    it.DateEarned = 0; it.Hardcore = false;
+                    out.push(it);
+                }
+                if (out.length) raGameCheevos.append(out);
+                unofficialCount = out.length;
+                unofficialState = 2;
+                rebuildFilteredCheevos();
+            },
+            function() { if (currentGameID === gameID) { unofficialState = 2; rebuildFilteredCheevos(); } });
     }
 
     // Your rank among this game's players (Stats view). One request per
@@ -673,32 +743,98 @@ id: root
     // the same normalized form as the RA lookup, and prefers a game whose
     // collection maps to the expected RA console so same-named titles on
     // different systems don't get crossed.
-    // Normalized title -> library indexes, built once on first use: one pass
-    // over the library instead of one per lookup (the Launch button and the
-    // Awards photos look up many games).
-    property var _localIndex: null
-    function localIndex() {
-        if (_localIndex && _localIndex.count === api.allGames.count) return _localIndex.map;
-        var map = {};
-        for (var i = 0; i < api.allGames.count; i++) {
-            var k = titleKey(api.allGames.get(i).title);
-            if (k === "") continue;
-            (map[k] = map[k] || []).push(i);
+    // ── Your own matches ─────────────────────────────────────────────────
+    // Exact pairs that beat title matching, in both directions:
+    //   1. "x-retroachievements: <RA game ID>" in the game's Pegasus
+    //      metadata (x-ra-id and x-raid work too);
+    //   2. a pair picked in the theme (Change match / Find in your library),
+    //      kept in the theme's settings as "RA Pairs" { local key: RA ID }.
+    property var raPairs: ({})
+    property bool _pairsLoaded: false
+    function _loadPairs() {
+        if (_pairsLoaded) return;
+        _pairsLoaded = true;
+        if (!api.memory.has("RA Pairs")) return;
+        var v = api.memory.get("RA Pairs");
+        try { raPairs = (typeof v === "string") ? JSON.parse(v) : (v || {}); } catch (e) { raPairs = {}; }
+    }
+    // A game's own key: its file, else system + title.
+    function localKey(g) {
+        if (!g) return "";
+        var f = (g.files && g.files.count > 0) ? (g.files.get(0).path || "") : "";
+        if (f !== "") return f;
+        var sn = (g.collections && g.collections.count > 0) ? (g.collections.get(0).shortName || "") : "";
+        return sn + "|" + (g.title || "");
+    }
+    function metadataId(g) {
+        if (!g || !g.extra) return 0;
+        var keys = ["retroachievements", "ra-id", "raid"];
+        for (var i = 0; i < keys.length; i++) {
+            var v = g.extra[keys[i]];
+            if (v === undefined || v === null || v === "") continue;
+            if (typeof v !== "string" && v.length !== undefined) v = v[0];
+            var id = parseInt(v);
+            if (id > 0) return id;
         }
-        _localIndex = { count: api.allGames.count, map: map };
-        return map;
+        return 0;
+    }
+    // >0 when you've said which RA game this is, else 0 (title matching).
+    function pairedId(g) {
+        var m = metadataId(g);
+        if (m > 0) return m;
+        _loadPairs();
+        var p = parseInt(raPairs[localKey(g)]) || 0;
+        return p > 0 ? p : 0;
+    }
+    function setPair(g, raId) {
+        if (!g || !(raId > 0)) return;
+        _loadPairs();
+        var copy = {};
+        for (var k in raPairs) copy[k] = raPairs[k];
+        copy[localKey(g)] = raId;
+        raPairs = copy;
+        api.memory.set("RA Pairs", copy);
+        _localIndex = null;
+        _hits = ({});
+        listsEpoch++;                       // Game details re-asks for its RA button
     }
 
-    function findLocalGame(raTitle, consoleName) {
+    // The library, indexed once on first use (one pass instead of one per
+    // lookup): normalized title -> indexes, RA ID -> indexes for games you
+    // paired, and index -> RA ID so a paired game isn't title-matched to a
+    // different RA game.
+    property var _localIndex: null
+    function localIndex() {
+        if (_localIndex && _localIndex.count === api.allGames.count) return _localIndex;
+        _loadPairs();
+        var map = {}, ids = {}, paired = {};
+        var anyPairs = Object.keys(raPairs).length > 0;
+        for (var i = 0; i < api.allGames.count; i++) {
+            var g = api.allGames.get(i);
+            var k = titleKey(g.title);
+            if (k !== "") (map[k] = map[k] || []).push(i);
+            var pid = metadataId(g);
+            if (!pid && anyPairs) pid = parseInt(raPairs[localKey(g)]) || 0;
+            if (pid > 0) { (ids[pid] = ids[pid] || []).push(i); paired[i] = pid; }
+        }
+        _localIndex = { count: api.allGames.count, map: map, ids: ids, paired: paired };
+        return _localIndex;
+    }
+
+    function findLocalGame(raTitle, consoleName, raId) {
+        var idx = localIndex();
+        if (raId > 0 && idx.ids[raId]) return api.allGames.get(idx.ids[raId][0]);
         if (!raTitle) return null;
         var want = titleKey(raTitle);
         if (want === "") return null;
 
         var wantConsole = (consoleName || "").toLowerCase();
         var loose = null;
-        var hits = localIndex()[want] || [];
+        var hits = idx.map[want] || [];
 
         for (var h = 0; h < hits.length; h++) {
+            var pid = idx.paired[hits[h]];
+            if (pid && pid !== raId) continue;          // you paired it with another RA game
             var g = api.allGames.get(hits[h]);
             if (!loose) loose = g;                     // first title match, any system
             if (wantConsole === "") return g;
@@ -712,6 +848,54 @@ id: root
             }
         }
         return loose;
+    }
+
+    // ── Picker support ───────────────────────────────────────────────────
+    // A console's game list, from the cache or downloaded once.
+    function withList(consoleID, cb) {
+        var l = _listFor(consoleID);
+        if (l) { cb(l); return; }
+        raRequest("GetGameList", "i=" + consoleID,
+            function(resp) {
+                api.memory.set("raList_" + consoleID, _storeList(consoleID, resp));
+                api.memory.set("raListTime_" + consoleID, Date.now().toString());
+                _hits = ({});
+                listsEpoch++;
+                cb(_lists[consoleID] || []);
+            },
+            function() { cb([]); });
+    }
+    // Candidates for the picker: { title, sub, value, key, words } with
+    // key/words worked out once, so typing only re-scores.
+    function pickItem(title, sub, value) {
+        var n = normalizeTitle(title), w = {};
+        n.split(" ").forEach(function(x) { if (x !== "") w[x] = true; });
+        return { title: title, sub: sub, value: value, key: n.replace(/ /g, ""), words: w };
+    }
+    // Best matches first: shared words, plus a bonus when one title contains
+    // the other with spaces ignored ("FireRed" finds "Fire Red").
+    function rankItems(items, query, limit) {
+        var qn = normalizeTitle(query), qk = qn.replace(/ /g, "");
+        var qw = qn === "" ? [] : qn.split(" ");
+        var scored = [];
+        for (var i = 0; i < items.length; i++) {
+            var it = items[i], sc = 0;
+            if (qk !== "") {
+                for (var j = 0; j < qw.length; j++) {
+                    if (it.words[qw[j]]) sc += 2;
+                    else if (qw[j].length >= 3 && it.key.indexOf(qw[j]) >= 0) sc += 1;
+                }
+                if (it.key === qk) sc += 10;
+                else if (it.key.indexOf(qk) >= 0) sc += 6;
+                else if (it.key.length >= 4 && qk.indexOf(it.key) >= 0) sc += 4;
+                if (sc === 0) continue;
+            }
+            scored.push({ it: it, sc: sc });
+        }
+        scored.sort(function(a, b) { return (b.sc - a.sc) || (a.it.title < b.it.title ? -1 : a.it.title > b.it.title ? 1 : 0); });
+        var out = [];
+        for (var r = 0; r < scored.length && r < (limit || 80); r++) out.push(scored[r].it);
+        return out;
     }
 
     // ── Game list search (two-pass exact + prefix) ────────────────────────
@@ -813,8 +997,10 @@ id: root
 
     // >0: the RA game ID (game has achievements), 0: none or RA not set up,
     // -1: not known yet (this console's list hasn't been downloaded).
-    function quickGameId(title, shortName) {
+    function quickGameId(title, shortName, game) {
         if (!title || !hasCredentials()) return 0;
+        var paired = pairedId(game);
+        if (paired > 0) return paired;
 
         // Recently played on RA: known without any list
         var normTitle = titleKey(title);
@@ -865,7 +1051,7 @@ id: root
     // ── Game lookup (Pegasus game → RA game ID) ───────────────────────────
     // Uses recently-played cache as fast path, then per-console game list
     // (cached in api.memory for 24 hours to minimise Android network traffic).
-    function lookupGame(title, shortName) {
+    function lookupGame(title, shortName, game) {
         pendingGameID    = -1;
         lookupInProgress = false;
         lookupStatusMsg  = "";
@@ -882,6 +1068,10 @@ id: root
         // Fire it now so points/rank/avatar are ready by the time achievements load.
         if (!profileLoaded)
             loadUserProfile();
+
+        // Your own match (metadata ID or a pair you picked) needs no lookup.
+        var paired = pairedId(game);
+        if (paired > 0) { pendingGameID = paired; return; }
 
 
         var consoleID = consoleMappings[shortName.toLowerCase()] || 0;

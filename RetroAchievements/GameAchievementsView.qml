@@ -69,6 +69,8 @@ id: root
         var parts = [];
         var t = filterDlg.typeKeys.indexOf(cheevosData.typeFilter);
         var st = filterDlg.statusKeys.indexOf(cheevosData.filterMode);
+        var se = filterDlg.setKeys.indexOf(cheevosData.setFilter);
+        if (se > 0) parts.push(filterDlg.setNames[se]);
         if (st > 0) parts.push(filterDlg.statusNames[st]);
         if (t > 0) parts.push(filterDlg.typeNames[t]);
         return parts.length ? parts.join(" \u00B7 ") : "All";
@@ -89,7 +91,13 @@ id: root
     // Focus zones: 0 Launch game, 1 Sort/Filter, 2 the list. railFocus: on
     // the rail, where Up/Down switch between Achievements and Stats.
     property int zone: 2
+    property int heroIndex: 0                    // zone 0: 0 Launch / Find, 1 Change match
     onZoneChanged: updateHelp()
+    onHeroIndexChanged: updateHelp()
+    readonly property bool popupOpen: filterDlg.visible || matchPicker.visible
+    // The game of yours this page was opened for: from its Game details, or
+    // picked in RA Search (both go through the RA lookup with currentGame).
+    readonly property var raFromDetailsGame: ((raFromDetails || raSearchReturn) && currentGame) ? currentGame : null
     onRailFocusChanged: updateHelp()
     property int toolIndex: 0
     property bool railFocus: false
@@ -105,16 +113,20 @@ id: root
     property string localFor: ""
     onDetChanged: resolveLocal()
     Component.onCompleted: { resolveLocal(); updateHelp(); }
-    function resolveLocal() {
+    function resolveLocal(force) {
         var t = det.Title || "";
-        var key = t + "|" + (det.ConsoleName || "");
-        if (key === localFor) return;
+        var id = cheevosData.currentGameID;
+        var key = id + "|" + t + "|" + (det.ConsoleName || "");
+        if (key === localFor && !force) return;
         localFor = key;
         if (t === "") { localGame = null; return; }
-        if (currentGame && cheevosData.titleKey(currentGame.title) === cheevosData.titleKey(t))
+        // currentGame first when it's this RA game: paired with it, or the
+        // same title and not paired with something else.
+        var cp = currentGame ? cheevosData.pairedId(currentGame) : 0;
+        if (currentGame && (cp === id || (cp === 0 && cheevosData.titleKey(currentGame.title) === cheevosData.titleKey(t))))
             localGame = currentGame;
         else
-            localGame = cheevosData.findLocalGame(t, det.ConsoleName || "");
+            localGame = cheevosData.findLocalGame(t, det.ConsoleName || "", id);
     }
     onOnStatsChanged: {
         if (onStats) { cheevosData.loadGameRank(cheevosData.currentGameID); if (!railFocus) zone = 0; }
@@ -131,6 +143,7 @@ id: root
             currentHelpbarModel = null;
             currentIndex = 0;
             zone = 2;
+            heroIndex = 0;
             railFocus = false;
             railIndex = 0;
         }
@@ -313,15 +326,26 @@ id: root
         // Launch game: the Game details button. Up from Sort / Filter (or
         // Right from the rail on Stats) reaches it. Greyed out, and says so,
         // when the game isn't in your library.
+        // Not in your library: the button finds it instead (the picker).
         GD.Button {
         id: launchBtn
             x: heroStats.x; y: mythicCard.y + mythicCard.height - height
             height: vpx(50)
-            text: root.localGame ? "Launch game" : "Not in your library"
-            icon: "../assets/images/icon_play.svg"
-            selected: root.zone === 0 && !root.railFocus && root.activeFocus
-            opacity: root.localGame ? 1 : 0.75
-            onActivated: { root.zone = 0; root.railFocus = false; root.forceActiveFocus(); root.launchOwnGame(); }
+            text: root.localGame ? "Launch game" : "Find in your library"
+            icon: root.localGame ? "../assets/images/icon_play.svg" : "../assets/images/fluent/search.svg"
+            selected: root.zone === 0 && root.heroIndex === 0 && !root.railFocus && root.activeFocus && !root.popupOpen
+            onActivated: { root.zone = 0; root.heroIndex = 0; root.railFocus = false; root.forceActiveFocus(); root.launchOrFind(); }
+        }
+        // Change match: when the wrong game was matched.
+        GD.Button {
+        id: matchBtn
+            anchors { left: launchBtn.right; leftMargin: vpx(12); verticalCenter: launchBtn.verticalCenter }
+            height: vpx(50)
+            text: ""
+            icon: "../assets/images/fluent/link.svg"
+            visible: root.localGame !== null || root.raFromDetailsGame !== null
+            selected: root.zone === 0 && root.heroIndex === 1 && !root.railFocus && root.activeFocus && !root.popupOpen
+            onActivated: { root.zone = 0; root.heroIndex = 1; root.railFocus = false; root.forceActiveFocus(); root.changeMatch(); }
         }
     }
 
@@ -431,7 +455,11 @@ id: root
         Text {
             anchors { top: parent.top; topMargin: vpx(30); horizontalCenter: parent.horizontalCenter }
             visible: root.displayList.length === 0
-            text: cheevosData.statusText || "Nothing here"
+            text: cheevosData.setFilter === "unofficial" && cheevosData.unofficialState === 1 ? "Loading unofficial achievements\u2026"
+                : cheevosData.setFilter === "unofficial" && cheevosData.unofficialCount === 0 ? "No unofficial achievements for this game"
+                : cheevosData.setFilter === "subsets" && cheevosData.subsetNames.length === 0 ? "No subsets for this game"
+                : cheevosData.statusText !== "" ? cheevosData.statusText
+                : "Nothing matches these filters"
             color: theme.text; opacity: 0.55
             font.family: bodyFont.name; font.pixelSize: fpx(18)
         }
@@ -490,8 +518,9 @@ id: root
                     color: theme.text; opacity: 0.55; font.family: bodyFont.name; font.pixelSize: fpx(13)
                 }
                 Text {
-                    text: card.earned ? "Unlocked " + root.fmtDate(ach.DateEarned) + (ach.Hardcore ? "  ·  hardcore" : "  ·  softcore")
-                                      : ("Locked" + (ach.Type === "missable" ? "  ·  missable" : ""))
+                    text: (card.earned ? "Unlocked " + root.fmtDate(ach.DateEarned) + (ach.Hardcore ? "  ·  hardcore" : "  ·  softcore")
+                                       : ("Locked" + (ach.Type === "missable" ? "  ·  missable" : "")))
+                          + (ach.Set === "Unofficial" ? "  ·  unofficial" : ach.Set ? "  ·  " + ach.Set + " subset" : "")
                     color: theme.text; opacity: 0.85; font.family: bodyFont.name; font.pixelSize: fpx(13)
                 }
             }
@@ -597,13 +626,19 @@ id: root
     ListModel { id: localHelpModel }
     function updateHelp() {
         localHelpModel.clear();
+        if (matchPicker.visible) {
+            localHelpModel.append({ name: matchPicker.onSearch ? "Search" : "Select", button: "accept" });
+            localHelpModel.append({ name: "Search", button: "filters" });
+            localHelpModel.append({ name: "Close",  button: "cancel" });
+            return;
+        }
         if (filtersOpen) {
-            localHelpModel.append({ name: filterDlg.col === 2 ? "Apply" : "Select", button: "accept" });
+            localHelpModel.append({ name: filterDlg.col === 3 ? "Apply" : "Select", button: "accept" });
             localHelpModel.append({ name: "Close", button: "cancel" });
             return;
         }
         var a = railFocus ? (onStats ? "" : "Select")
-              : zone === 0 ? (localGame ? "Launch" : "")
+              : zone === 0 ? (heroIndex === 1 ? "Change match" : localGame ? "Launch" : "Find")
               : zone === 1 ? (toolIndex === 0 ? "Change" : "Filters") : "";
         if (a !== "") localHelpModel.append({ name: a, button: "accept" });
         localHelpModel.append({ name: "Refresh", button: "details" });
@@ -639,12 +674,14 @@ id: root
         event.accepted = true;
         if (railFocus) return;
         if (zone === 1 && toolIndex > 0) { toolIndex--; playNav(); }
+        else if (zone === 0 && heroIndex > 0) { heroIndex--; playNav(); }
         else { railFocus = true; playNav(); }
     }
     Keys.onRightPressed: {
         event.accepted = true;
         if (railFocus) { railFocus = false; if (onStats) zone = 0; playNav(); return; }
         if (zone === 1 && toolIndex < 1) { toolIndex++; playNav(); }
+        else if (zone === 0 && heroIndex < 1 && matchBtn.visible) { heroIndex++; playNav(); }
     }
 
     // B / mouse back. Opened from Game details (the RA button): straight back
@@ -671,7 +708,7 @@ id: root
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
             if (railFocus) { railFocus = false; if (onStats) zone = 0; playNav(); }
-            else if (zone === 0) launchOwnGame();
+            else if (zone === 0) { if (heroIndex === 1) changeMatch(); else launchOrFind(); }
             else if (zone === 1) { if (toolIndex === 0) { playToggle(); cycleSort(1); } else openFilters(); }
         }
     }
@@ -682,8 +719,71 @@ id: root
         playAccept();
         launchGameFromRA(localGame);
     }
+    function launchOrFind() { if (localGame) launchOwnGame(); else openLibraryPicker(); }
+    // Change match: opened from your game's details, pick the right RA game
+    // for it; otherwise pick which of your games this RA game is.
+    function changeMatch() { if (raFromDetailsGame) openRaPicker(raFromDetailsGame); else openLibraryPicker(); }
+
+    // ── Match picker ─────────────────────────────────────────────────────
+    property string pickerMode: ""               // "library" | "ra"
+    property var pickerGame: null                // "ra": the game of yours being matched
+    function openLibraryPicker() {
+        var t = det.Title || "";
+        pickerMode = "library"; pickerGame = null;
+        matchPicker.open("Find in your library", "Which of your games is " + t + " (" + (det.ConsoleName || "") + ")?", t);
+        updateHelp();
+        // Your games on this RA console (all of them if none map to it).
+        var cid = det.ConsoleID || 0, mine = [], all = [];
+        for (var i = 0; i < api.allGames.count; i++) {
+            var g = api.allGames.get(i), sys = "", onConsole = false;
+            for (var c = 0; c < g.collections.count; c++) {
+                var col = g.collections.get(c);
+                if (c === 0) sys = col.name || col.shortName || "";
+                if (cid > 0 && cheevosData.consoleMappings[(col.shortName || "").toLowerCase()] === cid) { onConsole = true; sys = col.name || col.shortName; }
+            }
+            var it = cheevosData.pickItem(g.title || "", sys, i);
+            all.push(it);
+            if (onConsole) mine.push(it);
+        }
+        matchPicker.setItems(mine.length > 0 ? mine : all);
+    }
+    function openRaPicker(g) {
+        pickerMode = "ra"; pickerGame = g;
+        var sn = (g.collections.count > 0) ? (g.collections.get(0).shortName || "").toLowerCase() : "";
+        var cid = cheevosData.consoleMappings[sn] || det.ConsoleID || 0;
+        matchPicker.open("Match to RetroAchievements", "Which RetroAchievements game is " + g.title + "?", g.title);
+        updateHelp();
+        if (!cid) { matchPicker.setItems([]); return; }
+        cheevosData.withList(cid, function(list) {
+            if (!matchPicker.visible || pickerMode !== "ra") return;
+            var out = [];
+            for (var i = 0; i < list.length; i++)
+                out.push(cheevosData.pickItem(list[i].Title, list[i].NumAchievements + " achievements", list[i].ID));
+            matchPicker.setItems(out);
+        });
+    }
+    function applyPick(value) {
+        if (pickerMode === "library") {
+            var g = api.allGames.get(value);
+            cheevosData.setPair(g, cheevosData.currentGameID);
+            resolveLocal(true);
+        } else if (pickerMode === "ra" && pickerGame) {
+            cheevosData.setPair(pickerGame, value);
+            if (value !== cheevosData.currentGameID) {
+                cheevosData.loadGameAchievements(value);
+                currentIndex = 0;
+            }
+            resolveLocal(true);
+        }
+    }
     // Clickable prompts: each does what its button does.
     function helpAction(button) {
+        if (matchPicker.visible) {
+            if (button === "accept") matchPicker.pick();
+            else if (button === "filters") { matchPicker.onSearch = true; matchPicker.openKeyboard(); }
+            else if (button === "cancel") matchPicker.close();
+            return true;
+        }
         if (filtersOpen) {
             if (button === "accept") filterDlg.accept();
             else if (button === "cancel") filterDlg.close(false);
@@ -694,16 +794,25 @@ id: root
         else if (button === "details") refresh();
         else if (button === "accept") {
             if (railFocus) { railFocus = false; if (onStats) zone = 0; }
-            else if (zone === 0) launchOwnGame();
+            else if (zone === 0) { if (heroIndex === 1) changeMatch(); else launchOrFind(); }
             else if (zone === 1) { if (toolIndex === 0) { playToggle(); cycleSort(1); } else openFilters(); }
         }
         else return false;
         return true;
     }
 
+    RAMatchPicker {
+    id: matchPicker
+        onChosen: root.applyPick(value)
+        // Hand focus back: a hidden pop-up stays the page's focused child
+        // (and keeps the keys) unless it lets go.
+        onClosed: { matchPicker.focus = false; root.forceActiveFocus(); root.updateHelp(); }
+        onOnSearchChanged: root.updateHelp()
+    }
+
     RAFilterDialog {
     id: filterDlg
-        onClosed: { root.forceActiveFocus(); root.updateHelp(); }
+        onClosed: { filterDlg.focus = false; root.forceActiveFocus(); root.updateHelp(); }
         onColChanged: root.updateHelp()
     }
 

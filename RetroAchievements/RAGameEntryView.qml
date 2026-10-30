@@ -37,7 +37,8 @@ id: root
         if (currentGame)
             cheevosData.lookupGame(
                 currentGame.title,
-                currentGame.collections.get(0).shortName
+                currentGame.collections.get(0).shortName,
+                currentGame
             );
         else {
             cheevosData.lookupStatusMsg = "No game selected";

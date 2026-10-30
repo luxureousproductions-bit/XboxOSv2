@@ -4,9 +4,18 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 82)
+## Unreleased — seriesSX branch (build 83)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Tell the theme which RA game a game is, two ways.** Both beat title matching, in both directions (Game details' RA button, and Launch game / box art / fanart on the achievements page and the Awards photos):
+  - **In your metadata:** add `x-retroachievements: <RA game ID>` to a game in its `metadata.pegasus.txt` (the number in the game's retroachievements.org address). `x-ra-id` works too.
+  - **In the theme:** on a game's achievements page, **Find in your library** (when it isn't matched) or the **Change match** button (link icon, right of Launch game) opens a picker: a list with the best guesses on top, and a search box with the on-screen keyboard (Y). Opened from your game (its details or RA Search), it picks the RA game; opened from the RA page, it picks which of your games this is. The pair is remembered in the theme's settings.
+- **Filters pop-up, Set column** (RA's version of the console's Original / Add-on): **All** (base set plus subsets), **Base set**, **Subsets** and **Unofficial**. Subsets ("[Subset - Bonus]" and the like) are found in the console's RA game list and loaded after the base set, with your progress, each card tagged with its subset; the page's numbers and the Mythic card stay the base set's, as RA's mastery does. Unofficial achievements load only when you pick that filter (one request) and always show locked, since they can't be earned. Achievement types moved to a third column.
+- Fixed: after closing the Filters pop-up, keys kept going to the hidden pop-up (B didn't leave the page).
+- Test harness: the fake RA server serves console game lists with subsets and unofficial achievements (GetGameList, GetGameExtended).
+
+## build 82
 
 - **Games whose title is spelled a little differently on RA now match your library.** The theme pairs your games with RA by title, and a space or an accent was enough to miss: RA's "~Hack~ Pokémon **FireRed**: Rocket Edition" never matched "Pokémon **Fire Red**: Rocket Edition", so that game had no RA button on Game details and its achievements page said "Not in your library". Titles now match ignoring spaces, accents ("Pokemon" = "Pokémon") and "&" vs "and". This fixes the details-page RA button, the Launch game button, box art and fanart on the achievements page, the Awards photos and the progress bars in Search.
 - **Game achievements top, rearranged:** box art and title top left, with the **Mythic Achievement** card under them, as on the console. Until a game is 100% the card shows a **locked wreath** (a padlock in a laurel wreath, in greys) with your achievement count, percent and a bar; at 100% it shows the Mythic star with how and when.

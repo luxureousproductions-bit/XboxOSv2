@@ -45,7 +45,7 @@ id: tab
             c[r]++;
             if (railIndex === 0 || railIndex === r)
                 out.push({ title: a.Title || "", icon: a.ImageIcon || "", kind: k, date: a.AwardedAt || "", gameID: parseInt(a.AwardData) || 0,
-                           art: k === "other" ? "" : localArt(a.Title, a.ConsoleName) });
+                           art: k === "other" ? "" : localArt(a.Title, a.ConsoleName, parseInt(a.AwardData) || 0) });
         }
         counts = c;
         tiles = out;
@@ -54,10 +54,10 @@ id: tab
     // Your fanart (else screenshot, else box art) when the game is in your
     // library; cached per title so switching filters doesn't look it up again.
     property var artCache: ({})
-    function localArt(title, consoleName) {
-        var key = (title || "") + "|" + (consoleName || "");
+    function localArt(title, consoleName, raId) {
+        var key = raId + "|" + (title || "") + "|" + (consoleName || "");
         if (artCache.hasOwnProperty(key)) return artCache[key];
-        var g = cheevosData.findLocalGame(title || "", consoleName || "");
+        var g = cheevosData.findLocalGame(title || "", consoleName || "", raId);
         var art = g ? (g.assets.background || g.assets.screenshot || g.assets.boxFront || "") : "";
         artCache[key] = art;
         return art;
@@ -66,6 +66,7 @@ id: tab
     Connections {
         target: cheevosData
         onAwardsListChanged: tab.rebuild()
+        onRaPairsChanged: { tab.artCache = ({}); tab.rebuild(); }    // a pair you just picked
     }
     Component.onCompleted: rebuild()
 

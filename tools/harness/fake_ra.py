@@ -3,7 +3,9 @@
 reach the real one). Serves the endpoints the theme calls with made-up but
 well-formed data: 620 played games (two pages of GetUserCompletionProgress),
 awards with every kind (mastered, completed, beaten hardcore/softcore), each
-game's achievements, and made-up badges/screenshots under /media/ (sync.sh
+game's achievements, console game lists with subsets
+("[Subset - Bonus]"), unofficial achievements (GetGameExtended f=5), and made-up
+badges/screenshots under /media/ (sync.sh
 points media.retroachievements.org there).
 
     python3 tools/harness/fake_ra.py [port]      # default 8765
@@ -60,6 +62,33 @@ if _lib:
         if done: g.update(NumAwarded=g["MaxPossible"], NumAwardedHardcore=g["MaxPossible"], HighestAwardKind="mastered",
                           HighestAwardDate="2026-10-27T12:00:00+00:00")
         else: g.update(NumAwarded=g["MaxPossible"] // 2, NumAwardedHardcore=0, HighestAwardKind=None, HighestAwardDate=None)
+
+# Subsets: games of their own titled "<base> [Subset - Bonus]" (RA's multiset
+# links them to the base game); three base games get one.
+SUBSETS = {}
+for base, kind in ((GAMES[0], "Bonus"), (GAMES[28], "Bonus"), (GAMES[5], "Challenge")):
+    sid = 9000 + base["GameID"] - 1000
+    SUBSETS[sid] = dict(base, GameID=sid, Title=f"{base['Title']} [Subset - {kind}]", MaxPossible=6,
+                        NumAwarded=2, NumAwardedHardcore=0, HighestAwardKind=None, HighestAwardDate=None)
+
+def game(gid):
+    gid = int(gid or 0)
+    return SUBSETS.get(gid) or next((x for x in GAMES if x["GameID"] == gid), GAMES[0])
+
+def achievements(g, unofficial=False):
+    rr = random.Random(g["GameID"] * (7 if unofficial else 1)); ach = {}
+    n = 3 if unofficial else g["MaxPossible"]
+    for i in range(n):
+        aid = g["GameID"] * 100 + i + (50 if unofficial else 0)
+        earned = not unofficial and i < g["NumAwarded"]
+        hc = earned and i < g["NumAwardedHardcore"]
+        when = f"2026-{rr.randint(7,10):02d}-{rr.randint(1,28):02d} 12:00:00"
+        ach[str(aid)] = {"ID": aid, "Title": f"{rr.choice(WORDS)} {rr.choice(WORDS)}", "Description": "Do the thing in the level without getting hit.",
+                         "Points": rr.choice([1, 2, 3, 5, 10, 25, 50]), "TrueRatio": rr.randint(2, 200), "BadgeName": str(100000 + aid % 900000),
+                         "DisplayOrder": i, "NumAwarded": rr.randint(20, 5000), "NumAwardedHardcore": rr.randint(5, 2000),
+                         "Type": "" if unofficial else rr.choice(["", "", "progression", "win_condition", "missable"]),
+                         **({"DateEarned": when} if earned else {}), **({"DateEarnedHardcore": when} if hc else {})}
+    return ach
 
 def awards():
     vis = []
@@ -125,22 +154,22 @@ class H(BaseHTTPRequestHandler):
         elif name == "GetUserGameRankAndScore":
             body = [{"User": user, "TotalScore": 315, "LastAward": "2026-10-22 12:00:00", "UserRank": 412}]
         elif name == "GetGameInfoAndUserProgress":
-            g = next((x for x in GAMES if str(x["GameID"]) == q.get("g")), GAMES[0])
-            rr = random.Random(g["GameID"]); ach = {}
-            for i in range(g["MaxPossible"]):
-                aid = g["GameID"] * 100 + i; earned = i < g["NumAwarded"]
-                hc = earned and i < g["NumAwardedHardcore"]
-                when = f"2026-{rr.randint(7,10):02d}-{rr.randint(1,28):02d} 12:00:00"
-                ach[str(aid)] = {"ID": aid, "Title": f"{rr.choice(WORDS)} {rr.choice(WORDS)}", "Description": "Do the thing in the level without getting hit.",
-                                 "Points": rr.choice([1, 2, 3, 5, 10, 25, 50]), "TrueRatio": rr.randint(2, 200), "BadgeName": str(100000 + aid % 900000),
-                                 "DisplayOrder": i, "NumAwarded": rr.randint(20, 5000), "NumAwardedHardcore": rr.randint(5, 2000),
-                                 "Type": rr.choice(["", "", "progression", "win_condition", "missable"]),
-                                 **({"DateEarned": when} if earned else {}), **({"DateEarnedHardcore": when} if hc else {})}
+            g = game(q.get("g"))
             body = {"Title": g["Title"], "ImageIcon": g["ImageIcon"], "ImageIngame": "/Images/000002.png",
-                    "ImageBoxArt": f"/Images/{g['GameID']}_box.png", "ConsoleName": g["ConsoleName"],
+                    "ImageBoxArt": f"/Images/{g['GameID']}_box.png", "ConsoleID": g["ConsoleID"], "ConsoleName": g["ConsoleName"],
                     "NumAchievements": g["MaxPossible"], "NumAwardedToUser": g["NumAwarded"],
                     "NumAwardedToUserHardcore": g["NumAwardedHardcore"], "NumDistinctPlayersCasual": 5000, "NumDistinctPlayersHardcore": 1800,
-                    "HighestAwardKind": g["HighestAwardKind"], "HighestAwardDate": g["HighestAwardDate"], "Achievements": ach}
+                    "HighestAwardKind": g["HighestAwardKind"], "HighestAwardDate": g["HighestAwardDate"], "Achievements": achievements(g)}
+        elif name == "GetGameExtended":
+            # f=5: unofficial achievements; every other game has three.
+            g = game(q.get("i"))
+            ach = achievements(g, unofficial=True) if q.get("f") == "5" and g["GameID"] % 2 == 0 else {}
+            body = {"Title": g["Title"], "ConsoleID": g["ConsoleID"], "NumDistinctPlayers": 5000, "Achievements": ach}
+        elif name == "GetGameList":
+            cid = int(q.get("i", 0))
+            body = [{"ID": x["GameID"], "Title": x["Title"], "ConsoleID": x["ConsoleID"], "ConsoleName": x["ConsoleName"],
+                     "NumAchievements": x["MaxPossible"], "ImageIcon": x["ImageIcon"]}
+                    for x in GAMES + list(SUBSETS.values()) if x["ConsoleID"] == cid]
         else:
             body = {}
         data = json.dumps(body).encode()

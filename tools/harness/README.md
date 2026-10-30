@@ -73,7 +73,8 @@ bash tools/harness/drawerrun.sh ra '{"RA Username":"Tester","RA API Key":"x"}' \
 It serves 620 played games (two pages of GetUserCompletionProgress), awards
 of every kind, profile, rank and recent games, plus stand-in badges, screenshots
 and box art. Start it with `FAKE_RA_LIB=$HARNESS/testenv/lib` to give two games
-titles from the fake library (one mastered), for the in-library paths. Box art and avatars don't
+titles from the fake library (one mastered), for the in-library paths. It also
+serves console game lists with subsets, and unofficial achievements. Box art and avatars don't
 load (they come from media.retroachievements.org). Real data still needs a
 check on a device.
 
