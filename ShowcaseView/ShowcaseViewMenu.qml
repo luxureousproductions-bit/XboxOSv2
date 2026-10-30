@@ -1902,17 +1902,20 @@ id: root
 
         Keys.onUpPressed: {
             if (currentIndex <= 1) { homebutton.focus = true; return; }
-            navPreset(navNextEnabled(currentIndex, -1), navRowCenterX());   // seat nearest column before moving
+            // Work out where we're going first, then go there in ONE step.
+            // It used to step a row at a time past hidden rows, and only
+            // pre-switched to NoHighlightRange when leaving row 2. From any
+            // other row (or across a hidden one) the list briefly ran in
+            // ApplyRange and started its own scroll before the glide took
+            // over; on a fast screen that left one frame drawn at the OLD
+            // position mid-glide: the whole strip flashed back and forth.
+            var dest = navNextEnabled(currentIndex, -1);
+            if (dest === currentIndex) return;
+            navPreset(dest, navRowCenterX());   // seat nearest column before moving
             playNav();
-            // Leaving a collection to land on the strip: pre-switch to NoHighlightRange
-            // BEFORE the index changes so ApplyRange doesn't snap contentY first,
-            // letting the glide own the whole transition. (Mirrors the down handler.)
-            if (currentIndex === 2) {
-                highlightRangeMode = ListView.NoHighlightRange;
-            }
-            do {
-                decrementCurrentIndex();
-            } while (!currentItem.enabled);
+            // Landing on the strip: the glide owns the whole move.
+            if (dest <= 1) highlightRangeMode = ListView.NoHighlightRange;
+            currentIndex = dest;
         }
         Keys.onDownPressed: {
             navPreset(navNextEnabled(currentIndex, 1), navRowCenterX());   // seat nearest column before moving

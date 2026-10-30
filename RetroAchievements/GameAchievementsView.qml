@@ -1,7 +1,7 @@
 // XboxOSv2 – GameAchievementsView.qml
 // One game's achievements, after the Xbox Series game Progress page.
 //
-//   Hero: the game's fanart at 30% over near-black; a 100% (Mythic) game
+//   Hero: the game's fanart at 50% over near-black; a 100% (Mythic) game
 //         sits on your accent band and fades into it. Box art and title top
 //         left, the Mythic Achievement card under them (a locked wreath with
 //         progress, or the Mythic star once it's 100%), then Points /
@@ -170,7 +170,7 @@ id: root
         height: vpx(270)
         clip: true
 
-        // Near-black, with the fanart at 30% over it. A 100% game (Mythic)
+        // Near-black, with the fanart at 50% over it. A 100% game (Mythic)
         // sits on the accent band instead and fades into it at the bottom.
         Rectangle { anchors.fill: parent; color: root.mythic ? root.band : "#141414" }
         Image {
@@ -181,7 +181,7 @@ id: root
             asynchronous: true
             smooth: true
             sourceSize: Qt.size(hrpx(640), hrpx(360))
-            opacity: status === Image.Ready ? 0.3 : 0
+            opacity: status === Image.Ready ? 0.5 : 0
             Behavior on opacity { NumberAnimation { duration: 200 } }
         }
         Rectangle {

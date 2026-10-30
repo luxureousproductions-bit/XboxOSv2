@@ -4,9 +4,14 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 85)
+## Unreleased — seriesSX branch (build 86)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Fixed: the system tiles flashing when you go up from a row to the strip.** Root cause: as the page glides down to the strip, one frame was drawn back at the starting position (measured in a screen recording: the strip moved down smoothly, then jumped back once, then carried on), which reads as every tile flashing. Up only switched the page to "glide" mode before changing rows when you were on the row right below the strip; from any other row, or across a hidden row, it stepped one row at a time in "follow the focused row" mode, and the list started its own scroll before the glide took over. Up now works out the destination first, switches to glide mode, and goes straight there.
+- RA game page: the fanart behind the top is at **50%** (was 30%).
+
+## build 85
 
 - **Fixed: the Home background running one step behind and flashing between rows and the system tiles.** Root cause: the background only fades once its picture has finished decoding, and a big one (a system background, especially with High Quality Mode's 1.1 s fade) could finish *after* you'd already moved on. It was faded in anyway (the previous item's art behind the new one), then a second full fade went to the right picture. A picture that arrives after you've moved on is now dropped, and the current one fades in straight away.
 - **Fixed: App Drawer icons popping in on the first open of each session.** Root cause: since the drawer started being built on first open (to speed up startup), its icon pre-loader ran in the same moment as the rows, so icons decoded while the drawer slid in. The drawer is now built in the background from 7 s after start, at the first moment you've been idle for 1.5 s, so the icons are decoded before you open it (opening it sooner still builds it at once). Startup is unchanged, and the one-off build frame doesn't land mid-scroll.
