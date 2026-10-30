@@ -135,7 +135,7 @@ id: searchOverlay
         var map = {};
         for (var i = 0; i < cheevosData.raRecentGames.count; i++) {
             var e = cheevosData.raRecentGames.get(i);
-            var k = cheevosData.normalizeTitle(e.Title);
+            var k = cheevosData.titleKey(e.Title);
             if (k !== "" && !map[k]) map[k] = e;
         }
         return map;
@@ -177,7 +177,7 @@ id: searchOverlay
         var games = [], prog = [];
         for (var j = 0; j < out.length; j++) {
             games.push(out[j].game);
-            prog.push(map[out[j].norm] || null);
+            prog.push(map[out[j].norm.replace(/ /g, "")] || null);
         }
         resultProg = prog;
         results = games;

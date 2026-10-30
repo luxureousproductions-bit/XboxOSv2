@@ -2,16 +2,18 @@
 // One game's achievements, after the Xbox Series game Progress page.
 //
 //   Hero: the game's fanart at 30% over near-black; a 100% (Mythic) game
-//         sits on your accent band and fades into it. Box art top left, then
-//         the title, the "Path to Mythic" card (or the Mythic Achievement
-//         star), Points / Achievements / Overall progress and Launch game.
+//         sits on your accent band and fades into it. Box art and title top
+//         left, the Mythic Achievement card under them (a locked wreath with
+//         progress, or the Mythic star once it's 100%), then Points /
+//         Achievements / Overall progress and Launch game.
 //   Body: rail (Achievements, Stats), Sort and Filter, and every achievement
 //         as a card: the badge at full card height, name, description, how
 //         many players have it, when you unlocked it, points with a diamond
 //         when it's rare (<10%).
 //
 // Keys: Up/Down move; Up from the first card reaches Sort / Filter (A
-// changes them), Up again Launch game. Shortcuts kept from before: Y sort,
+// changes the sort, or opens the Filters pop-up, RAFilterDialog.qml), Up
+// again Launch game. Shortcuts kept from before: Y sort,
 // LB/RB filter, X refresh, B back (one press to Game details when you came
 // from there, else back to the RA page).
 
@@ -60,8 +62,19 @@ id: root
     // ── Sort / Filter ────────────────────────────────────────────────────
     readonly property var sortKeys:    ["default", "points", "rarity", "date"]
     readonly property var sortNames:   ["Default", "Points", "Rarity", "Date unlocked"]
-    readonly property var filterKeys:  ["all", "earned", "locked", "missable"]
-    readonly property var filterNames: ["All", "Unlocked", "Locked", "Missable"]
+    // LB/RB step through the status filter; the Filters pop-up sets both.
+    readonly property var filterKeys:  filterDlg.statusKeys
+    readonly property var filterNames: filterDlg.statusNames
+    readonly property string filterText: {
+        var parts = [];
+        var t = filterDlg.typeKeys.indexOf(cheevosData.typeFilter);
+        var st = filterDlg.statusKeys.indexOf(cheevosData.filterMode);
+        if (st > 0) parts.push(filterDlg.statusNames[st]);
+        if (t > 0) parts.push(filterDlg.typeNames[t]);
+        return parts.length ? parts.join(" \u00B7 ") : "All";
+    }
+    readonly property bool filtersOpen: filterDlg.visible
+    function openFilters() { filterDlg.open(); updateHelp(); }
     function cycleSort(d) {
         var i = sortKeys.indexOf(cheevosData.sortMode); if (i < 0) i = 0;
         cheevosData.sortMode = sortKeys[(i + (d || 1) + sortKeys.length) % sortKeys.length];
@@ -98,7 +111,7 @@ id: root
         if (key === localFor) return;
         localFor = key;
         if (t === "") { localGame = null; return; }
-        if (currentGame && cheevosData.normalizeTitle(currentGame.title) === cheevosData.normalizeTitle(t))
+        if (currentGame && cheevosData.titleKey(currentGame.title) === cheevosData.titleKey(t))
             localGame = currentGame;
         else
             localGame = cheevosData.findLocalGame(t, det.ConsoleName || "");
@@ -168,30 +181,31 @@ id: root
             }
         }
 
-        // Box art, top left: yours when the game is in your library, else
-        // RA's; as big as the hero allows, in its own shape.
+        // Box art, top left above the Mythic card, with the title beside
+        // it: yours when the game is in your library, else RA's. Full height
+        // of the space, as wide as its own shape makes it.
         Item {
         id: gameArt
-            x: vpx(67); y: vpx(24)
-            width: vpx(150); height: vpx(222)
+            x: vpx(67); y: vpx(18)
+            height: vpx(92)
+            width: boxImg.status === Image.Ready && boxImg.implicitHeight > 0
+                   ? Math.min(vpx(170), Math.round(height * boxImg.implicitWidth / boxImg.implicitHeight)) : vpx(66)
             Image {
             id: boxImg
                 anchors.fill: parent
                 source: root.boxArt
                 fillMode: Image.PreserveAspectFit
-                horizontalAlignment: Image.AlignLeft
-                verticalAlignment: Image.AlignTop
                 asynchronous: true; smooth: true; mipmap: true
-                sourceSize: Qt.size(hrpx(300), hrpx(444))
+                sourceSize: Qt.size(hrpx(200), hrpx(200))
             }
             Rectangle {
                 visible: boxImg.status !== Image.Ready
-                width: parent.width; height: parent.height
+                anchors.fill: parent
                 radius: vpx(4); color: Qt.rgba(1, 1, 1, 0.08)
             }
         }
         Column {
-            anchors { left: gameArt.right; leftMargin: vpx(24); right: parent.right; rightMargin: vpx(200); top: gameArt.top; topMargin: vpx(4) }
+            anchors { left: gameArt.right; leftMargin: vpx(16); right: parent.right; rightMargin: vpx(200); verticalCenter: gameArt.verticalCenter }
             Text {
                 width: parent.width; elide: Text.ElideRight
                 text: det.Title || (cheevosData.statusText || "Loading…")
@@ -204,47 +218,64 @@ id: root
         }
         StatusCluster { anchors.fill: parent; z: 50; dark: false }
 
-        // Path to Mythic / Mythic card
+        // Mythic Achievement card, as on the console: the locked wreath and
+        // progress until the game is 100%, then the Mythic star and when.
         Item {
         id: mythicCard
-            x: gameArt.x + gameArt.width + vpx(24); y: vpx(112)
-            width: vpx(400); height: vpx(113)
-            Rectangle { anchors.fill: parent; anchors.margins: -vpx(8); radius: vpx(12); color: root.light(root.cAccent, 0.35); opacity: 0.12 }
-            Rectangle { anchors.fill: parent; anchors.margins: -vpx(4); radius: vpx(9);  color: root.light(root.cAccent, 0.35); opacity: 0.25 }
+            x: vpx(67); y: vpx(124)
+            width: vpx(467); height: vpx(113)
+            Rectangle { anchors.fill: parent; anchors.margins: -vpx(8); radius: vpx(12); color: root.light(root.cAccent, 0.35); opacity: root.mythic ? 0.12 : 0.05 }
+            Rectangle { anchors.fill: parent; anchors.margins: -vpx(4); radius: vpx(9);  color: root.light(root.cAccent, 0.35); opacity: root.mythic ? 0.25 : 0.1 }
             Rectangle {
                 anchors.fill: parent; radius: vpx(6)
                 color: Qt.rgba(0, 0, 0, 0.42)
-                border.width: vpx(2); border.color: root.light(root.cAccent, 0.3)
+                border.width: vpx(2); border.color: root.mythic ? root.light(root.cAccent, 0.3) : Qt.rgba(1, 1, 1, 0.22)
             }
             Image {
             id: mythicIcon
                 x: vpx(10); anchors.verticalCenter: parent.verticalCenter
-                width: vpx(84); height: width
-                sourceSize: Qt.size(hrpx(84), hrpx(84))
+                width: vpx(88); height: width
+                sourceSize: Qt.size(hrpx(88), hrpx(88))
                 smooth: true
-                opacity: root.mythic ? 1 : 0.55
-                source: Emb.dataUrl(Emb.mythic(theme.accent, "g"))
+                source: root.mythic ? Emb.dataUrl(Emb.mythic(theme.accent, "g")) : Emb.dataUrl(Emb.mythicLocked(theme.accent, "q"))
             }
             Column {
-                anchors { left: mythicIcon.right; leftMargin: vpx(10); right: parent.right; rightMargin: vpx(20); verticalCenter: parent.verticalCenter }
-                spacing: vpx(3)
+                anchors { left: mythicIcon.right; leftMargin: vpx(12); right: parent.right; rightMargin: vpx(20); verticalCenter: parent.verticalCenter }
+                spacing: vpx(4)
                 Text {
-                    text: root.mythic ? "Mythic Achievement" : "Path to Mythic"
+                    text: "Mythic Achievement"
                     color: "white"; font.family: titleFont.name; font.pixelSize: fpx(16)
                 }
                 Text {
+                    visible: root.mythic
                     width: parent.width; elide: Text.ElideRight
-                    text: root.mythic
-                          ? ((det.Award === "mastered" ? "Mastered in hardcore" : det.Award === "completed" ? "Completed in softcore" : "Every achievement unlocked")
-                             + (det.AwardDate ? "  ·  " + Qt.formatDate(new Date(Date.parse(det.AwardDate)), "MMM d, yyyy") : ""))
-                          : (root.total > 0 ? root.unlocked + " of " + root.total + " achievements  ·  " + (root.total - root.unlocked) + " to go" : "")
+                    text: (det.Award === "mastered" ? "Mastered in hardcore" : det.Award === "completed" ? "Completed in softcore" : "Every achievement unlocked")
+                          + (det.AwardDate ? "  ·  " + Qt.formatDate(new Date(Date.parse(det.AwardDate)), "MMM d, yyyy") : "")
                     color: "#dddddd"; font.family: bodyFont.name; font.pixelSize: fpx(13)
+                }
+                // Locked: trophy count on the left, percent on the right, bar.
+                Item {
+                    visible: !root.mythic
+                    width: parent.width; height: vpx(26)
+                    Row {
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: vpx(6)
+                        Image {
+                            width: vpx(18); height: width; anchors.verticalCenter: parent.verticalCenter
+                            source: "../assets/images/trophy_outline.svg"; sourceSize: Qt.size(hrpx(24), hrpx(24))
+                        }
+                        Text { text: root.unlocked + "/" + root.total; color: "white"; font.family: bodyFont.name; font.pixelSize: fpx(20) }
+                    }
+                    Text {
+                        anchors { right: parent.right; verticalCenter: parent.verticalCenter }
+                        text: root.pct + "%"; color: "white"; font.family: bodyFont.name; font.pixelSize: fpx(20)
+                    }
                 }
                 Item {
                     visible: !root.mythic
                     width: parent.width; height: vpx(4)
-                    Rectangle { anchors.fill: parent; color: root.cDark }
-                    Rectangle { width: parent.width * root.pct / 100; height: parent.height; color: root.light(root.cAccent, 0.4) }
+                    Rectangle { anchors.fill: parent; color: Qt.rgba(1, 1, 1, 0.18) }
+                    Rectangle { width: parent.width * root.pct / 100; height: parent.height; color: root.light(root.cAccent, 0.2) }
                 }
             }
         }
@@ -252,8 +283,8 @@ id: root
         // Points / Achievements / Overall progress
         Row {
         id: heroStats
-            x: mythicCard.x + mythicCard.width + vpx(44); y: vpx(112)
-            spacing: vpx(44)
+            x: mythicCard.x + mythicCard.width + vpx(60); y: mythicCard.y
+            spacing: vpx(56)
             Column {
                 Text { text: "Points"; color: "white"; font.family: titleFont.name; font.pixelSize: fpx(15) }
                 Row {
@@ -371,11 +402,11 @@ id: root
                 spacing: vpx(8)
                 RAIcon { source: "../assets/images/fluent/filter.svg"; anchors.verticalCenter: parent.verticalCenter }
                 Text {
-                    text: "Filter: " + root.filterNames[Math.max(0, root.filterKeys.indexOf(cheevosData.filterMode))]
+                    text: "Filter: " + root.filterText
                     color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(16)
                 }
             }
-            TapHandler { onTapped: { playToggle(); root.cycleFilter(1); } }
+            TapHandler { onTapped: { root.zone = 1; root.toolIndex = 1; root.railFocus = false; root.forceActiveFocus(); root.openFilters(); } }
         }
     }
 
@@ -536,7 +567,7 @@ id: root
 
     // ── Local help bar ───────────────────────────────────────────────────
     Row {
-        z: 5
+        z: 110       // above the Filters pop-up's dim, so its prompts show
         anchors { right: parent.right; rightMargin: globalMargin; bottom: parent.bottom; bottomMargin: vpx(10) }
         spacing: vpx(16)
         Repeater {
@@ -561,20 +592,25 @@ id: root
         }
     }
     // A shows only where it does something: Launch on the button, Change on
-    // Sort / Filter, Select on the rail.
-    ListModel {
-    id: localHelpModel
-        ListElement { name: "Refresh"; button: "details" }
-        ListElement { name: "Sort";    button: "filters" }
-        ListElement { name: "Back";    button: "cancel"  }
-    }
+    // Sort, Filters on Filter, Select on the rail. In the Filters pop-up:
+    // Select / Apply and Close.
+    ListModel { id: localHelpModel }
     function updateHelp() {
-        var a = railFocus ? (onStats ? "" : "Select") : zone === 0 ? (localGame ? "Launch" : "") : zone === 1 ? "Change" : "";
-        var has = localHelpModel.count > 0 && localHelpModel.get(0).button === "accept";
-        if (a === "" && has) localHelpModel.remove(0);
-        else if (a !== "" && !has) localHelpModel.insert(0, { name: a, button: "accept" });
-        else if (a !== "" && has) localHelpModel.setProperty(0, "name", a);
+        localHelpModel.clear();
+        if (filtersOpen) {
+            localHelpModel.append({ name: filterDlg.col === 2 ? "Apply" : "Select", button: "accept" });
+            localHelpModel.append({ name: "Close", button: "cancel" });
+            return;
+        }
+        var a = railFocus ? (onStats ? "" : "Select")
+              : zone === 0 ? (localGame ? "Launch" : "")
+              : zone === 1 ? (toolIndex === 0 ? "Change" : "Filters") : "";
+        if (a !== "") localHelpModel.append({ name: a, button: "accept" });
+        localHelpModel.append({ name: "Refresh", button: "details" });
+        localHelpModel.append({ name: "Sort",    button: "filters" });
+        localHelpModel.append({ name: "Back",    button: "cancel" });
     }
+    onToolIndexChanged: updateHelp()
     onLocalGameChanged: updateHelp()
 
     // ── Keys ─────────────────────────────────────────────────────────────
@@ -636,7 +672,7 @@ id: root
             event.accepted = true;
             if (railFocus) { railFocus = false; if (onStats) zone = 0; playNav(); }
             else if (zone === 0) launchOwnGame();
-            else if (zone === 1) { playToggle(); if (toolIndex === 0) cycleSort(1); else cycleFilter(1); }
+            else if (zone === 1) { if (toolIndex === 0) { playToggle(); cycleSort(1); } else openFilters(); }
         }
     }
 
@@ -648,16 +684,27 @@ id: root
     }
     // Clickable prompts: each does what its button does.
     function helpAction(button) {
+        if (filtersOpen) {
+            if (button === "accept") filterDlg.accept();
+            else if (button === "cancel") filterDlg.close(false);
+            return true;
+        }
         if (button === "cancel") goBack();
         else if (button === "filters") { playToggle(); cycleSort(1); }
         else if (button === "details") refresh();
         else if (button === "accept") {
             if (railFocus) { railFocus = false; if (onStats) zone = 0; }
             else if (zone === 0) launchOwnGame();
-            else if (zone === 1) { playToggle(); if (toolIndex === 0) cycleSort(1); else cycleFilter(1); }
+            else if (zone === 1) { if (toolIndex === 0) { playToggle(); cycleSort(1); } else openFilters(); }
         }
         else return false;
         return true;
+    }
+
+    RAFilterDialog {
+    id: filterDlg
+        onClosed: { root.forceActiveFocus(); root.updateHelp(); }
+        onColChanged: root.updateHelp()
     }
 
     // The last card dissolves under the help bar (same fade as the grids).

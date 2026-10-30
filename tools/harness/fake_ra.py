@@ -53,8 +53,10 @@ if _lib:
                 if line.startswith("game: "): _t.append(line[6:].strip())
                 if len(_t) >= 2: break
         if len(_t) >= 2: break
+    # The mastered one is spelled the RA way, "~Hack~ SkyRally 87" for "Sky
+    # Rally 87", so the title matching (tag, spaces) gets checked too.
     for g, t, done in zip((GAMES[0], GAMES[28]), _t, (True, False)):
-        g["Title"] = t
+        g["Title"] = ("~Hack~ " + t.replace(" ", "", 1)) if done else t
         if done: g.update(NumAwarded=g["MaxPossible"], NumAwardedHardcore=g["MaxPossible"], HighestAwardKind="mastered",
                           HighestAwardDate="2026-10-27T12:00:00+00:00")
         else: g.update(NumAwarded=g["MaxPossible"] // 2, NumAwardedHardcore=0, HighestAwardKind=None, HighestAwardDate=None)

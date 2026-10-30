@@ -170,4 +170,46 @@ function mythic(a, k) {
     return svg("-72 -72 144 144", d.join(""), b);
 }
 
+// ── Locked Mythic ────────────────────────────────────────────────────────
+// Before a game is 100%: a dark disc in a laurel wreath with a padlock, in
+// greys, as the console shows a Mythic Achievement you haven't earned. The
+// accent only tints the wreath's highlights a little.
+function leaf(base, ang, len, wid, side) {
+    // A leaf from base, pointing along ang, leaning outward by side.
+    var a = (ang + side * 28) * Math.PI / 180;
+    var tip = [base[0] + Math.cos(a) * len, base[1] + Math.sin(a) * len];
+    var mid = [(base[0] + tip[0]) / 2, (base[1] + tip[1]) / 2];
+    var nx = -Math.sin(a) * wid, ny = Math.cos(a) * wid;
+    return "M" + pt(base) + " Q" + pt([mid[0] + nx, mid[1] + ny]) + " " + pt(tip)
+         + " Q" + pt([mid[0] - nx, mid[1] - ny]) + " " + pt(base) + "Z";
+}
+function mythicLocked(a, k) {
+    k = k || "z";
+    var d = [];
+    d.push(rad(k + "disc", [[0, "#4a4a4a"], [.7, "#2c2c2c"], [1, "#1c1c1c"]], -10, -14, 60));
+    d.push(lin(k + "leaf", [[0, mix("#d8d8d8", L(a, .6), .15)], [1, "#7c7c7c"]], 0, 0, 1, 1));
+    d.push(lin(k + "lock", [[0, "#e6e6e6"], [1, "#9a9a9a"]], 0, 0, 0, 1));
+    var b = "", i, side;
+    // Wreath: two branches up the sides from the bottom, open at the top.
+    for (side = -1; side <= 1; side += 2) {
+        var from = 90 + side * 16, to = 90 + side * 150, R = 55;
+        var p0 = pol(R, from), p1 = pol(R, to);
+        b += '<path d="M' + pt(p0) + ' A' + R + ',' + R + ' 0 0 ' + (side < 0 ? 0 : 1) + ' ' + pt(p1)
+           + '" fill="none" stroke="#8a8a8a" stroke-width="2.2"/>';
+        for (i = 0; i < 8; i++) {
+            var t = from + (to - from) * (i + .5) / 8;
+            var base = pol(R, t), dir = t + side * 90;           // along the branch, upward
+            b += '<path d="' + leaf(base, dir, 15, 4.6, side) + '" fill="url(#' + k + 'leaf)" stroke="#5a5a5a" stroke-width=".6"/>';
+            b += '<path d="' + leaf(base, dir, 13, 4.2, -side) + '" fill="url(#' + k + 'leaf)" stroke="#5a5a5a" stroke-width=".6"/>';
+        }
+    }
+    b += '<circle r="44" fill="url(#' + k + 'disc)" stroke="#8c8c8c" stroke-width="2"/>';
+    b += '<circle r="40.5" fill="none" stroke="#000000" stroke-opacity=".35" stroke-width="1.2"/>';
+    // Padlock.
+    b += '<path d="M-10,-4 v-8 a10,10 0 0 1 20,0 v8" fill="none" stroke="url(#' + k + 'lock)" stroke-width="5"/>';
+    b += '<rect x="-16" y="-5" width="32" height="25" rx="4" fill="url(#' + k + 'lock)" stroke="#5c5c5c" stroke-width=".8"/>';
+    b += '<circle cy="5" r="3.6" fill="#3a3a3a"/><rect x="-1.5" y="6" width="3" height="8" rx="1" fill="#3a3a3a"/>';
+    return svg("-72 -72 144 144", d.join(""), b);
+}
+
 function dataUrl(svgText) { return "data:image/svg+xml;utf8," + encodeURIComponent(svgText); }

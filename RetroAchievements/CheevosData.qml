@@ -58,9 +58,13 @@ id: root
     property int currentGameID: 0
 
     // ── Filter / sort state (consumed by GameAchievementsView) ───────────
-    // filterMode: "all" | "earned" | "locked"
+    // filterMode: "all" | "locked" | "earned" | "rare" | "common"
+    //             (rare: under 10% of players have it, as on the Xbox)
+    // typeFilter: "all" | "progression" | "win_condition" | "missable"
+    //             (RA's achievement types; untyped ones only show under All)
     // sortMode:   "default" | "points" | "rarity" | "date"
     property string filterMode: "all"
+    property string typeFilter: "all"
     property string sortMode:   "default"
 
     // ── Game lookup state (used by RAGameEntryView) ──────────────────────
@@ -247,7 +251,9 @@ id: root
             var a = raGameCheevos.get(i);
             if (filterMode === "earned" && !(a.DateEarned > 0)) continue;
             if (filterMode === "locked" &&  (a.DateEarned > 0)) continue;
-            if (filterMode === "missable" && a.Type !== "missable") continue;
+            if (filterMode === "rare"   && !(a.Rarity > 0 && a.Rarity < 10)) continue;
+            if (filterMode === "common" &&  (a.Rarity > 0 && a.Rarity < 10)) continue;
+            if (typeFilter !== "all" && a.Type !== typeFilter) continue;
             list.push({
                 Title:        a.Title,
                 Description:  a.Description,
@@ -287,7 +293,17 @@ id: root
         filteredCheevos = list;
     }
 
-    onFilterModeChanged: rebuildFilteredCheevos()
+    // Both filters at once (the Filters pop-up's Apply): one rebuild.
+    property bool _settingFilters: false
+    function setFilters(status, type) {
+        _settingFilters = true;
+        filterMode = status;
+        typeFilter = type;
+        _settingFilters = false;
+        rebuildFilteredCheevos();
+    }
+    onFilterModeChanged: if (!_settingFilters) rebuildFilteredCheevos()
+    onTypeFilterChanged: if (!_settingFilters) rebuildFilteredCheevos()
     onSortModeChanged:   rebuildFilteredCheevos()
 
     // Convenience counts for the tab badges
@@ -492,6 +508,7 @@ id: root
     function loadGameAchievements(gameID) {
         currentGameID = gameID;
         filterMode    = "all";      // reset filters on each new game
+        typeFilter    = "all";
         sortMode      = "default";
         statusText    = "Loading...";
         raGameCheevos.clear();
@@ -629,16 +646,27 @@ id: root
     }
 
     // ── Title normalisation ───────────────────────────────────────────────
+    // Accented letters fold to plain ones ("Pokémon" = "Pokemon"), and "&"
+    // reads as "and", so the same game spelled two ways still matches.
+    readonly property var _fold: ({ "à":"a","á":"a","â":"a","ã":"a","ä":"a","å":"a","æ":"ae","ç":"c",
+        "è":"e","é":"e","ê":"e","ë":"e","ì":"i","í":"i","î":"i","ï":"i","ñ":"n",
+        "ò":"o","ó":"o","ô":"o","õ":"o","ö":"o","ø":"o","ù":"u","ú":"u","û":"u","ü":"u","ý":"y","ÿ":"y","ß":"ss" })
     function normalizeTitle(t) {
+        var fold = _fold;
         return (t || "")
             .replace(/^~[^~]+~\s*/i,           "")
             .replace(/^(.*),\s*(the|a|an)\b/i, "$2 $1")
             .toLowerCase()
+            .replace(/[\u00df-\u00ff]/g,       function(c) { return fold[c] || c; })
+            .replace(/&/g,                     " and ")
             .replace(/\s*\([^)]*\)\s*/g,       " ")
             .replace(/[^a-z0-9 ]/g,            " ")
             .replace(/\s+/g,                   " ")
             .trim();
     }
+    // What two titles must share to be the same game: the normalized title
+    // without spaces, so "FireRed" = "Fire Red" and "MegaMan" = "Mega Man".
+    function titleKey(t) { return normalizeTitle(t).replace(/ /g, ""); }
 
     // ── Reverse lookup: RA game title → local Pegasus game ────────────────
     // Used by the achievements page to launch what you're viewing. Matches on
@@ -653,7 +681,7 @@ id: root
         if (_localIndex && _localIndex.count === api.allGames.count) return _localIndex.map;
         var map = {};
         for (var i = 0; i < api.allGames.count; i++) {
-            var k = normalizeTitle(api.allGames.get(i).title);
+            var k = titleKey(api.allGames.get(i).title);
             if (k === "") continue;
             (map[k] = map[k] || []).push(i);
         }
@@ -663,7 +691,7 @@ id: root
 
     function findLocalGame(raTitle, consoleName) {
         if (!raTitle) return null;
-        var want = normalizeTitle(raTitle);
+        var want = titleKey(raTitle);
         if (want === "") return null;
 
         var wantConsole = (consoleName || "").toLowerCase();
@@ -689,6 +717,7 @@ id: root
     // ── Game list search (two-pass exact + prefix) ────────────────────────
     function findGameInList(title, data) {
         var norm = normalizeTitle(title);
+        var key  = norm.replace(/ /g, "");
         var list = Array.isArray(data)
             ? data
             : Object.keys(data).map(function(k){ return data[k]; });
@@ -701,7 +730,7 @@ id: root
             var item = list[i];
             var id   = parseInt(item.ID) || parseInt(item.GameID) || 0;
             if (id <= 0) continue;
-            if (normalizeTitle(item.Title || "") !== norm) continue;
+            if (titleKey(item.Title || "") !== key) continue;
             if (!isHackEntry(item.Title)) return id;
             if (!hackFallback1) hackFallback1 = id;
         }
@@ -788,10 +817,10 @@ id: root
         if (!title || !hasCredentials()) return 0;
 
         // Recently played on RA: known without any list
-        var normTitle = normalizeTitle(title);
+        var normTitle = titleKey(title);
         for (var r = 0; r < raRecentGames.count; r++) {
             var entry = raRecentGames.get(r);
-            if (normalizeTitle(entry.Title) === normTitle) return entry.GameID;
+            if (titleKey(entry.Title) === normTitle) return entry.GameID;
         }
 
         var consoleID = consoleMappings[(shortName || "").toLowerCase()] || 0;
@@ -859,10 +888,10 @@ id: root
 
         // Fast path: check recently-played model (no network call)
         if (raRecentGames.count > 0) {
-            var normTitle = normalizeTitle(title);
+            var normTitle = titleKey(title);
             for (var r = 0; r < raRecentGames.count; r++) {
                 var entry = raRecentGames.get(r);
-                if (normalizeTitle(entry.Title) === normTitle) {
+                if (titleKey(entry.Title) === normTitle) {
                     pendingGameID   = entry.GameID;
                     lookupStatusMsg = "";
                     return;

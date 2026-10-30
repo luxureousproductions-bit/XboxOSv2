@@ -4,9 +4,16 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 81)
+## Unreleased — seriesSX branch (build 82)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Games whose title is spelled a little differently on RA now match your library.** The theme pairs your games with RA by title, and a space or an accent was enough to miss: RA's "~Hack~ Pokémon **FireRed**: Rocket Edition" never matched "Pokémon **Fire Red**: Rocket Edition", so that game had no RA button on Game details and its achievements page said "Not in your library". Titles now match ignoring spaces, accents ("Pokemon" = "Pokémon") and "&" vs "and". This fixes the details-page RA button, the Launch game button, box art and fanart on the achievements page, the Awards photos and the progress bars in Search.
+- **Game achievements top, rearranged:** box art and title top left, with the **Mythic Achievement** card under them, as on the console. Until a game is 100% the card shows a **locked wreath** (a padlock in a laurel wreath, in greys) with your achievement count, percent and a bar; at 100% it shows the Mythic star with how and when.
+- **Filters pop-up** (A on Filter), after the Xbox one: two columns of radio buttons and Apply. Left is RA's achievement types (All, Progression, Win condition, Missable); right is All, Locked, Unlocked, **Rare** (under 10% of players) and **Common**. Nothing changes until Apply; B closes it. The Filter box shows what's on (e.g. "Filter: Locked · Missable"); LB/RB still step through the right column.
+- Test harness: with `FAKE_RA_LIB`, the mastered fake game is titled the RA way ("~Hack~ SkyRally 87" for "Sky Rally 87") to exercise the matching.
+
+## build 81
 
 - **Awards tiles are photos.** Each tile is filled by your fanart for the game when it's in your library (else its screenshot or box art), or RA's game icon cropped to fill it when it isn't (those are small, so they look softer). The name and award sit on a dark fade at the bottom, white in both themes. Mythic tiles get an accent rim and the Mythic star in the corner; beaten ones keep the flag.
 
