@@ -1209,10 +1209,13 @@ id: root
     // stop() before play() forces a clean restart on every call, so rapid
     // retriggers (scrolling, cycling, etc.) never drop a play() the way Qt's
     // SoundEffect otherwise does when one is already in-flight.
-    function playNav()    { if (sfxVolume <= 0) return; sfxNav.stop();    sfxNav.play(); }
-    function playAccept() { if (sfxVolume <= 0) return; sfxAccept.stop(); sfxAccept.play(); }
-    function playBack()   { if (sfxVolume <= 0) return; sfxBack.stop();   sfxBack.play(); }
-    function playToggle() { if (sfxVolume <= 0) return; sfxToggle.stop(); sfxToggle.play(); }
+    // Every move plays one of these, so they also stamp when you last did
+    // something (lastNavMs): background work waits for a quiet moment.
+    property double lastNavMs: 0
+    function playNav()    { lastNavMs = Date.now(); if (sfxVolume <= 0) return; sfxNav.stop();    sfxNav.play(); }
+    function playAccept() { lastNavMs = Date.now(); if (sfxVolume <= 0) return; sfxAccept.stop(); sfxAccept.play(); }
+    function playBack()   { lastNavMs = Date.now(); if (sfxVolume <= 0) return; sfxBack.stop();   sfxBack.play(); }
+    function playToggle() { lastNavMs = Date.now(); if (sfxVolume <= 0) return; sfxToggle.stop(); sfxToggle.play(); }
     function playTabLeft()  { if (sfxVolume <= 0) return; sfxTabLeft.stop();  sfxTabLeft.play(); }
     function playTabRight() { if (sfxVolume <= 0) return; sfxTabRight.stop(); sfxTabRight.play(); }
 
@@ -2651,14 +2654,38 @@ id: root
         }
     }
 
-    // The drawer's SCREEN is created the first time it's opened (it used to be
-    // built at startup, 1,700 lines of QML nobody sees until they press the
-    // button) and kept from then on. Everything that used to read appDrawer
-    // reads these instead; they're safe before the first open.
+    // The drawer's SCREEN isn't built before the theme's first frame (it used
+    // to be: 1,700 lines of QML nobody sees until they press the button). It's
+    // built in the background from 7 s after start (after the search's 5 s
+    // warm-up), at the first moment you've been idle for 1.5 s — building it
+    // is a one-off ~0.1 s frame, which shouldn't land mid-scroll — or at once
+    // if opened before that, and
+    // kept from then on. Everything that used to read appDrawer reads these
+    // instead; they're safe before it exists.
+    //
+    // Why not on first open, as it was: the drawer pre-decodes every icon
+    // (AppDrawer.qml, the warmer Repeater), and built on open that ran in the
+    // same moment as the rows, so on the first open of every session the
+    // icons decoded while the drawer slid in: they popped in one by one.
     readonly property bool drawerOpen:  appDrawerLoader.item ? appDrawerLoader.item.open  : false
     readonly property real drawerSlide: appDrawerLoader.item ? appDrawerLoader.item.slide : 0
+    Timer {
+    id: drawerPrebuild
+        interval: 7000; running: true; repeat: true
+        onTriggered: {
+            if (appDrawerLoader.active) { stop(); return; }
+            interval = 500;                                  // then check twice a second
+            if (Date.now() - lastNavMs < 1500) return;       // you're moving: later
+            stop();
+            appDrawerLoader.asynchronous = true;
+            appDrawerLoader.active = true;
+        }
+    }
     function openAppDrawer() {
-        if (!appDrawerLoader.active) appDrawerLoader.active = true;   // built synchronously
+        // Still building in the background: switching to synchronous makes the
+        // Loader finish now, so item is there on the next line.
+        appDrawerLoader.asynchronous = false;
+        if (!appDrawerLoader.active) appDrawerLoader.active = true;
         appDrawerLoader.item.openDrawer();
     }
     function closeAppDrawer() {

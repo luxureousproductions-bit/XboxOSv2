@@ -378,6 +378,7 @@ id: root
         opacity: 0
         z: 0
         property bool pendingFade: false
+        property string wantedSrc: ""     // the target flushBg asked this layer for
         property bool animate: true
         Behavior on opacity { enabled: bgImage1.animate; PropertyAnimation { duration: hqFanartFadeMs; easing.type: hqMode ? Easing.InOutQuad : Easing.Linear } }
         onStatusChanged: {
@@ -446,6 +447,7 @@ id: root
         opacity: 0
         z: 0
         property bool pendingFade: false
+        property string wantedSrc: ""     // the target flushBg asked this layer for
         property bool animate: true
         Behavior on opacity { enabled: bgImage2.animate; PropertyAnimation { duration: hqFanartFadeMs; easing.type: hqMode ? Easing.InOutQuad : Easing.Linear } }
         onStatusChanged: {
@@ -665,6 +667,7 @@ id: root
         // Always write the layer that is NOT on screen
         var incoming = (bgShownImg === bgImage1) ? bgImage2 : bgImage1;
         incoming.pendingFade = true;
+        incoming.wantedSrc = src;
         if ("" + incoming.source === src && incoming.status === Image.Ready) {
             startBgFade(incoming);              // already cached — fade now
         } else {
@@ -676,6 +679,18 @@ id: root
     }
 
     function startBgFade(img) {
+        // 3. STALE ON ARRIVAL. A large file (a system background, say) can
+        //    finish decoding after you've already moved on. Fading it in
+        //    anyway showed the PREVIOUS item's art, then a second full fade
+        //    to the right one: the background one step behind, flashing on
+        //    every move. A target that's no longer wanted is dropped; the
+        //    current one is flushed straight away instead.
+        if (img.pendingFade && img.wantedSrc !== pendingBg) {
+            img.pendingFade = false;
+            lastBgShown = bgShownImg ? bgShownImg.wantedSrc : "";
+            if (!bgSettle.running) flushBg();
+            return;
+        }
         bgFadeRunning = true;
         bgFadeDone.restart();
         if (!img.pendingFade) return;

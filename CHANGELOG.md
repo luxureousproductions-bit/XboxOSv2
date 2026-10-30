@@ -4,9 +4,14 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 84)
+## Unreleased — seriesSX branch (build 85)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Fixed: the Home background running one step behind and flashing between rows and the system tiles.** Root cause: the background only fades once its picture has finished decoding, and a big one (a system background, especially with High Quality Mode's 1.1 s fade) could finish *after* you'd already moved on. It was faded in anyway (the previous item's art behind the new one), then a second full fade went to the right picture. A picture that arrives after you've moved on is now dropped, and the current one fades in straight away.
+- **Fixed: App Drawer icons popping in on the first open of each session.** Root cause: since the drawer started being built on first open (to speed up startup), its icon pre-loader ran in the same moment as the rows, so icons decoded while the drawer slid in. The drawer is now built in the background from 7 s after start, at the first moment you've been idle for 1.5 s, so the icons are decoded before you open it (opening it sooner still builds it at once). Startup is unchanged, and the one-off build frame doesn't land mid-scroll.
+
+## build 84
 
 - **Works with Pegasus X's RetroAchievements matching.** Pegasus X hashes your ROMs the way RA does and writes the result into your metadata as `x-ra-id`, which the theme uses as the match everywhere (Game details' RA button, Launch game, box art and fanart on the achievements page, the Awards photos). When Pegasus X found a ROM isn't on RA (`x-ra-id: 0`), the theme no longer guesses by title, so the game gets no RA button and isn't paired with a look-alike. Without Pegasus X, title matching works as before.
 - A match you pick in the theme (Change match / Find in your library) now beats the metadata ID, so the picker always wins over an older or title-based match.
