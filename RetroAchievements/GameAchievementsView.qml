@@ -31,7 +31,10 @@ id: root
     property alias currentIndex: list.currentIndex
     property var displayList: cheevosData.filteredCheevos
     readonly property var det: cheevosData.currentGameDetails
-    onDisplayListChanged: if (currentIndex >= displayList.length) currentIndex = Math.max(0, displayList.length - 1)
+    onDisplayListChanged: {
+        if (currentIndex >= displayList.length) currentIndex = Math.max(0, displayList.length - 1);
+        updateHelp();      // "Details" appears once there's something to open
+    }
 
     // ── Colours ──────────────────────────────────────────────────────────
     readonly property color cAccent: theme.accent
@@ -61,18 +64,22 @@ id: root
     // ── Sort / Filter ────────────────────────────────────────────────────
     readonly property var sortKeys:    ["default", "points", "rarity", "date"]
     readonly property var sortNames:   ["Default", "Points", "Rarity", "Date unlocked"]
-    // LB/RB step through the status filter; the Filters pop-up sets both.
-    readonly property var filterKeys:  filterDlg.statusKeys
-    readonly property var filterNames: filterDlg.statusNames
-    readonly property string filterText: {
-        var parts = [];
-        var t = filterDlg.typeKeys.indexOf(cheevosData.typeFilter);
-        var st = filterDlg.statusKeys.indexOf(cheevosData.filterMode);
-        var se = filterDlg.setKeys.indexOf(cheevosData.setFilter);
-        if (se > 0) parts.push(filterDlg.setNames[se]);
-        if (st > 0) parts.push(filterDlg.statusNames[st]);
-        if (t > 0) parts.push(filterDlg.typeNames[t]);
-        return parts.length ? parts.join(" \u00B7 ") : "All";
+    // The toolbar as on the Gaming tab: the sort (a drop-down), its
+    // direction, then "Filter applied" (only when one is on) and Filter.
+    readonly property bool filtered: cheevosData.filterMode !== "all" || cheevosData.typeFilter !== "all" || cheevosData.setFilter !== "all"
+    readonly property int sortIndex: Math.max(0, sortKeys.indexOf(cheevosData.sortMode))
+    property bool sortMenuOpen: false
+    property int sortMenuIndex: 0
+    onSortMenuOpenChanged: updateHelp()
+    function openSortMenu() { sortMenuIndex = sortIndex; sortMenuOpen = true; playAccept(); updateHelp(); }
+    function pickSort() {
+        sortMenuOpen = false; playAccept();
+        if (sortMenuIndex !== sortIndex) { cheevosData.sortMode = sortKeys[sortMenuIndex]; currentIndex = 0; }
+    }
+    function pressTool() {
+        if (toolIndex === 0) openSortMenu();
+        else if (toolIndex === 1) { cheevosData.sortReverse = !cheevosData.sortReverse; currentIndex = 0; playToggle(); }
+        else openFilters();
     }
     readonly property bool filtersOpen: filterDlg.visible
     function openFilters() { filterDlg.open(); updateHelp(); }
@@ -81,17 +88,21 @@ id: root
         cheevosData.sortMode = sortKeys[(i + (d || 1) + sortKeys.length) % sortKeys.length];
         currentIndex = 0;
     }
-    function cycleFilter(d) {
-        var i = filterKeys.indexOf(cheevosData.filterMode); if (i < 0) i = 0;
-        cheevosData.filterMode = filterKeys[(i + d + filterKeys.length) % filterKeys.length];
-        currentIndex = 0;
+    // Tabs across the top, as on the console: this page is Progress, with
+    // Welcome to its left and Social to its right (LB / RB, or a tap). They
+    // go to those tabs of the RA overview.
+    readonly property var pageTabs: ["Welcome", "Progress", "Social"]
+    function goTab(i) {
+        if (i === 1) return;
+        raOverviewTab = (i === 0) ? 0 : 1;      // the overview's Welcome / Social
+        achievementsScreenFromGame();
     }
 
     // Focus zones: 0 Launch game, 1 Sort/Filter, 2 the list. railFocus: on
     // the rail, where Up/Down switch between Achievements and Stats.
     property int zone: 2
     onZoneChanged: updateHelp()
-    readonly property bool popupOpen: filterDlg.visible || matchPicker.visible || detail.visible
+    readonly property bool popupOpen: filterDlg.visible || matchPicker.visible || detail.visible || sortMenuOpen
     // The game of yours this page was opened for: from its Game details, or
     // picked in RA Search (both go through the RA lookup with currentGame).
     readonly property var raFromDetailsGame: ((raFromDetails || raSearchReturn) && currentGame) ? currentGame : null
@@ -110,7 +121,9 @@ id: root
     // Leaving the rail to the right: into the list or the tiles
     // (an empty view keeps you on the rail).
     function enterView() {
-        if (isList) { railFocus = false; return; }
+        // Back into the list: zone 3 (the Stats tiles) is hidden there, so
+        // staying on it left nothing on screen focused.
+        if (isList) { railFocus = false; if (zone === 3) zone = 2; return; }
         if (viewCount === 0) return;
         railFocus = false;
         zone = 3;
@@ -210,22 +223,22 @@ id: root
             }
         }
 
-        // Box art, top left above the Mythic card, with the title beside
-        // it: yours when the game is in your library, else RA's. Full height
-        // of the space, as wide as its own shape makes it.
+        // Box art, small at the top left (as the console's game icon), with
+        // the title beside it: yours when the game is in your library, else
+        // RA's; as wide as its own shape makes it.
         Item {
         id: gameArt
-            x: vpx(67); y: vpx(18)
-            height: vpx(92)
+            x: vpx(67); y: vpx(16)
+            height: vpx(62)
             width: boxImg.status === Image.Ready && boxImg.implicitHeight > 0
-                   ? Math.min(vpx(170), Math.round(height * boxImg.implicitWidth / boxImg.implicitHeight)) : vpx(66)
+                   ? Math.min(vpx(110), Math.round(height * boxImg.implicitWidth / boxImg.implicitHeight)) : vpx(46)
             Image {
             id: boxImg
                 anchors.fill: parent
                 source: root.boxArt
                 fillMode: Image.PreserveAspectFit
                 asynchronous: true; smooth: true; mipmap: true
-                sourceSize: Qt.size(hrpx(200), hrpx(200))
+                sourceSize: Qt.size(hrpx(128), hrpx(128))
             }
             Rectangle {
                 visible: boxImg.status !== Image.Ready
@@ -234,16 +247,23 @@ id: root
             }
         }
         Column {
-            anchors { left: gameArt.right; leftMargin: vpx(16); right: parent.right; rightMargin: vpx(200); verticalCenter: gameArt.verticalCenter }
+            anchors { left: gameArt.right; leftMargin: vpx(14); right: pageTabBar.left; rightMargin: vpx(30); verticalCenter: gameArt.verticalCenter }
             Text {
                 width: parent.width; elide: Text.ElideRight
                 text: det.Title || (cheevosData.statusText || "Loading…")
-                color: "white"; font.family: titleFont.name; font.pixelSize: fpx(20)
+                color: "white"; font.family: titleFont.name; font.pixelSize: fpx(19)
             }
             Text {
                 text: det.ConsoleName || ""
                 color: "#d0d0d0"; font.family: bodyFont.name; font.pixelSize: fpx(13)
             }
+        }
+        RATabBar {
+        id: pageTabBar
+            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: vpx(22) }
+            tabs: root.pageTabs
+            current: 1
+            onTabClicked: root.goTab(index)
         }
         StatusCluster { anchors.fill: parent; z: 50; dark: false }
 
@@ -382,31 +402,46 @@ id: root
     Item {
     id: toolRow
         visible: root.isList
+        z: root.sortMenuOpen ? 6 : 0      // the drop-down hangs over the list
         anchors { left: rail.right; leftMargin: vpx(31); right: parent.right; rightMargin: vpx(67); top: hero.bottom; topMargin: vpx(23) }
         height: vpx(39)
         Rectangle {
         id: sortBox
-            readonly property bool hot: root.zone === 1 && root.toolIndex === 0 && !root.railFocus && root.activeFocus
+            readonly property bool hot: root.zone === 1 && root.toolIndex === 0 && !root.railFocus && root.activeFocus && !root.sortMenuOpen
             width: vpx(280); height: parent.height
             color: root.cardColor; radius: vpx(4)
             RAFocus { on: sortBox.hot }
             Text {
                 anchors { left: parent.left; leftMargin: vpx(13); verticalCenter: parent.verticalCenter }
-                text: "Sort: " + root.sortNames[Math.max(0, root.sortKeys.indexOf(cheevosData.sortMode))]
+                text: root.sortNames[root.sortIndex]
                 color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(16)
             }
             RAIcon { anchors { right: parent.right; rightMargin: vpx(13); verticalCenter: parent.verticalCenter } source: "../assets/images/fluent/chevron_down.svg" }
-            TapHandler { onTapped: { playToggle(); root.cycleSort(1); } }
+            TapHandler { onTapped: { root.zone = 1; root.toolIndex = 0; root.railFocus = false; root.forceActiveFocus(); root.openSortMenu(); } }
+        }
+        Rectangle {
+        id: dirBtn
+            readonly property bool hot: root.zone === 1 && root.toolIndex === 1 && !root.railFocus && root.activeFocus
+            anchors { left: sortBox.right; leftMargin: vpx(10) }
+            width: parent.height; height: parent.height
+            color: root.cardColor; radius: vpx(4)
+            RAFocus { on: dirBtn.hot }
+            RAIcon {
+                anchors.centerIn: parent
+                size: vpx(20)
+                source: "../assets/images/fluent/" + (cheevosData.sortReverse ? "arrow_sort_up" : "arrow_sort_down") + ".svg"
+            }
+            TapHandler { onTapped: { root.zone = 1; root.toolIndex = 1; root.railFocus = false; root.forceActiveFocus(); root.pressTool(); } }
         }
         Text {
-            anchors { left: sortBox.right; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
+            anchors { left: dirBtn.right; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
             text: root.displayList.length + (root.displayList.length === 1 ? " achievement" : " achievements")
             color: theme.text; opacity: 0.6
             font.family: bodyFont.name; font.pixelSize: fpx(15)
         }
         Rectangle {
         id: filterBox
-            readonly property bool hot: root.zone === 1 && root.toolIndex === 1 && !root.railFocus && root.activeFocus
+            readonly property bool hot: root.zone === 1 && root.toolIndex === 2 && !root.railFocus && root.activeFocus
             anchors.right: parent.right
             width: filterRow.implicitWidth + vpx(30); height: parent.height
             color: root.cardColor; radius: vpx(4)
@@ -417,11 +452,28 @@ id: root
                 spacing: vpx(8)
                 RAIcon { source: "../assets/images/fluent/filter.svg"; anchors.verticalCenter: parent.verticalCenter }
                 Text {
-                    text: "Filter: " + root.filterText
+                    text: "Filter"
                     color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(16)
                 }
             }
-            TapHandler { onTapped: { root.zone = 1; root.toolIndex = 1; root.railFocus = false; root.forceActiveFocus(); root.openFilters(); } }
+            TapHandler { onTapped: { root.zone = 1; root.toolIndex = 2; root.railFocus = false; root.forceActiveFocus(); root.openFilters(); } }
+        }
+        Text {
+            visible: root.filtered
+            anchors { right: filterBox.left; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
+            text: "Filter applied"
+            color: theme.text; opacity: 0.6
+            font.family: bodyFont.name; font.pixelSize: fpx(16)
+        }
+        RASortMenu {
+            visible: root.sortMenuOpen
+            x: sortBox.x; y: sortBox.height + vpx(4)
+            width: sortBox.width
+            names: root.sortNames
+            current: root.sortIndex
+            index: root.sortMenuIndex
+            hasFocus: root.activeFocus
+            onPicked: { root.sortMenuIndex = i; root.pickSort(); }
         }
     }
 
@@ -647,13 +699,18 @@ id: root
             localHelpModel.append({ name: "Close",    button: "cancel" });
             return;
         }
+        if (sortMenuOpen) {
+            localHelpModel.append({ name: "Select", button: "accept" });
+            localHelpModel.append({ name: "Close",  button: "cancel" });
+            return;
+        }
         if (filtersOpen) {
-            localHelpModel.append({ name: filterDlg.col === 3 ? "Apply" : "Select", button: "accept" });
+            localHelpModel.append({ name: filterDlg.col === filterDlg.applyCol ? "Apply" : "Select", button: "accept" });
             localHelpModel.append({ name: "Close", button: "cancel" });
             return;
         }
         var a = railFocus ? "Select"
-              : zone === 1 ? (toolIndex === 0 ? "Change" : "Filters")
+              : zone === 1 ? (toolIndex === 1 ? "Reverse" : toolIndex === 2 ? "Filters" : "Select")
               : (zone === 2 && displayList.length > 0) ? "Details" : "";
         if (a !== "") localHelpModel.append({ name: a, button: "accept" });
         localHelpModel.append({ name: "Refresh", button: "details" });
@@ -667,6 +724,7 @@ id: root
     // ── Keys ─────────────────────────────────────────────────────────────
     Keys.onUpPressed: {
         event.accepted = true;
+        if (sortMenuOpen) { if (sortMenuIndex > 0) { sortMenuIndex--; playNav(); } return; }
         if (railFocus) { if (railIndex > 0) { railIndex--; playNav(); } return; }
         if (!isList) {
             if (zone === 3) {
@@ -681,6 +739,7 @@ id: root
     }
     Keys.onDownPressed: {
         event.accepted = true;
+        if (sortMenuOpen) { if (sortMenuIndex < sortNames.length - 1) { sortMenuIndex++; playNav(); } return; }
         if (railFocus) { if (railIndex < railNames.length - 1) { railIndex++; playNav(); } return; }
         if (!isList) {
             if (zone === 3) {
@@ -697,16 +756,17 @@ id: root
     // the list, the cards or the tiles (or the Launch button when empty).
     Keys.onLeftPressed: {
         event.accepted = true;
-        if (railFocus) return;
+        if (railFocus || sortMenuOpen) return;
         if (zone === 3 && viewCols > 1 && viewIndex % viewCols > 0) { viewIndex--; playNav(); }
         else if (zone === 1 && toolIndex > 0) { toolIndex--; playNav(); }
         else { railFocus = true; playNav(); }
     }
     Keys.onRightPressed: {
         event.accepted = true;
+        if (sortMenuOpen) return;
         if (railFocus) { if (isList || viewCount > 0) { enterView(); playNav(); } return; }
         if (zone === 3) { if (viewCols > 1 && viewIndex % viewCols < viewCols - 1 && viewIndex < viewCount - 1) { viewIndex++; playNav(); } }
-        else if (zone === 1 && toolIndex < 1) { toolIndex++; playNav(); }
+        else if (zone === 1 && toolIndex < 2) { toolIndex++; playNav(); }
     }
 
     // B / mouse back. Opened from Game details (the RA button): straight back
@@ -725,15 +785,23 @@ id: root
     }
 
     Keys.onPressed: {
+        // The sort drop-down: A picks, B closes, nothing else.
+        if (sortMenuOpen) {
+            event.accepted = true;
+            if (event.isAutoRepeat) return;
+            if (api.keys.isAccept(event)) pickSort();
+            else if (api.keys.isCancel(event)) { sortMenuOpen = false; playBack(); }
+            return;
+        }
         if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; goBack(); }
-        if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; playToggle(); cycleFilter(-1); }
-        if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; playToggle(); cycleFilter(1); }
+        if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; goTab(0); }
+        if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; goTab(2); }
         if (api.keys.isFilters(event) && !event.isAutoRepeat)  { event.accepted = true; playToggle(); cycleSort(1); }
         if (api.keys.isDetails(event) && !event.isAutoRepeat)  { event.accepted = true; refresh(); }
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
             if (railFocus) { if (isList || viewCount > 0) { enterView(); playNav(); } }
-            else if (zone === 1) { if (toolIndex === 0) { playToggle(); cycleSort(1); } else openFilters(); }
+            else if (zone === 1) pressTool();
             else if (zone === 2) openDetail();
         }
     }
@@ -803,6 +871,11 @@ id: root
     }
     // Clickable prompts: each does what its button does.
     function helpAction(button) {
+        if (sortMenuOpen) {
+            if (button === "accept") pickSort();
+            else if (button === "cancel") { sortMenuOpen = false; playBack(); }
+            return true;
+        }
         if (detail.visible) {
             if (button === "accept") detail.press();
             else if (button === "prevPage") detail.step(-1);
@@ -826,7 +899,7 @@ id: root
         else if (button === "details") refresh();
         else if (button === "accept") {
             if (railFocus) enterView();
-            else if (zone === 1) { if (toolIndex === 0) { playToggle(); cycleSort(1); } else openFilters(); }
+            else if (zone === 1) pressTool();
             else if (zone === 2) openDetail();
         }
         else return false;

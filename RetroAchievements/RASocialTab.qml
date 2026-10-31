@@ -9,17 +9,24 @@
 // (CheevosData.loadSocial). Points are hardcore points, as RA ranks them.
 // Icons: Fluent UI System Icons (assets/images/fluent, MIT).
 //
-// Keys: as the Awards tab: Left from the list reaches the rail, where
-// Up / Down switch lists straight away, Right goes back.
+// The rail's last entry, Awards, shows a card for your awards page
+// (RAAwardsTab); A opens it (goTab("Awards")), B there comes back here.
+//
+// Keys: Left from the list reaches the rail, where Up / Down switch lists
+// straight away, Right goes back.
 
 import QtQuick 2.15
+import QtGraphicalEffects 1.15
 import "../Global"
 
 FocusScope {
 id: tab
 
+    signal goTab(string name)
+
     property real bandHeight: vpx(269)         // the header band above the rail
-    readonly property var railNames: ["Following", "Followers", "Top 10 worldwide"]
+    readonly property var railNames: ["Following", "Followers", "Top 10 worldwide", "Awards"]
+    readonly property bool onAwards: railIndex === 3
     property int railIndex: 0
     property bool railFocus: false
 
@@ -34,7 +41,7 @@ id: tab
     readonly property var following: withMe(cheevosData.followingList)
     readonly property var rows: railIndex === 0 ? following
                               : railIndex === 1 ? withMe(cheevosData.followersList)
-                              : cheevosData.topTenList
+                              : railIndex === 2 ? cheevosData.topTenList : []
     function isMe(u) { return (u || "").toLowerCase() === me.toLowerCase(); }
     readonly property int myRank: { for (var i = 0; i < following.length; i++) if (isMe(following[i].user)) return i + 1; return 0; }
     readonly property var nextUp: myRank > 1 ? following[myRank - 2] : null
@@ -123,6 +130,7 @@ id: tab
         leftMargin: vpx(14); rightMargin: vpx(14); topMargin: vpx(14); bottomMargin: vpx(14)
         clip: true
         focus: !tab.railFocus
+        visible: !tab.onAwards
         model: tab.rows
         spacing: vpx(8)
         keyNavigationEnabled: false
@@ -210,11 +218,46 @@ id: tab
             TapHandler { onTapped: { tab.railFocus = false; list.currentIndex = index; tab.forceActiveFocus(); } }
         }
     }
+    // Awards: a card for your awards page.
+    Rectangle {
+    id: awardsCard
+        readonly property bool hot: !tab.railFocus && tab.activeFocus
+        visible: tab.onAwards
+        anchors { left: list.left; leftMargin: vpx(14); right: list.right; rightMargin: vpx(14); top: list.top; topMargin: vpx(14) }
+        height: vpx(150)
+        radius: vpx(4)
+        color: tab.cardColor
+        RAFocus { on: awardsCard.hot }
+        Image {
+        id: awardsIcon
+            anchors { left: parent.left; leftMargin: vpx(28); verticalCenter: parent.verticalCenter }
+            width: vpx(72); height: width
+            source: "../assets/images/fluent/ribbon.svg"
+            sourceSize: Qt.size(hrpx(144), hrpx(144))
+            layer.enabled: whiteBackground
+            layer.effect: ColorOverlay { color: theme.text }
+        }
+        Column {
+            anchors { left: awardsIcon.right; leftMargin: vpx(26); right: parent.right; rightMargin: vpx(26); verticalCenter: parent.verticalCenter }
+            spacing: vpx(4)
+            Text { text: "Your awards"; color: theme.text; font.family: titleFont.name; font.pixelSize: fpx(22) }
+            Text {
+                text: cheevosData.awardsLoaded
+                      ? cheevosData.raFmt(cheevosData.awardsTotal) + " awards  \u00B7  " + cheevosData.raFmt(cheevosData.masteredCount) + " mastered  \u00B7  "
+                        + cheevosData.raFmt(cheevosData.completedCount) + " completed"
+                      : "Loading\u2026"
+                color: theme.text; opacity: 0.75; font.family: bodyFont.name; font.pixelSize: fpx(16)
+            }
+            Text { topPadding: vpx(6); text: "Every game you've beaten, completed and mastered"; color: theme.text; opacity: 0.55; font.family: bodyFont.name; font.pixelSize: fpx(14) }
+        }
+        TapHandler { onTapped: { playAccept(); tab.goTab("Awards"); } }
+    }
+
     WheelNav {
         anchors.fill: list
         view: list
         columns: 1
-        active: tab.visible && !searchOpen
+        active: tab.visible && !tab.onAwards && !searchOpen
         onStepped: function(quiet) { if (!quiet) playNav(); }
     }
 
@@ -230,11 +273,12 @@ id: tab
         else if (list.currentIndex < rows.length - 1) list.currentIndex++;
     }
     Keys.onLeftPressed:  { event.accepted = true; if (!railFocus) { railFocus = true; playNav(); } }
-    Keys.onRightPressed: { event.accepted = true; if (railFocus && rows.length > 0) { railFocus = false; playNav(); } }
+    Keys.onRightPressed: { event.accepted = true; if (railFocus && (rows.length > 0 || onAwards)) { railFocus = false; playNav(); } }
     Keys.onPressed: {
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (railFocus && rows.length > 0) { railFocus = false; playNav(); }
+            if (onAwards) { playAccept(); goTab("Awards"); }
+            else if (railFocus && rows.length > 0) { railFocus = false; playNav(); }
         }
     }
 }

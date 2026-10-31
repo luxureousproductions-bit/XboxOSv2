@@ -4,9 +4,23 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 90)
+## Unreleased — seriesSX branch (build 91)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Fixed: the Gaming tab could come up empty.** Root cause: build 90 added four requests (profile, following, followers, top 10) to the burst the RA page fires when it opens, about eight at once. RetroAchievements' web API turns bursts away ("429 Too Many Requests"), more so when another app on the same account is also calling it (Pegasus X's RA scan). When the library request was refused, Gaming stayed empty until the next visit. RA requests now go through a queue, three at a time with the library first, and a refused one waits and retries (1, 2, 4, 8 s) instead of failing. Tested with a fake server that turns every request away once.
+- **Fixed: no focus frame on a game's achievement list after a trip to the rail.** Root cause: passing over Stats on the rail pointed focus at the Stats tiles; coming back to Achievements and pressing Right left it there, on tiles that aren't shown in the list view, so nothing on screen had the frame (and Down moved an invisible cursor). Going back into the list now always focuses the list.
+- Fixed: the A "Details" prompt was missing on a game's page until you moved; it now appears as soon as the achievements arrive.
+- **Tabs, as on the console:** plain labels with an accent line under the selected one (RATabBar), on every RA page. The RA page's tabs are **Welcome / Social / Gaming**; Search and Awards are no longer tabs, and X no longer opens the library search there.
+- **Awards** is a page under Social: the last entry on Social's rail shows a card for it (A opens it), Welcome's Awards button opens it too, and B goes back to Social.
+- **A game's page is now "Progress"**, with **Welcome / Progress / Social** across the top centre (LB / RB or a tap go to those tabs). The box art beside the title is smaller.
+- **Gaming toolbar:** the sort is a drop-down (Last played, Completion, Title, Achievements unlocked) with no "Sort:" label, and a direction button to its right (each sort starts in its natural direction). On the right: "Filter applied" (only when a filter is on), **Filter** (a pop-up: Status and Mode columns) and **Search**, which slides a search bar out with the on-screen keyboard under it; the list narrows as you type, and the Search button keeps a dot while a search is on. Welcome's "Search games" goes straight there.
+- **Progress page toolbar** matches: the sort drop-down, a direction button, "Filter applied" and Filter. The Filters pop-up has column headings (Set / Status / Type). LB / RB now switch tabs instead of stepping the status filter.
+- **Welcome: your awards open a side panel** (after the console's Badge showcase) over the page: every award, newest first, with the game, its console, the kind (Mastered, Completed, Beaten, softcore) and the date. A on one opens that game's progress; tapping a badge in the strip opens the panel on it.
+- Shared pieces: RATabBar (the tabs), RASortMenu (the sort drop-down); RAFilterDialog takes any page's columns.
+- Test harness: the fake RA server can turn every request away once (FAKE_RA_REFUSE=1).
+
+## build 90
 
 - **Welcome tab** (it replaces Recent), after the console's profile Welcome. Over your accent, bright to dark: your name and points, your username big, what you're playing now and your motto, your rank / following / followers / member since, and a strip of your latest awards; your avatar in a circle in the middle; and a column of buttons on the right (Recently played, Awards with your count, Search games, Refresh, RA settings). The RA page opens on Welcome from Home and the App Drawer; a game's own page still opens straight to its progress, and backing out of a game returns to the tab you came from. The header shrinks to a slim strip on this tab.
 - **Social tab, as a points leaderboard of people.** On the header band: your rank among the people you follow, who's next up and how far ahead, and your site rank. Below, a rail (Following, Followers, Top 10 worldwide) and the ranked list with avatars and hardcore points; your own row is in the accent and is always in Following and Followers.

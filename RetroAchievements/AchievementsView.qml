@@ -1,8 +1,10 @@
 // XboxOSv2 – AchievementsView.qml
 // The RetroAchievements page, after the console's profile: tabs Welcome
-// (RAWelcomeTab), Social (RASocialTab), Gaming (RAGamingTab), Awards
-// (RAAwardsTab) and Search (opens the library search). From Home it opens
-// on Welcome; coming back from a game's page it keeps the tab you were on.
+// (RAWelcomeTab), Social (RASocialTab) and Gaming (RAGamingTab). Your awards
+// (RAAwardsTab) are a page under Social, opened from Social's rail or the
+// Welcome buttons; B goes back to Social. Search lives on the Gaming tab.
+// From Home it opens on Welcome; coming back from a game's page it keeps
+// the tab you were on.
 
 import QtQuick 2.15
 import QtGraphicalEffects 1.15
@@ -70,9 +72,9 @@ id: root
     }
 
     // ── Header (Xbox "Gaming" tab style) ─────────────────────────────────
-    // Tabs grow as the redesign lands: Gaming and Awards come next. Search
-    // isn't a page of its own: choosing it opens the library search (X).
-    readonly property var raTabs: ["Welcome", "Social", "Gaming", "Awards", "Search"]
+    // The first three are the tabs; Awards (index 3) is a page under Social.
+    readonly property var raTabs: ["Welcome", "Social", "Gaming", "Awards"]
+    readonly property int tabCount: 3
     property int raTab: raOverviewTab           // theme.qml: Welcome from Home, kept from a game
     onRaTabChanged: raOverviewTab = raTab
     readonly property string tabName: raTabs[raTab]
@@ -80,13 +82,17 @@ id: root
     function tabIndex(name) { return raTabs.indexOf(name); }
     function selectTab(i) {
         if (i < 0 || i >= raTabs.length) return;
-        if (raTabs[i] === "Search") { openLibrarySearch("ra"); return; }
         if (i !== raTab) { raTab = i; playNav(); }
     }
     function stepTab(d) {
-        var i = raTab + d;
-        if (i < 0 || i >= raTabs.length) return;
+        var i = (raTab >= tabCount ? 1 : raTab) + d;     // from Awards: as from Social
+        if (i < 0 || i >= tabCount) return;
         selectTab(i);
+    }
+    // Welcome's and Social's buttons: a tab, Awards, or Gaming's search.
+    function goTab(name) {
+        if (name === "Search") { selectTab(tabIndex("Gaming")); gamingTab.startSearch(); return; }
+        selectTab(tabIndex(name));
     }
 
     // ── Welcome: the whole page, under the tabs ───────────────────────────
@@ -95,15 +101,16 @@ id: root
         anchors.fill: parent
         visible: cheevosData.raUserName !== "" && tabName === "Welcome"
         focus: visible
-        onGoTab: selectTab(tabIndex(name))
+        onGoTab: root.goTab(name)
+        onHelpStateChanged: root.updateHelp()
     }
 
     RAHeader {
     id: achievementsHeader
         anchors { top: parent.top; left: parent.left; right: parent.right }
         visible: cheevosData.raUserName !== ""
-        tabs: raTabs
-        current: raTab
+        tabs: raTabs.slice(0, tabCount)
+        current: raTab >= tabCount ? 1 : raTab           // Awards sits under Social
         mode: tabName === "Welcome" ? "compact" : (tabName === "Social" ? "band" : "stats")
         onTabClicked: selectTab(index)
     }
@@ -160,6 +167,7 @@ id: root
         bandHeight: achievementsHeader.height
         visible: cheevosData.raUserName !== "" && tabName === "Social"
         focus: visible
+        onGoTab: root.goTab(name)
     }
 
     // ── Gaming tab: every game you've played (RAGamingTab.qml) ───────────
@@ -218,7 +226,6 @@ id: root
     ListModel {
     id: localHelpModel
         ListElement { name: "Select";  button: "accept"  }
-        ListElement { name: "Search";  button: "details" }
         ListElement { name: "Refresh"; button: "filters" }
         ListElement { name: "Back";    button: "cancel"  }
     }
@@ -226,16 +233,22 @@ id: root
     // The Gaming tab's Leaderboards view and its top-100 pop-up bring their
     // own prompts; everything else uses the page's four.
     function updateHelp() {
-        var st = gamingTab.visible ? gamingTab.helpState : "";
+        var st = gamingTab.visible ? gamingTab.helpState
+               : welcomeTab.visible ? welcomeTab.helpState : "";
         localHelpModel.clear();
+        if (st === "keyboard") return;                  // the keyboard shows its own
         if (st === "board") {
             localHelpModel.append({ name: "Top",   button: "prevPage" });
             localHelpModel.append({ name: "You",   button: "nextPage" });
             localHelpModel.append({ name: "Close", button: "cancel" });
             return;
         }
+        if (st === "filters" || st === "filtersApply" || st === "menu" || st === "awards") {
+            localHelpModel.append({ name: st === "filtersApply" ? "Apply" : (st === "awards" ? "View game" : "Select"), button: "accept" });
+            localHelpModel.append({ name: "Close", button: "cancel" });
+            return;
+        }
         localHelpModel.append({ name: st === "boards" ? "View" : "Select", button: "accept" });
-        localHelpModel.append({ name: "Search",  button: "details" });
         localHelpModel.append({ name: "Refresh", button: "filters" });
         localHelpModel.append({ name: "Back",    button: "cancel" });
     }
@@ -247,31 +260,29 @@ id: root
     // Mouse back button: mirrors B. An open search never gets here —
     // theme.qml's mouseBack() handles it first.
     function mouseBack() {
-        previousScreen();
+        back();
     }
 
     // Clickable prompts: each does what its button does.
     function helpAction(button) {
         if (gamingTab.visible && gamingTab.helpAction(button)) return true;
-        if (button === "details") openLibrarySearch("ra");
-        else if (button === "accept") { if (tabName === "Welcome") welcomeTab.press(); }
-        else if (button === "cancel") previousScreen();
+        if (welcomeTab.visible && welcomeTab.helpAction(button)) return true;
+        if (button === "accept") return false;
+        else if (button === "cancel") back();
         else if (button === "filters") { playAccept(); initialized = false; cheevosData.refreshAll(); }
         else return false;
         return true;
     }
 
+    // B: from Awards back to Social, else out of RA.
+    function back() {
+        if (tabName === "Awards") { selectTab(tabIndex("Social")); playBack(); }
+        else previousScreen();
+    }
     Keys.onPressed: {
-        // X — open the library search (theme instance, RA mode; it plays
-        // the accept sound itself)
-        if (api.keys.isDetails(event) && !event.isAutoRepeat) {
-            event.accepted = true;
-            openLibrarySearch("ra");
-            return;
-        }
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            previousScreen();
+            back();
         }
         // LB / RB — tabs, as on the Xbox
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; stepTab(-1); return; }

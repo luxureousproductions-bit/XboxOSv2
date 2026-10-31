@@ -87,49 +87,13 @@ id: header
         }
     }
 
-    // ── Tabs, centred ────────────────────────────────────────────────────
-    Row {
+    // ── Tabs, centred (RATabBar: the accent line under the selected one) ──
+    RATabBar {
     id: tabRow
-        anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: vpx(21) }
-        spacing: vpx(12)
-        Repeater {
-            model: header.tabs
-            delegate: Item {
-                readonly property bool on: index === header.current
-                width: tabLabel.implicitWidth + vpx(24); height: vpx(32)
-                // The selected tab glows softly, as on the console: two
-                // translucent halos behind the pill (no blur pass).
-                Rectangle {
-                    anchors.fill: parent; anchors.margins: -vpx(6)
-                    visible: parent.on
-                    radius: vpx(9)
-                    color: header.light(header.cAccent, 0.5); opacity: 0.16
-                }
-                Rectangle {
-                    anchors.fill: parent; anchors.margins: -vpx(3)
-                    visible: parent.on
-                    radius: vpx(6)
-                    color: header.light(header.cAccent, 0.55); opacity: 0.32
-                }
-                Rectangle {
-                    anchors.fill: parent
-                    visible: parent.on
-                    radius: vpx(4)
-                    color: header.light(header.cAccent, 0.62)
-                    border.width: vpx(1); border.color: header.light(header.cAccent, 0.85)
-                }
-                Text {
-                id: tabLabel
-                    anchors.centerIn: parent
-                    text: modelData
-                    color: parent.on ? header.mixc(header.cAccent, Qt.rgba(0, 0, 0, 1), 0.7) : "#ececec"
-                    font.family: parent.on ? titleFont.name : bodyFont.name
-                    font.pixelSize: fpx(18)
-                }
-                TapHandler { onTapped: header.tabClicked(index) }
-                HoverHandler { cursorShape: Qt.PointingHandCursor }
-            }
-        }
+        anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: vpx(22) }
+        tabs: header.tabs
+        current: header.current
+        onTabClicked: header.tabClicked(index)
     }
 
     // Clock / battery / wifi: the shared cluster, always light on the band.

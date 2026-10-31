@@ -7,7 +7,13 @@
 // Data: cheevosData.raLibrary (CheevosData.loadLibrary). The list is a JS
 // array rebuilt only when the library, Sort or Filter changes, never per row.
 //
-// Focus, top to bottom: quick buttons -> Sort/Filter -> the game list.
+// Toolbar, as on the console: the sort (a drop-down), its direction, then on
+// the right "Filter applied" (only when a filter is on), Filter (a pop-up:
+// RAFilterDialog with this tab's columns) and Search, which slides a search
+// bar out over the right of the toolbar with the on-screen keyboard; the
+// list narrows to matching titles as you type.
+//
+// Focus, top to bottom: quick buttons -> the toolbar -> the game list.
 // Up/Down move between them, Left/Right inside a row, A presses. Left from
 // the start of a row reaches the rail (Achievements / Leaderboards), where
 // Up/Down switch views and Right goes back.
@@ -24,10 +30,21 @@ FocusScope {
 id: tab
 
     // ── Sort / Filter state ──────────────────────────────────────────────
-    readonly property var sortNames:   ["Recent", "Completion", "Title", "Unlocked"]
-    readonly property var filterNames: ["All", "In progress", "Mythic", "Beaten"]
+    readonly property var sortNames:   ["Last played", "Completion", "Title", "Achievements unlocked"]
     property int sortIndex:   0
-    property int filterIndex: 0
+    // Descending: newest / highest / Z-A / most first. Each sort starts in
+    // its natural direction (Title A-Z, the rest descending).
+    property bool descending: true
+    // Filters (the pop-up's columns): status and mode.
+    readonly property var filterColumns: [
+        { title: "Status", keys: ["all", "progress", "mythic", "beaten", "unbeaten"],
+          names: ["All", "In progress", "Mythic", "Beaten", "Not beaten"] },
+        { title: "Mode", keys: ["all", "hardcore", "softcore"],
+          names: ["All", "Hardcore", "Softcore only"] }
+    ]
+    property var filters: ["all", "all"]
+    readonly property bool filtered: filters[0] !== "all" || filters[1] !== "all"
+    property string query: ""
     property var games: []
 
     readonly property var chips: ["Closest to mastery", "Recently unlocked", "Mythic"]
@@ -36,28 +53,37 @@ id: tab
     // says which.
     function isMythic(g) { return g.Award === "mastered" || g.Award === "completed"; }
     function applyChip(i) {
-        if (i === 0)      { sortIndex = 1; filterIndex = 1; }   // highest % that isn't done yet
-        else if (i === 1) { sortIndex = 0; filterIndex = 0; }
-        else              { sortIndex = 0; filterIndex = 2; }
+        if (i === 0)      { setSort(1); filters = ["progress", "all"]; }   // highest % that isn't done yet
+        else if (i === 1) { setSort(0); filters = ["all", "all"]; }
+        else              { setSort(0); filters = ["mythic", "all"]; }
         zone = 2;
     }
+    function setSort(i) { sortIndex = i; descending = sortNames[i] !== "Title"; }
 
-    function keep(g) {
-        switch (filterNames[filterIndex]) {
-        case "In progress": return !isMythic(g) && g.Progress < 1;
-        case "Mythic":      return isMythic(g);
-        case "Beaten":      return g.Award === "beaten-hardcore" || g.Award === "beaten-softcore";
-        default:            return true;
+    function isBeaten(g) { return g.Award === "beaten-hardcore" || g.Award === "beaten-softcore" || isMythic(g); }
+    function keep(g, q) {
+        switch (filters[0]) {
+        case "progress": if (isMythic(g) || g.Progress >= 1) return false; break;
+        case "mythic":   if (!isMythic(g)) return false; break;
+        case "beaten":   if (!isBeaten(g)) return false; break;
+        case "unbeaten": if (isBeaten(g)) return false; break;
         }
+        if (filters[1] === "hardcore" && !(g.NumAwardedHardcore > 0)) return false;
+        if (filters[1] === "softcore" && g.NumAwardedHardcore > 0) return false;
+        return q === "" || cheevosData.titleKey(g.Title).indexOf(q) >= 0;
     }
     function rebuild() {
-        var m = cheevosData.raLibrary, out = [];
-        for (var i = 0; i < m.count; i++) { var g = m.get(i); if (keep(g)) out.push(g); }
-        var s = sortNames[sortIndex];
-        if (s === "Completion")    out.sort(function(a, b) { return b.Progress - a.Progress || b.NumAwarded - a.NumAwarded; });
-        else if (s === "Title")    out.sort(function(a, b) { return String(a.Title).localeCompare(String(b.Title)); });
-        else if (s === "Unlocked") out.sort(function(a, b) { return b.NumAwarded - a.NumAwarded; });
-        else                       out.sort(function(a, b) { return String(b.LastUnlock).localeCompare(String(a.LastUnlock)); });
+        var m = cheevosData.raLibrary, out = [], q = query !== "" ? cheevosData.titleKey(query) : "";
+        for (var i = 0; i < m.count; i++) { var g = m.get(i); if (keep(g, q)) out.push(g); }
+        // Written descending; ascending is the same comparison turned round.
+        var d = descending ? 1 : -1, cmp;
+        switch (sortIndex) {
+        case 1:  cmp = function(a, b) { return b.Progress - a.Progress || b.NumAwarded - a.NumAwarded; }; break;
+        case 2:  cmp = function(a, b) { return String(b.Title).localeCompare(String(a.Title)); }; break;
+        case 3:  cmp = function(a, b) { return b.NumAwarded - a.NumAwarded; }; break;
+        default: cmp = function(a, b) { return String(b.LastUnlock).localeCompare(String(a.LastUnlock)); };
+        }
+        out.sort(function(a, b) { return d * cmp(a, b); });
         games = out;
         list.currentIndex = 0;
         // Leaderboards: every game, most recent first.
@@ -90,8 +116,19 @@ id: tab
     // For the page's help bar (AchievementsView): "board" while the top 100
     // is open, "boards" on a game's leaderboards, "games" on the game list.
     readonly property string helpState: boardPanel.visible ? "board"
+        : filterDlg.visible ? (filterDlg.col === filterDlg.applyCol ? "filtersApply" : "filters")
+        : sortMenuOpen ? "menu" : searching ? "keyboard"
         : (railIndex === 1 && !railFocus) ? (lbLevel === 1 ? "boards" : "games") : ""
     function helpAction(b) {
+        if (filterDlg.visible) {
+            if (b === "accept") filterDlg.accept(); else if (b === "cancel") filterDlg.close(false);
+            return true;
+        }
+        if (sortMenuOpen) {
+            if (b === "accept") pickSort(); else if (b === "cancel") { sortMenuOpen = false; playBack(); }
+            return true;
+        }
+        if (searching) return true;
         if (boardPanel.visible) {
             if (b === "cancel") boardPanel.close();
             return true;
@@ -102,8 +139,10 @@ id: tab
         }
         return false;
     }
-    onSortIndexChanged:   rebuild()
-    onFilterIndexChanged: rebuild()
+    onSortIndexChanged:  rebuild()
+    onDescendingChanged: rebuild()
+    onFiltersChanged:    rebuild()
+    onQueryChanged:      rebuild()
     Connections {
         target: cheevosData
         onLibraryLoadedChanged: if (cheevosData.libraryLoaded) tab.rebuild()
@@ -119,12 +158,35 @@ id: tab
     // ── Focus zones ──────────────────────────────────────────────────────
     property int zone: 2          // 0 quick buttons, 1 Sort/Filter, 2 list
     property int chipIndex: 0
-    property int toolIndex: 0     // 0 Sort, 1 Filter
+    property int toolIndex: 0     // 0 Sort, 1 direction, 2 Filter, 3 Search
+    readonly property int toolCount: 4
+    // The sort drop-down (opened from the sort box).
+    property bool sortMenuOpen: false
+    property int sortMenuIndex: 0
+    function openSortMenu() { sortMenuIndex = sortIndex; sortMenuOpen = true; playAccept(); }
+    function pickSort() { sortMenuOpen = false; playAccept(); if (sortMenuIndex !== sortIndex) setSort(sortMenuIndex); }
+    // Search: the bar slides out while the keyboard is up.
+    property bool searching: false
+    function openSearch() { searching = true; playAccept(); }
+    function closeSearch() { searching = false; tab.forceActiveFocus(); }
+    // From Welcome's "Search games": straight into the search bar.
+    function startSearch() {
+        railIndex = 0; railFocus = false; zone = 1; toolIndex = 3;
+        Qt.callLater(openSearch);
+    }
+    function openFilters() { filterDlg.open(filters); }
+    function pressTool() {
+        if (toolIndex === 0) openSortMenu();
+        else if (toolIndex === 1) { descending = !descending; playToggle(); }
+        else if (toolIndex === 2) openFilters();
+        else openSearch();
+    }
     readonly property var railNames: ["Achievements", "Leaderboards"]
     property int railIndex: 0
     property bool railFocus: false
     readonly property bool accentIsLight: (0.299 * cAccent.r + 0.587 * cAccent.g + 0.114 * cAccent.b) > 0.62
-    onActiveFocusChanged: if (activeFocus && !boardPanel.visible) list.forceActiveFocus()
+    readonly property bool popupOpen: boardPanel.visible || filterDlg.visible || searching
+    onActiveFocusChanged: if (activeFocus && !popupOpen) list.forceActiveFocus()
 
     // ── Left rail ────────────────────────────────────────────────────────
     Item {
@@ -198,28 +260,62 @@ id: tab
         id: toolRow
             anchors { left: parent.left; right: parent.right }
             y: vpx(77); height: vpx(42)
+            // The sort: a drop-down of the four orders.
             Rectangle {
             id: sortBox
-                readonly property bool hot: tab.zone === 1 && tab.toolIndex === 0 && tab.activeFocus && !tab.railFocus
-                width: vpx(390); height: parent.height
+                readonly property bool hot: tab.zone === 1 && tab.toolIndex === 0 && tab.activeFocus && !tab.railFocus && !tab.sortMenuOpen
+                width: vpx(330); height: parent.height
                 color: tab.cardColor
                 radius: vpx(4)
                 RAFocus { on: sortBox.hot }
                 Text {
-                    anchors { left: parent.left; leftMargin: vpx(14); verticalCenter: parent.verticalCenter }
-                    text: "Sort: " + tab.sortNames[tab.sortIndex]
+                    anchors { left: parent.left; leftMargin: vpx(14); right: sortChevron.left; rightMargin: vpx(8); verticalCenter: parent.verticalCenter }
+                    elide: Text.ElideRight
+                    text: tab.sortNames[tab.sortIndex]
                     color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(16)
                 }
                 RAIcon {
+                id: sortChevron
                     anchors { right: parent.right; rightMargin: vpx(14); verticalCenter: parent.verticalCenter }
                     source: "../assets/images/fluent/chevron_down.svg"
                 }
-                TapHandler { onTapped: { tab.sortIndex = (tab.sortIndex + 1) % tab.sortNames.length; playToggle(); } }
+                TapHandler { onTapped: { tab.zone = 1; tab.toolIndex = 0; tab.forceActiveFocus(); tab.openSortMenu(); } }
+            }
+            // Its direction.
+            Rectangle {
+            id: dirBtn
+                readonly property bool hot: tab.zone === 1 && tab.toolIndex === 1 && tab.activeFocus && !tab.railFocus
+                anchors { left: sortBox.right; leftMargin: vpx(10) }
+                width: parent.height; height: parent.height
+                color: tab.cardColor
+                radius: vpx(4)
+                RAFocus { on: dirBtn.hot }
+                RAIcon {
+                    anchors.centerIn: parent
+                    size: vpx(20)
+                    source: "../assets/images/fluent/" + (tab.descending ? "arrow_sort_down" : "arrow_sort_up") + ".svg"
+                }
+                TapHandler { onTapped: { tab.zone = 1; tab.toolIndex = 1; tab.forceActiveFocus(); tab.descending = !tab.descending; playToggle(); } }
+            }
+            Text {
+                anchors { left: dirBtn.right; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                text: tab.games.length + (tab.games.length === 1 ? " game" : " games")
+                      + (tab.query !== "" ? "  \u00B7  \u201C" + tab.query + "\u201D" : "")
+                color: theme.text; opacity: 0.6
+                font.family: bodyFont.name; font.pixelSize: fpx(15)
+            }
+            // Right: [Filter applied] [Filter] [Search]
+            Text {
+                visible: tab.filtered
+                anchors { right: filterBox.left; rightMargin: vpx(16); verticalCenter: parent.verticalCenter }
+                text: "Filter applied"
+                color: theme.text; opacity: 0.6
+                font.family: bodyFont.name; font.pixelSize: fpx(16)
             }
             Rectangle {
-                readonly property bool hot: tab.zone === 1 && tab.toolIndex === 1 && tab.activeFocus && !tab.railFocus
-                anchors.right: parent.right
             id: filterBox
+                readonly property bool hot: tab.zone === 1 && tab.toolIndex === 2 && tab.activeFocus && !tab.railFocus
+                anchors { right: searchBtn.left; rightMargin: vpx(10) }
                 width: filterRow.implicitWidth + vpx(32); height: parent.height
                 color: tab.cardColor
                 radius: vpx(4)
@@ -229,19 +325,61 @@ id: tab
                     anchors.centerIn: parent
                     spacing: vpx(8)
                     RAIcon { source: "../assets/images/fluent/filter.svg"; anchors.verticalCenter: parent.verticalCenter }
-                    Text {
-                        text: "Filter: " + tab.filterNames[tab.filterIndex]
-                        color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(16)
-                    }
+                    Text { text: "Filter"; color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(16) }
                 }
-                TapHandler { onTapped: { tab.filterIndex = (tab.filterIndex + 1) % tab.filterNames.length; playToggle(); } }
+                TapHandler { onTapped: { tab.zone = 1; tab.toolIndex = 2; tab.forceActiveFocus(); tab.openFilters(); } }
             }
-            Text {
-                anchors { left: sortBox.right; leftMargin: vpx(16); verticalCenter: parent.verticalCenter }
-                text: tab.games.length + (tab.games.length === 1 ? " game" : " games")
-                color: theme.text; opacity: 0.6
-                font.family: bodyFont.name; font.pixelSize: fpx(15)
+            Rectangle {
+            id: searchBtn
+                readonly property bool hot: tab.zone === 1 && tab.toolIndex === 3 && tab.activeFocus && !tab.railFocus && !tab.searching
+                anchors.right: parent.right
+                width: parent.height; height: parent.height
+                color: tab.searching ? theme.accent : tab.cardColor
+                radius: vpx(4)
+                RAFocus { on: searchBtn.hot }
+                RAIcon { anchors.centerIn: parent; size: vpx(20); source: "../assets/images/fluent/search.svg" }
+                // A dot while a search narrows the list.
+                Rectangle {
+                    visible: tab.query !== "" && !tab.searching
+                    anchors { right: parent.right; top: parent.top; margins: vpx(6) }
+                    width: vpx(8); height: width; radius: width / 2
+                    color: theme.accent
+                }
+                TapHandler { onTapped: { tab.zone = 1; tab.toolIndex = 3; tab.forceActiveFocus(); tab.openSearch(); } }
             }
+            // The search bar slides out of the Search button, over Filter.
+            Rectangle {
+            id: searchBar
+                anchors { right: searchBtn.left; rightMargin: vpx(10); verticalCenter: parent.verticalCenter }
+                height: parent.height
+                width: tab.searching ? vpx(440) : 0
+                Behavior on width { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                visible: width > 0
+                clip: true
+                radius: vpx(3)
+                color: "white"
+                border.width: vpx(3); border.color: theme.accent
+                Text {
+                    anchors { left: parent.left; leftMargin: vpx(18); right: parent.right; rightMargin: vpx(12); verticalCenter: parent.verticalCenter }
+                    elide: Text.ElideLeft
+                    text: tab.query !== "" ? tab.query : "Search games"
+                    color: tab.query !== "" ? "#111111" : "#6b6b6b"
+                    font.family: bodyFont.name; font.pixelSize: fpx(17)
+                }
+            }
+        }
+
+        // The sort drop-down, under the sort box.
+        RASortMenu {
+        id: sortMenu
+            visible: tab.sortMenuOpen
+            x: sortBox.x; y: toolRow.y + toolRow.height + vpx(4)
+            width: sortBox.width
+            names: tab.sortNames
+            current: tab.sortIndex
+            index: tab.sortMenuIndex
+            hasFocus: tab.activeFocus
+            onPicked: { tab.sortMenuIndex = i; tab.pickSort(); }
         }
 
         // ── The games ────────────────────────────────────────────────────
@@ -283,7 +421,7 @@ id: tab
             id: card
                 readonly property var g: modelData
                 readonly property bool mastered: tab.isMythic(g)     // the Mythic look
-                readonly property bool selected: ListView.isCurrentItem && tab.zone === 2 && tab.activeFocus && !tab.railFocus
+                readonly property bool selected: ListView.isCurrentItem && tab.zone === 2 && tab.activeFocus && !tab.railFocus && !tab.popupOpen
                 readonly property int pct: g.MaxPossible > 0 ? Math.floor(g.NumAwarded * 100 / g.MaxPossible) : 0
                 width: list.width - vpx(28); height: vpx(124)
 
@@ -571,6 +709,37 @@ id: tab
         }
     }
 
+    // Filters pop-up: this tab's columns (status, mode).
+    RAFilterDialog {
+    id: filterDlg
+        gamePage: false
+        columns: tab.filterColumns
+        onApplied: tab.filters = picks
+        onClosed: { filterDlg.focus = false; tab.forceActiveFocus(); }
+    }
+
+    // Search: the on-screen keyboard under the bar; the list narrows as you
+    // type. Accept or B puts it away and keeps the search.
+    Loader {
+    id: kbLoader
+        active: tab.searching
+        focus: tab.searching
+        z: 30
+        // Under the toolbar, so the search bar stays in view above it.
+        anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: content.y + vpx(127) }
+        onLoaded: item.forceActiveFocus()
+        sourceComponent: Component {
+            VirtualKeyboard {
+                title: "Search games"
+                text: tab.query
+                showTextField: false
+                onTextEdited: tab.query = newText
+                onAccepted: tab.closeSearch()
+                onCancelled: tab.closeSearch()
+            }
+        }
+    }
+
     // A leaderboard's top 100.
     RALeaderboardPanel {
     id: boardPanel
@@ -586,14 +755,16 @@ id: tab
 
     // ── Keys ─────────────────────────────────────────────────────────────
     // Arrows are always accepted here, so nothing underneath moves (or
-    // beeps) while this tab is up. The top-100 pop-up takes its own keys.
+    // beeps) while this tab is up. The pop-ups and the keyboard take their
+    // own keys; the sort drop-down is driven from here.
     function lbStep(d) {
         if (lbLevel === 0) { var g = lbGameIndex + d; if (g >= 0 && g < lbGames.length) { lbGameIndex = g; playNav(); } }
         else { var b = lbBoardIndex + d; if (b >= 0 && b < lbBoards.length) { lbBoardIndex = b; playNav(); } }
     }
     Keys.onUpPressed: {
         event.accepted = true;
-        if (railFocus) { if (railIndex > 0) { railIndex--; playNav(); } }
+        if (sortMenuOpen) { if (sortMenuIndex > 0) { sortMenuIndex--; playNav(); } }
+        else if (railFocus) { if (railIndex > 0) { railIndex--; playNav(); } }
         else if (railIndex === 1) lbStep(-1);
         else if (zone === 2) {
             if (list.currentIndex > 0) list.currentIndex--;
@@ -602,7 +773,8 @@ id: tab
     }
     Keys.onDownPressed: {
         event.accepted = true;
-        if (railFocus) { if (railIndex < railNames.length - 1) { railIndex++; playNav(); } }
+        if (sortMenuOpen) { if (sortMenuIndex < sortNames.length - 1) { sortMenuIndex++; playNav(); } }
+        else if (railFocus) { if (railIndex < railNames.length - 1) { railIndex++; playNav(); } }
         else if (railIndex === 1) lbStep(1);
         else if (zone === 0) { zone = 1; playNav(); }
         else if (zone === 1) { if (games.length > 0) { zone = 2; playNav(); } }
@@ -610,32 +782,34 @@ id: tab
     }
     Keys.onLeftPressed: {
         event.accepted = true;
-        if (railFocus) return;
+        if (railFocus || sortMenuOpen) return;
         if (railIndex === 0 && zone === 0 && chipIndex > 0) { chipIndex--; playNav(); }
         else if (railIndex === 0 && zone === 1 && toolIndex > 0) { toolIndex--; playNav(); }
         else { railFocus = true; playNav(); }
     }
     Keys.onRightPressed: {
         event.accepted = true;
+        if (sortMenuOpen) return;
         if (railFocus) { railFocus = false; playNav(); }
         else if (railIndex === 0 && zone === 0 && chipIndex < chips.length - 1) { chipIndex++; playNav(); }
-        else if (railIndex === 0 && zone === 1 && toolIndex < 1) { toolIndex++; playNav(); }
+        else if (railIndex === 0 && zone === 1 && toolIndex < toolCount - 1) { toolIndex++; playNav(); }
     }
     Keys.onPressed: {
         if (event.isAutoRepeat) return;
-        if (api.keys.isCancel(event) && !railFocus && railIndex === 1 && lbLevel === 1) {
-            event.accepted = true; lbBack(); return;
+        if (api.keys.isCancel(event)) {
+            if (sortMenuOpen) { event.accepted = true; sortMenuOpen = false; playBack(); return; }
+            if (!railFocus && railIndex === 1 && lbLevel === 1) { event.accepted = true; lbBack(); return; }
+            return;
         }
+        if (sortMenuOpen && (api.keys.isPrevPage(event) || api.keys.isNextPage(event))) { event.accepted = true; return; }
         if (api.keys.isAccept(event)) {
             event.accepted = true;
-            if (railFocus) { railFocus = false; playNav(); }
+            if (sortMenuOpen) pickSort();
+            else if (railFocus) { railFocus = false; playNav(); }
             else if (railIndex === 1) { if (lbLevel === 0) openLbGame(); else openBoard(); }
             else if (zone === 0) { playAccept(); applyChip(chipIndex); }
-            else if (zone === 1) {
-                playToggle();
-                if (toolIndex === 0) sortIndex = (sortIndex + 1) % sortNames.length;
-                else filterIndex = (filterIndex + 1) % filterNames.length;
-            } else openGame(list.currentIndex);
+            else if (zone === 1) pressTool();
+            else openGame(list.currentIndex);
         }
     }
 }

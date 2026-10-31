@@ -9,6 +9,10 @@
 // The page is your accent, from bright to dark, under a dark top strip
 // for the tabs. Icons: Fluent UI System Icons (assets/images/fluent, MIT).
 //
+// The awards strip opens a side panel (after the console's Badge showcase):
+// every award, newest first, with its game, console, kind and date; A on one
+// opens that game's progress, B closes.
+//
 // Keys: Left / Right between the awards strip and the buttons, Up / Down
 // in the buttons, A does it.
 
@@ -36,7 +40,7 @@ id: tab
         for (var i = 0; i < src.length && out.length < 6; i++) {
             var a = src[i];
             if (a.AwardType !== "Mastery/Completion" && a.AwardType !== "Game Beaten") continue;
-            out.push({ icon: a.ImageIcon || "", mythic: a.AwardType === "Mastery/Completion" });
+            out.push({ icon: a.ImageIcon || "", mythic: a.AwardType === "Mastery/Completion", src: i });
         }
         return out;
     }
@@ -45,13 +49,45 @@ id: tab
     readonly property color cMid:    theme.accentMid
     readonly property color cDark:   theme.accentDark
 
-    function press() {
+    // ── The awards panel ─────────────────────────────────────────────────
+    property bool panelOpen: false
+    property int panelIndex: 0
+    readonly property string helpState: panelOpen ? "awards" : ""
+    function openPanel(i) {
+        if (!cheevosData.awardsLoaded || cheevosData.awardsList.length === 0) return;
+        panelIndex = Math.max(0, Math.min(i, cheevosData.awardsList.length - 1));
+        panelOpen = true;
         playAccept();
-        if (!inButtons) { goTab("Awards"); return; }
+    }
+    function closePanel() { panelOpen = false; playBack(); }
+    function kindText(a) {
+        var hard = parseInt(a.AwardDataExtra) === 1;
+        if (a.AwardType === "Mastery/Completion") return hard ? "Mastered" : "Completed";
+        if (a.AwardType === "Game Beaten") return hard ? "Beaten" : "Beaten \u00B7 softcore";
+        return a.AwardType || "Award";
+    }
+    function dateText(d) {
+        var ms = Date.parse((d || "").replace(" ", "T"));
+        return isNaN(ms) ? "" : Qt.formatDate(new Date(ms), "MMM d, yyyy");
+    }
+    function openAwardGame() {
+        var a = cheevosData.awardsList[panelIndex];
+        var id = a ? parseInt(a.AwardData) || 0 : 0;
+        if (id <= 0 || (a.AwardType !== "Mastery/Completion" && a.AwardType !== "Game Beaten")) return;
+        playAccept();
+        panelOpen = false;
+        cheevosData.loadGameAchievements(id);
+        gameAchievementsScreenFromOverview();
+    }
+
+    function press() {
+        if (panelOpen) { openAwardGame(); return; }
+        if (!inButtons) { openPanel(0); return; }
+        playAccept();
         switch (button) {
         case 0: goTab("Gaming"); break;
         case 1: goTab("Awards"); break;
-        case 2: openLibrarySearch("ra"); break;
+        case 2: goTab("Search"); break;
         case 3: cheevosData.refreshAll(); break;
         case 4: settingsScreen(); break;
         }
@@ -147,6 +183,7 @@ id: tab
                     model: tab.latest
                     delegate: Item {
                         width: vpx(64); height: width
+                        TapHandler { onTapped: { tab.inButtons = false; tab.forceActiveFocus(); tab.openPanel(modelData.src); } }
                         Image {
                             anchors.fill: parent
                             source: modelData.icon ? "https://media.retroachievements.org" + modelData.icon : ""
@@ -176,7 +213,7 @@ id: tab
                     color: "#e0e0e0"; font.family: bodyFont.name; font.pixelSize: fpx(15)
                 }
             }
-            TapHandler { onTapped: { tab.inButtons = false; tab.forceActiveFocus(); tab.press(); } }
+            TapHandler { onTapped: { tab.inButtons = false; tab.forceActiveFocus(); tab.openPanel(0); } }
         }
         Text {
             topPadding: vpx(6)
@@ -246,17 +283,118 @@ id: tab
         }
     }
 
+    // ── Awards panel (over the page, from the left) ──────────────────────
+    // Drawn on the RA page itself (parent: tab.parent), so it covers the
+    // tabs above this tab (z 4-6: over the header, under the prompts).
+    Rectangle {
+        parent: tab.parent
+        z: 4
+        anchors.fill: parent
+        color: "black"
+        opacity: tab.panelOpen ? 0.55 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: 140 } }
+        MouseArea { anchors.fill: parent; onClicked: tab.closePanel() }
+    }
+    Rectangle {
+    id: panel
+        parent: tab.parent
+        z: 6
+        width: vpx(470)
+        anchors { top: parent.top; bottom: parent.bottom }
+        x: tab.panelOpen ? vpx(70) : -width - vpx(10)
+        Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+        visible: x > -width
+        color: whiteBackground ? "#f4f4f4" : "#262626"
+        MouseArea { anchors.fill: parent }
+        Column {
+        id: panelHead
+            x: vpx(26); y: vpx(30)
+            width: parent.width - vpx(52)
+            spacing: vpx(6)
+            Text { text: "Awards"; color: theme.text; font.family: titleFont.name; font.pixelSize: fpx(28) }
+            Text {
+                width: parent.width; wrapMode: Text.WordWrap
+                text: cheevosData.raFmt(cheevosData.awardsTotal) + " awards: " + cheevosData.raFmt(cheevosData.masteredCount) + " mastered, "
+                      + cheevosData.raFmt(cheevosData.completedCount) + " completed, " + cheevosData.raFmt(cheevosData.beatenCount) + " beaten. Newest first; A opens the game."
+                color: theme.text; opacity: 0.7; font.family: bodyFont.name; font.pixelSize: fpx(14)
+            }
+        }
+        ListView {
+        id: awardList
+            anchors { left: parent.left; right: parent.right; top: panelHead.bottom; topMargin: vpx(16); bottom: parent.bottom; bottomMargin: helpMargin }
+            leftMargin: vpx(14); rightMargin: vpx(14); topMargin: vpx(8); bottomMargin: vpx(8)
+            clip: true
+            model: tab.panelOpen || panel.visible ? cheevosData.awardsList : []
+            currentIndex: tab.panelIndex
+            keyNavigationEnabled: false
+            highlightMoveDuration: 100
+            preferredHighlightBegin: height * 0.25
+            preferredHighlightEnd: height * 0.75
+            highlightRangeMode: ListView.ApplyRange
+            spacing: vpx(4)
+            delegate: Item {
+            id: awardRow
+                readonly property bool hot: index === tab.panelIndex && tab.panelOpen && tab.activeFocus
+                readonly property bool mythic: modelData.AwardType === "Mastery/Completion"
+                width: awardList.width - awardList.leftMargin - awardList.rightMargin
+                height: vpx(92)
+                Rectangle { anchors.fill: parent; radius: vpx(4); color: whiteBackground ? "#ffffff" : "#323232"; visible: awardRow.hot }
+                RAFocus { on: awardRow.hot }
+                Image {
+                id: awardIcon
+                    anchors { left: parent.left; leftMargin: vpx(12); verticalCenter: parent.verticalCenter }
+                    width: vpx(64); height: width
+                    source: modelData.ImageIcon ? "https://media.retroachievements.org" + modelData.ImageIcon : ""
+                    sourceSize: Qt.size(64, 64)
+                    asynchronous: true; smooth: false
+                }
+                Rectangle {
+                    visible: awardRow.mythic
+                    anchors.fill: awardIcon
+                    color: "transparent"
+                    border.width: vpx(2); border.color: Qt.lighter(tab.cAccent, 1.4)
+                }
+                Column {
+                    anchors { left: awardIcon.right; leftMargin: vpx(16); right: parent.right; rightMargin: vpx(12); verticalCenter: parent.verticalCenter }
+                    spacing: vpx(2)
+                    Text { width: parent.width; elide: Text.ElideRight; text: modelData.Title || ""; color: theme.text; font.family: titleFont.name; font.pixelSize: fpx(17) }
+                    Text {
+                        width: parent.width; elide: Text.ElideRight
+                        text: tab.kindText(modelData) + (tab.dateText(modelData.AwardedAt) !== "" ? " \u00B7 " + tab.dateText(modelData.AwardedAt) : "")
+                        color: awardRow.mythic ? Qt.lighter(tab.cAccent, whiteBackground ? 1.0 : 1.5) : theme.text
+                        font.family: bodyFont.name; font.pixelSize: fpx(14)
+                    }
+                    Text { width: parent.width; elide: Text.ElideRight; text: modelData.ConsoleName || ""; color: theme.text; opacity: 0.6; font.family: bodyFont.name; font.pixelSize: fpx(13) }
+                }
+                TapHandler { onTapped: { if (tab.panelIndex === index) tab.openAwardGame(); else { tab.panelIndex = index; playNav(); } } }
+            }
+        }
+    }
+
     // ── Keys ─────────────────────────────────────────────────────────────
-    Keys.onUpPressed:    { event.accepted = true; if (inButtons && button > 0) { button--; playNav(); } }
-    Keys.onDownPressed:  { event.accepted = true; if (inButtons && button < buttons.length - 1) { button++; playNav(); } }
-    Keys.onLeftPressed:  { event.accepted = true; if (inButtons) { inButtons = false; playNav(); } }
-    Keys.onRightPressed: { event.accepted = true; if (!inButtons) { inButtons = true; playNav(); } }
+    Keys.onUpPressed: {
+        event.accepted = true;
+        if (panelOpen) { if (panelIndex > 0) { panelIndex--; playNav(); } }
+        else if (inButtons && button > 0) { button--; playNav(); }
+    }
+    Keys.onDownPressed: {
+        event.accepted = true;
+        if (panelOpen) { if (panelIndex < cheevosData.awardsList.length - 1) { panelIndex++; playNav(); } }
+        else if (inButtons && button < buttons.length - 1) { button++; playNav(); }
+    }
+    Keys.onLeftPressed:  { event.accepted = true; if (!panelOpen && inButtons) { inButtons = false; playNav(); } }
+    Keys.onRightPressed: { event.accepted = true; if (!panelOpen && !inButtons) { inButtons = true; playNav(); } }
     Keys.onPressed: {
-        if (api.keys.isAccept(event) && !event.isAutoRepeat) { event.accepted = true; press(); }
+        if (event.isAutoRepeat) return;
+        if (api.keys.isAccept(event)) { event.accepted = true; press(); }
+        else if (panelOpen && api.keys.isCancel(event)) { event.accepted = true; closePanel(); }
+        else if (panelOpen && (api.keys.isPrevPage(event) || api.keys.isNextPage(event))) event.accepted = true;
     }
     // Clickable prompts (the page's help bar).
     function helpAction(b) {
         if (b === "accept") { press(); return true; }
+        if (b === "cancel" && panelOpen) { closePanel(); return true; }
         return false;
     }
 }

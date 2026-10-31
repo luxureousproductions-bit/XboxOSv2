@@ -297,6 +297,7 @@ id: root
                 return a.DisplayOrder - b.DisplayOrder;
             });
         }
+        if (sortReverse) list.reverse();      // the page's direction button
         filteredCheevos = list;
     }
 
@@ -314,6 +315,8 @@ id: root
     onFilterModeChanged: if (!_settingFilters) rebuildFilteredCheevos()
     onTypeFilterChanged: if (!_settingFilters) rebuildFilteredCheevos()
     onSortModeChanged:   rebuildFilteredCheevos()
+    property bool sortReverse: false
+    onSortReverseChanged: rebuildFilteredCheevos()
 
     // Convenience counts for the tab badges
     property int countEarned: {
@@ -343,20 +346,61 @@ id: root
     }
 
     // ── Core HTTP helper ─────────────────────────────────────────────────
+    // Requests go through a small queue: at most _maxActive at a time, in
+    // the order asked, with the library first. RA's web API turns away
+    // bursts ("429 Too Many Requests"): opening the overview used to fire
+    // eight at once, and when the library was the one refused, Gaming
+    // stayed empty. A refused request waits and is retried (up to 4 times,
+    // 1 s, 2 s, 4 s, 8 s apart) instead of failing.
+    readonly property int _maxActive: 3
+    property int _active: 0
+    property var _queue: []
     function raRequest(apiName, args, handler, errorHandler) {
         if (!raUserName || !raApiKey) {
             statusText = "Configure your credentials in Settings → Retro Achievements";
             if (errorHandler) errorHandler();
             return;
         }
-        var url = apiBase + apiName
+        var job = { api: apiName, args: args, ok: handler, fail: errorHandler, tries: 0, due: 0 };
+        if (apiName === "GetUserCompletionProgress") _queue.unshift(job); else _queue.push(job);
+        _pump();
+    }
+    function _pump() {
+        var now = Date.now(), wait = -1;
+        while (_active < _maxActive) {
+            var i = -1;
+            for (var k = 0; k < _queue.length; k++) {
+                if (_queue[k].due <= now) { i = k; break; }
+                var w = _queue[k].due - now;
+                if (wait < 0 || w < wait) wait = w;
+            }
+            if (i < 0) break;
+            var job = _queue.splice(i, 1)[0];
+            _active++;
+            _send(job);
+        }
+        if (wait >= 0 && !_retryTimer.running) { _retryTimer.interval = Math.max(50, wait); _retryTimer.start(); }
+    }
+    Timer { id: _retryTimer; repeat: false; onTriggered: root._pump() }
+    function _send(job) {
+        var handler = job.ok, errorHandler = job.fail;
+        var url = apiBase + job.api
                   + ".php?z=" + encodeURIComponent(raUserName)
                   + "&y=" + encodeURIComponent(raApiKey)
-                  + (args !== "" ? "&" + args : "");
+                  + (job.args !== "" ? "&" + job.args : "");
         var xhr = new XMLHttpRequest();
         xhr.open("GET", url, true);
         xhr.onreadystatechange = function() {
             if (xhr.readyState !== XMLHttpRequest.DONE) return;
+            root._active--;
+            if (xhr.status === 429 && job.tries < 4) {
+                job.due = Date.now() + 1000 * Math.pow(2, job.tries);
+                job.tries++;
+                root._queue.unshift(job);
+                root._pump();
+                return;
+            }
+            root._pump();
             if (xhr.status === 200) {
                 try {
                     handler(JSON.parse(xhr.responseText));
@@ -572,6 +616,7 @@ id: root
         unofficialState = 0;
         unofficialCount = 0;
         sortMode      = "default";
+        sortReverse   = false;
         statusText    = "Loading...";
         raGameCheevos.clear();
         filteredCheevos = [];

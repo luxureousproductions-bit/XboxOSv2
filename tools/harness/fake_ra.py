@@ -124,6 +124,8 @@ def media_png(path):
     if "_lock" in path: im = im.convert("L").convert("RGB")
     b = io.BytesIO(); im.save(b, "PNG"); return b.getvalue()
 
+REFUSED = set()
+
 class H(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
     def do_GET(self):
@@ -133,6 +135,11 @@ class H(BaseHTTPRequestHandler):
             self.send_response(200); self.send_header("Content-Type", "image/png")
             self.send_header("Content-Length", str(len(data))); self.end_headers(); self.wfile.write(data); return
         name = u.path.rsplit("/API_", 1)[-1].replace(".php", "")
+        # FAKE_RA_REFUSE=1: turn every API request away once with 429, as
+        # RA does to bursts, so the theme's retry gets exercised.
+        if os.environ.get("FAKE_RA_REFUSE") and self.path not in REFUSED:
+            REFUSED.add(self.path)
+            self.send_response(429); self.send_header("Content-Length", "0"); self.end_headers(); return
         user = q.get("u") or q.get("z") or "Tester"
         if name == "GetUserProfile":
             body = {"User": user, "UserPic": "/UserPic/Tester.png", "TotalPoints": 24615, "TotalTruePoints": 61203,

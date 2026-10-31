@@ -8,6 +8,9 @@
 //   Status: All / Locked / Unlocked / Rare / Common   (rare: under 10%)
 //   Type:   All / Progression / Win condition / Missable
 //
+// Other pages give it their own columns (gamePage: false, open(picks)) and
+// get the picks back through applied(); the Gaming tab does.
+//
 // Picks stay pending until Apply; B (or a tap outside) closes without
 // changing anything. Up/Down move in a column, Left/Right switch columns,
 // Down from a column's last row reaches Apply.
@@ -27,32 +30,39 @@ id: dlg
     readonly property var statusNames: ["All", "Locked", "Unlocked", "Rare", "Common"]
     readonly property var typeKeys:    ["all", "progression", "win_condition", "missable"]
     readonly property var typeNames:   ["All", "Progression", "Win condition", "Missable"]
-    readonly property var columns: [
-        { keys: setKeys,    names: setNames },
-        { keys: statusKeys, names: statusNames },
-        { keys: typeKeys,   names: typeNames }
+    property bool gamePage: true
+    property var columns: [
+        { title: "Set",    keys: setKeys,    names: setNames },
+        { title: "Status", keys: statusKeys, names: statusNames },
+        { title: "Type",   keys: typeKeys,   names: typeNames }
     ]
+    readonly property int applyCol: columns.length   // the column index of Apply
 
-    property var pending: ["all", "all", "all"]      // set, status, type
-    property int col: 1                 // 0-2 the columns, 3 Apply
+    property var pending: ["all", "all", "all"]      // one key per column (game page: set, status, type)
+    property int col: 1                 // the columns, then applyCol = Apply
     property int row: 0
     property int lastCol: 1             // the column Up from Apply returns to
 
     signal closed()
+    signal applied(var picks)
 
     readonly property color panelColor: whiteBackground ? "#f4f4f4" : "#2b2b2b"
     readonly property color applyColor: whiteBackground ? "#e2e2e2" : "#3a3a3a"
 
-    function open() {
-        pending = [cheevosData.setFilter, cheevosData.filterMode, cheevosData.typeFilter];
-        col = 1; lastCol = 1;
-        row = Math.max(0, statusKeys.indexOf(pending[1]));
+    function open(picks) {
+        pending = gamePage ? [cheevosData.setFilter, cheevosData.filterMode, cheevosData.typeFilter] : picks.slice();
+        col = gamePage ? 1 : 0; lastCol = col;
+        row = Math.max(0, columns[col].keys.indexOf(pending[col]));
         visible = true;
         forceActiveFocus();
         playAccept();
     }
     function close(apply) {
-        if (apply) { playAccept(); cheevosData.setFilters(pending[1], pending[2], pending[0]); }
+        if (apply) {
+            playAccept();
+            if (gamePage) cheevosData.setFilters(pending[1], pending[2], pending[0]);
+            else applied(pending);
+        }
         else playBack();
         visible = false;
         closed();
@@ -66,7 +76,7 @@ id: dlg
     }
     // A, from the key or the help bar.
     function accept() {
-        if (col === 3) close(true);
+        if (col === applyCol) close(true);
         else pick(col, row);
     }
 
@@ -80,7 +90,7 @@ id: dlg
     Rectangle {
     id: panel
         anchors.centerIn: parent
-        width: vpx(860)
+        width: vpx(Math.max(2, dlg.columns.length) * 287)
         height: content.height + vpx(48)
         radius: vpx(4)
         color: dlg.panelColor
@@ -109,13 +119,20 @@ id: dlg
                         readonly property int c: index
                         width: (cols.width - cols.spacing * (dlg.columns.length - 1)) / dlg.columns.length
                         spacing: vpx(6)
+                        Text {
+                            visible: text !== ""
+                            leftPadding: vpx(12); bottomPadding: vpx(2)
+                            text: dlg.columns[column.c].title || ""
+                            color: theme.text; opacity: 0.6
+                            font.family: titleFont.name; font.pixelSize: fpx(14)
+                        }
                         Repeater {
                             model: dlg.columns[column.c].names
                             delegate: Item {
                                 readonly property bool chosen: dlg.columns[column.c].keys[index] === dlg.pending[column.c]
                                 readonly property bool hot: dlg.col === column.c && dlg.row === index && dlg.activeFocus
                                 // Subsets is dim when this game has none.
-                                readonly property bool empty: column.c === 0 && index === 2 && cheevosData.subsetNames.length === 0
+                                readonly property bool empty: dlg.gamePage && column.c === 0 && index === 2 && cheevosData.subsetNames.length === 0
                                 width: column.width; height: vpx(44)
                                 RAFocus { on: parent.hot }
                                 Text {
@@ -149,7 +166,7 @@ id: dlg
             // Apply
             Rectangle {
             id: applyBtn
-                readonly property bool hot: dlg.col === 3 && dlg.activeFocus
+                readonly property bool hot: dlg.col === dlg.applyCol && dlg.activeFocus
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: vpx(210); height: vpx(42)
                 radius: vpx(4)
@@ -180,23 +197,23 @@ id: dlg
     // ── Keys: everything stays in the pop-up while it's open ─────────────
     Keys.onUpPressed: {
         event.accepted = true;
-        if (col === 3) { col = lastCol; row = rows(col) - 1; playNav(); }
+        if (col === applyCol) { col = lastCol; row = rows(col) - 1; playNav(); }
         else if (row > 0) { row--; playNav(); }
     }
     Keys.onDownPressed: {
         event.accepted = true;
-        if (col === 3) return;
+        if (col === applyCol) return;
         if (row < rows(col) - 1) row++;
-        else { lastCol = col; col = 3; }
+        else { lastCol = col; col = applyCol; }
         playNav();
     }
     Keys.onLeftPressed: {
         event.accepted = true;
-        if (col > 0 && col < 3) { col--; lastCol = col; row = Math.min(row, rows(col) - 1); playNav(); }
+        if (col > 0 && col < applyCol) { col--; lastCol = col; row = Math.min(row, rows(col) - 1); playNav(); }
     }
     Keys.onRightPressed: {
         event.accepted = true;
-        if (col < 2) { col++; lastCol = col; row = Math.min(row, rows(col) - 1); playNav(); }
+        if (col < applyCol - 1) { col++; lastCol = col; row = Math.min(row, rows(col) - 1); playNav(); }
     }
     Keys.onPressed: {
         if (event.isAutoRepeat) { event.accepted = true; return; }
