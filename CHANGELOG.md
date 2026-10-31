@@ -4,9 +4,18 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 87)
+## Unreleased — seriesSX branch (build 88)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Leaderboards on a game's page** (rail: Achievements, Leaderboards, Stats). Every leaderboard of the game as a card: its name and description, the #1 entry, and **your** score and rank (or "No entry yet"). A opens the top 100 over the page, opening on your row (in the accent; when you're further down it's added at the end), with LB / RB to jump to the top or to you. Two requests when Leaderboards opens, one when a leaderboard does.
+- **Stats tiles at the console's size:** two columns of big tiles (title, a large value, a line under it) that you move through with the cursor and that scroll, instead of three columns of small ones.
+- RA game page: a **Mythic** game's fanart is at **60%** (others stay at 50%).
+- Fixed: the game page could read the old view for a moment when you changed it on the rail (so Leaderboards wouldn't load); it now goes by the rail position itself.
+- Fluent icons are decoded at twice their drawn size, so the bigger ones stay sharp.
+- Test harness: the fake RA server serves leaderboards (GetGameLeaderboards, GetUserGameLeaderboards, GetLeaderboardEntries).
+
+## build 87
 
 - **Fixed (for real this time): the system tiles flashing when you go up to the strip.** Build 86's change didn't touch the cause. Measured on your recording: the strip glides down, jumps back to where it started for one frame, then carries on. Measured in the harness: switching the page into "glide" mode moved it ~40 px the wrong way before the glide began. Root cause: Home's page list snaps to whole rows (for the wheel and touch), and changing how it follows focus makes it re-snap; on a fast screen that snap landed a frame into the glide. Row snapping is now off while the glide runs and back on when it lands. Build 86's one-step Up is kept.
 

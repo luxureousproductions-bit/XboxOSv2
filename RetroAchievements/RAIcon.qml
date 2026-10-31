@@ -10,7 +10,8 @@ import QtGraphicalEffects 1.15
 Image {
     property real size: vpx(18)
     width: size; height: size
-    sourceSize: Qt.size(hrpx(32), hrpx(32))
+    // Decoded at twice its size (at least 32): bigger icons stay sharp.
+    sourceSize: Qt.size(Math.max(hrpx(32), Math.ceil(size * 2)), Math.max(hrpx(32), Math.ceil(size * 2)))
     smooth: true
     layer.enabled: whiteBackground
     layer.effect: ColorOverlay { color: theme.text }

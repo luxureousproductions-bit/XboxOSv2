@@ -519,6 +519,7 @@ id: root
         filterMode    = "all";      // reset filters on each new game
         typeFilter    = "all";
         setFilter     = "all";
+        leaderboardsFor = 0; leaderboardsState = 0; leaderboards = [];
         subsetNames   = [];
         unofficialState = 0;
         unofficialCount = 0;
@@ -689,6 +690,57 @@ id: root
                 rebuildFilteredCheevos();
             },
             function() { if (currentGameID === gameID) { unofficialState = 2; rebuildFilteredCheevos(); } });
+    }
+
+    // ── Leaderboards (game page) ─────────────────────────────────────────
+    // The game's leaderboards with the top entry, merged with yours (two
+    // requests, both only when Leaderboards opens). state: 0 not asked,
+    // 1 loading, 2 loaded.
+    property var leaderboards: []
+    property int leaderboardsFor: 0
+    property int leaderboardsState: 0
+    function loadLeaderboards(gameID) {
+        if (leaderboardsFor === gameID && leaderboardsState > 0) return;
+        leaderboardsFor = gameID; leaderboardsState = 1; leaderboards = [];
+        var all = null, mine = null;
+        function done() {
+            if (leaderboardsFor !== gameID || all === null || mine === null) return;
+            var byId = {};
+            for (var m = 0; m < mine.length; m++) byId[mine[m].ID] = mine[m].UserEntry || {};
+            var out = [];
+            for (var i = 0; i < all.length; i++) {
+                var l = all[i], t = l.TopEntry || {}, u = byId[l.ID] || {};
+                out.push({ id: parseInt(l.ID) || 0, title: (l.Title || "").trim(), description: (l.Description || "").trim(),
+                           topUser: t.User || "", topScore: t.FormattedScore || (t.Score !== undefined ? "" + t.Score : ""),
+                           myScore: u.FormattedScore || "", myRank: parseInt(u.Rank) || 0 });
+            }
+            leaderboards = out;
+            leaderboardsState = 2;
+        }
+        raRequest("GetGameLeaderboards", "i=" + gameID + "&c=500",
+            function(r) { all = (r && r.Results) || []; done(); }, function() { all = []; done(); });
+        raRequest("GetUserGameLeaderboards", "i=" + gameID + "&u=" + encodeURIComponent(raUserName) + "&c=500",
+            function(r) { mine = (r && r.Results) || []; done(); }, function() { mine = []; done(); });
+    }
+    // One leaderboard's top 100 (the entries pop-up).
+    property var lbEntries: []
+    property int lbEntriesTotal: 0
+    property int lbEntriesFor: 0
+    property int lbEntriesState: 0
+    function loadLeaderboardEntries(id) {
+        lbEntriesFor = id; lbEntriesState = 1; lbEntries = []; lbEntriesTotal = 0;
+        raRequest("GetLeaderboardEntries", "i=" + id + "&c=100",
+            function(r) {
+                if (lbEntriesFor !== id) return;
+                var res = (r && r.Results) || [], out = [];
+                for (var i = 0; i < res.length; i++)
+                    out.push({ rank: parseInt(res[i].Rank) || (i + 1), user: res[i].User || "",
+                               score: res[i].FormattedScore || ("" + res[i].Score), date: res[i].DateSubmitted || "" });
+                lbEntries = out;
+                lbEntriesTotal = parseInt(r && r.Total) || out.length;
+                lbEntriesState = 2;
+            },
+            function() { if (lbEntriesFor === id) lbEntriesState = 2; });
     }
 
     // Your rank among this game's players (Stats view). One request per

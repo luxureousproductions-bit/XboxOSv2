@@ -165,6 +165,24 @@ class H(BaseHTTPRequestHandler):
             g = game(q.get("i"))
             ach = achievements(g, unofficial=True) if q.get("f") == "5" and g["GameID"] % 2 == 0 else {}
             body = {"Title": g["Title"], "ConsoleID": g["ConsoleID"], "NumDistinctPlayers": 5000, "Achievements": ach}
+        elif name in ("GetGameLeaderboards", "GetUserGameLeaderboards"):
+            # Three leaderboards per game (none on odd IDs); you're on two.
+            g = game(q.get("i")); rr = random.Random(g["GameID"] + 5); res = []
+            if g["GameID"] % 2 == 0:
+                for k, (t, d) in enumerate([("Fastest Castle Run", "Clear the castle as fast as possible"),
+                                            ("Highest Score", "Best score in one sitting"), ("Fewest Continues", "Beat the game using the fewest continues")]):
+                    lid = g["GameID"] * 10 + k
+                    if name == "GetGameLeaderboards":
+                        res.append({"ID": lid, "RankAsc": k != 1, "Title": " " + t, "Description": d, "Format": "VALUE",
+                                    "TopEntry": {"User": rr.choice(["Krazyhammer", "SpeedyGonz", "Moonglow"]), "Score": "1000", "FormattedScore": f"{rr.randint(1,9)}:{rr.randint(10,59)}.{rr.randint(10,99)}"}})
+                    elif k < 2:
+                        res.append({"ID": lid, "Title": t, "UserEntry": {"User": user, "Score": 1, "FormattedScore": f"{rr.randint(1,9)}:{rr.randint(10,59)}.{rr.randint(10,99)}", "Rank": [17, 140][k], "DateUpdated": "2026-10-25T12:00:00+00:00"}})
+            body = {"Count": len(res), "Total": len(res), "Results": res}
+        elif name == "GetLeaderboardEntries":
+            lid = int(q.get("i", 0)); rr = random.Random(lid); names = ["Krazyhammer", "SpeedyGonz", "Moonglow", "Lemonhead", "WarioWare", "Kaiseryoshi"]
+            res = [{"Rank": r, "User": ("Tester" if r == 17 else f"{rr.choice(names)}{r}"), "Score": r * 10, "FormattedScore": f"{1 + r // 30}:{(r * 7) % 60:02d}.{r % 100:02d}",
+                    "DateSubmitted": "2026-10-01T12:00:00+00:00"} for r in range(1, 101)]
+            body = {"Count": 100, "Total": 312, "Results": res}
         elif name == "GetGameList":
             cid = int(q.get("i", 0))
             body = [{"ID": x["GameID"], "Title": x["Title"], "ConsoleID": x["ConsoleID"], "ConsoleName": x["ConsoleName"],

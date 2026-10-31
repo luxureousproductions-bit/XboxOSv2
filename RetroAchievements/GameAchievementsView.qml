@@ -94,16 +94,31 @@ id: root
     property int heroIndex: 0                    // zone 0: 0 Launch / Find, 1 Change match
     onZoneChanged: updateHelp()
     onHeroIndexChanged: updateHelp()
-    readonly property bool popupOpen: filterDlg.visible || matchPicker.visible
+    readonly property bool popupOpen: filterDlg.visible || matchPicker.visible || boardPanel.visible
     // The game of yours this page was opened for: from its Game details, or
     // picked in RA Search (both go through the RA lookup with currentGame).
     readonly property var raFromDetailsGame: ((raFromDetails || raSearchReturn) && currentGame) ? currentGame : null
     onRailFocusChanged: updateHelp()
     property int toolIndex: 0
     property bool railFocus: false
-    property int railIndex: 0                    // 0 Achievements, 1 Stats
-    readonly property var railNames: ["Achievements", "Stats"]
-    readonly property bool onStats: railIndex === 1
+    property int railIndex: 0                    // 0 Achievements, 1 Leaderboards, 2 Stats
+    readonly property var railNames: ["Achievements", "Leaderboards", "Stats"]
+    readonly property bool onList:   railIndex === 0
+    readonly property bool onBoards: railIndex === 1
+    readonly property bool onStats:  railIndex === 2
+    // Zone 3: the Leaderboards cards or the Stats tiles (viewIndex is the
+    // focused one; Stats is two columns).
+    property int viewIndex: 0
+    readonly property int viewCount: onBoards ? cheevosData.leaderboards.length : (onStats ? statTiles.length : 0)
+    readonly property int viewCols: onStats ? 2 : 1
+    // Leaving the rail to the right: into the cards or tiles when there are
+    // any, else up to the Launch button.
+    function enterView() {
+        railFocus = false;
+        if (onList) return;
+        zone = viewCount > 0 ? 3 : 0;
+        viewIndex = 0;
+    }
     readonly property bool accentIsLight: (0.299 * cAccent.r + 0.587 * cAccent.g + 0.114 * cAccent.b) > 0.62
 
     // Your copy of the game in Pegasus: box art, fanart, the Launch button
@@ -128,9 +143,14 @@ id: root
         else
             localGame = cheevosData.findLocalGame(t, det.ConsoleName || "", id);
     }
-    onOnStatsChanged: {
-        if (onStats) { cheevosData.loadGameRank(cheevosData.currentGameID); if (!railFocus) zone = 0; }
-        updateHelp();
+    // railIndex itself, not onBoards / onStats: those bindings may not have
+    // caught up yet when this handler runs (it read the OLD view, so nothing
+    // loaded). Focus moves a tick later, once they have.
+    onRailIndexChanged: {
+        viewIndex = 0;
+        if (railIndex === 2) cheevosData.loadGameRank(cheevosData.currentGameID);
+        if (railIndex === 1) cheevosData.loadLeaderboards(cheevosData.currentGameID);
+        Qt.callLater(function() { if (!root.railFocus) root.enterView(); root.updateHelp(); });
     }
     function playTimeText(sec) {
         if (!sec || sec <= 0) return "0 m";
@@ -170,7 +190,8 @@ id: root
         height: vpx(270)
         clip: true
 
-        // Near-black, with the fanart at 50% over it. A 100% game (Mythic)
+        // Near-black, with the fanart at 50% over it (60% on a Mythic game,
+        // where the accent band and fade sit under and over it). A 100% game (Mythic)
         // sits on the accent band instead and fades into it at the bottom.
         Rectangle { anchors.fill: parent; color: root.mythic ? root.band : "#141414" }
         Image {
@@ -181,7 +202,7 @@ id: root
             asynchronous: true
             smooth: true
             sourceSize: Qt.size(hrpx(640), hrpx(360))
-            opacity: status === Image.Ready ? 0.5 : 0
+            opacity: status === Image.Ready ? (root.mythic ? 0.6 : 0.5) : 0
             Behavior on opacity { NumberAnimation { duration: 200 } }
         }
         Rectangle {
@@ -390,7 +411,7 @@ id: root
     // ── Sort and Filter ──────────────────────────────────────────────────
     Item {
     id: toolRow
-        visible: !root.onStats
+        visible: root.onList
         anchors { left: rail.right; leftMargin: vpx(31); right: parent.right; rightMargin: vpx(67); top: hero.bottom; topMargin: vpx(23) }
         height: vpx(39)
         Rectangle {
@@ -437,7 +458,7 @@ id: root
     // ── Achievements ─────────────────────────────────────────────────────
     ListView {
     id: list
-        visible: !root.onStats
+        visible: root.onList
         // Padding = the focus frame's reach, so the clip never cuts it; the
         // focused card stays in the top slot; the list ends above the prompts.
         anchors { left: rail.right; leftMargin: vpx(17); right: parent.right; rightMargin: vpx(53); top: toolRow.bottom; topMargin: vpx(0); bottom: parent.bottom; bottomMargin: helpMargin }
@@ -571,27 +592,119 @@ id: root
         out.push(["Your rank", cheevosData.gameRank > 0 ? "#" + cheevosData.raFmt(cheevosData.gameRank) : (cheevosData.gameRank < 0 ? "\u2026" : "\u2014"), "of this game's players"]);
         return out;
     }
-    Grid {
-    id: statsGrid
+    // Two columns of big tiles, as on the console's Stats view. Right from
+    // the rail reaches them; they scroll with the cursor.
+    GridView {
+    id: statsView
         visible: root.onStats
-        anchors { left: rail.right; leftMargin: vpx(31); right: parent.right; rightMargin: vpx(67); top: hero.bottom; topMargin: vpx(23) }
-        columns: 3
-        spacing: vpx(10)
-        Repeater {
-            model: root.onStats ? root.statTiles : []
-            delegate: Rectangle {
-                width: (statsGrid.width - 2 * statsGrid.spacing) / 3; height: vpx(80)
+        anchors { left: rail.right; leftMargin: vpx(17); right: parent.right; rightMargin: vpx(53); top: hero.bottom; topMargin: vpx(9); bottom: parent.bottom; bottomMargin: helpMargin }
+        leftMargin: vpx(14); rightMargin: vpx(14); topMargin: vpx(14); bottomMargin: vpx(14)
+        clip: true
+        interactive: true
+        keyNavigationEnabled: false
+        model: root.onStats ? root.statTiles : []
+        cellWidth: Math.floor((width - leftMargin - rightMargin) / 2)
+        cellHeight: vpx(146)
+        currentIndex: root.onStats ? root.viewIndex : -1
+        highlightMoveDuration: 120
+        preferredHighlightBegin: vpx(14)
+        preferredHighlightEnd: height - vpx(14)
+        highlightRangeMode: GridView.ApplyRange
+        delegate: Item {
+            width: statsView.cellWidth; height: statsView.cellHeight
+            Rectangle {
+                anchors { fill: parent; rightMargin: vpx(14); bottomMargin: vpx(14) }
                 radius: vpx(4); color: root.cardColor
+                RAFocus { on: index === root.viewIndex && root.zone === 3 && !root.railFocus && root.activeFocus && !root.popupOpen }
                 Column {
-                    anchors { left: parent.left; leftMargin: vpx(16); right: parent.right; rightMargin: vpx(12); verticalCenter: parent.verticalCenter }
-                    spacing: vpx(1)
-                    Text { text: modelData[0]; color: theme.text; opacity: 0.7; font.family: bodyFont.name; font.pixelSize: fpx(13) }
-                    Text { width: parent.width; elide: Text.ElideRight; text: modelData[1]; color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(22) }
+                    anchors { left: parent.left; leftMargin: vpx(24); right: parent.right; rightMargin: vpx(18); verticalCenter: parent.verticalCenter }
+                    spacing: vpx(4)
+                    Text { width: parent.width; elide: Text.ElideRight; text: modelData[0]; color: theme.text; font.family: titleFont.name; font.pixelSize: fpx(18) }
+                    Text { width: parent.width; elide: Text.ElideRight; text: modelData[1]; color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(38) }
                     // Always there (blank when empty) so every tile's lines sit at the same height.
-                    Text { width: parent.width; elide: Text.ElideRight; text: modelData[2] || " "; color: theme.text; opacity: 0.5; font.family: bodyFont.name; font.pixelSize: fpx(11) }
+                    Text { width: parent.width; elide: Text.ElideRight; text: modelData[2] || " "; color: theme.text; opacity: 0.75; font.family: bodyFont.name; font.pixelSize: fpx(16) }
+                }
+            }
+            TapHandler { onTapped: { root.railFocus = false; root.zone = 3; root.viewIndex = index; root.forceActiveFocus(); } }
+        }
+    }
+
+    // ── Leaderboards ─────────────────────────────────────────────────────
+    // Every leaderboard of the game with its top entry and yours; A opens
+    // the top 100 (RALeaderboardPanel).
+    ListView {
+    id: boardList
+        visible: root.onBoards
+        anchors { left: rail.right; leftMargin: vpx(17); right: parent.right; rightMargin: vpx(53); top: hero.bottom; topMargin: vpx(9); bottom: parent.bottom; bottomMargin: helpMargin }
+        leftMargin: vpx(14); rightMargin: vpx(14); topMargin: vpx(14); bottomMargin: vpx(14)
+        clip: true
+        model: root.onBoards ? cheevosData.leaderboards : []
+        spacing: vpx(12)
+        keyNavigationEnabled: false
+        currentIndex: root.onBoards ? root.viewIndex : -1
+        highlightMoveDuration: 120
+        preferredHighlightBegin: vpx(14)
+        preferredHighlightEnd: height - vpx(14)
+        highlightRangeMode: ListView.ApplyRange
+
+        Text {
+            anchors { top: parent.top; topMargin: vpx(30); horizontalCenter: parent.horizontalCenter }
+            visible: root.onBoards && cheevosData.leaderboards.length === 0
+            text: cheevosData.leaderboardsState === 1 ? "Loading leaderboards\u2026" : "This game has no leaderboards"
+            color: theme.text; opacity: 0.55
+            font.family: bodyFont.name; font.pixelSize: fpx(18)
+        }
+
+        delegate: Rectangle {
+        id: boardCard
+            readonly property var lb: modelData
+            readonly property bool hot: index === root.viewIndex && root.zone === 3 && !root.railFocus && root.activeFocus && !root.popupOpen
+            width: boardList.width - boardList.leftMargin - boardList.rightMargin
+            height: vpx(100)
+            radius: vpx(4); color: root.cardColor
+            RAFocus { on: boardCard.hot }
+            Rectangle {
+            id: boardIcon
+                anchors { left: parent.left; leftMargin: vpx(20); verticalCenter: parent.verticalCenter }
+                width: vpx(64); height: width; radius: width / 2
+                color: whiteBackground ? "#ececec" : root.mixc(root.band, root.cardColor, 0.1)
+                RAIcon { anchors.centerIn: parent; size: vpx(36); source: "../assets/images/fluent/data_bar_vertical.svg" }
+            }
+            Column {
+                anchors { left: boardIcon.right; leftMargin: vpx(18); right: mineCol.left; rightMargin: vpx(18); verticalCenter: parent.verticalCenter }
+                spacing: vpx(2)
+                Text { width: parent.width; elide: Text.ElideRight; text: lb.title; color: theme.text; font.family: titleFont.name; font.pixelSize: fpx(18) }
+                Text { width: parent.width; elide: Text.ElideRight; text: lb.description; color: theme.text; opacity: 0.85; font.family: bodyFont.name; font.pixelSize: fpx(14) }
+                Text {
+                    width: parent.width; elide: Text.ElideRight; topPadding: vpx(4)
+                    text: lb.topUser !== "" ? "#1  " + lb.topUser + "  \u00B7  " + lb.topScore : "No entries yet"
+                    color: theme.text; opacity: 0.55; font.family: bodyFont.name; font.pixelSize: fpx(13)
+                }
+            }
+            Column {
+            id: mineCol
+                anchors { right: parent.right; rightMargin: vpx(22); verticalCenter: parent.verticalCenter }
+                width: vpx(170)
+                Text { width: parent.width; horizontalAlignment: Text.AlignRight; text: "You"; color: theme.text; opacity: 0.7; font.family: bodyFont.name; font.pixelSize: fpx(13) }
+                Text { width: parent.width; horizontalAlignment: Text.AlignRight; elide: Text.ElideLeft; text: lb.myScore !== "" ? lb.myScore : "\u2014"; color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(24) }
+                Text {
+                    width: parent.width; horizontalAlignment: Text.AlignRight
+                    text: lb.myRank > 0 ? "Rank #" + cheevosData.raFmt(lb.myRank) : "No entry yet"
+                    color: root.light(root.cAccent, whiteBackground ? 0 : 0.4); font.family: bodyFont.name; font.pixelSize: fpx(13)
+                }
+            }
+            TapHandler {
+                onTapped: {
+                    root.railFocus = false; root.zone = 3; root.forceActiveFocus();
+                    if (root.viewIndex === index) root.openBoard(); else { root.viewIndex = index; playNav(); }
                 }
             }
         }
+    }
+    function openBoard() {
+        if (!onBoards || viewIndex < 0 || viewIndex >= cheevosData.leaderboards.length) return;
+        boardPanel.open(cheevosData.leaderboards[viewIndex]);
+        updateHelp();
     }
 
     // ── Local help bar ───────────────────────────────────────────────────
@@ -632,27 +745,41 @@ id: root
             localHelpModel.append({ name: "Close",  button: "cancel" });
             return;
         }
+        if (boardPanel.visible) {
+            localHelpModel.append({ name: "Top",   button: "prevPage" });
+            localHelpModel.append({ name: "You",   button: "nextPage" });
+            localHelpModel.append({ name: "Close", button: "cancel" });
+            return;
+        }
         if (filtersOpen) {
             localHelpModel.append({ name: filterDlg.col === 3 ? "Apply" : "Select", button: "accept" });
             localHelpModel.append({ name: "Close", button: "cancel" });
             return;
         }
-        var a = railFocus ? (onStats ? "" : "Select")
+        var a = railFocus ? "Select"
               : zone === 0 ? (heroIndex === 1 ? "Change match" : localGame ? "Launch" : "Find")
-              : zone === 1 ? (toolIndex === 0 ? "Change" : "Filters") : "";
+              : zone === 1 ? (toolIndex === 0 ? "Change" : "Filters")
+              : (zone === 3 && onBoards) ? "View" : "";
         if (a !== "") localHelpModel.append({ name: a, button: "accept" });
         localHelpModel.append({ name: "Refresh", button: "details" });
         localHelpModel.append({ name: "Sort",    button: "filters" });
         localHelpModel.append({ name: "Back",    button: "cancel" });
     }
     onToolIndexChanged: updateHelp()
+    onViewIndexChanged: updateHelp()
     onLocalGameChanged: updateHelp()
 
     // ── Keys ─────────────────────────────────────────────────────────────
     Keys.onUpPressed: {
         event.accepted = true;
         if (railFocus) { if (railIndex > 0) { railIndex--; playNav(); } return; }
-        if (onStats) return;
+        if (!onList) {
+            if (zone === 3) {
+                if (viewIndex - viewCols >= 0) { viewIndex -= viewCols; playNav(); }
+                else { zone = 0; playNav(); }
+            }
+            return;
+        }
         if (zone === 2) {
             if (currentIndex > 0) { currentIndex--; playNav(); }
             else { zone = 1; playNav(); }
@@ -662,25 +789,34 @@ id: root
     Keys.onDownPressed: {
         event.accepted = true;
         if (railFocus) { if (railIndex < railNames.length - 1) { railIndex++; playNav(); } return; }
-        if (onStats) return;
+        if (!onList) {
+            if (zone === 0) { if (viewCount > 0) { zone = 3; viewIndex = 0; playNav(); } }
+            else if (zone === 3) {
+                if (viewIndex + viewCols < viewCount) { viewIndex += viewCols; playNav(); }
+                else if (Math.floor(viewIndex / viewCols) < Math.floor((viewCount - 1) / viewCols)) { viewIndex = viewCount - 1; playNav(); }
+            }
+            return;
+        }
         if (zone === 0) { zone = 1; playNav(); }
         else if (zone === 1) { if (displayList.length > 0) { zone = 2; playNav(); } }
         else if (currentIndex < displayList.length - 1) { currentIndex++; playNav(); }
     }
-    // Left reaches the rail (from the list, the button, or the first of
-    // Sort/Filter); Right leaves it again: to the list, or on Stats (nothing
-    // else to focus there) to the Launch button.
+    // Left reaches the rail (from the list, the button, the first of
+    // Sort/Filter, or the left column of tiles); Right leaves it again: into
+    // the list, the cards or the tiles (or the Launch button when empty).
     Keys.onLeftPressed: {
         event.accepted = true;
         if (railFocus) return;
-        if (zone === 1 && toolIndex > 0) { toolIndex--; playNav(); }
+        if (zone === 3 && viewCols > 1 && viewIndex % viewCols > 0) { viewIndex--; playNav(); }
+        else if (zone === 1 && toolIndex > 0) { toolIndex--; playNav(); }
         else if (zone === 0 && heroIndex > 0) { heroIndex--; playNav(); }
         else { railFocus = true; playNav(); }
     }
     Keys.onRightPressed: {
         event.accepted = true;
-        if (railFocus) { railFocus = false; if (onStats) zone = 0; playNav(); return; }
-        if (zone === 1 && toolIndex < 1) { toolIndex++; playNav(); }
+        if (railFocus) { enterView(); playNav(); return; }
+        if (zone === 3) { if (viewCols > 1 && viewIndex % viewCols < viewCols - 1 && viewIndex < viewCount - 1) { viewIndex++; playNav(); } }
+        else if (zone === 1 && toolIndex < 1) { toolIndex++; playNav(); }
         else if (zone === 0 && heroIndex < 1 && matchBtn.visible) { heroIndex++; playNav(); }
     }
 
@@ -707,9 +843,10 @@ id: root
         if (api.keys.isDetails(event) && !event.isAutoRepeat)  { event.accepted = true; refresh(); }
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (railFocus) { railFocus = false; if (onStats) zone = 0; playNav(); }
+            if (railFocus) { enterView(); playNav(); }
             else if (zone === 0) { if (heroIndex === 1) changeMatch(); else launchOrFind(); }
             else if (zone === 1) { if (toolIndex === 0) { playToggle(); cycleSort(1); } else openFilters(); }
+            else if (zone === 3 && onBoards) openBoard();
         }
     }
 
@@ -778,6 +915,10 @@ id: root
     }
     // Clickable prompts: each does what its button does.
     function helpAction(button) {
+        if (boardPanel.visible) {
+            if (button === "cancel") boardPanel.close();
+            return true;
+        }
         if (matchPicker.visible) {
             if (button === "accept") matchPicker.pick();
             else if (button === "filters") { matchPicker.onSearch = true; matchPicker.openKeyboard(); }
@@ -793,12 +934,18 @@ id: root
         else if (button === "filters") { playToggle(); cycleSort(1); }
         else if (button === "details") refresh();
         else if (button === "accept") {
-            if (railFocus) { railFocus = false; if (onStats) zone = 0; }
+            if (railFocus) enterView();
             else if (zone === 0) { if (heroIndex === 1) changeMatch(); else launchOrFind(); }
             else if (zone === 1) { if (toolIndex === 0) { playToggle(); cycleSort(1); } else openFilters(); }
+            else if (zone === 3 && onBoards) openBoard();
         }
         else return false;
         return true;
+    }
+
+    RALeaderboardPanel {
+    id: boardPanel
+        onClosed: { boardPanel.focus = false; root.forceActiveFocus(); root.updateHelp(); }
     }
 
     RAMatchPicker {
