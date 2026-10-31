@@ -1,7 +1,8 @@
 // XboxOSv2 – GameAchievementsView.qml
 // One game's achievements, after the Xbox Series game Progress page.
 //
-//   Hero: the game's fanart at 50% over near-black; a 100% (Mythic) game
+//   Hero: the game's banner (else fanart, else a screenshot) at 50% over
+//         near-black; a 100% (Mythic) game
 //         sits on your accent band and fades into it. Box art and title top
 //         left, the Mythic Achievement card under them (a locked wreath with
 //         progress, or the Mythic star once it's 100%), then Points /
@@ -53,8 +54,10 @@ id: root
     readonly property bool mythic:   det.Award === "mastered" || det.Award === "completed" || (total > 0 && unlocked >= total)
     function fmtDate(ts) { return ts > 0 ? Qt.formatDate(new Date(ts), "MMM d, yyyy") : ""; }
 
-    // Your fanart and box art for this game, when it's in your library.
-    readonly property string localArt: localGame ? (localGame.assets.background || localGame.assets.screenshot || "") : ""
+    // The hero image and box art from your copy, when it's in your library.
+    // Hero: the banner (wide, made for a strip like this), then fanart, then
+    // a screenshot; RA's in-game shot when you don't have the game.
+    readonly property string localArt: localGame ? (localGame.assets.banner || localGame.assets.background || localGame.assets.screenshot || "") : ""
     readonly property string boxArt: {
         if (localGame && localGame.assets.boxFront) return localGame.assets.boxFront;
         if (det.ImageBoxArt) return "https://media.retroachievements.org" + det.ImageBoxArt;
@@ -193,7 +196,7 @@ id: root
         height: vpx(270)
         clip: true
 
-        // Near-black, with the fanart at 50% over it (60% on a Mythic game,
+        // Near-black, with the hero image at 50% over it (60% on a Mythic game,
         // where the accent band and fade sit under and over it). A 100% game (Mythic)
         // sits on the accent band instead and fades into it at the bottom.
         Rectangle { anchors.fill: parent; color: root.mythic ? root.band : "#141414" }

@@ -4,9 +4,13 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 92)
+## Unreleased — seriesSX branch (build 93)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Progress page: the top image is the game's banner**, then its fanart, then a screenshot (RA's in-game shot when the game isn't in your library). Banners are wide, made for a strip like this one.
+
+## build 92
 
 - **Game details media carousel: a banner's label now says "Banner"**, not "Screenshot". Root cause: the label is worked out from the file's path, and no rule matched a banner, so it fell through to the last one ("Screenshot"). The game's own banner asset is now recognised first (any file name), then "banner" in the path.
 - **Awards is under Welcome**, not Social: Welcome's Awards button opens it with Welcome underlined, and B goes back to Welcome. Social is back to Following / Followers / Top 10 worldwide.
