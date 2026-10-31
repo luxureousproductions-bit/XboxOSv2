@@ -2,7 +2,7 @@
 // Pick the right match when title matching got it wrong or found nothing:
 // a pop-up list, best guesses first, with a search box (the theme's
 // on-screen keyboard). The host gives it the candidates and decides what a
-// pick means; GameAchievementsView uses it both ways:
+// pick means; RAProgressTab uses it both ways:
 //   "Find in your library"  – which of your games is this RA game
 //   "Match to RetroAchievements" – which RA game is this game of yours
 //

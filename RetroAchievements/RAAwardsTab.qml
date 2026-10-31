@@ -270,7 +270,7 @@ id: tab
         if (i < 0 || i >= tiles.length || tiles[i].kind === "other" || tiles[i].gameID <= 0) return;
         playAccept();
         cheevosData.loadGameAchievements(tiles[i].gameID);
-        gameAchievementsScreenFromOverview();
+        raOpenProgress();
     }
 
     // ── Keys ─────────────────────────────────────────────────────────────

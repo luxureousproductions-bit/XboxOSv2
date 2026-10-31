@@ -869,8 +869,6 @@ id: root
         case "gameviewscreen":        return gameviewloader;
         case "settingsscreen":        return settingsloader;
         case "achievementsscreen":    return achievementsloader;
-        case "gameachievementsscreen":return gameachievementsloader;
-        case "raentryscreen":         return raentryloader;
         case "discoverscreen":        return discoverviewloader;
         default:                      return null;
         }
@@ -1314,7 +1312,6 @@ id: root
         launchGameScreen();             // pushes the RA screen onto the history
         navigator.setStack(["showcasescreen"]);  // ...replaced: return to the Showcase
         searchReturnDepth = -1;          // stack rewritten: no search to return to
-        raSearchReturn = false;
         saveCurrentState(launchingGame);
         launchDelay.restart();
     }
@@ -1701,12 +1698,6 @@ id: root
             name: "achievementsscreen";
         },
         State {
-            name: "gameachievementsscreen";
-        },
-        State {
-            name: "raentryscreen";
-        },
-        State {
             name: "discoverscreen";
         },
         State {
@@ -1785,69 +1776,35 @@ id: root
         navigator.go("settingsscreen");
     }
 
-    // The RA page's tab: Welcome when you come in from Home, the nav bar or
-    // the App Drawer; kept when you come back from a game's page.
+    // ── RetroAchievements: one page (AchievementsView) ─────────────────────
+    // Tabs Welcome / Social / Gaming; while a game is open (raGameOpen) its
+    // Progress tab (RAProgressTab) takes Gaming's place. B leaves RA from any
+    // tab. raOverviewTab is the tab it shows (0 Welcome, 1 Social, 2 Gaming
+    // or Progress, 3 Awards).
     property int raOverviewTab: 0
+    property bool raGameOpen: false
+    // The game a details page opened RA for: Progress finds it on RA first.
+    property var raDetailsGame: null
+    // From Home, the nav bar or the App Drawer: Welcome.
     function achievementsScreen() {
         playAccept();
+        raGameOpen = false; raDetailsGame = null;
         raOverviewTab = 0;
         navigator.go("achievementsscreen");
     }
-
-    // Navigate to RA overview without pushing onto lastState.
-    // Used when already inside RA (A from game achievements, or "View Overview"
-    // from RAGameEntryView) so B exits RA in one press.
-    function achievementsScreenFromGame() {
-        playAccept();
-        navigator.jump("achievementsscreen");
-        // Back on the overview after opening an RA search result: show the
-        // results again (B from the game's achievements lands here).
-        if (raSearchReturn) {
-            raSearchReturn = false;
-            reopenLibrarySearch();
-        }
-    }
-
-    function gameAchievementsScreen() {
-        raFromDetails = false;
-        navigator.go("gameachievementsscreen");
-    }
-
-    // Navigate to game achievements from the RA overview without pushing.
-    // Called by AchievementsView so that B always exits RA in one press
-    // regardless of whether RA was entered from GameView or Showcase.
-    // Set when a game's achievements page was opened straight from Game
-    // details (the RA button), so one Back there returns to the details page.
-    // Opened from the RA overview instead, Back returns to the overview and a
-    // second Back leaves RA.
-    property bool raFromDetails: false
-    function gameAchievementsScreenFromOverview() {
-        raFromDetails = false;
-        navigator.jump("gameachievementsscreen");
-    }
-
-    // Navigate to GameAchievementsView without pushing onto lastState.
-    // Called by RAGameEntryView when a game is found so pressing Back
-    // returns directly to wherever RA was entered from.
-    function gameAchievementsScreenFromEntry() {
-        // Via an RA search pick the entry page was reached from the overview,
-        // so Back must return to the search results, not to a details page.
-        raFromDetails = !raSearchReturn;
-        navigator.jump("gameachievementsscreen");
-    }
-
+    // From a game's details page (its RA button): straight to its Progress.
     function raEntryScreen() {
-        navigator.go("raentryscreen");
+        raDetailsGame = currentGame;
+        raGameOpen = true;
+        raOverviewTab = 2;
+        navigator.go("achievementsscreen");
     }
-
-    // RA entry from the achievements search overlay. Deliberately does NOT
-    // push onto lastState: we're already on the RA overview, and B from the
-    // achievements page calls achievementsScreenFromGame() to return there
-    // directly. Pushing left a stale "achievementsscreen" on the stack, so the
-    // next B popped back onto the page you were already on and appeared to do
-    // nothing until a third press.
-    function raEntryScreenFromSearch() {
-        navigator.jump("raentryscreen");
+    // From a game on the RA page itself (Gaming, Welcome's awards, Awards):
+    // the caller has loaded it; Progress takes Gaming's place.
+    function raOpenProgress() {
+        raDetailsGame = null;
+        raGameOpen = true;
+        raOverviewTab = 2;
     }
 
     // Optional 'collection' scopes Discover to a single system (passed from
@@ -1938,16 +1895,11 @@ id: root
     readonly property var librarySearch: librarySearchLoader.item
     readonly property bool searchOpen: librarySearch ? librarySearch.open : false
 
-    // mode "ra": opened from the RA overview (X). Results go to the RA
-    // lookup instead of Game Details, and coming back to the overview
-    // reopens them (raSearchReturn, see achievementsScreenFromGame()).
     property string librarySearchMode: "global"
-    property bool raSearchReturn: false
     function openLibrarySearch(mode) {
         playAccept();
         librarySearchMode = (mode === "ra") ? "ra" : "global";
         searchReturnDepth = -1;
-        raSearchReturn = false;
         searchPrevFocus = Window.activeFocusItem;
         searchWanted = true;            // builds it now if it isn't yet
         librarySearch.openSearch();
@@ -2015,17 +1967,6 @@ id: root
         // return, any-button fallback, cancelled launch): nothing to resume.
         if (state === "launchgamescreen")
             clearResume();
-
-        // B on the RA lookup page after an RA search pick. That entry doesn't
-        // push onto lastState (see raEntryScreenFromSearch), so popping here
-        // would leave RA altogether — go back to the overview's results.
-        if (raSearchReturn && state === "raentryscreen") {
-            raSearchReturn = false;
-            navigator.jump("achievementsscreen");
-            reopenLibrarySearch();
-            return;
-        }
-        raSearchReturn = false;     // any other Back leaves the search behind
 
         // Guard against an empty stack. Reading past the end sets state to
         // undefined, which leaves the screen stuck exactly where it was.
@@ -2332,46 +2273,6 @@ id: root
         asynchronous: true
     }
 
-    Loader {
-    id: gameachievementsloader
-
-        readonly property bool shown: (root.state === "gameachievementsscreen")
-
-        // Input only while this is the screen: a hidden screen still got the
-
-        // mouse, so hover lit its tiles and played nav sounds behind another one.
-
-        enabled: shown
-        focus: shown
-        active: opacity !== 0
-        opacity: shown ? 1 : 0
-        Behavior on opacity { PropertyAnimation { duration: transitionTime } }
-
-        anchors.fill: parent
-        sourceComponent: gameachievementsview
-        asynchronous: true
-    }
-
-    Loader {
-    id: raentryloader
-
-        readonly property bool shown: (root.state === "raentryscreen")
-
-        // Input only while this is the screen: a hidden screen still got the
-
-        // mouse, so hover lit its tiles and played nav sounds behind another one.
-
-        enabled: shown
-        focus: shown
-        active: opacity !== 0
-        opacity: shown ? 1 : 0
-        Behavior on opacity { PropertyAnimation { duration: transitionTime } }
-
-        anchors.fill: parent
-        sourceComponent: raentryview
-        asynchronous: true
-    }
-
     Component {
     id: showcaseview
 
@@ -2422,18 +2323,6 @@ id: root
     id: achievementsview
 
         AchievementsView { focus: true }
-    }
-
-    Component {
-    id: gameachievementsview
-
-        GameAchievementsView { focus: true }
-    }
-
-    Component {
-    id: raentryview
-
-        RAGameEntryView { focus: true }
     }
 
     Loader {
@@ -2499,10 +2388,8 @@ id: root
         // it resolves against that component's folder. Same "../" the delegate
         // beside it uses.
         leftPromptIcon: "../assets/images/icon_select.svg"
-        // The three RetroAchievements pages draw their prompts lower; Apps follows.
-        leftPromptNudge: (root.state === "achievementsscreen"
-                          || root.state === "gameachievementsscreen"
-                          || root.state === "raentryscreen") ? vpx(12) : 0
+        // The RetroAchievements page draws its prompts lower; Apps follows.
+        leftPromptNudge: root.state === "achievementsscreen" ? vpx(12) : 0
         promptColor: helpPromptColor
     }
 
@@ -2736,7 +2623,6 @@ id: root
             playAccept();
             navigator.home("showcasescreen");
             searchReturnDepth = -1;     // history cleared: no search to return to
-            raSearchReturn = false;
         }
         // Library pushes normally, so Back returns where you came from.
         onNavLibrary: {
@@ -2815,14 +2701,6 @@ id: root
             searchPrevFocus = null;
         }
         onChosen: {
-            // RA mode: hand the game to the RA lookup, same as the old
-            // page-level search; the way back is raSearchReturn.
-            if (librarySearchMode === "ra") {
-                currentGame = game;
-                raSearchReturn = true;
-                raEntryScreenFromSearch();
-                return;
-            }
             // From Game Details itself the page just swaps games (gameDetails
             // doesn't push), so there's no separate screen to come back to.
             if (root.state !== "gameviewscreen")

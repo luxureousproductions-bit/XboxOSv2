@@ -1,10 +1,12 @@
 // XboxOSv2 – AchievementsView.qml
 // The RetroAchievements page, after the console's profile: tabs Welcome
-// (RAWelcomeTab), Social (RASocialTab) and Gaming (RAGamingTab). Your awards
-// (RAAwardsTab) are a page under Welcome, opened from its Awards button; B
-// goes back to Welcome. Search lives on the Gaming tab.
-// From Home it opens on Welcome; coming back from a game's page it keeps
-// the tab you were on.
+// (RAWelcomeTab), Social (RASocialTab) and Gaming (RAGamingTab). While a
+// game is open its Progress tab (RAProgressTab) takes Gaming's place, as on
+// the console: opened from Gaming, Welcome's awards or Awards (theme
+// raOpenProgress), or straight from a game's details page (raEntryScreen).
+// Your awards (RAAwardsTab) are a page under Welcome, from its Awards
+// button; B there goes back to Welcome. Anywhere else B leaves RA.
+// From Home it opens on Welcome. Search lives on the Gaming tab.
 
 import QtQuick 2.15
 import QtGraphicalEffects 1.15
@@ -45,10 +47,17 @@ id: root
                 cheevosData.loadRecentGames();
                 cheevosData.loadSocial();
             }
-            // Gaming and Awards tabs: once per session, the first time here.
-            if (cheevosData.raUserName !== "" && !cheevosData.libraryLoaded) cheevosData.loadLibrary();
+            // Welcome's awards strip: once per session, the first time here.
             if (cheevosData.raUserName !== "" && !cheevosData.awardsLoaded)  cheevosData.loadAwards();
+            loadLibraryIfNeeded();
         }
+    }
+    // Your game list (the biggest request): only once Gaming or Awards, whose
+    // header counts come from it, is shown, so going straight to a game's
+    // Progress from its details page asks RA for less.
+    function loadLibraryIfNeeded() {
+        if (cheevosData.raUserName !== "" && !cheevosData.libraryLoaded && (tabName === "Gaming" || tabName === "Awards"))
+            cheevosData.loadLibrary();
     }
 
     // ── Background ───────────────────────────────────────────────────────
@@ -73,16 +82,17 @@ id: root
 
     // ── Header (Xbox "Gaming" tab style) ─────────────────────────────────
     // The first three are the tabs; Awards (index 3) is a page under Welcome.
-    readonly property var raTabs: ["Welcome", "Social", "Gaming", "Awards"]
+    // The third is Progress while a game is open (theme raGameOpen).
+    readonly property var raTabs: ["Welcome", "Social", raGameOpen ? "Progress" : "Gaming", "Awards"]
     readonly property int tabCount: 3
-    property int raTab: raOverviewTab           // theme.qml: Welcome from Home, kept from a game
-    onRaTabChanged: raOverviewTab = raTab
+    readonly property int raTab: raOverviewTab   // theme.qml owns it, so a game opening elsewhere can switch it
     readonly property string tabName: raTabs[raTab]
-    onTabNameChanged: updateHelp()
+    readonly property bool onProgress: tabName === "Progress"
+    onTabNameChanged: { updateHelp(); loadLibraryIfNeeded(); }
     function tabIndex(name) { return raTabs.indexOf(name); }
     function selectTab(i) {
         if (i < 0 || i >= raTabs.length) return;
-        if (i !== raTab) { raTab = i; playNav(); }
+        if (i !== raTab) { raOverviewTab = i; playNav(); }
     }
     function stepTab(d) {
         var i = (raTab >= tabCount ? 0 : raTab) + d;     // from Awards: as from Welcome
@@ -90,7 +100,9 @@ id: root
         selectTab(i);
     }
     // Welcome's buttons: a tab, Awards, or Gaming's search.
+    // Gaming isn't a tab while a game is open: asking for it closes the game.
     function goTab(name) {
+        if ((name === "Gaming" || name === "Search") && raGameOpen) { raGameOpen = false; raDetailsGame = null; }
         if (name === "Search") { selectTab(tabIndex("Gaming")); gamingTab.startSearch(); return; }
         selectTab(tabIndex(name));
     }
@@ -108,7 +120,7 @@ id: root
     RAHeader {
     id: achievementsHeader
         anchors { top: parent.top; left: parent.left; right: parent.right }
-        visible: cheevosData.raUserName !== ""
+        visible: cheevosData.raUserName !== "" && !root.onProgress
         tabs: raTabs.slice(0, tabCount)
         current: raTab >= tabCount ? 0 : raTab           // Awards sits under Welcome
         mode: tabName === "Welcome" ? "compact" : (tabName === "Social" ? "band" : "stats")
@@ -123,7 +135,7 @@ id: root
         anchors { top: achievementsHeader.bottom; left: parent.left; right: parent.right }
         height: vpx(14)
         z: 4
-        visible: gridDimOpacity > 0 && tabName !== "Welcome"
+        visible: gridDimOpacity > 0 && tabName !== "Welcome" && !root.onProgress
         gradient: Gradient {
             GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.35) }
             GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.0) }
@@ -133,7 +145,7 @@ id: root
     // Content surface: everything below the band sits on the dimmed layer.
     Rectangle {
         anchors { top: achievementsHeader.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
-        color: "#000000"; opacity: gridDimOpacity * surfaceShade; visible: opacity > 0 && tabName !== "Welcome"   // no z: order places it above the page fill, below the lists
+        color: "#000000"; opacity: gridDimOpacity * surfaceShade; visible: opacity > 0 && tabName !== "Welcome" && !root.onProgress   // no z: order places it above the page fill, below the lists
     }
 
     // ── No-credentials placeholder ───────────────────────────────────────
@@ -186,11 +198,34 @@ id: root
         focus: visible
     }
 
+    // ── Progress tab: one game (RAProgressTab.qml) ───────────────────────
+    // Loaded while a game is open (kept when you look at another tab); it
+    // draws its own hero, tabs, prompts and fade over the whole page.
+    Loader {
+    id: progressLoader
+        anchors.fill: parent
+        active: raGameOpen && cheevosData.raUserName !== ""
+        visible: root.onProgress
+        focus: visible
+        sourceComponent: Component {
+            RAProgressTab {
+                focus: true
+                pageTabs: root.raTabs.slice(0, root.tabCount)
+                pageTab: root.raTab
+                onTabClicked: root.selectTab(index)
+            }
+        }
+    }
+    // A new game opened from the page (not from details): drop any lookup.
+    readonly property var detailsGame: raDetailsGame
+    onDetailsGameChanged: if (progressLoader.item) progressLoader.item.startLookup()
+
     // ── Local help bar (bottom-right) ────────────────────────────────────
     // Right-aligned: the shared button bar puts the Apps prompt bottom-left on
     // every screen, and these used to start there too and overlap it.
     Row {
         z: 5   // above the bottom fade
+        visible: !root.onProgress           // Progress shows its own
         anchors {
             right: parent.right; rightMargin: globalMargin
             bottom: parent.bottom; bottomMargin: vpx(10)
@@ -264,6 +299,7 @@ id: root
 
     // Clickable prompts: each does what its button does.
     function helpAction(button) {
+        if (onProgress) return progressLoader.item ? progressLoader.item.helpAction(button) : false;
         if (gamingTab.visible && gamingTab.helpAction(button)) return true;
         if (welcomeTab.visible && welcomeTab.helpAction(button)) return true;
         if (button === "accept") return false;
@@ -286,22 +322,14 @@ id: root
         // LB / RB — tabs, as on the Xbox
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; stepTab(-1); return; }
         if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; stepTab(1);  return; }
-        // Y — refresh
-        if (api.keys.isFilters(event) && !event.isAutoRepeat) {
+        // Y — refresh (Progress refreshes its game with X instead)
+        if (api.keys.isFilters(event) && !event.isAutoRepeat && !onProgress) {
             event.accepted = true;
             playAccept();
             initialized = false;
             cheevosData.refreshAll();
         }
     }
-
-    // ── Library search ────────────────────────────────────────────────────
-    // X opens the theme-level search (librarySearch in theme.qml) in RA mode.
-    // It used to be a LibrarySearch instance on this page, but this page's
-    // Loader unloads once you navigate to a result — the search went with it,
-    // so B came back to a fresh page with no results. The theme instance
-    // persists, keeps the results, and reopens them on the way back.
-    // RAGameEntryView still does the RA game-ID lookup for the chosen game.
 
     // The last row dissolves under the help bar (same fade as the grids).
     Rectangle {
@@ -311,7 +339,7 @@ id: root
         // itself; only "Apps" comes from the theme's bar above the page).
         z: 1
         opacity: gridFadeOpacity    // part of "Background dimming": Off = no fade
-        visible: opacity > 0
+        visible: opacity > 0 && !root.onProgress
         gradient: Gradient {
             GradientStop { position: 0.0;  color: mainA(0.0)  }
             GradientStop { position: 0.25; color: mainA(0.12) }

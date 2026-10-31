@@ -25,7 +25,7 @@ id: pop
     visible: false
     z: 100
 
-    property var host: null                    // GameAchievementsView
+    property var host: null                    // RAProgressTab
     readonly property var list: host ? host.displayList : []
     readonly property int index: host ? host.currentIndex : 0
     readonly property var ach: (index >= 0 && index < list.length) ? list[index] : null

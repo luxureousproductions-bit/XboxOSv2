@@ -1,6 +1,6 @@
 // XboxOSv2 – RetroAchievements data layer
 // Handles all API communication with retroachievements.org and owns the
-// ListModels consumed by AchievementsView and GameAchievementsView.
+// ListModels consumed by the RA page (AchievementsView) and its tabs.
 
 import QtQuick 2.15
 
@@ -57,7 +57,7 @@ id: root
 
     property int currentGameID: 0
 
-    // ── Filter / sort state (consumed by GameAchievementsView) ───────────
+    // ── Filter / sort state (consumed by RAProgressTab) ───────────
     // filterMode: "all" | "locked" | "earned" | "rare" | "common"
     //             (rare: under 10% of players have it, as on the Xbox)
     // typeFilter: "all" | "progression" | "win_condition" | "missable"
@@ -70,7 +70,7 @@ id: root
     property string setFilter:  "all"
     property string sortMode:   "default"
 
-    // ── Game lookup state (used by RAGameEntryView) ──────────────────────
+    // ── Game lookup state (used by RAProgressTab, opened from Game details) ──────────────────────
     property int    pendingGameID:    -1
     property bool   lookupInProgress: false
     property string lookupStatusMsg:  ""
@@ -245,7 +245,7 @@ id: root
 
     // ── Filtered / sorted view of raGameCheevos ───────────────────────────
     // JS array rebuilt whenever the model, filter, or sort changes.
-    // GameAchievementsView binds its ListView to this instead of raGameCheevos.
+    // RAProgressTab binds its ListView to this instead of raGameCheevos.
     property var filteredCheevos: []
 
     function rebuildFilteredCheevos() {

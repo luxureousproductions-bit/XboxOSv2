@@ -1,5 +1,11 @@
-// XboxOSv2 – GameAchievementsView.qml
-// One game's achievements, after the Xbox Series game Progress page.
+// XboxOSv2 – RAProgressTab.qml
+// One game's achievements, after the Xbox Series game Progress page. The
+// Progress tab of the RA page (AchievementsView): it takes Gaming's place
+// while a game is open, and draws its own hero with the page's tabs.
+//
+//   Opened from a game's details page (theme raDetailsGame), it first finds
+//   the game on RA ("Checking…"); when there's no match it says so and A
+//   offers RA's games for that console to match it by hand.
 //
 //   Hero: the game's banner (else fanart, else a screenshot) at 50% over
 //         near-black; a 100% (Mythic) game
@@ -12,11 +18,9 @@
 //         many players have it, when you unlocked it, points with a diamond
 //         when it's rare (<10%).
 //
-// Keys: Up/Down move; Up from the first card reaches Sort / Filter (A
-// changes the sort, or opens the Filters pop-up, RAFilterDialog.qml), Up
-// again Launch game. Shortcuts kept from before: Y sort,
-// LB/RB filter, X refresh, B back (one press to Game details when you came
-// from there, else back to the RA page).
+// Keys: Up/Down move; Up from the first card reaches the toolbar (sort
+// drop-down, its direction, Filter). X refreshes. LB / RB and B are left to
+// the RA page: tabs, and B leaves RA.
 
 import QtQuick 2.15
 import QtGraphicalEffects 1.15
@@ -86,15 +90,35 @@ id: root
     }
     readonly property bool filtersOpen: filterDlg.visible
     function openFilters() { filterDlg.open(); updateHelp(); }
-    // Tabs across the top, as on the console: this page is Progress, with
-    // Welcome to its left and Social to its right (LB / RB, or a tap). They
-    // go to those tabs of the RA overview.
-    readonly property var pageTabs: ["Welcome", "Progress", "Social"]
-    function goTab(i) {
-        if (i === 1) return;
-        raOverviewTab = (i === 0) ? 0 : 1;      // the overview's Welcome / Social
-        achievementsScreenFromGame();
+    // The RA page's tabs, drawn in this tab's hero (the page's header is
+    // hidden here); a tap goes through tabClicked to the page.
+    property var pageTabs: []
+    property int pageTab: 0
+    signal tabClicked(int index)
+
+    // ── Finding the game (opened from its details page) ──────────────────
+    // lookup: "" (showing a game), "checking", or "notfound".
+    property string lookup: ""
+    function startLookup() {
+        var g = raDetailsGame;
+        if (!g) { lookup = ""; return; }
+        lookup = "checking";
+        cheevosData.lookupGame(g.title, g.collections.count > 0 ? g.collections.get(0).shortName : "", g);
+        lookupResult();                 // a cached match answers at once
     }
+    function lookupResult() {
+        if (lookup !== "checking" || cheevosData.lookupInProgress) return;
+        if (cheevosData.pendingGameID > 0) {
+            cheevosData.loadGameAchievements(cheevosData.pendingGameID);
+            lookup = "";
+        } else lookup = "notfound";
+    }
+    Connections {
+        target: cheevosData
+        onPendingGameIDChanged: root.lookupResult()
+        onLookupInProgressChanged: root.lookupResult()
+    }
+    onLookupChanged: updateHelp()
 
     // Focus zones: 0 Launch game, 1 Sort/Filter, 2 the list. railFocus: on
     // the rail, where Up/Down switch between Achievements and Stats.
@@ -103,7 +127,7 @@ id: root
     readonly property bool popupOpen: filterDlg.visible || matchPicker.visible || detail.visible || sortMenuOpen
     // The game of yours this page was opened for: from its Game details, or
     // picked in RA Search (both go through the RA lookup with currentGame).
-    readonly property var raFromDetailsGame: ((raFromDetails || raSearchReturn) && currentGame) ? currentGame : null
+    readonly property var raFromDetailsGame: raDetailsGame      // the game this was opened for, from its details page
     onRailFocusChanged: updateHelp()
     property int toolIndex: 0
     property bool railFocus: false
@@ -135,7 +159,7 @@ id: root
     property var localGame: null
     property string localFor: ""
     onDetChanged: resolveLocal()
-    Component.onCompleted: { resolveLocal(); updateHelp(); }
+    Component.onCompleted: { startLookup(); resolveLocal(); updateHelp(); }
     function resolveLocal(force) {
         var t = det.Title || "";
         var id = cheevosData.currentGameID;
@@ -260,8 +284,8 @@ id: root
         id: pageTabBar
             anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: vpx(22) }
             tabs: root.pageTabs
-            current: 1
-            onTabClicked: root.goTab(index)
+            current: root.pageTab
+            onTabClicked: root.tabClicked(index)
         }
         StatusCluster { anchors.fill: parent; z: 50; dark: false }
 
@@ -652,6 +676,48 @@ id: root
         }
     }
 
+    // ── Finding the game: covers the page (keeping the tabs) until it's found
+    Rectangle {
+    id: lookupCover
+        visible: root.lookup !== ""
+        anchors.fill: parent
+        z: 40                       // over the page, under the clock (50) and the prompts
+        color: theme.main
+        MouseArea { anchors.fill: parent; onClicked: if (root.lookup === "notfound") root.openRaPicker(raDetailsGame) }
+        RATabBar {
+            anchors { horizontalCenter: parent.horizontalCenter; top: parent.top; topMargin: vpx(22) }
+            tabs: root.pageTabs
+            current: root.pageTab
+            onTabClicked: root.tabClicked(index)
+            // White labels: on Light they sit on a dark strip.
+            Rectangle { z: -1; anchors.fill: parent; anchors.margins: -vpx(12); radius: vpx(6); color: "#202020"; visible: whiteBackground }
+        }
+        Column {
+            anchors.centerIn: parent
+            width: Math.min(parent.width - vpx(120), vpx(620))
+            spacing: vpx(14)
+            Text {
+                width: parent.width; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
+                text: raDetailsGame ? raDetailsGame.title : ""
+                color: theme.text; font.family: titleFont.name; font.pixelSize: fpx(26)
+            }
+            Text {
+                width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap
+                text: root.lookup === "checking" ? "Checking RetroAchievements\u2026"
+                      : (cheevosData.lookupStatusMsg !== "" ? cheevosData.lookupStatusMsg : "No RetroAchievements game matches this one.")
+                      + "\nPress A to pick its RetroAchievements game yourself."
+                color: theme.text; opacity: 0.65
+                font.family: bodyFont.name; font.pixelSize: fpx(17)
+                SequentialAnimation on opacity {
+                    running: root.lookup === "checking"
+                    loops: Animation.Infinite
+                    NumberAnimation { to: 0.25; duration: 600; easing.type: Easing.InOutSine }
+                    NumberAnimation { to: 0.65; duration: 600; easing.type: Easing.InOutSine }
+                }
+            }
+        }
+    }
+
     // ── Local help bar ───────────────────────────────────────────────────
     Row {
         z: 110       // above the Filters pop-up's dim, so its prompts show
@@ -690,6 +756,11 @@ id: root
             localHelpModel.append({ name: "Close",  button: "cancel" });
             return;
         }
+        if (lookup !== "") {
+            if (lookup === "notfound") localHelpModel.append({ name: "Match", button: "accept" });
+            localHelpModel.append({ name: "Back", button: "cancel" });
+            return;
+        }
         if (detail.visible) {
             localHelpModel.append({ name: detail.inList ? "Buttons" : "Select", button: "accept" });
             localHelpModel.append({ name: "Previous", button: "prevPage" });
@@ -721,6 +792,7 @@ id: root
     // ── Keys ─────────────────────────────────────────────────────────────
     Keys.onUpPressed: {
         event.accepted = true;
+        if (lookup !== "") return;
         if (sortMenuOpen) { if (sortMenuIndex > 0) { sortMenuIndex--; playNav(); } return; }
         if (railFocus) { if (railIndex > 0) { railIndex--; playNav(); } return; }
         if (!isList) {
@@ -736,6 +808,7 @@ id: root
     }
     Keys.onDownPressed: {
         event.accepted = true;
+        if (lookup !== "") return;
         if (sortMenuOpen) { if (sortMenuIndex < sortNames.length - 1) { sortMenuIndex++; playNav(); } return; }
         if (railFocus) { if (railIndex < railNames.length - 1) { railIndex++; playNav(); } return; }
         if (!isList) {
@@ -753,14 +826,14 @@ id: root
     // the list, the cards or the tiles (or the Launch button when empty).
     Keys.onLeftPressed: {
         event.accepted = true;
-        if (railFocus || sortMenuOpen) return;
+        if (railFocus || sortMenuOpen || lookup !== "") return;
         if (zone === 3 && viewCols > 1 && viewIndex % viewCols > 0) { viewIndex--; playNav(); }
         else if (zone === 1 && toolIndex > 0) { toolIndex--; playNav(); }
         else { railFocus = true; playNav(); }
     }
     Keys.onRightPressed: {
         event.accepted = true;
-        if (sortMenuOpen) return;
+        if (sortMenuOpen || lookup !== "") return;
         if (railFocus) { if (isList || viewCount > 0) { enterView(); playNav(); } return; }
         if (zone === 3) { if (viewCols > 1 && viewIndex % viewCols < viewCols - 1 && viewIndex < viewCount - 1) { viewIndex++; playNav(); } }
         else if (zone === 1 && toolIndex < 2) { toolIndex++; playNav(); }
@@ -769,11 +842,7 @@ id: root
     // B / mouse back. Opened from Game details (the RA button): straight back
     // to the details page. Opened from the RA overview: back to the overview,
     // and a second B leaves RA.
-    function goBack() {
-        if (raFromDetails) previousScreen();
-        else achievementsScreenFromGame();
-    }
-    function mouseBack() { goBack(); }
+    function goBack() { previousScreen(); }      // B leaves RA, from any tab
 
     function refresh() {
         playAccept();
@@ -782,6 +851,13 @@ id: root
     }
 
     Keys.onPressed: {
+        // Finding the game: A matches it by hand once it's not found; B (below,
+        // left to the page) leaves; nothing else.
+        if (lookup !== "" && api.keys.isAccept(event)) {
+            event.accepted = true;
+            if (lookup === "notfound" && !event.isAutoRepeat) openRaPicker(raDetailsGame);
+            return;
+        }
         // The sort drop-down: A picks, B closes, nothing else.
         if (sortMenuOpen) {
             event.accepted = true;
@@ -791,8 +867,6 @@ id: root
             return;
         }
         if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; goBack(); }
-        if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; goTab(0); }
-        if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; goTab(2); }
         if (api.keys.isDetails(event) && !event.isAutoRepeat)  { event.accepted = true; refresh(); }
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
@@ -858,10 +932,11 @@ id: root
             resolveLocal(true);
         } else if (pickerMode === "ra" && pickerGame) {
             cheevosData.setPair(pickerGame, value);
-            if (value !== cheevosData.currentGameID) {
+            if (value !== cheevosData.currentGameID || lookup !== "") {
                 cheevosData.loadGameAchievements(value);
                 currentIndex = 0;
             }
+            lookup = "";
             resolveLocal(true);
         }
     }

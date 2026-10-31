@@ -730,7 +730,6 @@ id: tab
         onLoaded: item.forceActiveFocus()
         sourceComponent: Component {
             VirtualKeyboard {
-                title: "Search games"
                 text: tab.query
                 showTextField: false
                 onTextEdited: tab.query = newText
@@ -750,7 +749,7 @@ id: tab
         if (i < 0 || i >= games.length) return;
         playAccept();
         cheevosData.loadGameAchievements(games[i].GameID);
-        gameAchievementsScreenFromOverview();
+        raOpenProgress();
     }
 
     // ── Keys ─────────────────────────────────────────────────────────────

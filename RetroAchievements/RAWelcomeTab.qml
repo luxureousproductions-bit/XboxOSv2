@@ -77,7 +77,7 @@ id: tab
         playAccept();
         panelOpen = false;
         cheevosData.loadGameAchievements(id);
-        gameAchievementsScreenFromOverview();
+        raOpenProgress();
     }
 
     function press() {

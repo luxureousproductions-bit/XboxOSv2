@@ -4,9 +4,19 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 93)
+## Unreleased — seriesSX branch (build 94)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **RetroAchievements is one page.** A game's achievements are now its **Progress** tab, which takes Gaming's place while a game is open (Welcome / Social / Progress), as on the console. Opened from Gaming, Welcome's awards or the Awards page, or straight from a game's details page (its trophy button), with the other tabs there as usual. LB / RB move between the tabs; **B leaves RA from any tab** (back to Home, or to the game's details page). Welcome's Recently played and Search games close the game and bring Gaming back.
+- Opened from a game's details page, Progress first finds the game on RA ("Checking RetroAchievements…"); when nothing matches it says so, and A lets you pick its RA game from that console's list (the same picker as Change match).
+- Faster between a game and the rest of RA: the page stays loaded, only the Progress tab loads and unloads, instead of swapping whole screens.
+- Your game list (RA's biggest request) now loads only when Gaming or Awards is shown, so going straight to a game from its details page asks RA for less.
+- Removed: the separate game page and RA lookup screens (GameAchievementsView.qml became RAProgressTab.qml; RAGameEntryView.qml is gone), their two screen loaders and the navigation functions and flags that tied the three screens together, the RA-search return path (nothing opens the RA search any more), and the RA logo only the lookup screen used.
+- Gaming search: the keyboard no longer has a "Search games" title (the search bar already says it).
+- Test harness: one test game carries a banner and an x-ra-id (harness library only).
+
+## build 93
 
 - **Progress page: the top image is the game's banner**, then its fanart, then a screenshot (RA's in-game shot when the game isn't in your library). Banners are wide, made for a strip like this one.
 
