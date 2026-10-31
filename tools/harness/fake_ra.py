@@ -135,7 +135,18 @@ class H(BaseHTTPRequestHandler):
         name = u.path.rsplit("/API_", 1)[-1].replace(".php", "")
         user = q.get("u") or q.get("z") or "Tester"
         if name == "GetUserProfile":
-            body = {"User": user, "UserPic": "/UserPic/Tester.png", "TotalPoints": 24615}
+            body = {"User": user, "UserPic": "/UserPic/Tester.png", "TotalPoints": 24615, "TotalTruePoints": 61203,
+                    "MemberSince": "2019-03-02 10:00:00", "Motto": "Mastering every Game Boy RPG, one at a time.",
+                    "RichPresenceMsg": "Playing Sky Rally 87 · Stage 4, 3 lives"}
+        elif name in ("GetUsersIFollow", "GetUsersFollowingMe"):
+            rr = random.Random(3 if name == "GetUsersIFollow" else 4)
+            names = ["Krazyhammer", "Kaiseryoshi", "Lemonhead", "WarioWare", "Moonglow", "SpeedyGonz", "Pixelpal", "Retrorick", "Cartridge", "Bitbard", "Saveslot", "Romhacker"]
+            pick = names[:12] if name == "GetUsersIFollow" else names[3:11]
+            res = [{"User": n, "Points": rr.randint(2000, 40000), "PointsSoftcore": rr.choice([0, 0, rr.randint(10, 900)]),
+                    ("IsFollowingMe" if name == "GetUsersIFollow" else "AmIFollowing"): rr.random() < .5} for n in pick]
+            body = {"Count": len(res), "Total": len(res), "Results": res}
+        elif name == "GetTopTenUsers":
+            body = [{"1": f"Legend{i}", "2": 400000 - i * 21000, "3": 1600000 - i * 90000, "4": "x"} for i in range(1, 11)]
         elif name == "GetUserSummary":
             body = {"User": user, "TotalPoints": 24615, "TotalSoftcorePoints": 1320, "TotalTruePoints": 61203,
                     "Rank": 4812, "MemberSince": "2019-03-02 10:00:00", "UserPic": "/UserPic/Tester.png"}

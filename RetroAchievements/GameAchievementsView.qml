@@ -91,24 +91,23 @@ id: root
     // the rail, where Up/Down switch between Achievements and Stats.
     property int zone: 2
     onZoneChanged: updateHelp()
-    readonly property bool popupOpen: filterDlg.visible || matchPicker.visible || boardPanel.visible || detail.visible
+    readonly property bool popupOpen: filterDlg.visible || matchPicker.visible || detail.visible
     // The game of yours this page was opened for: from its Game details, or
     // picked in RA Search (both go through the RA lookup with currentGame).
     readonly property var raFromDetailsGame: ((raFromDetails || raSearchReturn) && currentGame) ? currentGame : null
     onRailFocusChanged: updateHelp()
     property int toolIndex: 0
     property bool railFocus: false
-    property int railIndex: 0                    // 0 Achievements, 1 Leaderboards, 2 Stats
-    readonly property var railNames: ["Achievements", "Leaderboards", "Stats"]
+    property int railIndex: 0                    // 0 Achievements, 1 Stats
+    readonly property var railNames: ["Achievements", "Stats"]
     readonly property bool isList:   railIndex === 0
-    readonly property bool onBoards: railIndex === 1
-    readonly property bool onStats:  railIndex === 2
-    // Zone 3: the Leaderboards cards or the Stats tiles (viewIndex is the
-    // focused one; Stats is two columns).
+    readonly property bool onStats:  railIndex === 1
+    // Zone 3: the Stats tiles (viewIndex is the focused one; two columns).
+    // Leaderboards live on the overview's Gaming tab (RAGamingTab.qml).
     property int viewIndex: 0
-    readonly property int viewCount: onBoards ? cheevosData.leaderboards.length : (onStats ? statTiles.length : 0)
-    readonly property int viewCols: onStats ? 2 : 1
-    // Leaving the rail to the right: into the list, the cards or the tiles
+    readonly property int viewCount: onStats ? statTiles.length : 0
+    readonly property int viewCols: 2
+    // Leaving the rail to the right: into the list or the tiles
     // (an empty view keeps you on the rail).
     function enterView() {
         if (isList) { railFocus = false; return; }
@@ -141,13 +140,12 @@ id: root
         else
             localGame = cheevosData.findLocalGame(t, det.ConsoleName || "", id);
     }
-    // railIndex itself, not onBoards / onStats: those bindings may not have
+    // railIndex itself, not onStats: that binding may not have
     // caught up yet when this handler runs (it read the OLD view, so nothing
     // loaded). Focus moves a tick later, once they have.
     onRailIndexChanged: {
         viewIndex = 0;
-        if (railIndex === 2) cheevosData.loadGameRank(cheevosData.currentGameID);
-        if (railIndex === 1) cheevosData.loadLeaderboards(cheevosData.currentGameID);
+        if (railIndex === 1) cheevosData.loadGameRank(cheevosData.currentGameID);
         Qt.callLater(function() { if (!root.railFocus) root.enterView(); root.updateHelp(); });
     }
     function playTimeText(sec) {
@@ -604,84 +602,6 @@ id: root
         }
     }
 
-    // ── Leaderboards ─────────────────────────────────────────────────────
-    // Every leaderboard of the game with its top entry and yours; A opens
-    // the top 100 (RALeaderboardPanel).
-    ListView {
-    id: boardList
-        visible: root.onBoards
-        anchors { left: rail.right; leftMargin: vpx(17); right: parent.right; rightMargin: vpx(53); top: hero.bottom; topMargin: vpx(9); bottom: parent.bottom; bottomMargin: helpMargin }
-        leftMargin: vpx(14); rightMargin: vpx(14); topMargin: vpx(14); bottomMargin: vpx(14)
-        clip: true
-        model: root.onBoards ? cheevosData.leaderboards : []
-        spacing: vpx(12)
-        keyNavigationEnabled: false
-        currentIndex: root.onBoards ? root.viewIndex : -1
-        highlightMoveDuration: 120
-        preferredHighlightBegin: vpx(14)
-        preferredHighlightEnd: height - vpx(14)
-        highlightRangeMode: ListView.ApplyRange
-
-        Text {
-            anchors { top: parent.top; topMargin: vpx(30); horizontalCenter: parent.horizontalCenter }
-            visible: root.onBoards && cheevosData.leaderboards.length === 0
-            text: cheevosData.leaderboardsState === 1 ? "Loading leaderboards\u2026" : "This game has no leaderboards"
-            color: theme.text; opacity: 0.55
-            font.family: bodyFont.name; font.pixelSize: fpx(18)
-        }
-
-        delegate: Rectangle {
-        id: boardCard
-            readonly property var lb: modelData
-            readonly property bool hot: index === root.viewIndex && root.zone === 3 && !root.railFocus && root.activeFocus && !root.popupOpen
-            width: boardList.width - boardList.leftMargin - boardList.rightMargin
-            height: vpx(100)
-            radius: vpx(4); color: root.cardColor
-            RAFocus { on: boardCard.hot }
-            Rectangle {
-            id: boardIcon
-                anchors { left: parent.left; leftMargin: vpx(20); verticalCenter: parent.verticalCenter }
-                width: vpx(64); height: width; radius: width / 2
-                color: whiteBackground ? "#ececec" : root.mixc(root.band, root.cardColor, 0.1)
-                RAIcon { anchors.centerIn: parent; size: vpx(36); source: "../assets/images/fluent/data_bar_vertical.svg" }
-            }
-            Column {
-                anchors { left: boardIcon.right; leftMargin: vpx(18); right: mineCol.left; rightMargin: vpx(18); verticalCenter: parent.verticalCenter }
-                spacing: vpx(2)
-                Text { width: parent.width; elide: Text.ElideRight; text: lb.title; color: theme.text; font.family: titleFont.name; font.pixelSize: fpx(18) }
-                Text { width: parent.width; elide: Text.ElideRight; text: lb.description; color: theme.text; opacity: 0.85; font.family: bodyFont.name; font.pixelSize: fpx(14) }
-                Text {
-                    width: parent.width; elide: Text.ElideRight; topPadding: vpx(4)
-                    text: lb.topUser !== "" ? "#1  " + lb.topUser + "  \u00B7  " + lb.topScore : "No entries yet"
-                    color: theme.text; opacity: 0.55; font.family: bodyFont.name; font.pixelSize: fpx(13)
-                }
-            }
-            Column {
-            id: mineCol
-                anchors { right: parent.right; rightMargin: vpx(22); verticalCenter: parent.verticalCenter }
-                width: vpx(170)
-                Text { width: parent.width; horizontalAlignment: Text.AlignRight; text: "You"; color: theme.text; opacity: 0.7; font.family: bodyFont.name; font.pixelSize: fpx(13) }
-                Text { width: parent.width; horizontalAlignment: Text.AlignRight; elide: Text.ElideLeft; text: lb.myScore !== "" ? lb.myScore : "\u2014"; color: theme.text; font.family: bodyFont.name; font.pixelSize: fpx(24) }
-                Text {
-                    width: parent.width; horizontalAlignment: Text.AlignRight
-                    text: lb.myRank > 0 ? "Rank #" + cheevosData.raFmt(lb.myRank) : "No entry yet"
-                    color: root.light(root.cAccent, whiteBackground ? 0 : 0.4); font.family: bodyFont.name; font.pixelSize: fpx(13)
-                }
-            }
-            TapHandler {
-                onTapped: {
-                    root.railFocus = false; root.zone = 3; root.forceActiveFocus();
-                    if (root.viewIndex === index) root.openBoard(); else { root.viewIndex = index; playNav(); }
-                }
-            }
-        }
-    }
-    function openBoard() {
-        if (!onBoards || viewIndex < 0 || viewIndex >= cheevosData.leaderboards.length) return;
-        boardPanel.open(cheevosData.leaderboards[viewIndex]);
-        updateHelp();
-    }
-
     // ── Local help bar ───────────────────────────────────────────────────
     Row {
         z: 110       // above the Filters pop-up's dim, so its prompts show
@@ -727,12 +647,6 @@ id: root
             localHelpModel.append({ name: "Close",    button: "cancel" });
             return;
         }
-        if (boardPanel.visible) {
-            localHelpModel.append({ name: "Top",   button: "prevPage" });
-            localHelpModel.append({ name: "You",   button: "nextPage" });
-            localHelpModel.append({ name: "Close", button: "cancel" });
-            return;
-        }
         if (filtersOpen) {
             localHelpModel.append({ name: filterDlg.col === 3 ? "Apply" : "Select", button: "accept" });
             localHelpModel.append({ name: "Close", button: "cancel" });
@@ -740,8 +654,7 @@ id: root
         }
         var a = railFocus ? "Select"
               : zone === 1 ? (toolIndex === 0 ? "Change" : "Filters")
-              : (zone === 2 && displayList.length > 0) ? "Details"
-              : (zone === 3 && onBoards) ? "View" : "";
+              : (zone === 2 && displayList.length > 0) ? "Details" : "";
         if (a !== "") localHelpModel.append({ name: a, button: "accept" });
         localHelpModel.append({ name: "Refresh", button: "details" });
         localHelpModel.append({ name: "Sort",    button: "filters" });
@@ -822,7 +735,6 @@ id: root
             if (railFocus) { if (isList || viewCount > 0) { enterView(); playNav(); } }
             else if (zone === 1) { if (toolIndex === 0) { playToggle(); cycleSort(1); } else openFilters(); }
             else if (zone === 2) openDetail();
-            else if (zone === 3 && onBoards) openBoard();
         }
     }
 
@@ -898,10 +810,6 @@ id: root
             else if (button === "cancel") detail.close();
             return true;
         }
-        if (boardPanel.visible) {
-            if (button === "cancel") boardPanel.close();
-            return true;
-        }
         if (matchPicker.visible) {
             if (button === "accept") matchPicker.pick();
             else if (button === "filters") { matchPicker.onSearch = true; matchPicker.openKeyboard(); }
@@ -920,7 +828,6 @@ id: root
             if (railFocus) enterView();
             else if (zone === 1) { if (toolIndex === 0) { playToggle(); cycleSort(1); } else openFilters(); }
             else if (zone === 2) openDetail();
-            else if (zone === 3 && onBoards) openBoard();
         }
         else return false;
         return true;
@@ -937,11 +844,6 @@ id: root
         if (displayList.length === 0) return;
         detail.open();
         updateHelp();
-    }
-
-    RALeaderboardPanel {
-    id: boardPanel
-        onClosed: { boardPanel.focus = false; root.forceActiveFocus(); root.updateHelp(); }
     }
 
     RAMatchPicker {

@@ -1,5 +1,6 @@
 // XboxOSv2 – RALeaderboardPanel.qml
-// One leaderboard's top 100, over a dimmed game page (A on a leaderboard).
+// One leaderboard's top 100, over the Gaming tab's Leaderboards view (A on a
+// leaderboard).
 // Your row is in the accent; when you're outside the top 100 it's added at
 // the end under a gap. Opens on your row when you're listed, else the top.
 //
@@ -61,8 +62,10 @@ id: panel
 
     Rectangle {
     id: box
-        anchors.centerIn: parent
-        width: vpx(760); height: Math.min(parent.height - vpx(80), vpx(580))
+        // Centred in the space above the button prompts, clear of the fade.
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: vpx(760); height: Math.min(parent.height - helpMargin - vpx(40), vpx(580))
+        y: (parent.height - helpMargin - height) / 2
         radius: vpx(4)
         color: panel.panelColor
         MouseArea { anchors.fill: parent }

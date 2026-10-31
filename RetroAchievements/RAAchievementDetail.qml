@@ -87,13 +87,19 @@ id: pop
     MouseArea { anchors.fill: parent; onClicked: pop.close() }
 
     // ── Left: the badge ──────────────────────────────────────────────────
+    // The card's height and flush against its left edge, so the two read as
+    // one piece (as on the Xbox). Square when there's room; on 16:9 the
+    // space left of the card is narrower than the card is tall, so the
+    // sides are cropped evenly (badges are drawn centred). RA badges are
+    // 64 px pixel art: scaled without smoothing, so they stay crisp.
     Image {
-        x: (card.x - width) / 2; anchors.verticalCenter: card.verticalCenter
-        width: Math.min(vpx(300), card.x - vpx(60)); height: width
+    id: badge
+        width: Math.min(card.height, card.x); height: card.height
+        x: card.x - width; y: card.y
         source: pop.ach && pop.ach.BadgeName ? "https://media.retroachievements.org/Badge/" + pop.ach.BadgeName + (pop.earned ? "" : "_lock") + ".png" : ""
-        sourceSize: Qt.size(hrpx(64), hrpx(64))
-        smooth: true; asynchronous: true
-        fillMode: Image.PreserveAspectFit
+        sourceSize: Qt.size(64, 64)
+        smooth: false; asynchronous: true
+        fillMode: Image.PreserveAspectCrop
     }
 
     // ── Middle: the achievement ──────────────────────────────────────────
@@ -104,6 +110,8 @@ id: pop
         radius: vpx(6)
         color: pop.cardColor
         MouseArea { anchors.fill: parent }
+        // Square left corners: the badge meets the card there.
+        Rectangle { width: parent.radius; height: parent.height; color: parent.color; visible: badge.width > 0 }
 
         Column {
             x: vpx(22); y: vpx(20)

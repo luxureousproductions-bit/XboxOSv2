@@ -4,9 +4,18 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 89)
+## Unreleased — seriesSX branch (build 90)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Welcome tab** (it replaces Recent), after the console's profile Welcome. Over your accent, bright to dark: your name and points, your username big, what you're playing now and your motto, your rank / following / followers / member since, and a strip of your latest awards; your avatar in a circle in the middle; and a column of buttons on the right (Recently played, Awards with your count, Search games, Refresh, RA settings). The RA page opens on Welcome from Home and the App Drawer; a game's own page still opens straight to its progress, and backing out of a game returns to the tab you came from. The header shrinks to a slim strip on this tab.
+- **Social tab, as a points leaderboard of people.** On the header band: your rank among the people you follow, who's next up and how far ahead, and your site rank. Below, a rail (Following, Followers, Top 10 worldwide) and the ranked list with avatars and hardcore points; your own row is in the accent and is always in Following and Followers.
+- **Leaderboards moved to the Gaming tab** (rail: Achievements, Leaderboards), and off every game's page (back to Achievements / Stats). Your games, most recent first; A on one lists its leaderboards with the #1 and your score and rank; A on a leaderboard opens its top 100 (LB / RB: top / you); B steps back out. The prompts follow along (View, then Top / You / Close).
+- **Achievement pop-up:** the badge is now the card's height and sits flush against its left edge, so the two read as one piece (the card's left corners are square where they meet). On 16:9 it's cropped evenly at the sides to fit. Badges are scaled without smoothing, so RA's 64 px pixel art stays crisp.
+- The top-100 box sits clear of the button prompts.
+- Test harness: the fake RA server serves profiles (motto, what you're playing), who you follow and who follows you, and the top 10.
+
+## build 89
 
 - **Achievement pop-up** (A on an achievement), after the console's: over a blurred, dimmed copy of the game's art, the badge big on the left; in the middle the game, the achievement and its points (a diamond when rare), its description, locked or when you unlocked it (hardcore / softcore), how many players have it and its type (progression, win condition, missable, subset, unofficial), then **Launch game** (or **Find in your library** when it isn't matched) and **Change match**; on the right the game's tracker: points and achievements as rings, the Mythic card and the achievement list. Moving in the list (or LB / RB) changes the middle card. Icons are Fluent icons (controller, link, search, lock, check, flag, diamond).
 - **Launch game and Change match moved into that pop-up**, off the top of the page, as on the console.

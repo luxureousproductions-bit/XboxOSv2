@@ -1785,8 +1785,12 @@ id: root
         navigator.go("settingsscreen");
     }
 
+    // The RA page's tab: Welcome when you come in from Home, the nav bar or
+    // the App Drawer; kept when you come back from a game's page.
+    property int raOverviewTab: 0
     function achievementsScreen() {
         playAccept();
+        raOverviewTab = 0;
         navigator.go("achievementsscreen");
     }
 

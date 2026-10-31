@@ -484,6 +484,54 @@ id: root
         );
     }
 
+    // ── Welcome and Social ───────────────────────────────────────────────
+    // Your motto and "now playing" line (GetUserProfile), the people you
+    // follow and who follow you (points included), and the site's top 10.
+    // One load per visit to the RA overview; refreshAll() reloads it.
+    property string motto: ""
+    property string richPresence: ""
+    property string lastGameTitle: ""
+    property var followingList: []      // [{ user, points, softcore, mutual }]
+    property var followersList: []
+    property var topTenList: []         // [{ user, points, retro }]
+    property int followingTotal: -1     // -1 until known
+    property int followersTotal: -1
+    property bool socialLoaded: false
+    function loadSocial() {
+        socialLoaded = true;
+        raRequest("GetUserProfile", "u=" + encodeURIComponent(raUserName),
+            function(r) {
+                motto = (r.Motto || "").trim();
+                richPresence = (r.RichPresenceMsg || "").trim();
+                if (!totalTruePoints && r.TotalTruePoints) totalTruePoints = parseInt(r.TotalTruePoints) || 0;
+                if (!memberSince && r.MemberSince) memberSince = r.MemberSince;
+            }, function() {});
+        function people(r, mutualKeys) {
+            var res = (r && r.Results) || [], out = [];
+            for (var i = 0; i < res.length; i++) {
+                var m = false;
+                for (var k = 0; k < mutualKeys.length; k++) if (res[i][mutualKeys[k]] === true) m = true;
+                out.push({ user: res[i].User || "", points: parseInt(res[i].Points) || 0,
+                           softcore: parseInt(res[i].PointsSoftcore) || 0, mutual: m });
+            }
+            return out;
+        }
+        raRequest("GetUsersIFollow", "c=500",
+            function(r) { followingList = people(r, ["IsFollowingMe"]); followingTotal = parseInt(r && r.Total) || followingList.length; },
+            function() { followingTotal = 0; });
+        raRequest("GetUsersFollowingMe", "c=500",
+            function(r) { followersList = people(r, ["AmIFollowing", "IsFollowedByMe", "IsFollowing"]); followersTotal = parseInt(r && r.Total) || followersList.length; },
+            function() { followersTotal = 0; });
+        raRequest("GetTopTenUsers", "",
+            function(r) {
+                var out = [], arr = r || [];
+                for (var i = 0; i < arr.length; i++)
+                    out.push({ user: arr[i]["1"] || arr[i].username || "", points: parseInt(arr[i]["2"] || arr[i].totalPoints) || 0,
+                               retro: parseInt(arr[i]["3"] || arr[i].totalRatioPoints) || 0 });
+                topTenList = out;
+            }, function() {});
+    }
+
     function loadRecentGames() {
         statusText = "Loading...";
         raRecentGames.clear();
@@ -762,6 +810,7 @@ id: root
 
     function refreshAll() {
         loadUserProfile();
+        loadSocial();
         loadRecentGames();
         loadLibrary();
         loadAwards();

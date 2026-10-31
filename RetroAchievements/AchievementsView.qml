@@ -1,14 +1,8 @@
 // XboxOSv2 – AchievementsView.qml
-// Recently-played games with per-game achievement progress.
-// Selecting a game drills down to GameAchievementsView.
-//
-// Enhancements over v1:
-//   • Progress bar on every game row (visual fill, not just "N of M" text)
-//   • Completion % badge on the right side of each row
-//   • Extended profile header: rank + member-since + true points
-//   • Shared RAStatusBar (no duplicate clock/battery timers)
-//   • cacheBuffer on ListView for smoother Android scrolling
-//   • sourceSize on all network images
+// The RetroAchievements page, after the console's profile: tabs Welcome
+// (RAWelcomeTab), Social (RASocialTab), Gaming (RAGamingTab), Awards
+// (RAAwardsTab) and Search (opens the library search). From Home it opens
+// on Welcome; coming back from a game's page it keeps the tab you were on.
 
 import QtQuick 2.15
 import QtGraphicalEffects 1.15
@@ -47,6 +41,7 @@ id: root
                 initialized = true;
                 cheevosData.loadUserProfile();
                 cheevosData.loadRecentGames();
+                cheevosData.loadSocial();
             }
             // Gaming and Awards tabs: once per session, the first time here.
             if (cheevosData.raUserName !== "" && !cheevosData.libraryLoaded) cheevosData.loadLibrary();
@@ -77,9 +72,12 @@ id: root
     // ── Header (Xbox "Gaming" tab style) ─────────────────────────────────
     // Tabs grow as the redesign lands: Gaming and Awards come next. Search
     // isn't a page of its own: choosing it opens the library search (X).
-    readonly property var raTabs: ["Recent", "Gaming", "Awards", "Search"]
-    property int raTab: 1                       // opens on Gaming, as on the Xbox
+    readonly property var raTabs: ["Welcome", "Social", "Gaming", "Awards", "Search"]
+    property int raTab: raOverviewTab           // theme.qml: Welcome from Home, kept from a game
+    onRaTabChanged: raOverviewTab = raTab
     readonly property string tabName: raTabs[raTab]
+    onTabNameChanged: updateHelp()
+    function tabIndex(name) { return raTabs.indexOf(name); }
     function selectTab(i) {
         if (i < 0 || i >= raTabs.length) return;
         if (raTabs[i] === "Search") { openLibrarySearch("ra"); return; }
@@ -91,12 +89,22 @@ id: root
         selectTab(i);
     }
 
+    // ── Welcome: the whole page, under the tabs ───────────────────────────
+    RAWelcomeTab {
+    id: welcomeTab
+        anchors.fill: parent
+        visible: cheevosData.raUserName !== "" && tabName === "Welcome"
+        focus: visible
+        onGoTab: selectTab(tabIndex(name))
+    }
+
     RAHeader {
     id: achievementsHeader
         anchors { top: parent.top; left: parent.left; right: parent.right }
         visible: cheevosData.raUserName !== ""
         tabs: raTabs
         current: raTab
+        mode: tabName === "Welcome" ? "compact" : (tabName === "Social" ? "band" : "stats")
         onTabClicked: selectTab(index)
     }
 
@@ -108,7 +116,7 @@ id: root
         anchors { top: achievementsHeader.bottom; left: parent.left; right: parent.right }
         height: vpx(14)
         z: 4
-        visible: gridDimOpacity > 0
+        visible: gridDimOpacity > 0 && tabName !== "Welcome"
         gradient: Gradient {
             GradientStop { position: 0.0; color: Qt.rgba(0, 0, 0, 0.35) }
             GradientStop { position: 1.0; color: Qt.rgba(0, 0, 0, 0.0) }
@@ -118,7 +126,7 @@ id: root
     // Content surface: everything below the band sits on the dimmed layer.
     Rectangle {
         anchors { top: achievementsHeader.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
-        color: "#000000"; opacity: gridDimOpacity * surfaceShade; visible: opacity > 0   // no z: order places it above the page fill, below the lists
+        color: "#000000"; opacity: gridDimOpacity * surfaceShade; visible: opacity > 0 && tabName !== "Welcome"   // no z: order places it above the page fill, below the lists
     }
 
     // ── No-credentials placeholder ───────────────────────────────────────
@@ -144,251 +152,14 @@ id: root
         }
     }
 
-    // ── Recently-played game list ────────────────────────────────────────
-    ListView {
-    id: gameList
-
-        visible: cheevosData.raUserName !== "" && tabName === "Recent"
-        focus:   visible
-
-        anchors {
-            top:    achievementsHeader.bottom; topMargin:    vpx(4)
-            bottom: parent.bottom;            bottomMargin: vpx(56)
-            left:   parent.left
-            right:  parent.right
-        }
-
-        model:       cheevosData.raRecentGames
-        currentIndex: 0
-        clip:         true
-        cacheBuffer:  vpx(300)   // pre-render ~3 off-screen rows for smooth Android scrolling
-
-        // Nav sound fires on ANY index change (keyboard up/down, mouse hover/click).
-        // The focused ListView consumes Up/Down internally, so the root Keys handlers
-        // never see them — hooking the index change is the reliable place for the sound.
-        property bool navReady: false
-        Component.onCompleted: navReady = true
-        onCurrentIndexChanged: if (navReady) playNav()
-
-        highlightMoveDuration: 100
-        preferredHighlightBegin: vpx(96)
-        preferredHighlightEnd:   height - vpx(96)
-        highlightRangeMode: ListView.ApplyRange
-
-        highlight: Rectangle {
-            color:   theme.accent
-            opacity: 0.45
-            width:   gameList.width
-        }
-
-        // Empty / loading state
-        Text {
-            anchors.centerIn: parent
-            visible: cheevosData.raRecentGames.count === 0
-            text:    cheevosData.statusText || "No recently played games"
-            color:   theme.text
-            font.family: bodyFont.name
-            font.pixelSize: fpx(18)
-            opacity: 0.5
-        }
-
-        delegate: Item {
-        id: gameRow
-
-            width:  gameList.width
-            height: vpx(100)
-
-            property bool isSelected: ListView.isCurrentItem && gameList.focus
-
-            // ── Row inner layout ─────────────────────────────────────────
-            Item {
-                anchors {
-                    fill:        parent
-                    rightMargin: vpx(globalMargin)
-                }
-
-                // Game icon — square, left edge, full row height
-                Item {
-                id: gameIcon
-                    anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
-                    width: height
-
-                    Rectangle {
-                        anchors.fill: parent
-                        color:   theme.secondary
-                        opacity: 0.4
-                    }
-                    Image {
-                        anchors.fill: parent
-                        source: ImageIcon
-                                ? "https://media.retroachievements.org" + ImageIcon
-                                : ""
-                        fillMode: Image.PreserveAspectFit
-                        smooth: true
-                        asynchronous: true
-                        sourceSize { width: hrpx(96); height: hrpx(96) }
-                    }
-                }
-
-                // Completion % badge — right edge
-                Column {
-                id: countCol
-                    anchors {
-                        right: parent.right; rightMargin: vpx(0)
-                        verticalCenter: parent.verticalCenter
-                    }
-                    width: vpx(90)
-                    spacing: vpx(2)
-
-                    // Large % number
-                    Text {
-                        property int pct: NumPossibleAchievements > 0
-                                          ? Math.floor(NumAchieved * 100 / NumPossibleAchievements)
-                                          : 0
-                        text: NumPossibleAchievements > 0 ? pct + "%" : "—"
-                        color: {
-                            if (NumPossibleAchievements === 0) return theme.text;
-                            var p = Math.floor(NumAchieved * 100 / NumPossibleAchievements);
-                            if (p >= 100) return "#FFD700";   // gold — mastered
-                            if (p >= 50)  return theme.accent; // accent — decent progress
-                            return theme.text;
-                        }
-                        font.family:    titleFont.name
-                        font.pixelSize: fpx(26)
-                        font.bold:      true
-                        horizontalAlignment: Text.AlignRight
-                        width: parent.width
-                        opacity: isSelected ? 1.0 : 0.8
-                    }
-
-                    // "N of M" sub-label
-                    Text {
-                        text: NumPossibleAchievements > 0
-                              ? NumAchieved + " of " + NumPossibleAchievements
-                              : "No cheevos"
-                        color: theme.text
-                        font.family:    bodyFont.name
-                        font.pixelSize: fpx(13)
-                        horizontalAlignment: Text.AlignRight
-                        width: parent.width
-                        opacity: isSelected ? 0.75 : 0.45
-                    }
-                }
-
-                // Title + platform + last-played + progress bar
-                Column {
-                    anchors {
-                        left:  gameIcon.right; leftMargin:  vpx(14)
-                        right: countCol.left;  rightMargin: vpx(10)
-                        verticalCenter: parent.verticalCenter
-                    }
-                    spacing: vpx(5)
-
-                    Text {
-                        text: Title
-                        color: theme.text
-                        font.family:    titleFont.name
-                        font.pixelSize: fpx(21)
-                        font.bold:      true
-                        elide: Text.ElideRight
-                        width: parent.width
-                        opacity: isSelected ? 1.0 : 0.9
-                    }
-
-                    // Platform · Last played (same line)
-                    Item {
-                        width:  parent.width
-                        height: platformLbl.implicitHeight
-
-                        Text {
-                        id: platformLbl
-                            text: ConsoleName
-                            color: theme.text
-                            font.family:    subtitleFont.name
-                            font.pixelSize: fpx(15)
-                            font.bold:      true
-                            opacity: isSelected ? 0.9 : 0.55
-                            elide: Text.ElideRight
-                            width: parent.width * 0.55
-                        }
-
-                        Text {
-                            anchors.right: parent.right
-                            text: root.lastPlayedText(LastPlayed)
-                            color: theme.text
-                            font.family:    bodyFont.name
-                            font.pixelSize: fpx(14)
-                            opacity: isSelected ? 0.75 : 0.4
-                            elide: Text.ElideRight
-                            width: parent.width * 0.45
-                            horizontalAlignment: Text.AlignRight
-                        }
-                    }
-
-                    // Progress bar
-                    Item {
-                        width:  parent.width
-                        height: vpx(5)
-                        visible: NumPossibleAchievements > 0
-
-                        Rectangle {
-                            anchors.fill: parent
-                            color:        theme.text
-                            opacity:      0.15
-                            radius:       vpx(2)
-                        }
-                        Rectangle {
-                            width: {
-                                var p = Progress || 0;  // pre-computed 0.0–1.0
-                                return parent.width * p;
-                            }
-                            height: parent.height
-                            color: {
-                                var p = Progress || 0;
-                                if (p >= 1.0) return "#FFD700";   // mastered — gold
-                                if (p >= 0.5) return theme.accent;
-                                return theme.accent;
-                            }
-                            radius: vpx(2)
-                            Behavior on width { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } }
-                        }
-                    }
-                }
-            }
-
-            // Row divider
-            Rectangle {
-                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                height:  vpx(1)
-                color:   theme.text
-                opacity: 0.08
-            }
-
-            // Touch
-            MouseArea {
-                anchors.fill: parent
-                hoverEnabled: settings.MouseHover === "Yes"
-                function hoverPick() { if (!pointerMoved() || gameList.currentIndex === index) return;   // scrolled under a still pointer
-                    gameList.currentIndex = index; }
-                onEntered: hoverPick()
-                onPositionChanged: hoverPick()   // entered can arrive before the pointer tracker updates (theme.qml pointerMoved); the next nudge counts
-                onClicked: {
-                    if (isSelected) openSelectedGame();
-                    else { gameList.currentIndex = index; }
-                }
-            }
-        }
-    }
-
-    // Wheel moves the selection (see Global/WheelNav.qml) — a sibling of the
-    // view, never a child: a MouseArea inside a Flickable is reparented into
-    // its contentItem and scrolls away with it.
-    WheelNav {
-        anchors.fill: gameList
-        view: gameList
-        columns: 1
-        active: !searchOpen && gameList.visible
-        onStepped: function(quiet) { if (!quiet) playNav(); }
+    // ── Social tab: a points leaderboard of people (RASocialTab.qml) ─────
+    // Full height: its three figures sit on the header band.
+    RASocialTab {
+    id: socialTab
+        anchors.fill: parent
+        bandHeight: achievementsHeader.height
+        visible: cheevosData.raUserName !== "" && tabName === "Social"
+        focus: visible
     }
 
     // ── Gaming tab: every game you've played (RAGamingTab.qml) ───────────
@@ -397,6 +168,7 @@ id: root
         anchors { top: achievementsHeader.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
         visible: cheevosData.raUserName !== "" && tabName === "Gaming"
         focus: visible
+        onHelpStateChanged: root.updateHelp()
     }
 
     // ── Awards tab: your trophy case (RAAwardsTab.qml) ───────────────────
@@ -405,24 +177,6 @@ id: root
         anchors { top: achievementsHeader.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
         visible: cheevosData.raUserName !== "" && tabName === "Awards"
         focus: visible
-    }
-
-    // ── Page counter ─────────────────────────────────────────────────────
-    // Top right, above the list. It used to sit bottom-right, which left the
-    // bottom row crowded once the shared Apps prompt appeared bottom-left on
-    // every screen.
-    Text {
-        visible: gameList.visible && cheevosData.raRecentGames.count > 0
-        anchors {
-            right:  parent.right; rightMargin: globalMargin
-            bottom: gameList.top; bottomMargin: vpx(4)
-        }
-        text: (gameList.currentIndex + 1) + " of " + cheevosData.raRecentGames.count
-        color: "#ececec"    // sits on the header band, which is always dark
-        font.family: bodyFont.name
-        font.pixelSize: fpx(20)
-        font.bold: true
-        opacity: 0.75
     }
 
     // ── Local help bar (bottom-right) ────────────────────────────────────
@@ -463,34 +217,33 @@ id: root
 
     ListModel {
     id: localHelpModel
-        ListElement { name: "Details"; button: "accept"  }
+        ListElement { name: "Select";  button: "accept"  }
         ListElement { name: "Search";  button: "details" }
         ListElement { name: "Refresh"; button: "filters" }
         ListElement { name: "Back";    button: "cancel"  }
     }
 
-    // ── Navigation helpers ───────────────────────────────────────────────
-    function openSelectedGame() {
-        if (cheevosData.raRecentGames.count === 0) return;
-        var gameID = cheevosData.raRecentGames.get(gameList.currentIndex).GameID;
-        cheevosData.loadGameAchievements(gameID);
-        gameAchievementsScreenFromOverview();
+    // The Gaming tab's Leaderboards view and its top-100 pop-up bring their
+    // own prompts; everything else uses the page's four.
+    function updateHelp() {
+        var st = gamingTab.visible ? gamingTab.helpState : "";
+        localHelpModel.clear();
+        if (st === "board") {
+            localHelpModel.append({ name: "Top",   button: "prevPage" });
+            localHelpModel.append({ name: "You",   button: "nextPage" });
+            localHelpModel.append({ name: "Close", button: "cancel" });
+            return;
+        }
+        localHelpModel.append({ name: st === "boards" ? "View" : "Select", button: "accept" });
+        localHelpModel.append({ name: "Search",  button: "details" });
+        localHelpModel.append({ name: "Refresh", button: "filters" });
+        localHelpModel.append({ name: "Back",    button: "cancel" });
     }
 
     // ── Key handling ─────────────────────────────────────────────────────
-    // While the search overlay is open it owns all input (it has focus), so
-    // these only ever run for the recently-played list underneath.
-    Keys.onUpPressed: {
-        event.accepted = true;
-        if (searchOpen) return;
-        if (gameList.currentIndex > 0) gameList.currentIndex--;
-    }
-    Keys.onDownPressed: {
-        event.accepted = true;
-        if (searchOpen) return;
-        if (gameList.currentIndex < cheevosData.raRecentGames.count - 1)
-            gameList.currentIndex++;
-    }
+    // Each tab moves its own cursor; arrows that reach here go nowhere.
+    Keys.onUpPressed:   event.accepted = true
+    Keys.onDownPressed: event.accepted = true
     // Mouse back button: mirrors B. An open search never gets here —
     // theme.qml's mouseBack() handles it first.
     function mouseBack() {
@@ -499,8 +252,9 @@ id: root
 
     // Clickable prompts: each does what its button does.
     function helpAction(button) {
+        if (gamingTab.visible && gamingTab.helpAction(button)) return true;
         if (button === "details") openLibrarySearch("ra");
-        else if (button === "accept") { playAccept(); openSelectedGame(); }
+        else if (button === "accept") { if (tabName === "Welcome") welcomeTab.press(); }
         else if (button === "cancel") previousScreen();
         else if (button === "filters") { playAccept(); initialized = false; cheevosData.refreshAll(); }
         else return false;
@@ -514,11 +268,6 @@ id: root
             event.accepted = true;
             openLibrarySearch("ra");
             return;
-        }
-        if (api.keys.isAccept(event) && !event.isAutoRepeat) {
-            event.accepted = true;
-            playAccept();
-            openSelectedGame();
         }
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
