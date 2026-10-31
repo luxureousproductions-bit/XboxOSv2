@@ -4,9 +4,15 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 88)
+## Unreleased — seriesSX branch (build 89)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Achievement pop-up** (A on an achievement), after the console's: over a blurred, dimmed copy of the game's art, the badge big on the left; in the middle the game, the achievement and its points (a diamond when rare), its description, locked or when you unlocked it (hardcore / softcore), how many players have it and its type (progression, win condition, missable, subset, unofficial), then **Launch game** (or **Find in your library** when it isn't matched) and **Change match**; on the right the game's tracker: points and achievements as rings, the Mythic card and the achievement list. Moving in the list (or LB / RB) changes the middle card. Icons are Fluent icons (controller, link, search, lock, check, flag, diamond).
+- **Launch game and Change match moved into that pop-up**, off the top of the page, as on the console.
+- Fixed (process): the balance check was being run without file names, which checks nothing; every QML and JS file has now been checked (all balanced) and it's run with the files from here on.
+
+## build 88
 
 - **Leaderboards on a game's page** (rail: Achievements, Leaderboards, Stats). Every leaderboard of the game as a card: its name and description, the #1 entry, and **your** score and rank (or "No entry yet"). A opens the top 100 over the page, opening on your row (in the accent; when you're further down it's added at the end), with LB / RB to jump to the top or to you. Two requests when Leaderboards opens, one when a leaderboard does.
 - **Stats tiles at the console's size:** two columns of big tiles (title, a large value, a line under it) that you move through with the cursor and that scroll, instead of three columns of small ones.

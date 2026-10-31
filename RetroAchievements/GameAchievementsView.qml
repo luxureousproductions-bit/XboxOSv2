@@ -20,7 +20,6 @@
 import QtQuick 2.15
 import QtGraphicalEffects 1.15
 import "../Global"
-import "../GameDetails" as GD
 import "raEmblems.js" as Emb
 
 FocusScope {
@@ -91,10 +90,8 @@ id: root
     // Focus zones: 0 Launch game, 1 Sort/Filter, 2 the list. railFocus: on
     // the rail, where Up/Down switch between Achievements and Stats.
     property int zone: 2
-    property int heroIndex: 0                    // zone 0: 0 Launch / Find, 1 Change match
     onZoneChanged: updateHelp()
-    onHeroIndexChanged: updateHelp()
-    readonly property bool popupOpen: filterDlg.visible || matchPicker.visible || boardPanel.visible
+    readonly property bool popupOpen: filterDlg.visible || matchPicker.visible || boardPanel.visible || detail.visible
     // The game of yours this page was opened for: from its Game details, or
     // picked in RA Search (both go through the RA lookup with currentGame).
     readonly property var raFromDetailsGame: ((raFromDetails || raSearchReturn) && currentGame) ? currentGame : null
@@ -103,7 +100,7 @@ id: root
     property bool railFocus: false
     property int railIndex: 0                    // 0 Achievements, 1 Leaderboards, 2 Stats
     readonly property var railNames: ["Achievements", "Leaderboards", "Stats"]
-    readonly property bool onList:   railIndex === 0
+    readonly property bool isList:   railIndex === 0
     readonly property bool onBoards: railIndex === 1
     readonly property bool onStats:  railIndex === 2
     // Zone 3: the Leaderboards cards or the Stats tiles (viewIndex is the
@@ -111,12 +108,13 @@ id: root
     property int viewIndex: 0
     readonly property int viewCount: onBoards ? cheevosData.leaderboards.length : (onStats ? statTiles.length : 0)
     readonly property int viewCols: onStats ? 2 : 1
-    // Leaving the rail to the right: into the cards or tiles when there are
-    // any, else up to the Launch button.
+    // Leaving the rail to the right: into the list, the cards or the tiles
+    // (an empty view keeps you on the rail).
     function enterView() {
+        if (isList) { railFocus = false; return; }
+        if (viewCount === 0) return;
         railFocus = false;
-        if (onList) return;
-        zone = viewCount > 0 ? 3 : 0;
+        zone = 3;
         viewIndex = 0;
     }
     readonly property bool accentIsLight: (0.299 * cAccent.r + 0.587 * cAccent.g + 0.114 * cAccent.b) > 0.62
@@ -163,7 +161,6 @@ id: root
             currentHelpbarModel = null;
             currentIndex = 0;
             zone = 2;
-            heroIndex = 0;
             railFocus = false;
             railIndex = 0;
         }
@@ -343,31 +340,6 @@ id: root
                 Text { text: root.pct + "%"; color: "white"; font.family: bodyFont.name; font.pixelSize: fpx(26) }
             }
         }
-
-        // Launch game: the Game details button. Up from Sort / Filter (or
-        // Right from the rail on Stats) reaches it. Greyed out, and says so,
-        // when the game isn't in your library.
-        // Not in your library: the button finds it instead (the picker).
-        GD.Button {
-        id: launchBtn
-            x: heroStats.x; y: mythicCard.y + mythicCard.height - height
-            height: vpx(50)
-            text: root.localGame ? "Launch game" : "Find in your library"
-            icon: root.localGame ? "../assets/images/icon_play.svg" : "../assets/images/fluent/search.svg"
-            selected: root.zone === 0 && root.heroIndex === 0 && !root.railFocus && root.activeFocus && !root.popupOpen
-            onActivated: { root.zone = 0; root.heroIndex = 0; root.railFocus = false; root.forceActiveFocus(); root.launchOrFind(); }
-        }
-        // Change match: when the wrong game was matched.
-        GD.Button {
-        id: matchBtn
-            anchors { left: launchBtn.right; leftMargin: vpx(12); verticalCenter: launchBtn.verticalCenter }
-            height: vpx(50)
-            text: ""
-            icon: "../assets/images/fluent/link.svg"
-            visible: root.localGame !== null || root.raFromDetailsGame !== null
-            selected: root.zone === 0 && root.heroIndex === 1 && !root.railFocus && root.activeFocus && !root.popupOpen
-            onActivated: { root.zone = 0; root.heroIndex = 1; root.railFocus = false; root.forceActiveFocus(); root.changeMatch(); }
-        }
     }
 
     // ── Rail ─────────────────────────────────────────────────────────────
@@ -411,7 +383,7 @@ id: root
     // ── Sort and Filter ──────────────────────────────────────────────────
     Item {
     id: toolRow
-        visible: root.onList
+        visible: root.isList
         anchors { left: rail.right; leftMargin: vpx(31); right: parent.right; rightMargin: vpx(67); top: hero.bottom; topMargin: vpx(23) }
         height: vpx(39)
         Rectangle {
@@ -458,7 +430,7 @@ id: root
     // ── Achievements ─────────────────────────────────────────────────────
     ListView {
     id: list
-        visible: root.onList
+        visible: root.isList
         // Padding = the focus frame's reach, so the clip never cuts it; the
         // focused card stays in the top slot; the list ends above the prompts.
         anchors { left: rail.right; leftMargin: vpx(17); right: parent.right; rightMargin: vpx(53); top: toolRow.bottom; topMargin: vpx(0); bottom: parent.bottom; bottomMargin: helpMargin }
@@ -558,7 +530,10 @@ id: root
                 color: card.earned ? root.light(root.cAccent, whiteBackground ? 0 : 0.15) : (whiteBackground ? "#d8d8d8" : "#3e3e3e")
             }
             TapHandler {
-                onTapped: { root.zone = 2; root.railFocus = false; root.currentIndex = index; root.forceActiveFocus(); }
+                onTapped: {
+                    if (card.selected) { root.openDetail(); return; }
+                    root.zone = 2; root.railFocus = false; root.currentIndex = index; root.forceActiveFocus();
+                }
             }
         }
     }
@@ -745,6 +720,13 @@ id: root
             localHelpModel.append({ name: "Close",  button: "cancel" });
             return;
         }
+        if (detail.visible) {
+            localHelpModel.append({ name: detail.inList ? "Buttons" : "Select", button: "accept" });
+            localHelpModel.append({ name: "Previous", button: "prevPage" });
+            localHelpModel.append({ name: "Next",     button: "nextPage" });
+            localHelpModel.append({ name: "Close",    button: "cancel" });
+            return;
+        }
         if (boardPanel.visible) {
             localHelpModel.append({ name: "Top",   button: "prevPage" });
             localHelpModel.append({ name: "You",   button: "nextPage" });
@@ -757,8 +739,8 @@ id: root
             return;
         }
         var a = railFocus ? "Select"
-              : zone === 0 ? (heroIndex === 1 ? "Change match" : localGame ? "Launch" : "Find")
               : zone === 1 ? (toolIndex === 0 ? "Change" : "Filters")
+              : (zone === 2 && displayList.length > 0) ? "Details"
               : (zone === 3 && onBoards) ? "View" : "";
         if (a !== "") localHelpModel.append({ name: a, button: "accept" });
         localHelpModel.append({ name: "Refresh", button: "details" });
@@ -773,10 +755,9 @@ id: root
     Keys.onUpPressed: {
         event.accepted = true;
         if (railFocus) { if (railIndex > 0) { railIndex--; playNav(); } return; }
-        if (!onList) {
+        if (!isList) {
             if (zone === 3) {
                 if (viewIndex - viewCols >= 0) { viewIndex -= viewCols; playNav(); }
-                else { zone = 0; playNav(); }
             }
             return;
         }
@@ -784,21 +765,18 @@ id: root
             if (currentIndex > 0) { currentIndex--; playNav(); }
             else { zone = 1; playNav(); }
         }
-        else if (zone === 1) { zone = 0; playNav(); }
     }
     Keys.onDownPressed: {
         event.accepted = true;
         if (railFocus) { if (railIndex < railNames.length - 1) { railIndex++; playNav(); } return; }
-        if (!onList) {
-            if (zone === 0) { if (viewCount > 0) { zone = 3; viewIndex = 0; playNav(); } }
-            else if (zone === 3) {
+        if (!isList) {
+            if (zone === 3) {
                 if (viewIndex + viewCols < viewCount) { viewIndex += viewCols; playNav(); }
                 else if (Math.floor(viewIndex / viewCols) < Math.floor((viewCount - 1) / viewCols)) { viewIndex = viewCount - 1; playNav(); }
             }
             return;
         }
-        if (zone === 0) { zone = 1; playNav(); }
-        else if (zone === 1) { if (displayList.length > 0) { zone = 2; playNav(); } }
+        if (zone === 1) { if (displayList.length > 0) { zone = 2; playNav(); } }
         else if (currentIndex < displayList.length - 1) { currentIndex++; playNav(); }
     }
     // Left reaches the rail (from the list, the button, the first of
@@ -809,15 +787,13 @@ id: root
         if (railFocus) return;
         if (zone === 3 && viewCols > 1 && viewIndex % viewCols > 0) { viewIndex--; playNav(); }
         else if (zone === 1 && toolIndex > 0) { toolIndex--; playNav(); }
-        else if (zone === 0 && heroIndex > 0) { heroIndex--; playNav(); }
         else { railFocus = true; playNav(); }
     }
     Keys.onRightPressed: {
         event.accepted = true;
-        if (railFocus) { enterView(); playNav(); return; }
+        if (railFocus) { if (isList || viewCount > 0) { enterView(); playNav(); } return; }
         if (zone === 3) { if (viewCols > 1 && viewIndex % viewCols < viewCols - 1 && viewIndex < viewCount - 1) { viewIndex++; playNav(); } }
         else if (zone === 1 && toolIndex < 1) { toolIndex++; playNav(); }
-        else if (zone === 0 && heroIndex < 1 && matchBtn.visible) { heroIndex++; playNav(); }
     }
 
     // B / mouse back. Opened from Game details (the RA button): straight back
@@ -843,9 +819,9 @@ id: root
         if (api.keys.isDetails(event) && !event.isAutoRepeat)  { event.accepted = true; refresh(); }
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            if (railFocus) { enterView(); playNav(); }
-            else if (zone === 0) { if (heroIndex === 1) changeMatch(); else launchOrFind(); }
+            if (railFocus) { if (isList || viewCount > 0) { enterView(); playNav(); } }
             else if (zone === 1) { if (toolIndex === 0) { playToggle(); cycleSort(1); } else openFilters(); }
+            else if (zone === 2) openDetail();
             else if (zone === 3 && onBoards) openBoard();
         }
     }
@@ -915,6 +891,13 @@ id: root
     }
     // Clickable prompts: each does what its button does.
     function helpAction(button) {
+        if (detail.visible) {
+            if (button === "accept") detail.press();
+            else if (button === "prevPage") detail.step(-1);
+            else if (button === "nextPage") detail.step(1);
+            else if (button === "cancel") detail.close();
+            return true;
+        }
         if (boardPanel.visible) {
             if (button === "cancel") boardPanel.close();
             return true;
@@ -935,12 +918,25 @@ id: root
         else if (button === "details") refresh();
         else if (button === "accept") {
             if (railFocus) enterView();
-            else if (zone === 0) { if (heroIndex === 1) changeMatch(); else launchOrFind(); }
             else if (zone === 1) { if (toolIndex === 0) { playToggle(); cycleSort(1); } else openFilters(); }
+            else if (zone === 2) openDetail();
             else if (zone === 3 && onBoards) openBoard();
         }
         else return false;
         return true;
+    }
+
+    // A on an achievement: the pop-up with Launch game and Change match.
+    RAAchievementDetail {
+    id: detail
+        host: root
+        onClosed: { detail.focus = false; root.forceActiveFocus(); root.updateHelp(); }
+        onInListChanged: root.updateHelp()
+    }
+    function openDetail() {
+        if (displayList.length === 0) return;
+        detail.open();
+        updateHelp();
     }
 
     RALeaderboardPanel {
