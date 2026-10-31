@@ -165,6 +165,10 @@ id: root
                     if (isVideo) return "Video";
                     // Matched without regard to capitals (Box2dFront, BOXFRONT, ...)
                     var m = String(mediaItem).toLowerCase();
+                    // The game's banner (Carousel banner setting): by its asset
+                    // first, so any file name works, then by folder/file name.
+                    if (currentGame && currentGame.assets && currentGame.assets.banner
+                        && String(currentGame.assets.banner) === String(mediaItem)) return "Banner";
                     if (m.includes("background") || m.includes("fanart")) return "Fanart";
                     if (m.includes("titlescreen") || m.includes("screenshottitle")) return "Title Screen";
                     if (m.includes("box3d") || m.includes("box_3d") || m.includes("3dbox")) return "3D Box";
@@ -190,6 +194,7 @@ id: root
                     if (m.includes("cartridge") || m.includes("support")) return physicalMediaLabel();
                     if (m.includes("miximage") || m.includes("mix_image") || m.includes("steamgrid") || m.includes("/steam/") || m.includes("/grid/")) return "Miximage";
                     if (m.includes("wheel")) return "Logo";
+                    if (m.includes("banner")) return "Banner";
                     return "Screenshot";
                 }
                 // Always light: the pill is theme.secondary (fixed dark grey),

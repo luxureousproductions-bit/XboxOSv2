@@ -1,8 +1,8 @@
 // XboxOSv2 – AchievementsView.qml
 // The RetroAchievements page, after the console's profile: tabs Welcome
 // (RAWelcomeTab), Social (RASocialTab) and Gaming (RAGamingTab). Your awards
-// (RAAwardsTab) are a page under Social, opened from Social's rail or the
-// Welcome buttons; B goes back to Social. Search lives on the Gaming tab.
+// (RAAwardsTab) are a page under Welcome, opened from its Awards button; B
+// goes back to Welcome. Search lives on the Gaming tab.
 // From Home it opens on Welcome; coming back from a game's page it keeps
 // the tab you were on.
 
@@ -72,7 +72,7 @@ id: root
     }
 
     // ── Header (Xbox "Gaming" tab style) ─────────────────────────────────
-    // The first three are the tabs; Awards (index 3) is a page under Social.
+    // The first three are the tabs; Awards (index 3) is a page under Welcome.
     readonly property var raTabs: ["Welcome", "Social", "Gaming", "Awards"]
     readonly property int tabCount: 3
     property int raTab: raOverviewTab           // theme.qml: Welcome from Home, kept from a game
@@ -85,11 +85,11 @@ id: root
         if (i !== raTab) { raTab = i; playNav(); }
     }
     function stepTab(d) {
-        var i = (raTab >= tabCount ? 1 : raTab) + d;     // from Awards: as from Social
+        var i = (raTab >= tabCount ? 0 : raTab) + d;     // from Awards: as from Welcome
         if (i < 0 || i >= tabCount) return;
         selectTab(i);
     }
-    // Welcome's and Social's buttons: a tab, Awards, or Gaming's search.
+    // Welcome's buttons: a tab, Awards, or Gaming's search.
     function goTab(name) {
         if (name === "Search") { selectTab(tabIndex("Gaming")); gamingTab.startSearch(); return; }
         selectTab(tabIndex(name));
@@ -110,7 +110,7 @@ id: root
         anchors { top: parent.top; left: parent.left; right: parent.right }
         visible: cheevosData.raUserName !== ""
         tabs: raTabs.slice(0, tabCount)
-        current: raTab >= tabCount ? 1 : raTab           // Awards sits under Social
+        current: raTab >= tabCount ? 0 : raTab           // Awards sits under Welcome
         mode: tabName === "Welcome" ? "compact" : (tabName === "Social" ? "band" : "stats")
         onTabClicked: selectTab(index)
     }
@@ -167,7 +167,6 @@ id: root
         bandHeight: achievementsHeader.height
         visible: cheevosData.raUserName !== "" && tabName === "Social"
         focus: visible
-        onGoTab: root.goTab(name)
     }
 
     // ── Gaming tab: every game you've played (RAGamingTab.qml) ───────────
@@ -274,9 +273,9 @@ id: root
         return true;
     }
 
-    // B: from Awards back to Social, else out of RA.
+    // B: from Awards back to Welcome, else out of RA.
     function back() {
-        if (tabName === "Awards") { selectTab(tabIndex("Social")); playBack(); }
+        if (tabName === "Awards") { selectTab(tabIndex("Welcome")); playBack(); }
         else previousScreen();
     }
     Keys.onPressed: {

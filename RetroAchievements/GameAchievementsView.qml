@@ -83,11 +83,6 @@ id: root
     }
     readonly property bool filtersOpen: filterDlg.visible
     function openFilters() { filterDlg.open(); updateHelp(); }
-    function cycleSort(d) {
-        var i = sortKeys.indexOf(cheevosData.sortMode); if (i < 0) i = 0;
-        cheevosData.sortMode = sortKeys[(i + (d || 1) + sortKeys.length) % sortKeys.length];
-        currentIndex = 0;
-    }
     // Tabs across the top, as on the console: this page is Progress, with
     // Welcome to its left and Social to its right (LB / RB, or a tap). They
     // go to those tabs of the RA overview.
@@ -714,7 +709,6 @@ id: root
               : (zone === 2 && displayList.length > 0) ? "Details" : "";
         if (a !== "") localHelpModel.append({ name: a, button: "accept" });
         localHelpModel.append({ name: "Refresh", button: "details" });
-        localHelpModel.append({ name: "Sort",    button: "filters" });
         localHelpModel.append({ name: "Back",    button: "cancel" });
     }
     onToolIndexChanged: updateHelp()
@@ -796,7 +790,6 @@ id: root
         if (api.keys.isCancel(event) && !event.isAutoRepeat) { event.accepted = true; goBack(); }
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) { event.accepted = true; goTab(0); }
         if (api.keys.isNextPage(event) && !event.isAutoRepeat) { event.accepted = true; goTab(2); }
-        if (api.keys.isFilters(event) && !event.isAutoRepeat)  { event.accepted = true; playToggle(); cycleSort(1); }
         if (api.keys.isDetails(event) && !event.isAutoRepeat)  { event.accepted = true; refresh(); }
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
@@ -895,7 +888,6 @@ id: root
             return true;
         }
         if (button === "cancel") goBack();
-        else if (button === "filters") { playToggle(); cycleSort(1); }
         else if (button === "details") refresh();
         else if (button === "accept") {
             if (railFocus) enterView();

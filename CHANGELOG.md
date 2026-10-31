@@ -4,9 +4,15 @@ All notable changes to XboxOSv2, newest first. Dates are when each update was fi
 
 ---
 
-## Unreleased — seriesSX branch (build 91)
+## Unreleased — seriesSX branch (build 92)
 
 The Xbox Series dashboard redesign, page by page, branched from refresh build 63.
+
+- **Game details media carousel: a banner's label now says "Banner"**, not "Screenshot". Root cause: the label is worked out from the file's path, and no rule matched a banner, so it fell through to the last one ("Screenshot"). The game's own banner asset is now recognised first (any file name), then "banner" in the path.
+- **Awards is under Welcome**, not Social: Welcome's Awards button opens it with Welcome underlined, and B goes back to Welcome. Social is back to Following / Followers / Top 10 worldwide.
+- Progress page: Y no longer cycles the sort (the sort drop-down does that); its "Sort" prompt is gone.
+
+## build 91
 
 - **Fixed: the Gaming tab could come up empty.** Root cause: build 90 added four requests (profile, following, followers, top 10) to the burst the RA page fires when it opens, about eight at once. RetroAchievements' web API turns bursts away ("429 Too Many Requests"), more so when another app on the same account is also calling it (Pegasus X's RA scan). When the library request was refused, Gaming stayed empty until the next visit. RA requests now go through a queue, three at a time with the library first, and a refused one waits and retries (1, 2, 4, 8 s) instead of failing. Tested with a fake server that turns every request away once.
 - **Fixed: no focus frame on a game's achievement list after a trip to the rail.** Root cause: passing over Stats on the rail pointed focus at the Stats tiles; coming back to Achievements and pressing Right left it there, on tiles that aren't shown in the list view, so nothing on screen had the frame (and Down moved an invisible cursor). Going back into the list now always focuses the list.
