@@ -21,7 +21,6 @@ import SortFilterProxyModel 0.2
 import QtQml.Models 2.15
 import QtMultimedia 5.15
 import "../Global"
-import "../GridView"
 import "../Lists"
 import "../utils.js" as Utils
 
@@ -85,7 +84,7 @@ id: root
     // Combine the video and the screenshot arrays into one
     function mediaArray() {
         let mediaList = [];
-        if (game && game.assets.video && settings.CarouselVideo === "Yes")
+        if (game && game.assets.video && settings.CarouselVideo === "Yes" && !videoUnsupported)
             game.assets.videoList.forEach(v => mediaList.push(v));
 
         if (game) {
@@ -100,9 +99,12 @@ id: root
                 mediaList.push(art3d);
             // In Pegasus, ALL box images (box3d, box2dFront, etc.) are stored in boxFrontList.
             // Push every 2D entry that wasn't already added as the 3D art above.
+            // Pegasus X marks every 3D box (extra.box3d), so the others are
+            // left out of the 2D list too.
             if (settings.Carousel2DBox === "Yes" && game.assets.boxFrontList) {
+                var known3d = Utils.box3dList(game).length > 0;
                 game.assets.boxFrontList.forEach(function(url) {
-                    if (url && url !== art3d) mediaList.push(url);
+                    if (url && url !== art3d && !(known3d && Utils.is3dFor(game, url))) mediaList.push(url);
                 });
             }
             if (settings.CarouselBackBox === "Yes" && game.assets.boxBack)
@@ -118,7 +120,7 @@ id: root
                 });
             }
             if (game.assets.poster)     mediaList.push(game.assets.poster);
-            if (game.assets.banner)     mediaList.push(game.assets.banner);
+            if (settings.CarouselBanner === "Yes" && game.assets.banner) mediaList.push(game.assets.banner);
             if (game.assets.tile)       mediaList.push(game.assets.tile);
             if (settings.CarouselWheel === "Yes" && game.assets.logo)
                 mediaList.push(game.assets.logo);
@@ -136,6 +138,7 @@ id: root
         list2.savedIndex = 0;
         screenshot.opacity = 1;
         mediaScreen.opacity = 0;
+        manualScreen.opacity = 0;
         toggleVideo(true);
         // Defer the "More" list filter updates (Options 1 & 2) so the expensive
         // ExpressionFilter scans don't block the navigation transition.
@@ -183,19 +186,183 @@ id: root
         currentHelpbarModel = gameviewHelpModel;
     }
 
-    onGameChanged: reset();
+    onGameChanged: { reset(); scheduleExtras(); }
 
     // Pre-computed media list for this game; used by both the strip and the full-screen viewer.
     // Binding to `game` means it is computed once per game change instead of twice.
     readonly property var mediaList: game ? mediaArray() : []
 
-    anchors.fill: parent
+    // Game manual (PDF). Needs a Pegasus build with PDF support, which adds
+    // api.pdfPageCount(); on stock Pegasus this stays "" and the Manual
+    // button never shows. Tried in order, first match wins:
+    //   1. x-manual: <path> in the metadata (absolute, or relative to the ROM)
+    //   2. next to the game's own art: if the box art is
+    //      .../media/box2dfront/<sub path>/<name>.png, then
+    //      .../media/manuals/<sub path>/<name>.pdf (exactly the Skraper
+    //      layout Pegasus used to find the art, multi-disc folders included)
+    //   3. the ROM folder and its parent (for games without art):
+    //      <dir>/media/manuals/<path below dir>.pdf, and for games in a
+    //      subfolder also <folder name>.pdf / <folder name>/<folder name>.pdf
+    //   4. <dir>/media/manuals/<game title>.pdf
+    // Each step tries media/manuals, media/manual and plain manuals.
+    //
+    // Only looked up while Game details is on screen, and once per game per
+    // session. This screen stays loaded with `game` following the Home
+    // cursor, so a binding here ran the whole lookup (file opens, often on
+    // the SD card) on every Home move.
+    property string manualPath: ""
+    property var manualCache: ({})
 
-    GridSpacer {
-    id: fakebox
-        
-        width: vpx(100); height: vpx(100)
+    // RetroAchievements game ID when this game has achievements, else 0 (or
+    // -1 while its console list hasn't been downloaded). Same rule as the
+    // Manual button: no achievements, no button.
+    property int raGameId: 0
+
+    readonly property bool extrasWanted: !!game && gameviewloader.shown
+    onExtrasWantedChanged: scheduleExtras()
+
+    function scheduleExtras() {
+        manualPath = "";
+        raGameId = 0;
+        if (extrasWanted) Qt.callLater(resolveExtras);
     }
+
+    function resolveExtras() {
+        if (!extrasWanted) return;
+        var files = (game.files && game.files.count > 0) ? (game.files.get(0).path || "") : "";
+        var key = files !== "" ? files : (collectionShortName + "|" + game.title);
+        if (manualCache[key] === undefined) manualCache[key] = findManual(game);
+        manualPath = manualCache[key];
+        refreshRa();
+    }
+
+    function refreshRa() {
+        if (!extrasWanted) return;
+        raGameId = cheevosData.quickGameId(game.title, collectionShortName);
+        if (raGameId < 0) cheevosData.prefetchList(collectionShortName);
+    }
+
+    Connections {
+        target: cheevosData
+        onListsEpochChanged: refreshRa()
+    }
+
+    function localPath(url) {
+        var p = url ? String(url) : "";
+        if (p.indexOf("file://") === 0) p = p.substring(7);
+        try { p = decodeURIComponent(p); } catch (err) {}
+        return p;
+    }
+
+    function stripExt(path) {
+        var dot = path.lastIndexOf(".");
+        return (dot > path.lastIndexOf("/")) ? path.substring(0, dot) : path;
+    }
+
+    function findManual(g) {
+        if (!platform.hasPdf) return "";
+
+        // Pegasus X (build 2124+) finds the manual itself: x-manual, media/
+        // manual(s) in any case, media/<game>/manual.pdf, ES-DE's manuals.
+        var pm = g.extra ? g.extra.manual : null;
+        if (pm) {
+            var first = (typeof pm === "string") ? pm : (pm.length ? pm[0] : "");
+            if (first) return first;
+        }
+
+        var candidates = [];
+        var seen = {};
+        function add(path) {
+            if (path && !seen[path]) { seen[path] = true; candidates.push(path); }
+        }
+        // Folder names: "manuals" and "manual" are both accepted
+        function addRoot(root, name) {
+            add(root + "/media/manuals/" + name + ".pdf");
+            add(root + "/media/manual/" + name + ".pdf");
+            add(root + "/manuals/" + name + ".pdf");
+        }
+
+        var romPath = (g.files && g.files.count > 0) ? (g.files.get(0).path || "") : "";
+        if (romPath.indexOf("android:") === 0) romPath = "";
+        var romDir = romPath.substring(0, Math.max(0, romPath.lastIndexOf("/")));
+
+        // 1. metadata
+        var extra = g.extra ? g.extra["manual"] : undefined;
+        if (extra) {
+            var e = (typeof extra === "string") ? extra : (extra[0] || "");
+            if (e !== "") add(e.charAt(0) === "/" ? e : romDir + "/" + e);
+        }
+
+        // 2. mirror the art's location
+        var a = g.assets;
+        var arts = [a.boxFront, a.screenshot, a.logo, a.background, a.titlescreen,
+                    a.boxBack, a.cartridge, a.marquee, a.video];
+        for (var i = 0; i < arts.length; i++) {
+            var art = localPath(arts[i]);
+            var m = art.lastIndexOf("/media/");
+            if (m < 0) continue;
+            var rest = art.substring(m + 7);              // <type>/<sub path>/<name>.ext
+            var typeEnd = rest.indexOf("/");
+            if (typeEnd < 0) continue;
+            addRoot(art.substring(0, m), stripExt(rest.substring(typeEnd + 1)));
+            break;
+        }
+
+        // 3. walk up from the ROM folder: the folder itself and its parent
+        //    (enough for one level of game subfolders; going higher would
+        //    match collection names, eg. iROMs/media/manuals/psx.pdf)
+        if (romDir !== "") {
+            var dir = romDir;
+            for (var level = 0; level < 2 && dir.lastIndexOf("/") > 0; level++) {
+                var rel = stripExt(romPath.substring(dir.length + 1));
+                addRoot(dir, rel);
+                var sub = rel.indexOf("/");
+                if (sub > 0) {
+                    var folder = rel.substring(0, sub);
+                    var base = rel.substring(rel.lastIndexOf("/") + 1);
+                    addRoot(dir, base);
+                    addRoot(dir, folder);
+                    addRoot(dir, folder + "/" + folder);
+                }
+                // 4. by title, at the ROM folder and its parent
+                if (g.title) addRoot(dir, g.title);
+                dir = dir.substring(0, dir.lastIndexOf("/"));
+            }
+        }
+
+        // Pegasus X with findManual: one native call that only checks the
+        // files exist (no PDF parsing)
+        if (platform.hasFindManual)
+            return api.findManual(candidates) || "";
+        for (var c = 0; c < candidates.length; c++) {
+            if (api.pdfPageCount(candidates[c]) > 0) return candidates[c];
+        }
+        return "";
+    }
+
+    // Show/hide the manual reader
+    function showManual() {
+        if (manualPath === "") return;
+        playAccept();
+        // The preview only stops when leaving the top row, and the Manual
+        // button is on the top row, so stop it here
+        toggleVideo(false);
+        manualScreen.open(manualPath, game.title);
+        manualScreen.focus = true;
+        manualScreen.opacity = 1;
+    }
+
+    function closeManual() {
+        playBack();
+        manualScreen.opacity = 0;
+        content.focus = true;
+        currentHelpbarModel = gameviewHelpModel;
+        // Back on the top row with details closed: preview resumes as usual
+        if (content.currentIndex === 0 && detailsOpacity === 0)
+            toggleVideo(true);
+    }
+
+    anchors.fill: parent
 
     // Video
     // Show/hide the video
@@ -228,7 +395,7 @@ id: root
         onTriggered: {
             if (game && game.assets.videos.length && canPlayVideo) {
                 videoPreviewLoader.sourceComponent = videoPreviewWrapper;
-                fadescreenshot.restart();
+                fadescreenshot.begin();
             }
         }
     }
@@ -238,12 +405,27 @@ id: root
     id: fadescreenshot
 
         interval: 1000
+        // Fades the picture only once the video is really showing frames. It
+        // used to fade after a fixed second whether or not the video had
+        // started, so a video that never plays (no codecs on Windows) left a
+        // black screen. Re-checks every half second for ~5s, then gives up
+        // and keeps the picture.
+        property int tries: 0
         onTriggered: {
-            // The blur layer's opacity is bound to screenshot.opacity, so this
-            // one write fades both. (The old bgBlur write referenced an id that
-            // no longer exists.)
-            screenshot.opacity = 0;
+            var w = videoPreviewLoader.item;
+            if (!w || w.failed) { tries = 0; return; }
+            if (w.framesFlowing) {
+                tries = 0;
+                // The blur layer's opacity is bound to screenshot.opacity, so
+                // this one write fades both.
+                screenshot.opacity = 0;
+                return;
+            }
+            if (tries < 10) { tries += 1; interval = 500; restart(); }
+            else tries = 0;
         }
+        // Every new start begins with the full first second and no retries.
+        function begin() { tries = 0; interval = 1000; restart(); }
     }
 
     Timer {
@@ -320,9 +502,18 @@ id: root
 
       Item {
         anchors.fill: parent
+        // Read by fadescreenshot: frames actually on screen / playback failed.
+        readonly property bool framesFlowing: videocomponent.playbackState === MediaPlayer.PlayingState
+                                              && videocomponent.position > 0
+        readonly property bool failed: videocomponent.error !== MediaPlayer.NoError
 
         Video {
         id: videocomponent
+            // Stop before the player is destroyed (screen change, row rebuild, or
+            // Pegasus unloading the theme to launch a game): destroying a playing
+            // video is what the Windows media backend crashes on.
+            Component.onDestruction: stop()
+            onErrorChanged: reportVideoError(videocomponent)   // logged; see videoUnsupported in theme.qml
 
             property bool videoExists: game ? game.assets.videos.length : false
             // Cleared off-screen, same reason as the other players.
@@ -330,8 +521,11 @@ id: root
                     ? game.assets.videos[0] : ""
             anchors.fill: parent
             fillMode: VideoOutput.PreserveAspectCrop
+            // Also muted at once under the manual: toggleVideo(false) only
+            // unloads the player after its 1 s fade
             muted: settings.AllowVideoPreviewAudio === "No"
                    || playbackOwner !== "gameviewscreen"
+                   || manualScreen.visible
             loops: MediaPlayer.Infinite
             autoPlay: true
             //onPlaying: videocomponent.seek(5000)
@@ -372,22 +566,14 @@ id: root
 
         anchors.fill: parent
         asynchronous: true
-        property int randoScreenshotNumber: {
-            if (game && settings.GameRandomBackground === "Yes")
-                return Math.floor(Math.random() * game.assets.screenshotList.length);
-            else
-                return 0;
-        }
-        property int randoFanartNumber: {
-            if (game && settings.GameRandomBackground === "Yes")
-                return Math.floor(Math.random() * game.assets.backgroundList.length);
-            else
-                return 0;
-        }
-
-        property var randoScreenshot: game ? game.assets.screenshotList[randoScreenshotNumber] : ""
-        property var randoFanart: game ? game.assets.backgroundList[randoFanartNumber] : ""
-        property var actualBackground: (settings.GameBackground === "Screenshot") ? randoScreenshot : Utils.fanArt(game) || randoFanart;
+        // First screenshot / fanart. (A "random background" option was read
+        // here but never existed as a setting, so it was always the first.)
+        property var randoScreenshot: game ? game.assets.screenshotList[0] : ""
+        property var randoFanart: game ? game.assets.backgroundList[0] : ""
+        // Banner falls back to fanart for games that have none.
+        property var actualBackground: (settings.GameBackground === "Screenshot") ? randoScreenshot
+                                     : (settings.GameBackground === "Banner" && game && game.assets.banner) ? game.assets.banner
+                                     : Utils.fanArt(game) || randoFanart;
         source: actualBackground || ""
         sourceSize: Qt.size(root.width, root.height)
         fillMode: Image.PreserveAspectCrop
@@ -407,7 +593,12 @@ id: root
         readonly property real blurOpacity: screenshot.opacity
         sourceComponent: Component {
             FastBlur {
-                anchors.fill: parent
+                cached: true   // static: blur once, not every frame
+                // Big desktop screens: blur at 1080p size and scale up (1 on Android).
+                width: parent.width / hiResScale
+                height: parent.height / hiResScale
+                scale: hiResScale
+                transformOrigin: Item.TopLeft
                 source: blurLoader.blurSource
                 radius: 64
                 opacity: blurLoader.blurOpacity
@@ -443,7 +634,9 @@ id: root
     // position (atYBeginning), not just currentIndex — so a mouse wheel or
     // finger flick (which scrolls contentY without changing currentIndex) also
     // hides the logo, matching controller behavior.
-    property bool logoAtTop: content.atYBeginning && content.currentIndex === 0 && detailsScreen.opacity === 0
+    // Also off while the manual reader is open: the logo sits above it in z
+    // (the media viewer never needed this, it opens from the media row).
+    property bool logoAtTop: content.atYBeginning && content.currentIndex === 0 && detailsScreen.opacity === 0 && !manualScreen.visible
     Image {
     id: logo
 
@@ -454,7 +647,7 @@ id: root
         width: vpx(500)
         height: vpx(450) + header.height
         source: settings.GameLogo === "Show" && game ? Utils.logo(game) : ""
-        sourceSize { width: 512; height: 512 }
+        sourceSize { width: hrpx(512); height: hrpx(512) }
         fillMode: Image.PreserveAspectFit
         asynchronous: true
         opacity: logoAtTop ? 1 : 0
@@ -474,6 +667,7 @@ id: root
         readonly property real shadowOpacity: logoAtTop ? 0.4 : 0
         sourceComponent: Component {
             DropShadow {
+                cached: true   // static: blur once, not every frame
                 anchors.fill: parent
                 horizontalOffset: 0
                 verticalOffset: 0
@@ -634,7 +828,7 @@ id: root
                             source: Utils.boxArt(game, settings.BoxArtStyle)
                             width: vpx(350)
                             height: parent.height
-                            sourceSize { width: 512; height: 512 }
+                            sourceSize { width: hrpx(512); height: hrpx(512) }
                             fillMode: Image.PreserveAspectFit
                             asynchronous: true
                             smooth: true
@@ -663,6 +857,9 @@ id: root
             right: parent.right
         }
         height: vpx(75)
+        // z: 10 puts it above the manual reader, whose own title bar sits here
+        opacity: manualScreen.visible ? 0 : 1
+        Behavior on opacity { NumberAnimation { duration: 100 } }
 
         // Platform-page band: fades in once the list leaves the Play row.
         // Never over the fullscreen media viewer (it sits under the header).
@@ -683,8 +880,8 @@ id: root
                 left: parent.left; leftMargin: globalMargin
             }
             fillMode: Image.PreserveAspectFit
-            source: "../assets/images/logospng/" + Utils.processPlatformName(game.collections.get(0).shortName) + ".png"
-            sourceSize { width: 256; height: 256 }
+            source: systemLogoSource(game.collections.get(0))
+            sourceSize { width: hrpx(256); height: hrpx(256) }
             smooth: true
             asynchronous: true
 
@@ -730,19 +927,10 @@ id: root
         // 4 nav buttons — centered in header
         Rectangle {
         id: gv_homebutton
+            color: "transparent"
+            NavPill { focused: gv_homebutton.focus; light: whiteBackground; icon: "../assets/images/icon_home.svg"; iconFilled: "../assets/images/icon_home_fill.svg" }
             width: vpx(32); height: vpx(32); radius: height / 2
             anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(48) }
-            color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.6
-            layer.enabled: true
-            layer.effect: DropShadow {
-                transparentBorder: true
-                horizontalOffset: 0
-                verticalOffset: 0
-                radius: 8
-                samples: 17
-                color: "#cc000000"
-            }
 
             onFocusChanged: if (focus) playNav();
             Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
@@ -758,33 +946,14 @@ id: root
                 onEntered: gv_homebutton.focus = true; onExited: gv_homebutton.focus = false;
                 onClicked: showcaseScreen();
             }
-            Image {
-                anchors.centerIn: parent
-                width: vpx(24); height: vpx(24)
-                sourceSize: Qt.size(vpx(24), vpx(24))
-                source: "../assets/images/icon_home.svg"
-                layer.enabled: whiteBackground
-                layer.effect: ColorOverlay { color: "black" }
-                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
-                opacity: parent.focus ? 1 : 0.7
-            }
         }
 
         Rectangle {
         id: gv_discoverbutton
+            color: "transparent"
+            NavPill { focused: gv_discoverbutton.focus; light: whiteBackground; icon: "../assets/images/icon_discover.svg" }
             width: vpx(32); height: vpx(32); radius: height / 2
             anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(0) }
-            color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.6
-            layer.enabled: true
-            layer.effect: DropShadow {
-                transparentBorder: true
-                horizontalOffset: 0
-                verticalOffset: 0
-                radius: 8
-                samples: 17
-                color: "#cc000000"
-            }
 
             onFocusChanged: if (focus) playNav();
             Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
@@ -801,34 +970,15 @@ id: root
                 onEntered: gv_discoverbutton.focus = true; onExited: gv_discoverbutton.focus = false;
                 onClicked: discoverScreen();
             }
-            Image {
-                anchors { fill: parent; margins: vpx(5) }
-                source: "../assets/images/icon_discover.svg"
-                // Rasterised above display size so it stays sharp on a TV.
-                sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
-                layer.enabled: whiteBackground
-                layer.effect: ColorOverlay { color: "black" }
-                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
-                opacity: gv_discoverbutton.focus ? 1.0 : 0.85
-            }
         }
 
 
         Rectangle {
         id: gv_settingsbutton
+            color: "transparent"
+            NavPill { focused: gv_settingsbutton.focus; light: whiteBackground; icon: "../assets/images/settingsicon.svg"; iconFilled: "../assets/images/settingsicon_fill.svg" }
             width: vpx(32); height: vpx(32); radius: height / 2
             anchors { verticalCenter: parent.verticalCenter; horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(48) }
-            color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.6
-            layer.enabled: true
-            layer.effect: DropShadow {
-                transparentBorder: true
-                horizontalOffset: 0
-                verticalOffset: 0
-                radius: 8
-                samples: 17
-                color: "#cc000000"
-            }
 
             onFocusChanged: if (focus) playNav();
             Keys.onDownPressed:  { event.accepted = true; content.focus = true; }
@@ -844,21 +994,12 @@ id: root
                 onEntered: gv_settingsbutton.focus = true; onExited: gv_settingsbutton.focus = false;
                 onClicked: settingsScreen();
             }
-            Image {
-                anchors.centerIn: parent
-                width: vpx(24); height: vpx(24)
-                sourceSize: Qt.size(vpx(24), vpx(24))
-                source: "../assets/images/settingsicon.svg"; smooth: true; asynchronous: true
-                layer.enabled: whiteBackground
-                layer.effect: ColorOverlay { color: "black" }
-                opacity: parent.focus ? 1 : 0.7
-            }
         }
 
         // Nav button labels — shown only when the button is highlighted
         Text {
             text: "Home"
-            anchors { top: gv_homebutton.bottom; topMargin: vpx(3); horizontalCenter: gv_homebutton.horizontalCenter }
+            anchors { top: gv_homebutton.bottom; topMargin: vpx(8); horizontalCenter: gv_homebutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: titleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: gv_homebutton.focus ? 1 : 0
@@ -866,7 +1007,7 @@ id: root
         }
         Text {
             text: "Discover"
-            anchors { top: gv_discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: gv_discoverbutton.horizontalCenter }
+            anchors { top: gv_discoverbutton.bottom; topMargin: vpx(8); horizontalCenter: gv_discoverbutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: titleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: gv_discoverbutton.focus ? 1 : 0
@@ -874,7 +1015,7 @@ id: root
         }
         Text {
             text: "Settings"
-            anchors { top: gv_settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: gv_settingsbutton.horizontalCenter }
+            anchors { top: gv_settingsbutton.bottom; topMargin: vpx(8); horizontalCenter: gv_settingsbutton.horizontalCenter }
             color: whiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: titleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: gv_settingsbutton.focus ? 1 : 0
@@ -916,25 +1057,6 @@ id: root
                 }
         }
 
-        Button {
-        id: button5
-
-            width: height
-            icon: "../assets/images/trophy.svg"
-            iconPadding: vpx(22)
-            height: parent.height
-            selected: ListView.isCurrentItem && menu.activeFocus
-            onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
-            onActivated:
-                if (selected) {
-                    playAccept();
-                    raEntryScreen();
-                } else {
-                    playNav();
-                    menu.currentIndex = ObjectModel.index;
-                }
-        }
-
         Button { 
         id: button2 
 
@@ -946,6 +1068,50 @@ id: root
                 if (selected) {
                     playToggle();
                     showDetails();
+                } else {
+                    playNav();
+                    menu.currentIndex = ObjectModel.index;
+                }
+        }
+
+        Button {
+        id: buttonManual
+
+            // Only when this game has a manual. Hidden, a negative width
+            // cancels the row spacing so no gap is left behind; the menu's
+            // left/right handlers skip it.
+            visible: manualPath !== ""
+            width: visible ? height : -menu.spacing
+            icon: "../assets/images/icon_manual.svg"
+            iconPadding: vpx(22)
+            height: parent.height
+            selected: ListView.isCurrentItem && menu.activeFocus
+            onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
+            onActivated:
+                if (selected) {
+                    showManual();
+                } else {
+                    playNav();
+                    menu.currentIndex = ObjectModel.index;
+                }
+        }
+
+        Button {
+        id: button5
+
+            // Only when this game has achievements (see raGameId); hidden
+            // the same way as the Manual button.
+            visible: raGameId > 0
+            width: visible ? height : -menu.spacing
+            icon: "../assets/images/trophy.svg"
+            iconPadding: vpx(22)
+            height: parent.height
+            selected: ListView.isCurrentItem && menu.activeFocus
+            onHighlighted: { menu.currentIndex = ObjectModel.index; content.currentIndex = 0; }
+            onActivated:
+                if (selected) {
+                    playAccept();
+                    raEntryScreen();
                 } else {
                     playNav();
                     menu.currentIndex = ObjectModel.index;
@@ -1006,8 +1172,16 @@ id: root
             orientation: ListView.Horizontal
             spacing: vpx(10)
             keyNavigationWraps: true
-            Keys.onLeftPressed: { playNav(); decrementCurrentIndex() }
-            Keys.onRightPressed: { playNav(); incrementCurrentIndex() }
+            // Hidden buttons (Manual, Achievements) are skipped; a loop, since
+            // both can be hidden side by side.
+            Keys.onLeftPressed: {
+                playNav(); decrementCurrentIndex();
+                for (var i = 0; i < count && currentItem && !currentItem.visible; i++) decrementCurrentIndex();
+            }
+            Keys.onRightPressed: {
+                playNav(); incrementCurrentIndex();
+                for (var j = 0; j < count && currentItem && !currentItem.visible; j++) incrementCurrentIndex();
+            }
         }
 
         HorizontalCollection {
@@ -1025,6 +1199,7 @@ id: root
                 height: width
                 selected: ListView.isCurrentItem && media.ListView.isCurrentItem
                 mediaItem: modelData
+                systemShortName: collectionShortName   // Disc / UMD / Game Card label
 
                 onHighlighted: {
                     playNav(); 
@@ -1051,6 +1226,11 @@ id: root
         HorizontalCollection {
         id: list1
             ownScreen: "gameviewscreen"
+            // "More like this" rows have their own preview settings
+            // (Settings > Previews & sound); they used to follow Home's.
+            previewOn:       gatePreview(liveSetting("Details rows video preview")) === "Yes"
+            previewSound:    gateSound(liveSetting("Details rows video audio")) === "Yes"
+            hideLogoOnVideo: liveSetting("Details rows hide logo on video") === "Yes"
 
             property bool selected: ListView.isCurrentItem
             focus: selected
@@ -1088,6 +1268,11 @@ id: root
         HorizontalCollection {
         id: list2
             ownScreen: "gameviewscreen"
+            // "More like this" rows have their own preview settings
+            // (Settings > Previews & sound); they used to follow Home's.
+            previewOn:       gatePreview(liveSetting("Details rows video preview")) === "Yes"
+            previewSound:    gateSound(liveSetting("Details rows video audio")) === "Yes"
+            hideLogoOnVideo: liveSetting("Details rows hide logo on video") === "Yes"
 
             property bool selected: ListView.isCurrentItem
             focus: selected
@@ -1197,12 +1382,13 @@ id: root
     MouseArea {
         id: mediaInputBlocker
         anchors.fill: parent
-        enabled: mediaScreen.visible
+        enabled: mediaScreen.visible || manualScreen.visible
         visible: enabled
         acceptedButtons: Qt.AllButtons
         preventStealing: true
         hoverEnabled: true
         onPressed: mouse.accepted = true
+        onWheel: wheel.accepted = true   // the wheel stops here too, not on the screen behind
         onClicked: mouse.accepted = true
         onReleased: mouse.accepted = true
     }
@@ -1222,12 +1408,39 @@ id: root
         onClose: closeMedia();
     }
 
+    ManualView {
+    id: manualScreen
+
+        anchors.fill: parent
+        opacity: 0
+        Behavior on opacity { NumberAnimation { duration: 100 } }
+        visible: opacity != 0
+        // Same as the media viewer: the drawer can't open over it
+        onVisibleChanged: hideAppsPrompt = visible
+        onClose: closeManual();
+    }
+
     // Input handling
     // Mouse back button: mirrors B in the same order — fullscreen media
     // closes first, then a focused header button returns to the content,
     // then the screen itself.
+    // Clickable prompts (theme.qml helpClick). Buttons, media and tiles take
+    // A themselves; this is the page's own keys. B is left to mouseBack().
+    function helpAction(button) {
+        if (button === "details") { if (game) { playAccept(); game.favorite = !game.favorite; } return true; }
+        if (button === "filters") { settingsScreen(); return true; }
+        if (button === "accept") {
+            if (gv_homebutton.activeFocus)          showcaseScreen();
+            else if (gv_discoverbutton.activeFocus) discoverScreen();
+            else if (gv_settingsbutton.activeFocus) settingsScreen();
+            return true;
+        }
+        return false;
+    }
+
     function mouseBack() {
         if (mediaScreen.visible)  { closeMedia(); return; }
+        if (manualScreen.visible) { closeManual(); return; }
         if (!content.activeFocus) { content.focus = true; return; }
         previousScreen();
     }
@@ -1238,6 +1451,8 @@ id: root
             event.accepted = true;
             if (mediaScreen.visible)
                 closeMedia();
+            else if (manualScreen.visible)
+                closeManual();
             else
                 previousScreen();
         }
@@ -1299,7 +1514,7 @@ id: root
     StatusCluster {
         anchors.fill: parent
         z: 50
-        visible: mediaScreen.opacity < 0.5
+        visible: mediaScreen.opacity < 0.5 && manualScreen.opacity < 0.5
         dark: whiteBackground
     }
 

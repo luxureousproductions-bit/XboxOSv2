@@ -21,7 +21,6 @@ import QtGraphicalEffects 1.15
 import QtMultimedia 5.15
 import QtQml.Models 2.15
 import "../Global"
-import "../GridView"
 import "../Lists"
 import "../utils.js" as Utils
 
@@ -36,19 +35,15 @@ id: root
     ListAllGames    { id: listNone;        max: 0 }
     ListAllGames    { id: listAllGames;    max: settings.ShowcaseColumns; hideRows: libraryHideRows }
     ListFavorites   { id: listFavorites;   max: settings.ShowcaseColumns }
-    // Uncapped — feeds the favorites carousel header, which pages through
-    // every favorited game (unlike the "Favorites" collection category above,
-    // which is deliberately capped to a normal row's worth of tiles).
-    ListFavorites   { id: listFavoritesAll }
-    ListLastPlayed  { id: listLastPlayed;  max: settings.ShowcaseColumns; omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
-    ListMostPlayed  { id: listMostPlayed;  max: settings.ShowcaseColumns; omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
-    ListRecommended { id: listRecommended; active: true; max: settings.ShowcaseColumns; omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
+    ListLastPlayed  { id: listLastPlayed;  max: settings.ShowcaseColumns; omitApplication: false; omitEmulator: false; hideTitles: noHideTitles; hideRows: homeHideRows }
+    ListMostPlayed  { id: listMostPlayed;  max: settings.ShowcaseColumns; omitApplication: false; omitEmulator: false; hideTitles: noHideTitles; hideRows: homeHideRows }
+    ListRecommended { id: listRecommended; active: true; max: settings.ShowcaseColumns; omitApplication: false; omitEmulator: false; hideTitles: noHideTitles; hideRows: homeHideRows }
     // "Play Something New For <System>": one random system, a few of its games.
     ListRandomSystem { id: listRandomSystem; active: true; max: settings.ShowcaseColumns }
-    ListPublisher   { id: listPublisher;   max: settings.ShowcaseColumns; publisher: randoPub;   omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
-    ListDeveloper   { id: listDeveloper;   max: settings.ShowcaseColumns; developer: randoDev;   omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
-    ListGenre       { id: listGenre;       max: settings.ShowcaseColumns; genre: randoGenre;     omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
-    ListGenre       { id: listGenre2;      max: settings.ShowcaseColumns; genre: randoGenre2;    omitApplication: omitAppsLive; omitEmulator: omitEmulatorsLive; hideTitles: homeHideTitles; hideRows: libraryHideRows }
+    ListPublisher   { id: listPublisher;   max: settings.ShowcaseColumns; publisher: randoPub;   omitApplication: false; omitEmulator: false; hideTitles: noHideTitles; hideRows: homeHideRows }
+    ListDeveloper   { id: listDeveloper;   max: settings.ShowcaseColumns; developer: randoDev;   omitApplication: false; omitEmulator: false; hideTitles: noHideTitles; hideRows: homeHideRows }
+    ListGenre       { id: listGenre;       max: settings.ShowcaseColumns; genre: randoGenre;     omitApplication: false; omitEmulator: false; hideTitles: noHideTitles; hideRows: homeHideRows }
+    ListGenre       { id: listGenre2;      max: settings.ShowcaseColumns; genre: randoGenre2;    omitApplication: false; omitEmulator: false; hideTitles: noHideTitles; hideRows: homeHideRows }
 
     property var highlightedGame: null
 
@@ -171,29 +166,30 @@ id: root
     readonly property bool poolOmitApp: omitAppsLive
     readonly property bool poolOmitEmu: omitEmulatorsLive
 
-    property string randoPub:    Utils.returnRandom(Utils.uniqueValuesArray('publisher', poolOmitApp, poolOmitEmu)) || ''
-    property string randoDev:    Utils.returnRandom(Utils.uniqueValuesArray('developer', poolOmitApp, poolOmitEmu)) || ''
-    property string randoGenre:  Utils.returnRandom(Utils.uniqueGenreValues(poolOmitEmu)) || ''
-    property string randoGenre2: Utils.returnRandom(Utils.uniqueGenreValues(poolOmitEmu)) || ''
+    // Picked in Component.onCompleted (restored from the last session when
+    // returning from a game, so no library pass at all then), again on X
+    // (refreshLists), and when either hide option changes.
+    property string randoPub:    ''
+    property string randoDev:    ''
+    property string randoGenre:  ''
+    property string randoGenre2: ''
+    onPoolOmitAppChanged: pickRandoms()
+    onPoolOmitEmuChanged: pickRandoms()
+
+    function pickRandoms() {
+        var pools = Utils.homePools(poolOmitApp, poolOmitEmu);
+        var genres = pools.genres;
+        var genre = Utils.returnRandom(genres) || '';
+        var others = genres.filter(function(g) { return g !== genre; });
+        randoPub    = Utils.returnRandom(pools.publishers) || '';
+        randoDev    = Utils.returnRandom(pools.developers) || '';
+        randoGenre  = genre;
+        randoGenre2 = Utils.returnRandom(others.length > 0 ? others : genres) || '';
+        api.memory.set("Showcase randoms", { pub: randoPub, dev: randoDev, genre: randoGenre, genre2: randoGenre2 });
+    }
 
     function refreshLists() {
-        var omitEmu = omitEmulatorsLive;
-        var omitApp = omitAppsLive;
-        var pub = Utils.returnRandom(Utils.uniqueValuesArray('publisher', omitApp, omitEmu)) || '';
-        var dev = Utils.returnRandom(Utils.uniqueValuesArray('developer', omitApp, omitEmu)) || '';
-        var genres = Utils.uniqueGenreValues(omitEmu);
-        var genre = Utils.returnRandom(genres) || '';
-        var filtered = genres.filter(function(g) { return g !== genre; });
-        var pick = filtered.length > 0 ? filtered : genres;
-        var genre2 = Utils.returnRandom(pick) || '';
-        randoPub = pub;
-        randoDev = dev;
-        randoGenre = genre;
-        randoGenre2 = genre2;
-        api.memory.set("Showcase randoPub", pub);
-        api.memory.set("Showcase randoDev", dev);
-        api.memory.set("Showcase randoGenre", genre);
-        api.memory.set("Showcase randoGenre2", genre2);
+        pickRandoms();
         listRecommended.refresh();
         listRandomSystem.refresh();
         currentHelpbarModel = gridviewHelpModel;
@@ -209,21 +205,23 @@ id: root
     Component.onDestruction: storeIndices();
 
     Component.onCompleted: {
-        if (api.memory.has("To Game")) {
+        // One key instead of four: each api.memory.set rewrites the whole
+        // settings file.
+        var saved = api.memory.has("Showcase randoms") ? api.memory.get("Showcase randoms") : null;
+        if (fromGame && saved) {
             // Returning from a game launch — restore saved random values so the
             // lists look exactly as the user left them
-            randoPub    = api.memory.get("Showcase randoPub")    || "";
-            randoDev    = api.memory.get("Showcase randoDev")    || "";
-            randoGenre  = api.memory.get("Showcase randoGenre")  || "";
-            randoGenre2 = api.memory.get("Showcase randoGenre2") || "";
+            randoPub    = saved.pub    || "";
+            randoDev    = saved.dev    || "";
+            randoGenre  = saved.genre  || "";
+            randoGenre2 = saved.genre2 || "";
         } else {
-            // Fresh startup — persist the property-initializer values so they
-            // survive a game launch and can be restored on the way back
-            api.memory.set("Showcase randoPub",    randoPub);
-            api.memory.set("Showcase randoDev",    randoDev);
-            api.memory.set("Showcase randoGenre",  randoGenre);
-            api.memory.set("Showcase randoGenre2", randoGenre2);
+            // Fresh startup: pick, and persist so a game launch can restore them
+            pickRandoms();
         }
+        // The four keys older builds used, removed once
+        ["Showcase randoPub", "Showcase randoDev", "Showcase randoGenre", "Showcase randoGenre2"]
+            .forEach(function(k) { if (api.memory.has(k)) api.memory.unset(k); });
     }
     
     anchors.fill: parent
@@ -250,6 +248,8 @@ id: root
         smooth: true
         z: -1
         source: (settings.CustomBackground === "Yes") ? "../assets/images/backgrounds/background.png" : ""
+        // Screen size: a 4K background.png was a 33 MB texture.
+        sourceSize: Qt.size(root.width, root.height)
         // Shown only while NO fanart is on screen. Two images never overlap, so
         // fanart blends with the theme colour beneath rather than with this —
         // which is what caused the colour shift and the flash between fades.
@@ -485,14 +485,32 @@ id: root
         if (!sysTileBgActive) crossfadeTo(bgSource);
     }
     property var  sysBgFallbackColl: null
+    // Pegasus X: a collection's own background and logo (Settings > Edit
+    // metadata) win over the theme's bundled system art
+    function customSystemBackground(c) {
+        return (c && c.assets && c.assets.background) ? c.assets.background : "";
+    }
+    function customSystemLogo(c) {
+        return (c && c.assets && c.assets.logo) ? c.assets.logo : "";
+    }
 
     Image {
     id: sysBgResolver
         visible: false
         asynchronous: true
+        // Only a probe: it finds WHICH file exists, then the fanart layer
+        // does the real decode at its own size. It used to decode every
+        // system's background at full size (a second, full-resolution
+        // decode on each step along the system strip). Tiny, and kept out
+        // of the image cache so it never shares an entry with the real one.
+        sourceSize: Qt.size(32, 18)
+        cache: false
         property string basePath: ""
-        property var exts: [".png", ".jpg", ".jpeg", ".webp"]
+        property var exts: [".webp", ".png", ".jpg", ".jpeg"]
         property int extIdx: 0
+        // Pegasus X: a background set for the collection itself (Settings >
+        // Edit metadata) is one exact file, no extensions to try
+        readonly property bool exact: basePath.indexOf("file:") === 0 || basePath.indexOf("/") === 0
         // Request the background for a system. Re-requesting the system that's
         // already resolved re-applies it instantly (returning from game rows);
         // a new system starts the load chain and the page holds the current
@@ -513,11 +531,11 @@ id: root
         }
         onBasePathChanged: {
             extIdx = 0;
-            source = basePath !== "" ? (basePath + exts[0]) : "";
+            source = basePath !== "" ? (exact ? basePath : basePath + exts[0]) : "";
         }
         onStatusChanged: {
             if (status === Image.Error) {
-                if (extIdx < exts.length - 1) {
+                if (!exact && extIdx < exts.length - 1) {
                     extIdx = extIdx + 1;          // try next extension
                     source = basePath + exts[extIdx];
                 } else if (sysTileBgActive && sysBgFallbackColl && sysBgFallbackColl.games.count > 0) {
@@ -564,7 +582,8 @@ id: root
         // art, which matches the tile.
         sysBgFallbackColl = coll;
         sysTileBgActive   = true;
-        sysBgResolver.request("../assets/images/systembackground/" + Utils.processPlatformName(coll.shortName));
+        sysBgResolver.request(customSystemBackground(coll)
+            || "../assets/images/systembackground/" + Utils.processPlatformName(coll.shortName));
     }
 
     // Dim overlay so content stays readable. Lowered from 0.45: it sits above
@@ -710,7 +729,7 @@ id: root
             // Logo Color Match: tints the logo to the current Color Layout accent.
             layer.enabled: settings.LogoColorMatch === "Yes"
             layer.effect: ColorOverlay { color: theme.accent }
-            sourceSize { width: 150; height: 100}
+            sourceSize { width: hrpx(150); height: hrpx(100) }
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true
@@ -751,7 +770,7 @@ id: root
                         source: cheevosData.avatarUrl
                         fillMode: Image.PreserveAspectCrop
                         smooth: true; asynchronous: true
-                        sourceSize { width: 64; height: 64 }
+                        sourceSize { width: hrpx(64); height: hrpx(64) }
                         layer.enabled: true
                         layer.smooth: true
                         layer.effect: OpacityMask {
@@ -812,22 +831,14 @@ id: root
                 visible: cheevosData.raUserName === ""
             }
         }
+        // Nav buttons: each draws a NavPill (Global/NavPill.qml), as on the Xbox.
         Rectangle {
         id: homebutton
+            color: "transparent"
+            NavPill { focused: homebutton.focus; light: showcaseWhiteBackground; icon: "../assets/images/icon_gamesandapps.svg"; iconFilled: "../assets/images/icon_gamesandapps_fill.svg" }
 
             width:  vpx(36); height: vpx(36); radius: height / 2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(108) }
-            color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.6
-            layer.enabled: true
-            layer.effect: DropShadow {
-                transparentBorder: true
-                horizontalOffset: 0
-                verticalOffset: 0
-                radius: 8
-                samples: 17
-                color: "#cc000000"
-            }
 
             onFocusChanged: {
                 if (focus) playNav();
@@ -846,37 +857,15 @@ id: root
                 onEntered: homebutton.focus = true; onExited: homebutton.focus = false;
                 onClicked: allGamesScreen();
             }
-            Image {
-                // vpx(6) margin on a vpx(36) button = a vpx(24) icon box, the
-                // same box trophy.svg and settingsicon.svg use, so all four nav
-                // icons are inset identically.
-                anchors { fill: parent; margins: vpx(6) }
-                source: "../assets/images/icon_gamesandapps.svg"
-                sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
-                layer.enabled: showcaseWhiteBackground
-                layer.effect: ColorOverlay { color: "black" }
-                fillMode: Image.PreserveAspectFit
-                smooth: true; asynchronous: true
-                opacity: homebutton.focus ? 1.0 : 0.85
-            }
         }
 
         Rectangle {
         id: discoverbutton
+            color: "transparent"
+            NavPill { focused: discoverbutton.focus; light: showcaseWhiteBackground; icon: "../assets/images/icon_discover.svg" }
 
             width:  vpx(36); height: vpx(36); radius: height / 2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: -vpx(54) }
-            color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.6
-            layer.enabled: true
-            layer.effect: DropShadow {
-                transparentBorder: true
-                horizontalOffset: 0
-                verticalOffset: 0
-                radius: 8
-                samples: 17
-                color: "#cc000000"
-            }
 
             onFocusChanged: {
                 if (focus) playNav();
@@ -896,34 +885,15 @@ id: root
                 onEntered: discoverbutton.focus = true; onExited: discoverbutton.focus = false;
                 onClicked: discoverScreen();
             }
-            Image {
-                anchors { fill: parent; margins: vpx(6) }
-                source: "../assets/images/icon_discover.svg"
-                // Rasterised above display size so it stays sharp on a TV.
-                sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
-                layer.enabled: showcaseWhiteBackground
-                layer.effect: ColorOverlay { color: "black" }
-                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
-                opacity: discoverbutton.focus ? 1.0 : 0.85
-            }
         }
 
         Rectangle {
         id: achievementsbutton
+            color: "transparent"
+            NavPill { focused: achievementsbutton.focus; light: showcaseWhiteBackground; icon: "../assets/images/trophy_outline.svg"; iconFilled: "../assets/images/trophy_fill.svg" }
 
             width:  vpx(36); height: vpx(36); radius: height / 2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: 0 }
-            color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.6
-            layer.enabled: true
-            layer.effect: DropShadow {
-                transparentBorder: true
-                horizontalOffset: 0
-                verticalOffset: 0
-                radius: 8
-                samples: 17
-                color: "#cc000000"
-            }
 
             onFocusChanged: {
                 if (focus) playNav();
@@ -945,36 +915,15 @@ id: root
             }
         }
 
-        Image {
-        id: achievementsTrophyIcon
-            width: vpx(24); height: vpx(24)
-            sourceSize: Qt.size(vpx(24), vpx(24))
-            source: "../assets/images/trophy.svg"
-            layer.enabled: showcaseWhiteBackground
-            layer.effect: ColorOverlay { color: "black" }
-            fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
-            anchors.centerIn: achievementsbutton
-            opacity: achievementsbutton.focus ? 1 : 0.7
-        }
-
         // Global library search — opens the shared overlay in theme.qml.
         // Same box and inset as Discover so the five icons line up.
         Rectangle {
         id: searchbutton
+            color: "transparent"
+            NavPill { focused: searchbutton.focus; light: showcaseWhiteBackground; icon: "../assets/images/icon_search.svg" }
 
             width:  vpx(36); height: vpx(36); radius: height / 2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(54) }
-            color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.6
-            layer.enabled: true
-            layer.effect: DropShadow {
-                transparentBorder: true
-                horizontalOffset: 0
-                verticalOffset: 0
-                radius: 8
-                samples: 17
-                color: "#cc000000"
-            }
 
             onFocusChanged: {
                 if (focus) playNav();
@@ -994,33 +943,15 @@ id: root
                 onEntered: searchbutton.focus = true; onExited: searchbutton.focus = false;
                 onClicked: openLibrarySearch();
             }
-            Image {
-                anchors { fill: parent; margins: vpx(6) }
-                source: "../assets/images/icon_search.svg"
-                sourceSize { width: Math.round(width * 2); height: Math.round(height * 2) }
-                layer.enabled: showcaseWhiteBackground
-                layer.effect: ColorOverlay { color: "black" }
-                fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
-                opacity: searchbutton.focus ? 1.0 : 0.85
-            }
         }
 
         Rectangle {
         id: settingsbutton
+            color: "transparent"
+            NavPill { focused: settingsbutton.focus; light: showcaseWhiteBackground; icon: "../assets/images/settingsicon.svg"; iconFilled: "../assets/images/settingsicon_fill.svg" }
 
             width:  vpx(36); height: vpx(36); radius: height / 2
             anchors { top: parent.top; topMargin: vpx(6); horizontalCenter: parent.horizontalCenter; horizontalCenterOffset: vpx(108) }
-            color:   focus ? theme.accent : "transparent"
-            opacity: focus ? 1 : 0.6
-            layer.enabled: true
-            layer.effect: DropShadow {
-                transparentBorder: true
-                horizontalOffset: 0
-                verticalOffset: 0
-                radius: 8
-                samples: 17
-                color: "#cc000000"
-            }
 
             onFocusChanged: {
                 if (focus) playNav();
@@ -1041,21 +972,10 @@ id: root
             }
         }
 
-        Image {
-        id: settingsicon
-            width: height; height: vpx(24)
-            anchors.centerIn: settingsbutton
-            smooth: true; asynchronous: true
-            source: "../assets/images/settingsicon.svg"
-            layer.enabled: showcaseWhiteBackground
-            layer.effect: ColorOverlay { color: "black" }
-            opacity: root.focus ? 0.8 : 0.5
-        }
-
         // ── Nav button labels — shown only for the highlighted button ─────
         Text {
             text: "Full Library"
-            anchors { top: homebutton.bottom; topMargin: vpx(3); horizontalCenter: homebutton.horizontalCenter }
+            anchors { top: homebutton.bottom; topMargin: vpx(8); horizontalCenter: homebutton.horizontalCenter }
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: homebutton.focus ? 1 : 0
@@ -1063,7 +983,7 @@ id: root
         }
         Text {
             text: "Discover"
-            anchors { top: discoverbutton.bottom; topMargin: vpx(3); horizontalCenter: discoverbutton.horizontalCenter }
+            anchors { top: discoverbutton.bottom; topMargin: vpx(8); horizontalCenter: discoverbutton.horizontalCenter }
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: discoverbutton.focus ? 1 : 0
@@ -1071,7 +991,7 @@ id: root
         }
         Text {
             text: "RetroAchievements"
-            anchors { top: achievementsbutton.bottom; topMargin: vpx(3); horizontalCenter: achievementsbutton.horizontalCenter }
+            anchors { top: achievementsbutton.bottom; topMargin: vpx(8); horizontalCenter: achievementsbutton.horizontalCenter }
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: achievementsbutton.focus ? 1 : 0
@@ -1079,7 +999,7 @@ id: root
         }
         Text {
             text: "Search"
-            anchors { top: searchbutton.bottom; topMargin: vpx(3); horizontalCenter: searchbutton.horizontalCenter }
+            anchors { top: searchbutton.bottom; topMargin: vpx(8); horizontalCenter: searchbutton.horizontalCenter }
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: searchbutton.focus ? 1 : 0
@@ -1087,7 +1007,7 @@ id: root
         }
         Text {
             text: "Settings"
-            anchors { top: settingsbutton.bottom; topMargin: vpx(3); horizontalCenter: settingsbutton.horizontalCenter }
+            anchors { top: settingsbutton.bottom; topMargin: vpx(8); horizontalCenter: settingsbutton.horizontalCenter }
             color: showcaseWhiteBackground ? "black" : "white"; style: Text.Outline; styleColor: Qt.rgba(0,0,0,0.7)
             font.family: subtitleFont.name; font.pixelSize: fpx(11); font.bold: true
             opacity: settingsbutton.focus ? 1 : 0
@@ -1112,23 +1032,6 @@ id: root
                                       && settings.ShowcaseCollection4 === "None"
                                       && settings.ShowcaseCollection5 === "None"
                                       && settings.ShowcaseCollection6 === "None"
-
-    // Which collection slot (1-6) hosts the pin box, from Settings > Pins >
-    // "Pins to collection". If that collection is set to None the box simply
-    // doesn't appear — deliberately no fallback to another row, so the choice
-    // stays predictable.
-    property int featuredBoxSlot: {
-        if (settings.FeaturedBox === "No") return 0;
-        var slot = parseInt(settings.FeaturedBoxCollection) || 1;
-        if (slot < 1 || slot > 6) return 0;
-        var chosen = slot === 1 ? settings.ShowcaseCollection1
-                   : slot === 2 ? settings.ShowcaseCollection2
-                   : slot === 3 ? settings.ShowcaseCollection3
-                   : slot === 4 ? settings.ShowcaseCollection4
-                   : slot === 5 ? settings.ShowcaseCollection5
-                   :              settings.ShowcaseCollection6;
-        return (chosen === "None") ? 0 : slot;
-    }
 
     // Using an object model to build the list
     ObjectModel {
@@ -1204,10 +1107,30 @@ id: root
             property var resumeGame: null
             function refreshResume() {
                 var g = listLastPlayed.games.count > 0 ? listLastPlayed.currentGame(0) : null;
+                // The theme's own launch record wins when it's newer than what
+                // Pegasus reports (see rememberLaunch in theme.qml) — as long
+                // as Home isn't hiding that game.
+                var rec = lastLaunchRecord();
+                if (rec && rec.game !== g && heroAllowed(rec)) {
+                    var gt = (g && g.lastPlayed) ? g.lastPlayed.getTime() : NaN;
+                    if (!g || isNaN(gt) || rec.t > gt) g = rec.game;
+                }
                 if (g === resumeGame) return;
                 resumeGame = g;
                 // Hero highlighted right now: the page background follows it.
                 if (topRow.selected && currentIndex === 0) updateTopRowBackground(0, g);
+            }
+            // Same rules the Last Played row filters with (Lists/ListLastPlayed.qml).
+            function heroAllowed(rec) {
+                if (libraryHideRows[rec.index] === true) return false;
+                if (homeHideTitles[rec.game.title] === true) return false;
+                var genres = rec.game.genreList;
+                for (var i = 0; i < genres.length; i++) {
+                    var gn = genres[i].toLowerCase();
+                    if (omitAppsLive && gn === "application") return false;
+                    if (omitEmulatorsLive && gn === "emulator") return false;
+                }
+                return true;
             }
             readonly property var resumeDeps: [homeHideTitles, omitAppsLive, omitEmulatorsLive, libraryHideRows]
             onResumeDepsChanged: Qt.callLater(platformlist.refreshResume)
@@ -1231,7 +1154,7 @@ id: root
             orientation: ListView.Horizontal
             highlightRangeMode: ListView.NoHighlightRange
             snapMode: ListView.SnapToItem
-            highlightMoveDuration: 100
+            highlightMoveDuration: animMs(100)
             keyNavigationWraps: false
             
             // Whole-tile alignment of the scroll position. Shared by both the live
@@ -1307,9 +1230,9 @@ id: root
                 }
                 width: topRow.tileSz
                 height: topRow.tileSz
-                radius: vpx(12)
+                radius: vpx(6)   // concentric with the focus frame
                 color: selected ? theme.accent : theme.secondary
-                Behavior on color { ColorAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                Behavior on color { ColorAnimation { duration: animMs(180); easing.type: Easing.OutCubic } }
                 // Grow from the bottom edge so the bottom stays put. The first (hero) tile
                 // grows up-and-right (left border pinned) and the last tile grows up-and-left
                 // (right border pinned) so neither outer border is clipped at the screen edge;
@@ -1317,58 +1240,34 @@ id: root
                 transformOrigin: index === 0 ? Item.BottomLeft
                                  : (index === platformlist.count - 1 ? Item.BottomRight : Item.Bottom)
                 scale: selected ? topRow.growScale : 1.0
-                Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                Behavior on scale { NumberAnimation { duration: animMs(180); easing.type: Easing.OutCubic } }
                 // Animated horizontal shift so neighbors slide out of the way of the selected tile
                 transform: Translate {
                     x: navShift
-                    Behavior on x { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+                    Behavior on x { NumberAnimation { duration: animMs(180); easing.type: Easing.OutCubic } }
                 }
                 // Selected always renders above its neighbors so the border can't be clipped behind them
                 z: selected ? 1 : 0
                 border.width: vpx(1)
                 border.color: "#19FFFFFF"
-                anchors.verticalCenter: parent.verticalCenter
-
-                // Xbox-style focus glow, auto-matched to the current Color Layout accent.
-                // The white PNG supplies only the glow SHAPE (alpha); ColorOverlay recolors
-                // it to theme.accent, so it always matches the selected colour. Only the
-                // selected tile's overlay is visible, so a single shader renders at a time.
-                Image {
-                    id: focusHaloSrc
-                    source: "../assets/images/focus_halo.png"
-                    anchors.fill: parent
-                    anchors.margins: -(tile.width * 0.0614)
-                    smooth: true
-                    mipmap: false
-                    visible: false
-                }
-                ColorOverlay {
-                    id: focusHalo
-                    anchors.fill: focusHaloSrc
-                    source: focusHaloSrc
-                    color: theme.accent
-                    z: -1
-                    opacity: (selected && settings.TileHalo === "Yes") ? 0.95 : 0
-                    visible: opacity > 0
-                    Behavior on opacity { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-                }
+                // Delegates lose their parent while being recycled; guarded so
+                // that doesn't throw (it threw ~60 times per Home scroll).
+                anchors.verticalCenter: parent ? parent.verticalCenter : undefined
 
                 // ── HERO (index 0): resume / last-played screenshot + title ──
-                // heroBg + title bar share a single OpacityMask so the bar's BOTTOM
-                // corners follow the rounded tile edge while its TOP corners stay square.
+                // Rounded without a mask: the art through RoundedArt (one
+                // shader pass), the title bar from a square band plus a
+                // clipped rounded strip. The old layer + OpacityMask kept
+                // two off-screen copies of the whole hero tile alive.
+                // Built for the hero tile only: every system tile used to carry
+                // this whole block (art, shader, logo, title bar) invisibly.
+                Loader {
+                    anchors.fill: parent
+                    active: isHero
+                    sourceComponent: Component {
                 Item {
                     id: heroClipper
-                    visible: isHero
                     anchors.fill: parent
-                    layer.enabled: isHero
-                    layer.smooth: true
-                    layer.effect: OpacityMask {
-                        maskSource: Rectangle {
-                            width: heroClipper.width
-                            height: heroClipper.height
-                            radius: tile.radius
-                        }
-                    }
 
                     Image {
                         id: heroBg
@@ -1378,7 +1277,20 @@ id: root
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true; smooth: true
                         source: heroArtSource(platformlist.resumeGame)
-                        opacity: selected ? 1 : 0.5
+                        // Decoded at the grown tile's size, not the file's.
+                        sourceSize: Qt.size(decodePxFor(topRow.tileSz * topRow.growScale), decodePxFor(topRow.tileSz * topRow.growScale))
+                        opacity: tile.selected ? 1 : 0.5
+                        // Drawn by heroBgFx; shown directly only if the shader can't run
+                        visible: heroBgFx.failed
+                    }
+                    RoundedArt {
+                    id: heroBgFx
+                        anchors.fill: heroBg
+                        source: heroBg
+                        crop: true
+                        radius: tile.radius
+                        opacity: heroBg.opacity
+                        visible: heroBg.status === Image.Ready && !failed
                     }
 
                     // Game logo overlay — only for the Screenshot / Fanart hero art modes.
@@ -1394,20 +1306,39 @@ id: root
                         asynchronous: true; smooth: true
                         source: (platformlist.resumeGame && platformlist.resumeGame.assets.logo)
                                 ? platformlist.resumeGame.assets.logo : ""
+                        sourceSize: Qt.size(decodePxFor(topRow.tileSz * topRow.growScale), decodePxFor(topRow.tileSz * topRow.growScale))
                         visible: source != ""
                                  && (settings.HeroBoxArt === "Screenshot" || settings.HeroBoxArt === "Fanart")
-                        opacity: selected ? 1 : 0.5
+                        opacity: tile.selected ? 1 : 0.5
                     }
 
                     Rectangle {
                         // Full-width bar across the bottom — shown only on highlight now.
-                        // No radius — the parent OpacityMask clips the bottom corners to
-                        // match tile.radius automatically.
+                        // Square top, bottom corners following tile.radius.
+                    id: heroBar
                         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-                        height: Math.max(vpx(36), topRow.tileSz * 0.16, heroBarText.contentHeight + vpx(16)); color: "#99000000"
-                        opacity: gameTitleMode === "Never" ? 0 : ((selected || gameTitleMode === "Always") ? 1 : 0)
+                        height: Math.max(vpx(36), topRow.tileSz * 0.16, heroBarText.contentHeight + vpx(16)); color: "transparent"
+                        // The hero is part of the system row: its titles setting.
+                        opacity: systemTitleMode === "Never" ? 0 : ((tile.selected || systemTitleMode === "Always") ? 1 : 0)
                         visible: opacity > 0
                         Behavior on opacity { NumberAnimation { duration: 120 } }
+                        readonly property real r: Math.min(tile.radius, height)
+                        Rectangle {
+                            anchors { left: parent.left; right: parent.right; top: parent.top }
+                            height: parent.height - parent.r
+                            color: "#99000000"
+                        }
+                        Item {
+                            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                            height: heroBar.r
+                            clip: true
+                            Rectangle {
+                                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                                height: heroBar.r * 2
+                                radius: heroBar.r
+                                color: "#99000000"
+                            }
+                        }
                         Text {
                             anchors { left: parent.left; leftMargin: vpx(8); right: parent.right; rightMargin: vpx(6); verticalCenter: parent.verticalCenter }
                             id: heroBarText
@@ -1421,6 +1352,8 @@ id: root
                         }
                     }
                 }
+                    }   // Component
+                }   // hero Loader
 
                 // ── PLATFORM (index >= 1): system background + logo ──
 
@@ -1431,33 +1364,40 @@ id: root
                 id: sysBg
                     property string basePath: (!isHero && coll)
                         ? "../assets/images/systembackground/" + Utils.processPlatformName(coll.shortName) : ""
-                    property var exts: [".png", ".jpg", ".jpeg", ".webp"]
+                    property var exts: [".webp", ".png", ".jpg", ".jpeg"]
                     property int extIdx: 0
                     onBasePathChanged: extIdx = 0      // reset when tile recycles to a new system
                     onStatusChanged: {
                         if (status === Image.Error && extIdx < exts.length - 1)
                             extIdx = extIdx + 1;       // try next extension
                     }
-                    visible: !isHero && status === Image.Ready
+                    // Drawn by sysBgFx below (rounded in one pass); shown
+                    // directly only if that shader can't run on this GPU.
+                    readonly property bool shown: !isHero && status === Image.Ready
+                    visible: shown && sysBgFx.failed
                     anchors.fill: parent
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true; smooth: true
-                    source: basePath !== "" ? basePath + exts[extIdx] : ""
+                    sourceSize: Qt.size(decodePxFor(topRow.tileSz * topRow.growScale), decodePxFor(topRow.tileSz * topRow.growScale))
+                    readonly property string customBg: (!isHero && coll) ? customSystemBackground(coll) : ""
+                    source: customBg !== "" ? customBg : (basePath !== "" ? basePath + exts[extIdx] : "")
                     // HQ: dissolve in once decoded instead of snapping. The
                     // target opacity is unchanged; the Behavior only animates
                     // the change, and only when HQ is on.
                     opacity: (status === Image.Ready) ? (selected ? 0.9 : 0.6) : 0
                     Behavior on opacity { enabled: hqFadeIn; NumberAnimation { duration: 180 } }
-                    // Rounded-corner clip just on the image
-                    layer.enabled: !isHero
-                    layer.smooth: true
-                    layer.effect: OpacityMask {
-                        maskSource: Rectangle {
-                            width: sysBg.width
-                            height: sysBg.height
-                            radius: tile.radius
-                        }
-                    }
+                }
+                // Rounded corners in one shader pass, reading the image's own
+                // texture. Replaces a layer + OpacityMask that kept two
+                // off-screen images alive on EVERY system tile.
+                RoundedArt {
+                id: sysBgFx
+                    anchors.fill: sysBg
+                    source: sysBg
+                    crop: true
+                    radius: tile.radius
+                    opacity: sysBg.opacity
+                    visible: sysBg.shown && !failed
                 }
 
                 Image {
@@ -1465,8 +1405,11 @@ id: root
                     visible: !isHero
                     anchors.fill: parent
                     anchors.margins: vpx(15)
-                    source: (!isHero && coll) ? "../assets/images/logospng/" + Utils.processPlatformName(coll.shortName) + ".png" : ""
-                    sourceSize { width: 512; height: 512 }
+                    source: (!isHero && coll)
+                        ? systemLogoSource(coll) : ""
+                    // The grown tile's size: 512 px was twice what a 244 px
+                    // tile (366 grown) can show, for every logo in the strip.
+                    sourceSize: Qt.size(decodePxFor(topRow.tileSz * topRow.growScale), decodePxFor(topRow.tileSz * topRow.growScale))
                     fillMode: Image.PreserveAspectFit
                     asynchronous: true
                     smooth: true
@@ -1504,22 +1447,37 @@ id: root
 
                     anchors.fill: parent
                     visible: !isHero && sysNameBar.opacity > 0
-                    // Only pay for the FBO while the bar is actually showing.
-                    layer.enabled: visible
-                    layer.effect: OpacityMask {
-                        maskSource: Rectangle {
-                            width: tile.width
-                            height: tile.height
-                            radius: tile.radius
-                        }
-                    }
+                    // Square top, rounded bottom WITHOUT a mask: a plain square
+                    // band, plus a strip clipped to the bottom corner radius
+                    // holding a rounded rectangle. Clipping a plain rectangle
+                    // is free; the OpacityMask it replaces allocated two
+                    // offscreen buffers on every step along the strip (the
+                    // newly selected tile turned its layer on each time).
 
-                    Rectangle {
+                    Item {
                     id: sysNameBar
 
                         anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                         height: Math.max(vpx(36), topRow.tileSz * 0.16, sysBarText.contentHeight + vpx(16))   // grows for 2-line names
-                        color: "#99000000"
+                        readonly property color barColor: "#99000000"
+                        readonly property real r: Math.min(tile.radius, height)
+
+                        Rectangle {
+                            anchors { left: parent.left; right: parent.right; top: parent.top }
+                            height: parent.height - parent.r
+                            color: parent.barColor
+                        }
+                        Item {
+                            anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                            height: parent.r
+                            clip: true
+                            Rectangle {
+                                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                                height: sysNameBar.r * 2
+                                radius: sysNameBar.r
+                                color: sysNameBar.barColor
+                            }
+                        }
                         // System tile titles: its own setting, separate from game tiles.
                         opacity: (isHero || systemTitleMode === "Never") ? 0
                                : ((selected || systemTitleMode === "Always") ? 1 : 0)
@@ -1539,48 +1497,36 @@ id: root
                     }
                 }
 
-                // Accent frame: hero when selected; platform when selected AND system background loaded
-                // (platforms without a background keep the current accent-fill look instead)
-                Rectangle {
-                    // Overhang by a pixel: sharing the tile's exact bounds left
-                    // the tile's antialiased corner peeking outside the frame,
-                    // which reads as the old square-ish corner poking through
-                    // at the larger radius. Radius tracks tile.radius so the
-                    // two can't drift apart again.
+                // Focus frame: gap, ring and glow in one pass, on the selected
+                // tile only — the hero, or a system tile once its background is
+                // loaded (one without keeps the accent-fill look). Sized
+                // against the grow-on-focus scale so the ring matches the game
+                // tiles'.
+                Loader {
                     anchors.fill: parent
-                    anchors.margins: -vpx(3)
-                    visible: selected && (isHero || sysBg.status === Image.Ready)
-                    color: "transparent"
-                    radius: tile.radius + vpx(3)
-                    border.color: theme.accent
-                    border.width: vpx(5)
-                }
-
-                // Animated highlight — flashes the frame white when the AnimateHighlight setting is on
-                Rectangle {
-                    id: highlightPulse
-                    anchors.fill: parent
-                    anchors.margins: -vpx(3)
-                    visible: selected && settings.AnimateHighlight === "Yes"
-                    color: "transparent"
-                    radius: tile.radius + vpx(3)
-                    border.color: "#ffffff"
-                    border.width: vpx(5)
-                    opacity: 0   // start invisible so it can't pop in at peak brightness
-                    SequentialAnimation on opacity {
-                        running: highlightPulse.visible
-                        loops: Animation.Infinite
-                        PropertyAction { target: highlightPulse; property: "opacity"; value: 0 }
-                        NumberAnimation { to: 1; duration: 200 }
-                        NumberAnimation { to: 0; duration: 500 }
-                        PauseAnimation  { duration: 200 }
+                    active: selected && (isHero || sysBg.status === Image.Ready)
+                    sourceComponent: Item {
+                        FocusFrame {
+                            anchors.fill: parent
+                            artRadius: tile.radius
+                            gap: vpx(2) / topRow.growScale
+                            ring: vpx(3) / topRow.growScale
+                            glow: vpx(6) / topRow.growScale
+                        }
                     }
                 }
+
 
                 MouseArea {
                     anchors.fill: parent
                     hoverEnabled: settings.MouseHover == "Yes"
-                    onEntered: { playNav(); mainList.currentIndex = topRow.ObjectModel.index; platformlist.currentIndex = index; }
+                    // Only when the pointer itself moved (see theme.qml pointerMoved).
+                    function hoverSelect() {
+                        if (selected || !pointerMoved()) return;
+                        playNav(); mainList.currentIndex = topRow.ObjectModel.index; platformlist.currentIndex = index;
+                    }
+                    onEntered: hoverSelect()
+                    onPositionChanged: hoverSelect()
                     onClicked: {
                         if (selected) {
                             if (isHero) { if (platformlist.resumeGame) { launchGame(platformlist.resumeGame); } }
@@ -1607,14 +1553,23 @@ id: root
             Keys.onPressed: {
                 if (api.keys.isAccept(event) && !event.isAutoRepeat) {
                     event.accepted = true;
-                    if (currentIndex <= 0) {
-                        if (resumeGame) { launchGame(resumeGame); }
-                    } else {
-                        currentCollectionIndex = sortedColl[currentIndex - 1];
-                        collectionVisited = true;
-                        softwareScreen();
-                    }
+                    activateCurrent();
                 }
+            }
+            // A on the system row: the hero resumes its game, a system opens.
+            function activateCurrent() {
+                if (currentIndex <= 0) {
+                    if (resumeGame) { launchGame(resumeGame); }
+                } else {
+                    currentCollectionIndex = sortedColl[currentIndex - 1];
+                    collectionVisited = true;
+                    softwareScreen();
+                }
+            }
+            function helpAction(button) {
+                if (button !== "accept") return false;
+                activateCurrent();
+                return true;
             }
 
         }
@@ -1631,7 +1586,6 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (featuredBoxSlot === 1) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1666,7 +1620,6 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (featuredBoxSlot === 2) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1701,7 +1654,6 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (featuredBoxSlot === 3) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1736,7 +1688,6 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (featuredBoxSlot === 4) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1771,7 +1722,6 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (featuredBoxSlot === 5) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1806,7 +1756,6 @@ id: root
             enabled: collection.enabled
             visible: collection.enabled
 
-            favoritesData: (featuredBoxSlot === 6) ? listFavoritesAll : null
 
             height: collection.height
 
@@ -1842,17 +1791,7 @@ id: root
         var list = null;
         if (mainList.currentIndex === 1) list = platformlist;
         else if (mainList.currentItem && mainList.currentItem.collectionList) list = mainList.currentItem.collectionList;
-        if (!list) return -1;
-        // Resting on the favorites carousel: currentIndex is -1 so there's no
-        // currentItem to measure. Report the header's own centre instead —
-        // without this the closest-column logic got no position, bailed out,
-        // and the destination row fell back to its stale savedIndex (jumping
-        // far right instead of straight down).
-        if (list.onFavoritesHeader !== undefined && list.onFavoritesHeader && list.headerItem) {
-            var h = list.headerItem;
-            return h.mapToItem(root, h.width / 2, 0).x;
-        }
-        if (!list.currentItem) return -1;
+        if (!list || !list.currentItem) return -1;
         var c = list.currentItem;
         return c.mapToItem(root, c.width / 2, 0).x;          // screen-x centre of current item
     }
@@ -1886,30 +1825,13 @@ id: root
             var it = mainList.itemAtIndex(destIndex);
             if (!it || !it.collectionList) return;
             var list = it.collectionList;
-            // A row carrying the favorites carousel has an extra slot before
-            // tile 0, so the plain column math lands one tile too far right.
-            // Offset by the header's extent, and treat a negative result as
-            // "that column IS the carousel" rather than clamping onto tile 0.
-            var hasHeader = it.showFavoritesHeader === true && list.headerItem;
-            var headerExtent = hasHeader ? (list.headerItem.width + list.spacing) : 0;
             var unit = it.itemWidth + list.spacing;
             if (unit <= 0) return;
             var local = list.mapFromItem(root, screenX, 0).x;
-            var i = Math.round((list.contentX + local - headerExtent - it.itemWidth / 2) / unit);
-
-            if (hasHeader && i < 0) {
-                it.savedIndex = 0;
-                list.savedOnHeader = true;
-                list.onFavoritesHeader = true;
-                return;
-            }
+            var i = Math.round((list.contentX + local - it.itemWidth / 2) / unit);
             if (i < 0) i = 0;
             if (i > list.count - 1) i = list.count - 1;
             it.savedIndex = i;
-            if (list.onFavoritesHeader !== undefined) {
-                list.savedOnHeader = false;
-                list.onFavoritesHeader = false;
-            }
         }
     }
 
@@ -1930,7 +1852,8 @@ id: root
         anchors.fill: parent
         model: mainModel
         focus: true
-        highlightMoveDuration: 200
+        // Snaps while the wheel spins, so a fast spin doesn't queue a slide per notch.
+        highlightMoveDuration: homeWheel.busy ? 0 : animMs(200)
         highlightRangeMode: ListView.ApplyRange 
         preferredHighlightBegin: header.height
         preferredHighlightEnd: parent.height - (helpMargin * 2)
@@ -2014,11 +1937,12 @@ id: root
     // a list the user isn't in. navJump/savedRow are left alone: this is an
     // ordinary row change, not a jump to the nav bar.
     WheelNav {
+    id: homeWheel
         anchors.fill: mainList
         view: mainList
         columns: 1
         active: mainList.activeFocus
-        onStepped: function() { playNav(); }
+        onStepped: function(quiet) { if (!quiet) playNav(); }
     }
 
     // Global input handling for the screen
@@ -2026,6 +1950,21 @@ id: root
     // Discover from the rows — and, from a header button, returning to the
     // rows (restoring the saved row so a navJump doesn't glide to the top),
     // which is what those buttons' own B handlers do.
+    // Clickable prompts (theme.qml helpClick). Tiles and the system row take
+    // A themselves; this covers the header buttons and the page's own keys.
+    // B is left to mouseBack(), which mirrors it.
+    function helpAction(button) {
+        if (button === "filters") { settingsScreen(); return true; }
+        if (button === "details") { refreshLists(); return true; }
+        if (button !== "accept") return false;
+        if (homebutton.activeFocus)         allGamesScreen();
+        else if (discoverbutton.activeFocus)     discoverScreen();
+        else if (achievementsbutton.activeFocus) achievementsScreen();
+        else if (searchbutton.activeFocus)       openLibrarySearch();
+        else if (settingsbutton.activeFocus)     settingsScreen();
+        return true;
+    }
+
     function mouseBack() {
         if (!mainList.activeFocus) {
             if (mainList.navJump) { mainList.navJump = false; mainList.currentIndex = mainList.savedRow; }
@@ -2048,6 +1987,11 @@ id: root
         }
         // Discover mode (B)
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
+            // Windows / Linux: Esc is left unaccepted, so it reaches Pegasus,
+            // which opens its own menu (themes, settings, quit) — a keyboard
+            // has no other way there but F1. A controller's B and Backspace
+            // still open Discover; Android is unchanged.
+            if (event.key === Qt.Key_Escape && !platform.isAndroid) return;
             event.accepted = true;
             discoverScreen();
         }

@@ -86,6 +86,7 @@ id: root
         acceptedButtons: Qt.AllButtons
         hoverEnabled: true
         onPressed: mouse.accepted = true
+        onWheel: wheel.accepted = true   // the wheel stops here too, not on the screen behind
         onClicked: mouse.accepted = true
         onReleased: mouse.accepted = true
     }
@@ -114,7 +115,7 @@ id: root
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true
-            sourceSize { width: 96; height: 96 }
+            sourceSize { width: hrpx(96); height: hrpx(96) }
         }
 
         // Avatar + username + points + member since (same as the other RA pages)
@@ -136,7 +137,7 @@ id: root
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
                     asynchronous: true
-                    sourceSize { width: 64; height: 64 }
+                    sourceSize { width: hrpx(64); height: hrpx(64) }
                     layer.enabled: true
                     layer.smooth: true
                     layer.effect: OpacityMask {
@@ -418,6 +419,13 @@ id: root
             event.accepted = true;
             previousScreen();
         }
+    }
+
+    // Clickable prompts (B is left to mouseBack).
+    function helpAction(button) {
+        if (button !== "accept") return false;
+        if (!cheevosData.lookupInProgress && cheevosData.pendingGameID === 0) { playAccept(); activateSelected(); }
+        return true;
     }
 
     // ── Help bar ─────────────────────────────────────────────────────────

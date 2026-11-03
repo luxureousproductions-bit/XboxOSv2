@@ -15,19 +15,19 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import QtQuick 2.15
+import QtQml 2.15            // Binding.restoreMode (Game details follows the cursor only while shown)
 import QtQuick.Window 2.15   // Window.active — second signal for app-switch detection
 import QtGraphicalEffects 1.15   // FastBlur, for the HQ drawer backdrop
 import QtQuick.Layouts 1.15
 import SortFilterProxyModel 0.2
 import QtMultimedia 5.15
 import "RetroAchievements"
-import "VerticalList"
-import "GridView"
 import "Global"
 import "GameDetails"
 import "ShowcaseView"
 import "Settings"
 import "utils.js" as Utils
+import "buildinfo.js" as BuildInfo
 
 FocusScope {
 id: root
@@ -51,14 +51,25 @@ id: root
     // safer than making the whole object reactive, which would invalidate all
     // 224 settings.* bindings at once — including several that walk the full
     // game list.
-    property int settingsEpoch: 0
+    property alias settingsEpoch: settingsStore.epoch
 
-    // Live copy of the featured box mode. Read by ShowcaseViewMenu's carousel
-    // and by FavoritesHeader, so switching it applies without a reload.
-    readonly property string featuredBoxContent: {
-        var e = settingsEpoch;
-        return api.memory.has("Featured Box Content")
-             ? api.memory.get("Featured Box Content") : "Favorites";
+    SettingsStore {
+    id: settingsStore
+        defaults: settingDefaults
+    }
+
+    // OS and Pegasus X feature checks, in one place (Global/Platform.qml).
+    Platform { id: platform }
+
+    // What the Diagnostics page shows and "Write diagnostics to log" writes.
+    function diagnosticsText() {
+        return "XboxOSv2 build " + BuildInfo.build + " (" + BuildInfo.branch + ", " + BuildInfo.date + ")"
+            + "\nFrontend: " + platform.frontendLine
+            + "\nFeatures: " + platform.featureLine
+            + "\nPDF manuals: " + (platform.hasPdf ? "yes" : "no") + "  |  Manual lookup: " + (platform.hasFindManual ? "native" : "theme")
+            + "\nOS: " + platform.os + "  |  Screen: " + width + "x" + height + "  |  UI scale: " + settings.UiScale
+            + "\nHQ mode: " + (hqMode ? "on" : "off")
+            + "\nLibrary: " + api.allGames.count + " games, " + api.collections.count + " collections";
     }
 
     // ── Home "hide" sets: apps and emulators kept SEPARATE ────────────────
@@ -79,6 +90,15 @@ id: root
     //                               the keyword rules or wherever you moved it
     //                               (saved moves update categoryMap, so this
     //                               follows them live)
+    // A system's logo: the collection's own (Pegasus X Settings > Library >
+    // System tile), else the theme's bundled one. Every screen uses this, so
+    // a logo set for a collection shows everywhere. Relative to the screens'
+    // folders (they all sit one level down).
+    function systemLogoSource(coll) {
+        if (!coll) return "";
+        if (coll.assets && coll.assets.logo) return coll.assets.logo;
+        return "../assets/images/logospng/" + Utils.processPlatformName(coll.shortName) + ".png";
+    }
     function hasGenre(g, want) {
         var gl = g ? g.genreList : null;
         if (!gl) return false;
@@ -86,10 +106,19 @@ id: root
             if ((gl[i] || "").toLowerCase() === want) return true;
         return false;
     }
+    // Pegasus X tags every entry of its one "Android" collection as Game,
+    // Emulator or Application (Settings > Library > Combine Android collections)
+    function hasTag(g, want) {
+        var tl = g ? g.tagList : null;
+        if (!tl) return false;
+        for (var i = 0; i < tl.length; i++)
+            if ((tl[i] || "").toLowerCase() === want) return true;
+        return false;
+    }
     readonly property var emulatorTitleSet: {
         var set = {};
-        var idx = appDrawer.appIndex;
-        var cat = appDrawer.categoryMap;
+        var idx = appLib.appIndex;
+        var cat = appLib.categoryMap;
         for (var i = 0; i < idx.length; i++) {
             var e = idx[i];
             if (!e.title) continue;
@@ -104,8 +133,8 @@ id: root
     // on Home. A genre tag of "Application" still makes it an app.
     readonly property var drawerGameTitleSet: {
         var set = {};
-        var idx = appDrawer.appIndex;
-        var cat = appDrawer.categoryMap;
+        var idx = appLib.appIndex;
+        var cat = appLib.categoryMap;
         for (var i = 0; i < idx.length; i++) {
             var e = idx[i];
             if (!e.title) continue;
@@ -157,7 +186,7 @@ id: root
     //                      list } for every Android collection (platform page,
     //                      All Games with one system chosen)
     function drawerKeyOf(g) {
-        var p = appDrawer.packageOf(g);
+        var p = appLib.packageOf(g);
         return p !== "" ? p : "title:" + (g.title || "");
     }
     function libraryHides(g, mine, lib, libOn) {
@@ -168,16 +197,48 @@ id: root
         var mine = myAndroidTitles;
         var lib = libraryHiddenLive;
         var libOn = Object.keys(lib).length > 0;
+        // Nothing hidden (always so on desktop, often on Android): no walk.
+        if (!libOn && Object.keys(mine).length === 0) return noHideTitles;
         var rows = {};
         var all = api.allGames;
         for (var k = 0; k < all.count; k++)
             if (libraryHides(all.get(k), mine, lib, libOn)) rows[k] = true;
         return rows;
     }
+    // ── Home rows: everything they hide, as ONE row set ───────────────────
+    // Each Home row used to re-check, for every one of ~4.4k games, the
+    // hidden rows, the hidden titles AND the game's genre tags (apps,
+    // emulators) — seven rows doing the same work on every re-filter. This
+    // does it once per change of its inputs; the rows then only look up
+    // their row number here.
+    readonly property var homeHideRows: {
+        var base = libraryHideRows, titles = homeHideTitles;
+        var omitApp = omitAppsLive, omitEmu = omitEmulatorsLive;
+        // Nothing to add to the library's own hides: reuse that set, no walk.
+        if (!omitApp && !omitEmu && Object.keys(titles).length === 0) return base;
+        var rows = {};
+        for (var r in base) rows[r] = true;
+        var all = api.allGames;
+        for (var k = 0; k < all.count; k++) {
+            if (rows[k]) continue;
+            var g = all.get(k);
+            if (titles[g.title] === true) { rows[k] = true; continue; }
+            if (!omitApp && !omitEmu) continue;
+            var genres = g.genreList;
+            for (var i = 0; i < genres.length; i++) {
+                var gl = genres[i].toLowerCase();
+                if ((omitApp && gl === "application") || (omitEmu && gl === "emulator")) { rows[k] = true; break; }
+            }
+        }
+        return rows;
+    }
+    readonly property var noHideTitles: ({})
+
     readonly property var androidHideRows: {
         var mine = myAndroidTitles;
         var lib = libraryHiddenLive;
         var libOn = Object.keys(lib).length > 0;
+        if (!libOn && Object.keys(mine).length === 0) return noHideRows;
         var out = {};
         var n = api.collections.count;
         for (var i = 0; i < n; i++) {
@@ -199,17 +260,20 @@ id: root
 
     // Live copies of the two Home hide options. `settings` is read once at
     // load, so rows bound to it only changed after a reload. These re-read on
-    // settingsEpoch, which Settings bumps on every save (the same pattern as
-    // featuredBoxContent above).
+    // settingsEpoch, which Settings bumps on every save.
     readonly property bool omitAppsLive: {
         var e = settingsEpoch;
-        return (api.memory.has("Omit genre: Application from Showcase")
-              ? api.memory.get("Omit genre: Application from Showcase") : "No") === "Yes";
+        return (settingsStore.get("Omit genre: Application from Showcase", "No")) === "Yes";
     }
     readonly property bool omitEmulatorsLive: {
         var e = settingsEpoch;
-        return (api.memory.has("Omit genre: Emulator from Showcase")
-              ? api.memory.get("Omit genre: Emulator from Showcase") : "No") === "Yes";
+        return (settingsStore.get("Omit genre: Emulator from Showcase", "No")) === "Yes";
+    }
+
+    // Frame rate counter (Settings > Appearance > Diagnostics). Live.
+    readonly property bool frameCounterLive: {
+        var e = settingsEpoch;
+        return (settingsStore.get("Frame counter", "No")) === "Yes";
     }
 
     // ── What the Home rows hide, as ONE list ──────────────────────────────
@@ -234,12 +298,24 @@ id: root
     property var    libraryHiddenLive: ({})
     property string libraryHiddenSig: ""
     function rebuildHomeHide() {
-        if (appDrawer.open) { homeHidePending = true; return; }
+        if (drawerOpen) { homeHidePending = true; return; }
         homeHidePending = false;
-        var libSig = Object.keys(appDrawer.libraryHiddenPkgs).sort().join("\n");
+        // PC: the Power entries (Sleep, Restart, ...) live behind the drawer's
+        // Power tile only. They're added here, so Home, the hero, All Games
+        // and the PC Apps page leave them out the way they leave out anything
+        // hidden from the library.
+        var hidden = appLib.libraryHiddenPkgs;
+        var power = onDesktop ? appLib.powerPkgs : noHideTitles;
+        if (Object.keys(power).length > 0) {
+            var merged = {};
+            for (var hk in hidden) merged[hk] = hidden[hk];
+            for (var pk in power) merged[pk] = true;
+            hidden = merged;
+        }
+        var libSig = Object.keys(hidden).sort().join("\n");
         if (libSig !== libraryHiddenSig) {
             libraryHiddenSig = libSig;
-            libraryHiddenLive = appDrawer.libraryHiddenPkgs;
+            libraryHiddenLive = hidden;
         }
         var set = {};
         if (omitAppsLive)      { var a = homeAppTitleSet;  for (var t in a) set[t] = true; }
@@ -254,8 +330,9 @@ id: root
     onOmitAppsLiveChanged:      Qt.callLater(rebuildHomeHide)
     onOmitEmulatorsLiveChanged: Qt.callLater(rebuildHomeHide)
     Connections {
-        target: appDrawer
+        target: appLib
         onLibraryHiddenPkgsChanged: Qt.callLater(rebuildHomeHide)
+        onPowerPkgsChanged: Qt.callLater(rebuildHomeHide)
     }
     // After the drawer's slide-out, so the one re-filter doesn't land on it.
     Timer {
@@ -292,6 +369,58 @@ id: root
         }
     }
 
+    // A setting read live: re-evaluates whenever any setting is saved.
+    function liveSetting(key) { var e = settingsEpoch; return settingsStore.get(key); }
+
+    // ── Big desktop screens (1440p / 4K) ──────────────────────────────────
+    // Layout already scales with vpx(). What doesn't are FIXED pixel numbers
+    // tuned for 1080p handhelds: single images' decode sizes (icons, logos,
+    // badges) and blur textures. hiResScale grows those with the window:
+    // 1 at 1080p, 1.33 at 1440p, 2 at 4K — and is exactly 1 on Android, so
+    // handhelds decode and draw exactly what they did before. Per-tile art
+    // is deliberately NOT grown: decoding every tile at up to 4x the pixels
+    // is what made art load slowly on a 4K tester's screen.
+    readonly property bool onDesktop: !platform.isAndroid
+    readonly property real hiResScale: platform.isAndroid ? 1 : Math.max(1, vpx(1) / 1.5)
+    function hrpx(n) { return Math.round(n * hiResScale); }
+    // Images drawn at a known size (system tiles): base mode decodes them for
+    // a 1080p screen, High Quality Mode for the real one. Same on Android.
+    // Selection animations run at half length on PC (tile grow, highlight,
+    // row and system-strip slides): with a mouse they read as lag. Android
+    // keeps its timings exactly.
+    function animMs(ms) { return onDesktop ? Math.round(ms / 2) : ms; }
+    function decodePxFor(displayPx) {
+        return Math.max(1, Math.round(displayPx * (hqMode ? 1 : 1 / hiResScale)));
+    }
+
+    // ── Previews & sound master switches ──────────────────────────────────
+    // Off overrides every screen without rewriting its own choice. Discover
+    // always plays its video; the sound master mutes it too.
+    readonly property bool previewsMaster: liveSetting("Video previews") !== "No"
+    readonly property bool previewSoundMaster: liveSetting("Preview sound") !== "No"
+    function gatePreview(v) { return (previewsMaster && !videoUnsupported) ? v : "No"; }
+    function gateSound(v)   { return (previewsMaster && previewSoundMaster && !videoUnsupported) ? v : "No"; }
+
+    // ── Video health (Windows / Linux) ────────────────────────────────────
+    // Without the right codecs EVERY video fails, and the screens that show
+    // one stay black (Pegasus's Windows notes recommend the K-Lite Codec
+    // Pack, Basic). Each failure is logged to lastrun.log; once two different
+    // files have failed this session the theme stops trying: previews, the
+    // Game details video and the carousel video fall back to art, and
+    // Discover shows art and a hint. Never set on Android.
+    property bool videoUnsupported: false
+    property var  videoFailedSources: ({})
+    function reportVideoError(player) {
+        if (!player || player.error === MediaPlayer.NoError) return;
+        var src = String(player.source);
+        console.warn("XboxOSv2: video could not play (" + player.errorString + "): " + src);
+        if (platform.isAndroid || src === "" || videoFailedSources[src]) return;
+        var m = videoFailedSources;
+        m[src] = true;
+        videoFailedSources = m;
+        if (Object.keys(m).length >= 2) videoUnsupported = true;
+    }
+
     // ── Tile titles ───────────────────────────────────────────────────────
     // "Game tile titles" reuses the old "Always show titles" key. Saved values
     // from before are Yes/No; the row now stores On focus/Always/Never. Both
@@ -308,10 +437,32 @@ id: root
     // settings object below (as each key's fallback) AND by SettingsScreen (to
     // show the right current value on a fresh install) — one table, so the two
     // can never disagree. Keys absent here keep the fallback written inline.
+    // Per-OS defaults (only for settings never changed; a saved value
+    // always wins). Desktop: no video previews (many PCs lack the codecs, and
+    // a failed preview is a black box), mouse hover on, no startup chime;
+    // Windows: menu sounds off. Android keeps every default it had.
+    readonly property string previewDefault:    platform.isAndroid ? "Yes" : "No"
+    readonly property string hoverDefault:      platform.isAndroid ? "No"  : "Yes"
+    readonly property string chimeDefault:      platform.isAndroid ? "Yes" : "No"
+    readonly property string menuSoundsDefault: platform.isWindows ? "No"  : "Yes"
     readonly property var settingDefaults: ({
+        // ── Library (build 40): All Games and Systems are set separately ──
+        "AllGames Tile titles":                      "On focus",
+        "AllGames Grid hide logo on video":          "Yes",
+        "AllGames List hide on video":               "None",
+        "Systems View":                              "List",
+        "Systems Tile titles":                       "On focus",
+        "Systems Video preview":                     previewDefault,
+        "Systems video audio":                       "Yes",
+        "Systems Grid hide logo on video":           "Yes",
+        "Systems List hide on video":                "None",
+        // ── Game details "More like this" rows: their own previews ──
+        "Details rows video preview":                previewDefault,
+        "Details rows video audio":                  "Yes",
+        "Details rows hide logo on video":           "Yes",
         "3D Box":                                    "Yes",
         "All games menu video audio":                "Yes",
-        "Allow video thumbnails":                    "Yes",
+        "Allow video thumbnails":                    previewDefault,
         "Bottom fade":                               "Strong",
         "Box Art":                                   "3D",
         "Collection 1":                              "Recommended",
@@ -339,21 +490,22 @@ id: root
         "Discover video audio":                      "Yes",
         "Dynamic Background":                        "No",
         "Favorited Tile Accent":                     "Yes",
-        "Featured Box Content":                      "Fanart Slideshow",
         "Game Background":                           "Fanart",
         "Game details video preview audio":          "Yes",
         "Grid Thumbnail":                            "Square",
         "Hide Android System Tile":                  "Yes",
+        "PC games in App Drawer":                    "No",
+        "App drawer source":                         "Auto",
         "Hide Android Games System Tile":            "No",
         "Hide logo when thumbnail video plays":      "Yes",
         "High Quality Mode":                         "No",
+        "App drawer blur":                           "No",
         "Launch screen delay":                       "2.5",
         "More by Genre Display":                     "Full",
         "Number of columns":                         "3",
         "Number of games showcased":                 "20",
         "Omit genre: Application from Showcase":     "No",
         "Omit genre: Emulator from Showcase":        "No",
-        "Pins to collection":                        "2",
         "Randomize System Tile Fanart":              "No",
         "Screenshot Fallback":                       "No",
         "Show scanlines":                            "No",
@@ -363,121 +515,166 @@ id: root
         "UI Scale":                                  "1.0",
         "Video thumbnail audio":                     "Yes",
         "Xbox Logo":                                 "Logo1",
+        // ── Added with SettingsStore: every remaining setting, same values as
+        //    the settings object's fallbacks, so this is the complete schema.
+        "2D Box":                                    "Yes",
+        "Added App Launch":                          "Instant",
+        "All Games View":                            "List",
+        "AllGames Blur Background":                  "No",
+        "AllGames Items per row":                    "5",
+        "AllGames Show scanlines":                   "No",
+        "AllGames Tile Art":                         "Fanart",
+        "AllGames Tile Logo":                        "Yes",
+        "AllGames Tile Ratio":                       "0.66",
+        "AllGames Tile Style":                       "Wide",
+        "AllGames Video preview":                    previewDefault,
+        "Always show titles":                        "On focus",
+        "Back Box":                                  "Yes",
+        "Blur Background":                           "No",
+        "Cartridge":                                 "Yes",
+        "Collection 3 - Ratio":                      "0.66",
+        "Collection 4 - Ratio":                      "0.66",
+        "Collection 4 - Thumbnail":                  "Tall",
+        "Collection 5 - Thumbnail":                  "Wide",
+        "Collection 6 - Ratio":                      "0.66",
+        "Default to full details":                   "No",
+        "Enable mouse hover":                        hoverDefault,
+        "Fanart":                                    "Yes",
+        "Game Counter":                              "Yes",
+        "Game Logo":                                 "Show",
+        "Grid Game Logo":                            "Yes",
+        "Grid Ratio":                                "0.66",
+        "Grid art":                                  "Fanart",
+        "Grid background dimming":                   "Light",
+        "Hero box art":                              "Fanart",
+        "Hide button help":                          "No",
+        "LB/RB Function":                            "Cycle Platforms",
+        "Logo":                                      "Yes",
+        "Logo Color Match":                          "No",
+        "Menu Volume":                               "1.0",
+        "Menu sounds":                               menuSoundsDefault,
+        "Miximage":                                  "Yes",
+        "Video previews":                            "Yes",
+        "Media viewer video audio":                  "Yes",
+        "Preview sound":                             "Yes",
+        "Banner":                                    "Yes",
+        "Screenshots":                               "Yes",
+        "Show Battery Percentage":                   "Battery Only",
+        "Show Clock":                                "12hr",
+        "Show WiFi Indicator":                       "Yes",
+        "Showcase Collections Art":                  "Fanart",
+        "Start up chime":                            chimeDefault,
+        "Startup intro":                             "Yes",
+        "System tile titles":                        "On focus",
+        "Tile Halo":                                 "Yes",
+        "Title Screen":                              "Yes",
+        "Video":                                     "Yes",
+        "Video preview":                             previewDefault,
     })
 
     property var settings: {
         return {
-            PlatformView:                  api.memory.has("Game View") ? api.memory.get("Game View") : "Grid",
-            GridThumbnail:                 api.memory.has("Grid Thumbnail") ? api.memory.get("Grid Thumbnail") : "Square",
-            GridArt:                       api.memory.has("Grid art") ? api.memory.get("Grid art") : "Fanart",
-            GridGameLogo:                  api.memory.has("Grid Game Logo") ? api.memory.get("Grid Game Logo") : "Yes",
-            GridColumns:                   api.memory.has("Number of columns") ? api.memory.get("Number of columns") : "3",
-            GameBackground:                api.memory.has("Game Background") ? api.memory.get("Game Background") : "Fanart",
-            GameLogo:                      api.memory.has("Game Logo") ? api.memory.get("Game Logo") : "Show",
-            GameBlurBackground:            api.memory.has("Blur Background") ? api.memory.get("Blur Background") : "No",
-            VideoPreview:                  api.memory.has("Video preview") ? api.memory.get("Video preview") : "Yes",
-            AllowThumbVideo:               api.memory.has("Allow video thumbnails") ? api.memory.get("Allow video thumbnails") : "Yes",
-            AllowThumbVideoAudio:          api.memory.has("Video thumbnail audio") ? api.memory.get("Video thumbnail audio") : "Yes",
-            HideLogo:                      api.memory.has("Hide logo when thumbnail video plays") ? api.memory.get("Hide logo when thumbnail video plays") : "Yes",
-            HideButtonHelp:                api.memory.has("Hide button help") ? api.memory.get("Hide button help") : "No",
+            GridThumbnail:                 settingsStore.get("Grid Thumbnail", "Square"),
+            GridArt:                       settingsStore.get("Grid art", "Fanart"),
+            GridGameLogo:                  settingsStore.get("Grid Game Logo", "Yes"),
+            GridColumns:                   settingsStore.get("Number of columns", "3"),
+            GameBackground:                settingsStore.get("Game Background", "Fanart"),
+            GameLogo:                      settingsStore.get("Game Logo", "Show"),
+            GameBlurBackground:            settingsStore.get("Blur Background", "No"),
+            VideoPreview:                  gatePreview(settingsStore.get("Video preview")),
+            AllowThumbVideo:               gatePreview(settingsStore.get("Allow video thumbnails")),
+            AllowThumbVideoAudio:          gateSound(settingsStore.get("Video thumbnail audio", "Yes")),
+            HideLogo:                      settingsStore.get("Hide logo when thumbnail video plays", "Yes"),
+            HideButtonHelp:                settingsStore.get("Hide button help", "No"),
             // "Gradient" was removed as an option; a stale saved value falls back to the default.
             ColorLayout:                   (api.memory.has("Color Layout") && api.memory.get("Color Layout") !== "Gradient") ? api.memory.get("Color Layout") : "Lime",
-            MouseHover:                    api.memory.has("Enable mouse hover") ? api.memory.get("Enable mouse hover") : "No",
-            AlwaysShowTitles:              api.memory.has("Always show titles") ? api.memory.get("Always show titles") : "No",
-            AnimateHighlight:              api.memory.has("Animate highlight") ? api.memory.get("Animate highlight") : "No",
-            AllowVideoPreviewAudio:        api.memory.has("Game details video preview audio") ? api.memory.get("Game details video preview audio") : "Yes",
-            ShowScanlines:                 api.memory.has("Show scanlines") ? api.memory.get("Show scanlines") : "No",
-            DetailsDefault:                api.memory.has("Default to full details") ? api.memory.get("Default to full details") : "No",
-            LaunchScreenDelay:             api.memory.has("Launch screen delay") ? api.memory.get("Launch screen delay") : "2.5",
-            FeaturedBox:                   api.memory.has("Featured Box") ? api.memory.get("Featured Box") : "Yes",
-            FeaturedBoxCollection:         api.memory.has("Pins to collection") ? api.memory.get("Pins to collection") : "2",
-            UiScale:                       api.memory.has("UI Scale") ? api.memory.get("UI Scale") : "1.0",
-            FavoritedTileAccent:           api.memory.has("Favorited Tile Accent") ? api.memory.get("Favorited Tile Accent") : "Yes",
-            FeaturedBoxContent:            api.memory.has("Featured Box Content") ? api.memory.get("Featured Box Content") : "Fanart Slideshow",
-            ShowcaseBackgroundArt:          api.memory.has("Showcase Background Art") ? api.memory.get("Showcase Background Art") : "Yes",
-            RandomizeSystemTileFanart:      api.memory.has("Randomize System Tile Fanart") ? api.memory.get("Randomize System Tile Fanart") : "No",
-            CustomBackground:               api.memory.has("Custom Background") ? api.memory.get("Custom Background") : "Yes",
-            ShowcaseBackgroundOpacity:     api.memory.has("Showcase Background Opacity") ? api.memory.get("Showcase Background Opacity") : "1.00",
-            ShowcaseArt:                   api.memory.has("Showcase Collections Art") ? api.memory.get("Showcase Collections Art") : "Fanart",
-            HeroBoxArt:                    api.memory.has("Hero box art") ? api.memory.get("Hero box art") : "Fanart",
-            TileHalo:                      api.memory.has("Tile Halo") ? api.memory.get("Tile Halo") : "Yes",
-            SystemSort:                    api.memory.has("System sort") ? api.memory.get("System sort") : "Release year (oldest)",
-            ShowcaseColumns:               api.memory.has("Number of games showcased") ? api.memory.get("Number of games showcased") : "20",
-            ShowcaseFeaturedCollection:    api.memory.has("Featured collection") ? api.memory.get("Featured collection") : "Favorites",
-            ShowcaseCollection1:           api.memory.has("Collection 1") ? api.memory.get("Collection 1") : "Recommended",
-            ShowcaseCollection1_Thumbnail: api.memory.has("Collection 1 - Thumbnail") ? api.memory.get("Collection 1 - Thumbnail") : "Wide",
-            ShowcaseCollection1_Size:      api.memory.has("Collection 1 - Size") ? api.memory.get("Collection 1 - Size") : "Small",
-            ShowcaseCollection1_Ratio:     api.memory.has("Collection 1 - Ratio") ? api.memory.get("Collection 1 - Ratio") : "0.66",
-            ShowcaseCollection2:           api.memory.has("Collection 2") ? api.memory.get("Collection 2") : "Recently Played",
-            ShowcaseCollection2_Thumbnail: api.memory.has("Collection 2 - Thumbnail") ? api.memory.get("Collection 2 - Thumbnail") : "Tall",
-            ShowcaseCollection2_Size:      api.memory.has("Collection 2 - Size") ? api.memory.get("Collection 2 - Size") : "Medium",
-            ShowcaseCollection2_Ratio:     api.memory.has("Collection 2 - Ratio") ? api.memory.get("Collection 2 - Ratio") : "0.55",
-            ShowcaseCollection3:           api.memory.has("Collection 3") ? api.memory.get("Collection 3") : "Top by Genre",
-            ShowcaseCollection3_Thumbnail: api.memory.has("Collection 3 - Thumbnail") ? api.memory.get("Collection 3 - Thumbnail") : "Square",
-            ShowcaseCollection3_Size:      api.memory.has("Collection 3 - Size") ? api.memory.get("Collection 3 - Size") : "Medium",
-            ShowcaseCollection3_Ratio:     api.memory.has("Collection 3 - Ratio") ? api.memory.get("Collection 3 - Ratio") : "0.66",
-            ShowcaseCollection4:           api.memory.has("Collection 4") ? api.memory.get("Collection 4") : "Top by Publisher",
-            ShowcaseCollection4_Thumbnail: api.memory.has("Collection 4 - Thumbnail") ? api.memory.get("Collection 4 - Thumbnail") : "Tall",
-            ShowcaseCollection4_Size:      api.memory.has("Collection 4 - Size") ? api.memory.get("Collection 4 - Size") : "Medium",
-            ShowcaseCollection4_Ratio:     api.memory.has("Collection 4 - Ratio") ? api.memory.get("Collection 4 - Ratio") : "0.66",
-            ShowcaseCollection5:           api.memory.has("Collection 5") ? api.memory.get("Collection 5") : "Top by Genre 2",
-            ShowcaseCollection5_Thumbnail: api.memory.has("Collection 5 - Thumbnail") ? api.memory.get("Collection 5 - Thumbnail") : "Wide",
-            ShowcaseCollection5_Size:      api.memory.has("Collection 5 - Size") ? api.memory.get("Collection 5 - Size") : "Large",
-            ShowcaseCollection5_Ratio:     api.memory.has("Collection 5 - Ratio") ? api.memory.get("Collection 5 - Ratio") : "0.55",
-            ShowcaseCollection6:           api.memory.has("Collection 6") ? api.memory.get("Collection 6") : "Top by Developer",
-            ShowcaseCollection6_Thumbnail: api.memory.has("Collection 6 - Thumbnail") ? api.memory.get("Collection 6 - Thumbnail") : "Square",
-            ShowcaseCollection6_Size:      api.memory.has("Collection 6 - Size") ? api.memory.get("Collection 6 - Size") : "Large",
-            ShowcaseCollection6_Ratio:     api.memory.has("Collection 6 - Ratio") ? api.memory.get("Collection 6 - Ratio") : "0.66",
-            GridRatio:                     api.memory.has("Grid Ratio") ? api.memory.get("Grid Ratio") : "0.66",
+            MouseHover:                    settingsStore.get("Enable mouse hover"),
+            AlwaysShowTitles:              settingsStore.get("Always show titles"),
+            AllowVideoPreviewAudio:        gateSound(settingsStore.get("Game details video preview audio", "Yes")),
+            ShowScanlines:                 settingsStore.get("Show scanlines", "No"),
+            DetailsDefault:                settingsStore.get("Default to full details", "No"),
+            LaunchScreenDelay:             settingsStore.get("Launch screen delay", "2.5"),
+            UiScale:                       settingsStore.get("UI Scale", "1.0"),
+            FavoritedTileAccent:           settingsStore.get("Favorited Tile Accent", "Yes"),
+            ShowcaseBackgroundArt:          settingsStore.get("Showcase Background Art", "Yes"),
+            RandomizeSystemTileFanart:      settingsStore.get("Randomize System Tile Fanart", "No"),
+            CustomBackground:               settingsStore.get("Custom Background", "Yes"),
+            ShowcaseBackgroundOpacity:     settingsStore.get("Showcase Background Opacity", "1.00"),
+            ShowcaseArt:                   settingsStore.get("Showcase Collections Art", "Fanart"),
+            HeroBoxArt:                    settingsStore.get("Hero box art", "Fanart"),
+            SystemSort:                    settingsStore.get("System sort", "Release year (oldest)"),
+            ShowcaseColumns:               settingsStore.get("Number of games showcased", "20"),
+            ShowcaseCollection1:           settingsStore.get("Collection 1", "Recommended"),
+            ShowcaseCollection1_Thumbnail: settingsStore.get("Collection 1 - Thumbnail", "Wide"),
+            ShowcaseCollection1_Size:      settingsStore.get("Collection 1 - Size", "Small"),
+            ShowcaseCollection1_Ratio:     settingsStore.get("Collection 1 - Ratio", "0.66"),
+            ShowcaseCollection2:           settingsStore.get("Collection 2", "Recently Played"),
+            ShowcaseCollection2_Thumbnail: settingsStore.get("Collection 2 - Thumbnail", "Tall"),
+            ShowcaseCollection2_Size:      settingsStore.get("Collection 2 - Size", "Medium"),
+            ShowcaseCollection2_Ratio:     settingsStore.get("Collection 2 - Ratio", "0.55"),
+            ShowcaseCollection3:           settingsStore.get("Collection 3", "Top by Genre"),
+            ShowcaseCollection3_Thumbnail: settingsStore.get("Collection 3 - Thumbnail", "Square"),
+            ShowcaseCollection3_Size:      settingsStore.get("Collection 3 - Size", "Medium"),
+            ShowcaseCollection3_Ratio:     settingsStore.get("Collection 3 - Ratio", "0.66"),
+            ShowcaseCollection4:           settingsStore.get("Collection 4", "Top by Publisher"),
+            ShowcaseCollection4_Thumbnail: settingsStore.get("Collection 4 - Thumbnail", "Tall"),
+            ShowcaseCollection4_Size:      settingsStore.get("Collection 4 - Size", "Medium"),
+            ShowcaseCollection4_Ratio:     settingsStore.get("Collection 4 - Ratio", "0.66"),
+            ShowcaseCollection5:           settingsStore.get("Collection 5", "Top by Genre 2"),
+            ShowcaseCollection5_Thumbnail: settingsStore.get("Collection 5 - Thumbnail", "Wide"),
+            ShowcaseCollection5_Size:      settingsStore.get("Collection 5 - Size", "Large"),
+            ShowcaseCollection5_Ratio:     settingsStore.get("Collection 5 - Ratio", "0.55"),
+            ShowcaseCollection6:           settingsStore.get("Collection 6", "Top by Developer"),
+            ShowcaseCollection6_Thumbnail: settingsStore.get("Collection 6 - Thumbnail", "Square"),
+            ShowcaseCollection6_Size:      settingsStore.get("Collection 6 - Size", "Large"),
+            ShowcaseCollection6_Ratio:     settingsStore.get("Collection 6 - Ratio", "0.66"),
+            GridRatio:                     settingsStore.get("Grid Ratio", "0.66"),
             ColorBackground:               (api.memory.has("Color Background") && api.memory.get("Color Background") !== "Gradient") ? api.memory.get("Color Background") : "Black",
-            XboxLogo:                      api.memory.has("Xbox Logo") ? api.memory.get("Xbox Logo") : "Logo1",
-            LogoColorMatch:                api.memory.has("Logo Color Match") ? api.memory.get("Logo Color Match") : "No",
-            BoxArtStyle:                   api.memory.has("Box Art") ? api.memory.get("Box Art") : "3D",
-            GameCounter:                   api.memory.has("Game Counter") ? api.memory.get("Game Counter") : "Yes",
-            CarouselVideo:                 api.memory.has("Video") ? api.memory.get("Video") : "Yes",
-            CarouselScreenshots:           api.memory.has("Screenshots") ? api.memory.get("Screenshots") : "Yes",
-            CarouselTitleScreen:           api.memory.has("Title Screen") ? api.memory.get("Title Screen") : "Yes",
-            CarouselFanart:                api.memory.has("Fanart") ? api.memory.get("Fanart") : "Yes",
-            Carousel3DBox:                 api.memory.has("3D Box") ? api.memory.get("3D Box") : "Yes",
-            Carousel2DBox:                 api.memory.has("2D Box") ? api.memory.get("2D Box") : "Yes",
-            CarouselBackBox:               api.memory.has("Back Box") ? api.memory.get("Back Box") : "Yes",
-            CarouselCartridge:             api.memory.has("Cartridge") ? api.memory.get("Cartridge") : "Yes",
-            CarouselMiximage:              api.memory.has("Miximage") ? api.memory.get("Miximage") : "Yes",
-            CarouselWheel:                 api.memory.has("Logo") ? api.memory.get("Logo") : "Yes",
-            OmitApplicationFromShowcase:   api.memory.has("Omit genre: Application from Showcase") ? api.memory.get("Omit genre: Application from Showcase") : "No",
-            OmitEmulatorFromShowcase:      api.memory.has("Omit genre: Emulator from Showcase") ? api.memory.get("Omit genre: Emulator from Showcase") : "No",
-            HighQualityMode:               api.memory.has("High Quality Mode") ? api.memory.get("High Quality Mode") : "No",
-            PlatformShoulderButtons:       api.memory.has("LB/RB Function") ? api.memory.get("LB/RB Function") : "Cycle Platforms",
-            DynamicBackground:             api.memory.has("Dynamic Background") ? api.memory.get("Dynamic Background") : "No",
-            ScreenshotFallback:            api.memory.has("Screenshot Fallback") ? api.memory.get("Screenshot Fallback") : "No",
-            AddedAppLaunch:                api.memory.has("Added App Launch") ? api.memory.get("Added App Launch") : "Instant",
-            HideAndroidSystemTile:         api.memory.has("Hide Android System Tile") ? api.memory.get("Hide Android System Tile") : "Yes",
-            HideAndroidGamesSystemTile:    api.memory.has("Hide Android Games System Tile") ? api.memory.get("Hide Android Games System Tile") : "No",
-            MoreByGenreDisplay:            api.memory.has("More by Genre Display") ? api.memory.get("More by Genre Display") : "Full",
-            AllowDiscoverVideoAudio:         api.memory.has("Discover video audio") ? api.memory.get("Discover video audio") : "Yes",
-            MenuSounds:                      api.memory.has("Menu sounds") ? api.memory.get("Menu sounds") : "Yes",
-            MenuVolume:                      api.memory.has("Menu Volume") ? api.memory.get("Menu Volume") : "1.0",
-            StartupChime:                    api.memory.has("Start up chime") ? api.memory.get("Start up chime") : "Yes",
-            AllGamesVideoPreview:            api.memory.has("AllGames Video preview") ? api.memory.get("AllGames Video preview") : "Yes",
-            AllGamesView:                  api.memory.has("All Games View") ? api.memory.get("All Games View") : "List",
-            AllGamesTileStyle:             api.memory.has("AllGames Tile Style") ? api.memory.get("AllGames Tile Style") : "Wide",
-            AllGamesTileRatio:             api.memory.has("AllGames Tile Ratio") ? api.memory.get("AllGames Tile Ratio") : "0.66",
-            AllGamesTileArt:               api.memory.has("AllGames Tile Art") ? api.memory.get("AllGames Tile Art") : "Fanart",
-            AllGamesTileLogo:              api.memory.has("AllGames Tile Logo") ? api.memory.get("AllGames Tile Logo") : "Yes",
-            AllGamesColumns:               api.memory.has("AllGames Items per row") ? api.memory.get("AllGames Items per row") : "5",
-            AllGamesMatchPlatform:         api.memory.has("AllGames Match Platform") ? api.memory.get("AllGames Match Platform") : "No",
-            SystemTileTitles:              api.memory.has("System tile titles") ? api.memory.get("System tile titles") : "On focus",
-            PerSystemTiles:                api.memory.has("Per-system tile settings") ? api.memory.get("Per-system tile settings") : "No",
-            GridDimming:                   api.memory.has("Grid background dimming") ? api.memory.get("Grid background dimming") : "Light",
-            GridFade:                      api.memory.has("Bottom fade") ? api.memory.get("Bottom fade") : "Strong",
-            AllGamesHideBoxOnVideo:          api.memory.has("AllGames Hide box art on video") ? api.memory.get("AllGames Hide box art on video") : "No",
-            AllGamesHideLogoOnVideo:         api.memory.has("AllGames Hide logo on video") ? api.memory.get("AllGames Hide logo on video") : "No",
-            AllGamesBlurBackground:          api.memory.has("AllGames Blur Background") ? api.memory.get("AllGames Blur Background") : "No",
-            AllGamesScanlines:               api.memory.has("AllGames Show scanlines") ? api.memory.get("AllGames Show scanlines") : "No",
-            AllGamesVideoAudio:              api.memory.has("All games menu video audio") ? api.memory.get("All games menu video audio") : "Yes",
-            ShowWifi:                      api.memory.has("Show WiFi Indicator")     ? api.memory.get("Show WiFi Indicator")     : "Yes",
-            ShowBattery:                   api.memory.has("Show Battery Percentage") ? api.memory.get("Show Battery Percentage") : "Battery Only",
-            ShowClock:                     api.memory.has("Show Clock")              ? api.memory.get("Show Clock")              : "12hr"
+            XboxLogo:                      settingsStore.get("Xbox Logo", "Logo1"),
+            LogoColorMatch:                settingsStore.get("Logo Color Match", "No"),
+            BoxArtStyle:                   settingsStore.get("Box Art", "3D"),
+            GameCounter:                   settingsStore.get("Game Counter", "Yes"),
+            CarouselVideo:                 settingsStore.get("Video", "Yes"),
+            CarouselScreenshots:           settingsStore.get("Screenshots", "Yes"),
+            CarouselTitleScreen:           settingsStore.get("Title Screen", "Yes"),
+            CarouselFanart:                settingsStore.get("Fanart", "Yes"),
+            Carousel3DBox:                 settingsStore.get("3D Box", "Yes"),
+            Carousel2DBox:                 settingsStore.get("2D Box", "Yes"),
+            CarouselBackBox:               settingsStore.get("Back Box", "Yes"),
+            CarouselCartridge:             settingsStore.get("Cartridge", "Yes"),
+            CarouselMiximage:              settingsStore.get("Miximage", "Yes"),
+            CarouselBanner:                settingsStore.get("Banner", "Yes"),
+            CarouselWheel:                 settingsStore.get("Logo", "Yes"),
+            HighQualityMode:               settingsStore.get("High Quality Mode", "No"),
+            PlatformShoulderButtons:       settingsStore.get("LB/RB Function", "Cycle Platforms"),
+            DynamicBackground:             settingsStore.get("Dynamic Background", "No"),
+            ScreenshotFallback:            settingsStore.get("Screenshot Fallback", "No"),
+            HideAndroidSystemTile:         settingsStore.get("Hide Android System Tile", "Yes"),
+            HideAndroidGamesSystemTile:    settingsStore.get("Hide Android Games System Tile", "No"),
+            MoreByGenreDisplay:            settingsStore.get("More by Genre Display", "Full"),
+            AllowDiscoverVideoAudio:         previewSoundMaster ? settingsStore.get("Discover video audio", "Yes") : "No",
+            // A video opened full screen from Game details' media row: like Discover,
+            // it always plays; only its sound is a choice (and the sound master).
+            MediaViewerAudio:                previewSoundMaster ? settingsStore.get("Media viewer video audio", "Yes") : "No",
+            MenuSounds:                      settingsStore.get("Menu sounds"),
+            MenuVolume:                      settingsStore.get("Menu Volume", "1.0"),
+            StartupChime:                    settingsStore.get("Start up chime"),
+            AllGamesVideoPreview:            gatePreview(settingsStore.get("AllGames Video preview")),
+            AllGamesView:                  settingsStore.get("All Games View", "List"),
+            AllGamesTileStyle:             settingsStore.get("AllGames Tile Style", "Wide"),
+            AllGamesTileRatio:             settingsStore.get("AllGames Tile Ratio", "0.66"),
+            AllGamesTileArt:               settingsStore.get("AllGames Tile Art", "Fanart"),
+            AllGamesTileLogo:              settingsStore.get("AllGames Tile Logo", "Yes"),
+            AllGamesColumns:               settingsStore.get("AllGames Items per row", "5"),
+            SystemTileTitles:              settingsStore.get("System tile titles", "On focus"),
+            GridDimming:                   settingsStore.get("Grid background dimming", "Light"),
+            GridFade:                      settingsStore.get("Bottom fade", "Strong"),
+            AllGamesBlurBackground:          settingsStore.get("AllGames Blur Background", "No"),
+            AllGamesScanlines:               settingsStore.get("AllGames Show scanlines", "No"),
+            AllGamesVideoAudio:              gateSound(settingsStore.get("All games menu video audio", "Yes")),
+            ShowWifi:                      settingsStore.get("Show WiFi Indicator", "Yes"),
+            ShowBattery:                   settingsStore.get("Show Battery Percentage", "Battery Only"),
+            ShowClock:                     settingsStore.get("Show Clock", "12hr")
         }
     }
 
@@ -510,15 +707,66 @@ id: root
     // never reports it, windowSeenActive stays false and the expression falls
     // back to the old behaviour instead of silencing everything forever.
     property bool windowSeenActive: false
-    onActiveFocusChanged: if (Window.active) windowSeenActive = true
+    onActiveFocusChanged: {
+        if (Window.active) windowSeenActive = true;
+        if (activeFocus && !themeSeenFocused) { startupChimeTimer.start(); homeDataTimer.start(); }   // theme just appeared
+        if (activeFocus) themeSeenFocused = true;   // see appActive
+    }
     Connections {
         target: root.Window.window
         function onActiveChanged() { if (root.Window.active) root.windowSeenActive = true; }
     }
 
+    // Also false while Pegasus' own menu (its Settings) is open over the
+    // theme: focus then leaves the theme, so every preview pauses, audio and
+    // all, and resumes when the menu closes. Only trusted once the theme has
+    // had focus, like windowSeenActive above.
+    property bool themeSeenFocused: false
+    // ── Pointer movement ──────────────────────────────────────────────────
+    // Hover selects tiles (Settings > General > Enable mouse hover, on by
+    // default on desktop). But a list scrolled by keys, wheel or a held
+    // D-pad moves tiles under a mouse that's sitting still, and Qt calls
+    // that "entered": the selection jumped to whatever passed under the
+    // pointer, mid-scroll. Hover now counts only if the pointer itself moved
+    // in the last 300 ms. A HoverHandler watches without taking hover away
+    // from anything below it.
+    property double pointerMovedMs: 0
+    property point  pointerPos: Qt.point(-1, -1)
+    HoverHandler {
+        onPointChanged: {
+            var p = point.position;
+            if (p.x !== root.pointerPos.x || p.y !== root.pointerPos.y) {
+                root.pointerPos = p;
+                root.pointerMovedMs = Date.now();
+            }
+        }
+    }
+    function pointerMoved() { return Date.now() - pointerMovedMs < 300; }
+
     readonly property bool appActive: Qt.application.state === Qt.ApplicationActive
                                       && (!windowSeenActive || Window.active)
-                                      && !appDrawer.open
+                                      && (!themeSeenFocused || activeFocus)
+                                      && !drawerOpen
+    // Connectivity for the status bar's Wi-Fi arcs: ONE HEAD request every
+    // 30 s, only while the theme is in front and the indicator is shown.
+    property bool netOnline: false
+    Timer {
+        interval: 30000
+        repeat: true
+        triggeredOnStart: true
+        running: appActive && settings.ShowWifi !== "No"
+        onTriggered: {
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === XMLHttpRequest.DONE)
+                    root.netOnline = xhr.status >= 200 && xhr.status < 300;
+            };
+            xhr.onerror = function() { root.netOnline = false; };
+            xhr.open("HEAD", "https://1.1.1.1", true);
+            xhr.timeout = 5000;
+            xhr.send();
+        }
+    }
 
     // ── Playback coordinator ──────────────────────────────────────────────
     // Names the ONE screen whose video players are allowed to run right now,
@@ -564,7 +812,6 @@ id: root
         return "";
     }
     readonly property real hqFanartScale:   hqMode ? 1.0 : (dynamicBg ? 0.7 : 0.6)   // fanart decode vs display size
-    readonly property bool hqDualDecoder:   hqMode                // featured box keeps playing under a row preview
     // Row/grid preview: how long a tile rests before its video plays, and how
     // far ahead of that the decoder warms. The lead is always 300ms short of
     // the delay in HQ: warming from the very first instant put the row's
@@ -602,7 +849,11 @@ id: root
     readonly property real hqAppTileScrim:  0.30                  // dark wash over it (was 0.42)
 
     // Phase C
-    readonly property bool hqDrawerBlur:    hqMode                // blurred screen behind the app drawer
+    // Blurred screen behind the app drawer: its own setting now (Settings ›
+    // General › App drawer blur), off by default — the Xbox guide doesn't
+    // blur. Base mode blurs a half-size snapshot, High Quality a full one.
+    readonly property bool hqDrawerBlur: { var e = settingsEpoch; return settingsStore.get("App drawer blur", "No") === "Yes"; }
+    readonly property real drawerBlurRes: hqMode ? 1 : 0.5
     readonly property int  hqDrawerSlideMs: hqMode ? 320  : 220   // drawer slide duration
     readonly property bool hqAllGamesWarm:  hqMode                // warm the All Games preview during its rest
     // (No halo size knob: the halo PNG's transparent centre is cut for exactly
@@ -615,8 +866,6 @@ id: root
         switch (state) {
         case "showcasescreen":        return showcaseLoader;
         case "allgamesscreen":        return allgamesloader;
-        case "softwaregridscreen":    return gridviewloader;
-        case "softwarescreen":        return listviewloader;
         case "gameviewscreen":        return gameviewloader;
         case "settingsscreen":        return settingsloader;
         case "achievementsscreen":    return achievementsloader;
@@ -630,8 +879,12 @@ id: root
     // One definition of the fanart decode size, used by the crossfade layers
     // AND the prefetcher. They must match exactly, or a prefetched image lands
     // in a different cache entry and the crossfade decodes it all over again.
-    readonly property size fanartDecodeSize: Qt.size(Math.round(width  * hqFanartScale),
-                                                     Math.round(height * hqFanartScale))
+    // Desktop base mode decodes the background for a 1080p screen even on a
+    // bigger one (each move decodes and uploads a new one); High Quality Mode
+    // decodes for the real screen. Exactly 1 on Android and at 1080p.
+    readonly property real fanartDesktopFactor: (onDesktop && !hqMode) ? 1 / hiResScale : 1
+    readonly property size fanartDecodeSize: Qt.size(Math.round(width  * hqFanartScale * fanartDesktopFactor),
+                                                     Math.round(height * hqFanartScale * fanartDesktopFactor))
     readonly property int  hqCacheTiles:    hqMode ? 4    : 2     // off-screen row tiles pre-decoded
 
     // All Games Menu
@@ -639,32 +892,11 @@ id: root
     readonly property int  hqAllGamesArtMs:   hqMode ? 60   : 150  // rest before heavy art swaps in
     readonly property int  hqAllGamesCacheRows: hqMode ? 4  : 0    // off-screen list rows kept built
 
-    // Phase 2 — within the Showcase, the featured box yields to a row preview.
-    // Count of row previews currently loaded on the Showcase (0 or 1 in
-    // practice; a counter so an overlap during a row change can't leave it
-    // wrong). While non-zero the featured video pauses, so the Showcase never
-    // runs two decoders at once — the guarantee that matters on weaker chips.
-    property int showcaseRowPreviews: 0
-
     // True while a row preview video is actually PLAYING (not just loaded).
     // The tile under it fades its art on this, so the reveal is tied to the
     // first frame rather than to a fixed timer — previously the video ran
     // audibly for ~2.4s behind still-opaque art waiting on a 3s clock.
     property bool rowPreviewPlaying: false
-
-    // ── Discover handoff ──────────────────────────────────────────────────
-    // Lets the Showcase featured box (in Discover Videos mode) and the Discover
-    // screen pick up where the other left off, in both directions. Whichever
-    // side is leaving writes the game and position; whichever side is arriving
-    // consumes and clears them. Null game means "nothing to resume — pick
-    // randomly as before".
-    property var handoffGame: null
-    property int handoffPosition: 0
-    function takeHandoff() {
-        var g = handoffGame;
-        handoffGame = null;
-        return g;
-    }
 
     // Set by a screen that hides its whole UI (Discover's X toggle), so the
     // bottom-left Apps prompt goes with it. Deliberately explicit rather than
@@ -681,9 +913,27 @@ id: root
     // hand-written "Android Apps" collection both report shortName "android",
     // so shortName can't tell them apart. Hand-made app collections are left
     // alone on purpose — only the provider's own tile is replaced.
-    readonly property string appsCollectionName: "Android"
+    // Windows / Linux: the drawer reads your "PC Apps" collection instead
+    // (shortName pcapps also counts), and it's kept off the system row the
+    // same way.
+    // Settings › System › "App drawer source" (PC only) picks another
+    // collection by name; "Auto", or a collection that's gone, means PC Apps.
+    readonly property string drawerSourceSetting: {
+        var e = settingsEpoch;
+        if (!onDesktop) return "Auto";
+        var v = settingsStore.get("App drawer source", "Auto") || "Auto";
+        if (v === "Auto") return v;
+        var n = api.collections.count;
+        for (var i = 0; i < n; i++)
+            if (api.collections.get(i).name === v) return v;
+        return "Auto";
+    }
+    readonly property string appsCollectionName: !onDesktop ? "Android"
+                                               : drawerSourceSetting !== "Auto" ? drawerSourceSetting : "PC Apps"
     function isDrawerCollection(c) {
-        return !!c && (c.name || "").toLowerCase() === appsCollectionName.toLowerCase();
+        if (!c) return false;
+        if ((c.name || "").toLowerCase() === appsCollectionName.toLowerCase()) return true;
+        return onDesktop && drawerSourceSetting === "Auto" && (c.shortName || "").toLowerCase() === "pcapps";
     }
 
     // ── Android sources: ONE answer to "what is an app" ───────────────────
@@ -710,11 +960,30 @@ id: root
     readonly property var drawerCollections: {
         var out = [];
         var n = api.collections.count;          // referenced so this re-runs if collections reload
+        var pcGames = pcGamesInDrawer;
         for (var i = 0; i < n; i++) {
             var c = api.collections.get(i);
-            if (isAndroidSourceCollection(c)) out.push(c);
+            if (isAndroidSourceCollection(c) || (pcGames && isPcGamesCollection(c))) out.push(c);
         }
         return out;
+    }
+
+    // Windows / Linux, optional (Settings › System › "PC games in the App
+    // Drawer", off by default): your PC game collections join the drawer's
+    // Games tab. Pegasus's providers name them "Steam", "GOG" and "Lutris";
+    // Playnite's are named after the platform ("PC (Windows)" and the like).
+    // Shortnames steam / gog / epic / lutris / heroic / pc / windows / linux
+    // count too, for collections of your own.
+    readonly property bool pcGamesInDrawer: {
+        var e = settingsEpoch;
+        return onDesktop && settingsStore.get("PC games in App Drawer", "No") === "Yes";
+    }
+    readonly property var pcGameCollectionNames: ["steam", "gog", "gog.com", "lutris", "heroic", "epic",
+        "epic games", "pc", "pc (windows)", "pc (linux)", "pc (dos)", "windows", "linux"]
+    function isPcGamesCollection(c) {
+        if (!c || !onDesktop || isDrawerCollection(c)) return false;
+        return pcGameCollectionNames.indexOf((c.name || "").toLowerCase()) >= 0
+            || pcGameCollectionNames.indexOf((c.shortName || "").toLowerCase()) >= 0;
     }
 
     // What an entry is, judged by the collections it's actually IN (not its
@@ -731,6 +1000,7 @@ id: root
         if (isPegasusImport(game)) return "import";
         if (hasGenre(game, "application")) return "app";
         if (hasGenre(game, "emulator"))    return "emulator";
+        if (hasTag(game, "game"))          return "game";   // Pegasus X's Android collection
         var cl = game.collections;
         if (!cl) return "";
         var inGames = false, inApps = false;
@@ -863,6 +1133,7 @@ id: root
     }
     property var currentGame
     property var launchingGame: null         // game shown on the launch splash
+    property var launchingFile: null         // multi-disc: the disc picked before the splash
     property bool launchSuspended: false     // true once the app has backgrounded for a launch
     property int  launchSplashDelay: {       // ms the splash is held before launch, from the "Launch screen delay" setting (seconds)
         var v = parseFloat(settings.LaunchScreenDelay);
@@ -952,7 +1223,78 @@ id: root
     Timer { id: drawerOpenChime;  interval: 140; onTriggered: playTabRight() }
     Timer { id: drawerCloseChime; interval: 140; onTriggered: playTabLeft()  }
 
+    // ── Multi-disc: ask for the disc BEFORE the launch splash ──────────────
+    // Every launch path calls askDisc() first. A game with more than one file
+    // opens the disc picker and the launch is replayed once a disc is chosen
+    // (discReady lets that second call through); launchDelay then starts the
+    // chosen file instead of the game, so Pegasus doesn't ask again.
+    property bool discReady: false
+    property string discKind: ""
+    property var discGame: null
+    property var discPrevFocus: null
+    function askDisc(game, kind) {
+        if (discReady) { discReady = false; return false; }
+        launchingFile = null;
+        var g = (game !== null && game !== undefined) ? game : currentGame;
+        if (!g || !g.files || g.files.count < 2) return false;
+        discKind = kind;
+        discGame = game;
+        discPrevFocus = Window.activeFocusItem;
+        playAccept();
+        discPicker.openFor(g);
+        return true;
+    }
+    function discChosen(index) {
+        var g = (discGame !== null && discGame !== undefined) ? discGame : currentGame;
+        launchingFile = g.files.get(index);
+        discReady = true;
+        if (discKind === "ra")            launchGameFromRA(discGame);
+        else if (discKind === "discover") launchGameFromDiscover(discGame);
+        else if (discKind === "drawer")   launchAppFromDrawer(discGame);
+        else                              launchGame(discGame);
+        discReady = false;
+    }
+
+    // ── The theme's own record of the last launch ─────────────────────────
+    // The hero follows Pegasus's "last played", which Pegasus only writes
+    // once a game has FINISHED (and skips while a library scan runs). On
+    // Android that happens the moment the game starts; on Windows/Linux only
+    // after it closes, and some setups never record it. So the theme notes
+    // each launch itself, and the hero uses it when it's newer than what
+    // Pegasus reports. When Pegasus did record the game, its time is later,
+    // so nothing changes.
+    function rememberLaunch(game) {
+        if (!game) return;
+        var path = (game.files && game.files.count > 0) ? game.files.get(0).path : "";
+        api.memory.set("lastLaunch", JSON.stringify({ t: Date.now(), title: game.title, path: path }));
+    }
+    // -> { game, index, t } for the remembered launch, or null. The library
+    // search is cached against the stored text, so it runs once per launch.
+    property string lastLaunchKey: ""
+    property var lastLaunchCache: null
+    function lastLaunchRecord() {
+        if (!api.memory.has("lastLaunch")) return null;
+        var raw = api.memory.get("lastLaunch");
+        if (raw === lastLaunchKey) return lastLaunchCache;
+        lastLaunchKey = raw;
+        lastLaunchCache = null;
+        var r;
+        try { r = JSON.parse(raw); } catch (e) { return null; }
+        if (!r || !r.title) return null;
+        var all = api.allGames.toVarArray();
+        for (var i = 0; i < all.length; i++) {
+            var g = all[i];
+            if (!g || g.title !== r.title) continue;
+            var p = (g.files && g.files.count > 0) ? g.files.get(0).path : "";
+            if (r.path && p !== r.path) continue;
+            lastLaunchCache = { game: g, index: i, t: r.t };
+            break;
+        }
+        return lastLaunchCache;
+    }
+
     function launchGame(game) {
+        if (askDisc(game, "game")) return;
         launchingGame = (game !== null) ? game : currentGame;
         launchGameScreen();
         saveCurrentState(launchingGame);
@@ -964,221 +1306,328 @@ id: root
     // stale achievements page (possibly for a game reached via search) isn't
     // useful. lastState must be replaced BEFORE saveCurrentState() serializes it.
     function launchGameFromRA(game) {
+        if (askDisc(game, "ra")) return;
         launchingGame = (game !== null) ? game : currentGame;
-        launchGameScreen();             // pushes the RA screen onto lastState
-        lastState = ["showcasescreen"];  // ...replaced: return to the Showcase
+        launchGameScreen();             // pushes the RA screen onto the history
+        navigator.setStack(["showcasescreen"]);  // ...replaced: return to the Showcase
         searchReturnDepth = -1;          // stack rewritten: no search to return to
         raSearchReturn = false;
         saveCurrentState(launchingGame);
         launchDelay.restart();
     }
 
-    // Save current states for returning from game
-    function saveCurrentState(game) {
-        api.memory.set('savedState', root.state);
-        api.memory.set('savedCollection', currentCollectionIndex);
-        api.memory.set('lastState', JSON.stringify(lastState));
-        api.memory.set('lastGame', JSON.stringify(lastGame));
-        api.memory.set('storedHomePrimaryIndex', storedHomePrimaryIndex);
-        api.memory.set('storedHomeSecondaryIndex', storedHomeSecondaryIndex);
-        api.memory.set('storedCollectionIndex', currentCollectionIndex);
-        api.memory.set('storedCollectionGameIndex', storedCollectionGameIndex);
-
-        const savedGameIndex = api.allGames.toVarArray().findIndex(g => g === game);
-        api.memory.set('savedGame', savedGameIndex);
-
-        api.memory.set('To Game', 'True');
+    // ── Return from a game ────────────────────────────────────────────────
+    // Everything needed to come back to the same screen is saved as ONE
+    // memory key, "Resume", written once at launch. It used to be ten keys:
+    // every api.memory.set rewrites the whole settings file, so a launch
+    // cost ten full rewrites right before the game started. Games are saved
+    // by identity (system + ROM path + title), not by their position in the
+    // library, so a rescan, a late SD card or an import can't bring you back
+    // to the wrong game.
+    function gameKey(g) {
+        if (!g) return null;
+        var c = (g.collections && g.collections.count > 0) ? g.collections.get(0).shortName : "";
+        var p = (g.files && g.files.count > 0) ? (g.files.get(0).path || "") : "";
+        return { c: c, p: p, t: g.title || "" };
     }
 
-    // Handle loading settings when returning from a game
-    property bool fromGame: api.memory.has('To Game');
-    function returnedFromGame() {
-        lastState                   = JSON.parse(api.memory.get('lastState'));
-        lastGame                    = JSON.parse(api.memory.get('lastGame'));
-        currentCollectionIndex      = api.memory.get('savedCollection');
-        storedHomePrimaryIndex      = api.memory.get('storedHomePrimaryIndex');
-        storedHomeSecondaryIndex    = api.memory.get('storedHomeSecondaryIndex');
-        currentCollectionIndex      = api.memory.get('storedCollectionIndex');
-        storedCollectionGameIndex   = api.memory.get('storedCollectionGameIndex');
-
-        currentGame                 = api.allGames.get(api.memory.get('savedGame'));
-        root.state                  = api.memory.get('savedState');
-
-        // savedState is "launchgamescreen" (the splash was on-screen at launch).
-        // On reload-type devices we land back on the splash, so redirect to the
-        // page we launched from (top of lastState) and drop it from the stack.
-        if (root.state === "launchgamescreen") {
-            if (lastState.length > 0) {
-                root.state = lastState[lastState.length - 1];
-                lastState.pop();
-            } else {
-                root.state = "showcasescreen";
+    // Finds the games for a list of keys in one pass over the library.
+    function resolveGameKeys(keys) {
+        var out = [], want = 0;
+        for (var k = 0; k < keys.length; k++) { out.push(null); if (keys[k]) want++; }
+        for (var i = 0; i < api.allGames.count && want > 0; i++) {
+            var g = api.allGames.get(i);
+            for (var j = 0; j < keys.length; j++) {
+                var key = keys[j];
+                if (!key || out[j] || g.title !== key.t) continue;
+                var gk = gameKey(g);
+                if (gk.p === key.p && gk.c === key.c) { out[j] = g; want--; }
             }
         }
+        return out;
+    }
 
-        // Launched from the app drawer: always land on the Showcase, whatever
-        // screen it was opened from. Checked after the redirect above so it
-        // wins over the restored state.
-        if (api.memory.has('From App Drawer')) {
-            lastState  = ["showcasescreen"];
-            root.state = "showcasescreen";
-            api.memory.unset('From App Drawer');
+    function saveCurrentState(game, fromDrawer) {
+        settingsStore.flush();          // pending settings reach disk before the game runs
+        var nav = navigator.serialize(gameKey);
+        api.memory.set('Resume', {
+            v: 1,
+            state: nav.state,
+            lastState: nav.lastState,
+            lastGame: nav.lastGame,
+            game: gameKey(game),
+            collection: currentCollectionIndex,
+            homePrimary: storedHomePrimaryIndex,
+            libScope: libraryScope,
+            libIndex: storedAllGamesIndex,
+            homeSecondary: storedHomeSecondaryIndex,
+            collectionGame: storedCollectionGameIndex,
+            fromDrawer: !!fromDrawer
+        });
+    }
+
+    // Pegasus is still running (instant return, the "press any button"
+    // fallback, a cancelled splash or a failed launch): nothing to restore.
+    // Without this the key outlived the session and the NEXT cold start,
+    // possibly days later, jumped back to that old screen.
+    function clearResume() {
+        if (api.memory.has('Resume')) api.memory.unset('Resume');
+    }
+
+    // Read once at startup (api.memory.has isn't a live binding).
+    readonly property bool fromGame: api.memory.has('Resume')
+    function returnedFromGame() {
+        var r = api.memory.get('Resume');
+        api.memory.unset('Resume');
+        if (!r || r.v !== 1) return;
+
+        var keys = [r.game].concat(r.lastGame || []);
+        var games = resolveGameKeys(keys);
+
+        storedHomePrimaryIndex    = r.homePrimary || 0;
+        storedHomeSecondaryIndex  = r.homeSecondary || 0;
+        currentCollectionIndex    = r.collection || 0;
+        storedCollectionGameIndex = r.collectionGame || 0;
+        if (r.libIndex !== undefined) storedAllGamesIndex = r.libIndex;
+        if (r.libScope !== undefined && r.libScope !== -2) libraryScope = r.libScope;
+        if (games[0]) currentGame = games[0];
+
+        var screen = r.state || "showcasescreen";
+        var stack  = r.lastState || [];
+        // The game is gone (removed, or its SD card isn't mounted): don't
+        // land on a details page with no game behind it.
+        if (!games[0] && screen === "gameviewscreen") { screen = "showcasescreen"; stack = []; }
+        // Saved while the launch splash was up (the normal case): land on the
+        // page the game was launched from instead of the splash.
+        if (screen === "launchgamescreen") screen = stack.length ? stack.pop() : "showcasescreen";
+        // Launched from the app drawer: always land on Home.
+        if (r.fromDrawer) { screen = "showcasescreen"; stack = []; }
+
+        navigator.restore(screen, stack, games.slice(1).filter(function(g) { return g !== null; }));
+    }
+
+    // Older builds saved ten separate keys (and "To Game"). Removed once,
+    // without restoring from them: if they're still here they're stale.
+    // ── Settings schema 2 (build 40) ──────────────────────────────────────
+    // All Games and Systems became separate (their own View, titles and
+    // previews), each system follows Systems or has its own without a master
+    // switch, and Game details' "More like this" rows got their own preview
+    // settings. Runs once; every new key starts from exactly what the
+    // screen showed before, so nothing changes on update.
+    function migrateSettingsV2() {
+        var st = settingsStore;
+        if (String(st.get("Settings schema", "1")) !== "1") return;
+        function put(k, v, order) {
+            st.set(k, v);
+            if (order) { var i = order.split(",").indexOf(String(v)); if (i >= 0) st.set(k + "Index", i); }
         }
+        function copyIf(from, to, order) { if (st.has(from) && !st.has(to)) put(to, st.get(from), order); }
+        var yn = "Yes,No", titlesOrder = "On focus,Always,Never";
+        // Titles: the Library had none of its own (it used the Home rows').
+        if (!st.has("AllGames Tile titles")) put("AllGames Tile titles", gameTitleMode, titlesOrder);
+        if (!st.has("Systems Tile titles"))  put("Systems Tile titles",  gameTitleMode, titlesOrder);
+        // View: one setting used to cover All Games and every system.
+        if (!st.has("Systems View")) put("Systems View", st.get("All Games View", "List"), "List,Grid");
+        // "Same as All view": the systems used All Games' tile rows.
+        if (st.get("Library system tiles follow All", "No") === "Yes") {
+            put("Grid Thumbnail",    st.get("AllGames Tile Style"),    "Wide,Tall,Square,Box Art,3D Box");
+            st.set("Grid Ratio", st.get("AllGames Tile Ratio"));
+            if (st.has("AllGames Tile RatioIndex")) st.set("Grid RatioIndex", st.get("AllGames Tile RatioIndex"));
+            put("Grid art",          st.get("AllGames Tile Art"),      "Fanart,Screenshot,Boxfront");
+            put("Grid Game Logo",    st.get("AllGames Tile Logo"),     yn);
+            put("Number of columns", st.get("AllGames Items per row"), "3,4,5,6,7,8");
+        }
+        // Previews: the systems used All Games'; the grids and "More like
+        // this" rows used Home's hide-logo rule; "More like this" used
+        // Home's preview and sound.
+        copyIf("AllGames Video preview",     "Systems Video preview", yn);
+        copyIf("All games menu video audio", "Systems video audio",   yn);
+        copyIf("Hide logo when thumbnail video plays", "AllGames Grid hide logo on video", yn);
+        copyIf("Hide logo when thumbnail video plays", "Systems Grid hide logo on video",  yn);
+        copyIf("Hide logo when thumbnail video plays", "Details rows hide logo on video",  yn);
+        copyIf("Allow video thumbnails", "Details rows video preview", yn);
+        copyIf("Video thumbnail audio",  "Details rows video audio",   yn);
+        // The list's two hide rows become one choice.
+        var hb = st.get("AllGames Hide box art on video", "No") === "Yes";
+        var hl = st.get("AllGames Hide logo on video", "No") === "Yes";
+        var lh = (hb && hl) ? "Both" : hb ? "Box art" : hl ? "Logo" : "None";
+        var lhOrder = "None,Box art,Logo,Both";
+        if (!st.has("AllGames List hide on video")) put("AllGames List hide on video", lh, lhOrder);
+        if (!st.has("Systems List hide on video"))  put("Systems List hide on video",  lh, lhOrder);
+        // No more master switch: overrides it kept switched off stay off.
+        if (st.get("Per-system tile settings", "No") !== "Yes") {
+            for (var c = 0; c < api.collections.count; c++) {
+                var k = (api.collections.get(c).shortName || "") + " - Use theme settings";
+                if (st.get(k, "Yes") === "No") st.set(k, "Yes");
+            }
+        }
+        ["Per-system tile settings", "Library system tiles follow All",
+         "AllGames Hide box art on video", "AllGames Hide logo on video"].forEach(function(k) {
+            st.unset(k); st.unset(k + "Index");
+        });
+        st.set("Settings schema", "2");
+        st.flush();
+    }
 
-        // Remove these from memory so as to not clog it up
-        api.memory.unset('savedState');
-        api.memory.unset('savedGame');
-        api.memory.unset('lastState');
-        api.memory.unset('lastGame');
-        api.memory.unset('storedHomePrimaryIndex');
-        api.memory.unset('storedHomeSecondaryIndex');
-        api.memory.unset('storedCollectionIndex');
-        api.memory.unset('storedCollectionGameIndex');
-
-        // Remove this one so we only have it when we come back from the game and not at Pegasus launch
-        api.memory.unset('To Game');
+    function dropLegacyResumeKeys() {
+        if (!api.memory.has('To Game') && !api.memory.has('savedState')) return;
+        ['To Game', 'savedState', 'savedGame', 'savedCollection', 'lastState', 'lastGame',
+         'storedHomePrimaryIndex', 'storedHomeSecondaryIndex', 'storedCollectionIndex',
+         'storedCollectionGameIndex', 'From App Drawer'].forEach(function(k) {
+            if (api.memory.has(k)) api.memory.unset(k);
+        });
     }
 
     // Theme settings
-    property var theme: {
+    // Background colour -> { background, text, gradientstart, gradientend }.
+    // theme (below) uses the saved one; Settings uses the live one.
+    function backgroundPalette(name) {
         var background    = "#000000";
         var text          = "#ebebeb";
         var gradientstart = "#001f1f1f";
         var gradientend   = "#FF000000";
-        if (settings.ColorBackground === "Black") {
+        if (name === "Black") {
             background    = "#000000";
             gradientstart = "#001f1f1f";
             gradientend   = "#FF000000";
-        } else if (settings.ColorBackground === "Charcoal") {
+        } else if (name === "Charcoal") {
             background    = "#1a1a1a";
             gradientstart = "#001a1a1a";
             gradientend   = "#FF1a1a1a";
-        } else if (settings.ColorBackground === "Dark Gray") {
+        } else if (name === "Dark Gray") {
             background    = "#1f1f1f";
             gradientstart = "#001f1f1f";
             gradientend   = "#FF1F1F1F";
-        } else if (settings.ColorBackground === "Mid Gray") {
+        } else if (name === "Mid Gray") {
             background    = "#2d2d2d";
             gradientstart = "#002d2d2d";
             gradientend   = "#FF2d2d2d";
-        } else if (settings.ColorBackground === "Navy Blue") {
+        } else if (name === "Navy Blue") {
             background    = "#0a0e2e";
             gradientstart = "#000a0e2e";
             gradientend   = "#FF0a0e2e";
-        } else if (settings.ColorBackground === "Dark Blue") {
+        } else if (name === "Dark Blue") {
             background    = "#1d253d";
             gradientstart = "#001d253d";
             gradientend   = "#FF1d253d";
-        } else if (settings.ColorBackground === "Dark Teal") {
+        } else if (name === "Dark Teal") {
             background    = "#041a18";
             gradientstart = "#00041a18";
             gradientend   = "#FF041a18";
-        } else if (settings.ColorBackground === "Dark Green") {
+        } else if (name === "Dark Green") {
             background    = "#054b16";
             gradientstart = "#00054b16";
             gradientend   = "#FF054b16";
-        } else if (settings.ColorBackground === "Forest Green") {
+        } else if (name === "Forest Green") {
             background    = "#0a200a";
             gradientstart = "#000a200a";
             gradientend   = "#FF0a200a";
-        } else if (settings.ColorBackground === "Dark Red") {
+        } else if (name === "Dark Red") {
             background    = "#520000";
             gradientstart = "#00520000";
             gradientend   = "#FF520000";
-        } else if (settings.ColorBackground === "Burgundy") {
+        } else if (name === "Burgundy") {
             background    = "#1c0008";
             gradientstart = "#001c0008";
             gradientend   = "#FF1c0008";
-        } else if (settings.ColorBackground === "Dark Purple") {
+        } else if (name === "Dark Purple") {
             background    = "#120012";
             gradientstart = "#00120012";
             gradientend   = "#FF120012";
-        } else if (settings.ColorBackground === "Indigo") {
+        } else if (name === "Indigo") {
             background    = "#0a0020";
             gradientstart = "#000a0020";
             gradientend   = "#FF0a0020";
-        } else if (settings.ColorBackground === "Dark Brown") {
+        } else if (name === "Dark Brown") {
             background    = "#1a0e00";
             gradientstart = "#001a0e00";
             gradientend   = "#FF1a0e00";
-        } else if (settings.ColorBackground === "Dark Orange") {
+        } else if (name === "Dark Orange") {
             background    = "#1a0800";
             gradientstart = "#001a0800";
             gradientend   = "#FF1a0800";
-        } else if (settings.ColorBackground === "Slate") {
+        } else if (name === "Slate") {
             background    = "#1a1e26";
             gradientstart = "#001a1e26";
             gradientend   = "#FF1a1e26";
-        } else if (settings.ColorBackground === "Midnight Blue") {
+        } else if (name === "Midnight Blue") {
             background    = "#050510";
             gradientstart = "#00050510";
             gradientend   = "#FF050510";
-        } else if (settings.ColorBackground === "Deep Purple") {
+        } else if (name === "Deep Purple") {
             background    = "#0e0018";
             gradientstart = "#000e0018";
             gradientend   = "#FF0e0018";
-        } else if (settings.ColorBackground === "Dark Steel") {
+        } else if (name === "Dark Steel") {
             background    = "#1e2a3a";
             gradientstart = "#001e2a3a";
             gradientend   = "#FF1e2a3a";
-        } else if (settings.ColorBackground === "Gray") {
+        } else if (name === "Gray") {
             background    = "#3a3a3a";
             gradientstart = "#003a3a3a";
             gradientend   = "#FF3a3a3a";
-        } else if (settings.ColorBackground === "Cool Gray") {
+        } else if (name === "Cool Gray") {
             background    = "#4a5060";
             gradientstart = "#004a5060";
             gradientend   = "#FF4a5060";
-        } else if (settings.ColorBackground === "Steel Blue") {
+        } else if (name === "Steel Blue") {
             background    = "#2c4a6e";
             gradientstart = "#002c4a6e";
             gradientend   = "#FF2c4a6e";
-        } else if (settings.ColorBackground === "Teal") {
+        } else if (name === "Teal") {
             background    = "#1a4a4a";
             gradientstart = "#001a4a4a";
             gradientend   = "#FF1a4a4a";
-        } else if (settings.ColorBackground === "Forest") {
+        } else if (name === "Forest") {
             background    = "#1a3a1a";
             gradientstart = "#001a3a1a";
             gradientend   = "#FF1a3a1a";
-        } else if (settings.ColorBackground === "Wine") {
+        } else if (name === "Wine") {
             background    = "#4a1020";
             gradientstart = "#004a1020";
             gradientend   = "#FF4a1020";
-        } else if (settings.ColorBackground === "Plum") {
+        } else if (name === "Plum") {
             background    = "#3a1a3a";
             gradientstart = "#003a1a3a";
             gradientend   = "#FF3a1a3a";
-        } else if (settings.ColorBackground === "Light Gray") {
+        } else if (name === "Light Gray") {
             background    = "#707070";
             gradientstart = "#00707070";
             gradientend   = "#FF707070";
-        } else if (settings.ColorBackground === "Silver") {
+        } else if (name === "Silver") {
             background    = "#909090";
             gradientstart = "#00909090";
             gradientend   = "#FF909090";
-        } else if (settings.ColorBackground === "Light Blue") {
+        } else if (name === "Light Blue") {
             background    = "#4a7aa0";
             gradientstart = "#004a7aa0";
             gradientend   = "#FF4a7aa0";
-        } else if (settings.ColorBackground === "Sage") {
+        } else if (name === "Sage") {
             background    = "#6a8a6a";
             gradientstart = "#006a8a6a";
             gradientend   = "#FF6a8a6a";
-        } else if (settings.ColorBackground === "Tan") {
+        } else if (name === "Tan") {
             background    = "#8a7a5a";
             gradientstart = "#008a7a5a";
             gradientend   = "#FF8a7a5a";
-        } else if (settings.ColorBackground === "Rose") {
+        } else if (name === "Rose") {
             background    = "#a06070";
             gradientstart = "#00a06070";
             gradientend   = "#FFa06070";
-        } else if (settings.ColorBackground === "White") {
+        } else if (name === "White") {
             background    = "#ebebeb";
             gradientstart = "#00ebebeb";
             gradientend   = "#FFebebeb";
             text          = "#101010";
         }
+
+        return { background: background, text: text, gradientstart: gradientstart, gradientend: gradientend };
+    }
+
+    property var theme: {
+        var bp = backgroundPalette(settings.ColorBackground);
+        var background = bp.background, text = bp.text;
+        var gradientstart = bp.gradientstart, gradientend = bp.gradientend;
 
         var accent        = "#107C10";   // default: Dark Green (Xbox brand green)
 
@@ -1274,6 +1723,12 @@ id: root
         };
     }
 
+    // The accent at a given alpha. theme.accent is a string ("#86c440"), so
+    // theme.accent.r was undefined and Qt.rgba(theme.accent.r, ...) drew
+    // nothing; a color property has real channels.
+    readonly property color accentRgb: theme.accent
+    function accentA(a) { return Qt.rgba(accentRgb.r, accentRgb.g, accentRgb.b, a); }
+
     // ── White-background contrast flags ───────────────────────────────────
     // When the page background is the light "White" color, chrome that is
     // normally white (nav bar, status bar, library logo) should flip to black
@@ -1294,7 +1749,7 @@ id: root
     // leftPromptNudge) because `root.state` inside ButtonHelpBar.qml is the
     // bar's own root, whose state is always "".
     readonly property color helpPromptColor:
-        (state === "settingsscreen")                              ? "#ebebeb"
+        (state === "settingsscreen")                              ? (settingsBgLight ? "#101010" : "#ebebeb")
       : (state === "showcasescreen" && !showcaseWhiteBackground) ? "#ebebeb"
       : theme.text
 
@@ -1306,18 +1761,21 @@ id: root
     // icons stay on vpx() so layouts tuned at 1.0 can't overflow. Resolves by
     // bare name in child screens and Global/ components, exactly like vpx().
     property real uiScale: parseFloat(settings.UiScale) || 1.0
+    // Settings follows UI Scale and Color Background LIVE (the rest of the
+    // theme picks them up on reload): its text grows with the scale, its rows
+    // a little less, and its backdrop is your background colour.
+    readonly property real settingsScale: { var e = settingsEpoch; return parseFloat(settingsStore.get("UI Scale", "1.0")) || 1.0; }
+    function spx(n) { return vpx(n) * settingsScale; }
+    function srow(n) { return vpx(n) * (1 + (settingsScale - 1) * 0.6); }
+    readonly property color settingsBg: { var e = settingsEpoch; return backgroundPalette(settingsStore.get("Color Background", "Black")).background; }
+    // Light backdrop (White, Silver): text drawn straight on it turns dark.
+    readonly property bool settingsBgLight: (0.299 * settingsBg.r + 0.587 * settingsBg.g + 0.114 * settingsBg.b) > 0.5
     function fpx(n) { return vpx(n) * uiScale; }
     property real helpMargin: buttonbar.height
     property int transitionTime: 100
 
     // State settings
     states: [
-        State {
-            name: "softwarescreen";
-        },
-        State {
-            name: "softwaregridscreen";
-        },
         State {
             name: "showcasescreen";
         },
@@ -1347,35 +1805,47 @@ id: root
         }
     ]
 
-    property var lastState: []
-    property var lastGame: []
+    // All screen changes and the Back history live here (Global/Navigator.qml).
+    // root.state follows navigator.current; the screen Loaders key on root.state.
+    Navigator {
+    id: navigator
+        onCurrentChanged: root.state = current
+    }
+
+    // ── Library screen ────────────────────────────────────────────────────
+    // One screen (AllGamesMenu) for All Games and for a single system:
+    // opening a system from Home scopes it to that system. The old Platform
+    // page (GridView/, VerticalList/) was removed in build 29.
+    // What All Games should show next: a collection index, -1 for All,
+    // -2 for "leave it as it is". Bumping the serial makes it look.
+    property int libraryScopePending: -2
+    property int libraryScopeSerial: 0
+    // The scope the Library is showing (-1 = All). Kept here because the
+    // All Games screen is unloaded while hidden and rebuilt on return, and
+    // the rebuilt one must come back on the same system.
+    property int libraryScope: -1
+    function requestLibraryScope(idx) { libraryScopePending = idx; libraryScopeSerial++; }
 
     // Screen switching functions
     function softwareScreen() {
         playAccept();
-        lastState.push(state);
         searchTerm = "";
         searchMode = "Title";
         genreSelected = [];
-        switch(settings.PlatformView) {
-            case "Grid":
-                root.state = "softwaregridscreen";
-                break;
-            default:
-                root.state = "softwarescreen";
-        }
+        requestLibraryScope(currentCollectionIndex);
+        navigator.go("allgamesscreen");
     }
 
     function showcaseScreen() {
         playAccept();
-        lastState.push(state);
-        root.state = "showcasescreen";
+        navigator.go("showcasescreen");
     }
 
     function allGamesScreen() {
         playAccept();
-        lastState.push(state);
-        root.state = "allgamesscreen";
+        requestLibraryScope(-1);                 // the Library button means All
+        if (root.state === "allgamesscreen") return;
+        navigator.go("allgamesscreen");
     }
 
     function gameDetails(game) {
@@ -1391,28 +1861,24 @@ id: root
         }
 
         // As long as there is a state history, save the last game
-        if (lastState.length != 0)
-            lastGame.push(currentGame);
+        if (navigator.depth > 0)
+            navigator.pushGame(currentGame);
 
         // Push the new game
         if (game !== null)
             currentGame = game;
 
-        // Save the state before pushing the new one
-        lastState.push(state);
-        root.state = "gameviewscreen";
+        navigator.go("gameviewscreen");
     }
 
     function settingsScreen() {
         playAccept();
-        lastState.push(state);
-        root.state = "settingsscreen";
+        navigator.go("settingsscreen");
     }
 
     function achievementsScreen() {
         playAccept();
-        lastState.push(state);
-        root.state = "achievementsscreen";
+        navigator.go("achievementsscreen");
     }
 
     // Navigate to RA overview without pushing onto lastState.
@@ -1420,7 +1886,7 @@ id: root
     // from RAGameEntryView) so B exits RA in one press.
     function achievementsScreenFromGame() {
         playAccept();
-        root.state = "achievementsscreen";
+        navigator.jump("achievementsscreen");
         // Back on the overview after opening an RA search result: show the
         // results again (B from the game's achievements lands here).
         if (raSearchReturn) {
@@ -1430,27 +1896,35 @@ id: root
     }
 
     function gameAchievementsScreen() {
-        lastState.push(state);
-        root.state = "gameachievementsscreen";
+        raFromDetails = false;
+        navigator.go("gameachievementsscreen");
     }
 
     // Navigate to game achievements from the RA overview without pushing.
     // Called by AchievementsView so that B always exits RA in one press
     // regardless of whether RA was entered from GameView or Showcase.
+    // Set when a game's achievements page was opened straight from Game
+    // details (the RA button), so one Back there returns to the details page.
+    // Opened from the RA overview instead, Back returns to the overview and a
+    // second Back leaves RA.
+    property bool raFromDetails: false
     function gameAchievementsScreenFromOverview() {
-        root.state = "gameachievementsscreen";
+        raFromDetails = false;
+        navigator.jump("gameachievementsscreen");
     }
 
     // Navigate to GameAchievementsView without pushing onto lastState.
     // Called by RAGameEntryView when a game is found so pressing Back
     // returns directly to wherever RA was entered from.
     function gameAchievementsScreenFromEntry() {
-        root.state = "gameachievementsscreen";
+        // Via an RA search pick the entry page was reached from the overview,
+        // so Back must return to the search results, not to a details page.
+        raFromDetails = !raSearchReturn;
+        navigator.jump("gameachievementsscreen");
     }
 
     function raEntryScreen() {
-        lastState.push(state);
-        root.state = "raentryscreen";
+        navigator.go("raentryscreen");
     }
 
     // RA entry from the achievements search overlay. Deliberately does NOT
@@ -1460,7 +1934,7 @@ id: root
     // next B popped back onto the page you were already on and appeared to do
     // nothing until a third press.
     function raEntryScreenFromSearch() {
-        root.state = "raentryscreen";
+        navigator.jump("raentryscreen");
     }
 
     // Optional 'collection' scopes Discover to a single system (passed from
@@ -1470,8 +1944,7 @@ id: root
     function discoverScreen(collection) {
         playAccept();
         discoverContext = collection || null;
-        lastState.push(state);
-        root.state = "discoverscreen";
+        navigator.go("discoverscreen");
     }
 
     // Navigate to game details without pushing "discoverscreen" onto lastState.
@@ -1501,7 +1974,7 @@ id: root
     // every Settings save, so changing it no longer needs a reload.
     readonly property string addedAppLaunchLive: {
         var e = settingsEpoch;
-        return api.memory.has("Added App Launch") ? api.memory.get("Added App Launch") : "Instant";
+        return settingsStore.get("Added App Launch", "Instant");
     }
     // Apps Pegasus imported on its own have a file path of "android:<package>"
     // and no metadata at all. Apps the user wrote a metadata entry for point at
@@ -1545,6 +2018,12 @@ id: root
     // competes with the first Showcase load; opening sooner builds on demand.
     property bool searchWarmupGo: false
     Timer { interval: 5000; running: true; repeat: false; onTriggered: searchWarmupGo = true }
+    // The search (and its 890-line keyboard) is built 5 s after start, when
+    // its index warm-up would begin anyway, or the moment it's first asked
+    // for — not before the theme's first frame, as it used to be.
+    property bool searchWanted: false
+    readonly property var librarySearch: librarySearchLoader.item
+    readonly property bool searchOpen: librarySearch ? librarySearch.open : false
 
     // mode "ra": opened from the RA overview (X). Results go to the RA
     // lookup instead of Game Details, and coming back to the overview
@@ -1557,30 +2036,33 @@ id: root
         searchReturnDepth = -1;
         raSearchReturn = false;
         searchPrevFocus = Window.activeFocusItem;
+        searchWanted = true;            // builds it now if it isn't yet
         librarySearch.openSearch();
     }
     function reopenLibrarySearch() {
         searchPrevFocus = Window.activeFocusItem;
+        searchWanted = true;
         librarySearch.reopenResults();
     }
 
     function gameDetailsFromDiscover(game) {
         playAccept();
-        if (lastState.length != 0)
-            lastGame.push(currentGame);
+        if (navigator.depth > 0)
+            navigator.pushGame(currentGame);
         if (game !== null)
             currentGame = game;
-        root.state = "gameviewscreen";
+        navigator.jump("gameviewscreen");
     }
 
     // Launch a game from DiscoverView without pushing "discoverscreen" onto
     // lastState so that returning from the game skips the Discover screen.
     function launchGameFromDiscover(game) {
+        if (game !== null && askDisc(game, "discover")) return;
         if (game !== null) {
             playAccept();
             launchingGame = game;
             launchSuspended = false;
-            root.state = "launchgamescreen";
+            navigator.jump("launchgamescreen");
             saveCurrentState(game);
             launchDelay.restart();      // hold the splash, then launch (see launchDelay)
         }
@@ -1591,6 +2073,7 @@ id: root
     // the normal return path is left completely alone.
     function launchAppFromDrawer(game) {
         if (game === null) return;
+        if (askDisc(game, "drawer")) return;
         launchingGame = game;
         // MUST go through launchGameScreen(): it pushes the current state onto
         // lastState before switching. Setting root.state directly pushed
@@ -1598,35 +2081,34 @@ id: root
         // there — the stack emptied and the next cancel had nothing to return
         // to, leaving the launch to go ahead anyway.
         launchGameScreen();
-        saveCurrentState(game);
-        api.memory.set('From App Drawer', 'True');
+        saveCurrentState(game, true);   // comes back to the Showcase
         launchDelay.restart();
     }
 
     onStateChanged: {
+        settingsStore.flush();          // e.g. leaving Settings: write what was changed
         if (state !== "gameviewscreen") forceFullDetails = false;
     }
 
     function launchGameScreen() {
         playAccept();
         launchSuspended = false;
-        lastState.push(state);
-        root.state = "launchgamescreen";
+        navigator.go("launchgamescreen");
     }
 
     function previousScreen() {
         playBack();
-        // A cancelled drawer launch never returns, so clear the flag here or a
-        // later, unrelated return would be redirected to the Showcase.
-        if (api.memory.has('From App Drawer'))
-            api.memory.unset('From App Drawer');
+        // Leaving the launch splash with Pegasus still running (instant
+        // return, any-button fallback, cancelled launch): nothing to resume.
+        if (state === "launchgamescreen")
+            clearResume();
 
         // B on the RA lookup page after an RA search pick. That entry doesn't
         // push onto lastState (see raEntryScreenFromSearch), so popping here
         // would leave RA altogether — go back to the overview's results.
         if (raSearchReturn && state === "raentryscreen") {
             raSearchReturn = false;
-            root.state = "achievementsscreen";
+            navigator.jump("achievementsscreen");
             reopenLibrarySearch();
             return;
         }
@@ -1634,36 +2116,37 @@ id: root
 
         // Guard against an empty stack. Reading past the end sets state to
         // undefined, which leaves the screen stuck exactly where it was.
-        if (lastState.length === 0) {
+        // Details opened from details: the game swaps back as the screen does.
+        if (!navigator.back(function(g) { currentGame = g; })) {
             searchReturnDepth = -1;
-            state = "showcasescreen";
+            navigator.home("showcasescreen");
             return;
         }
 
-        if (state == lastState[lastState.length-1])
-            popLastGame();
-
-        state = lastState[lastState.length - 1];
-        lastState.pop();
-
         // Back at the screen the global search was opened from: show its
         // results again. Anything shallower means the stack was cut past it.
-        if (searchReturnDepth >= 0 && lastState.length <= searchReturnDepth) {
-            var reopen = (lastState.length === searchReturnDepth);
+        if (searchReturnDepth >= 0 && navigator.depth <= searchReturnDepth) {
+            var reopen = (navigator.depth === searchReturnDepth);
             searchReturnDepth = -1;
             if (reopen) reopenLibrarySearch();
         }
     }
 
     function popLastGame() {
-        if (lastGame.length) {
-            currentGame = lastGame[lastGame.length-1];
-            lastGame.pop();
-        }
+        var g = navigator.popGame();
+        if (g) currentGame = g;
     }
 
     // Set default state to the platform screen
     Component.onCompleted: { 
+        // First line in lastrun.log from the theme: which build, and which
+        // Pegasus features it found. Stock Pegasus shows "stock".
+        console.log("[XboxOSv2] build " + BuildInfo.build + " (" + BuildInfo.branch + ", " + BuildInfo.date + ")"
+            + " | frontend: " + platform.frontendLine
+            + " | pdf: " + (platform.hasPdf ? "yes" : "no")
+            + " | findManual: " + (platform.hasFindManual ? "yes" : "no")
+            + " | " + platform.os + " " + width + "x" + height
+            + " | HQ: " + (hqMode ? "on" : "off"));
         // "Gradient" is no longer a color option. Clear it if it was saved, so
         // Settings shows the default color instead of the last one in the list.
         ["Color Background", "Color Layout"].forEach(function(k) {
@@ -1672,9 +2155,20 @@ id: root
                 api.memory.unset(k + "Index");
             }
         });
+        migrateSettingsV2();
+        // Rows removed in build 36 (the Xbox frame is the only frame; no
+        // Highlight animation; no Featured box) and keys nothing ever read.
+        // Saved values are dropped once so they can't linger in the file.
+        ["Tile frame", "Animate highlight", "Featured Box", "Pins to collection",
+         "Featured Box Content", "Featured collection", "AllGames Match Platform"].forEach(function(k) {
+            if (api.memory.has(k)) api.memory.unset(k);
+            if (api.memory.has(k + "Index")) api.memory.unset(k + "Index");
+        });
         rebuildHomeHide();      // first fill, before the Home rows filter
-        root.state = "showcasescreen";
+        navigator.home("showcasescreen");
 
+        if (!introLoader.active) homeDataReady = true;   // no intro: lists build now, before the theme shows
+        dropLegacyResumeKeys();
         if (fromGame)
             returnedFromGame();
 
@@ -1738,18 +2232,40 @@ id: root
     id: showcaseLoader
 
         readonly property bool shown: (root.state === "showcasescreen")
+
+        // Input only while this is the screen: a hidden screen still got the
+
+        // mouse, so hover lit its tiles and played nav sounds behind another one.
+
+        enabled: shown
         focus: shown
         opacity: shown ? 1 : 0
+        // Hidden once faded out: the Home screen stays loaded under every
+        // other screen, and while "visible" its pulses, marquees and
+        // bindings kept running (and redrawing) behind them.
+        visible: shown || opacity > 0
         Behavior on opacity { PropertyAnimation { duration: transitionTime } }
 
         anchors.fill: parent
         sourceComponent: showcaseview
+        // Built in the background when the startup intro covers it. Pegasus
+        // keeps its own splash up until everything the theme builds
+        // synchronously is done, so a synchronous Home held the Pegasus logo
+        // on screen for seconds. Without the intro (setting off, or coming
+        // back from a game) Home is still built before the theme shows.
+        asynchronous: introLoader.active
     }
 
     Loader {
     id: allgamesloader
 
         readonly property bool shown: (root.state === "allgamesscreen")
+
+        // Input only while this is the screen: a hidden screen still got the
+
+        // mouse, so hover lit its tiles and played nav sounds behind another one.
+
+        enabled: shown
         focus: shown
         active: opacity !== 0
         opacity: shown ? 1 : 0
@@ -1761,37 +2277,15 @@ id: root
     }
 
     Loader  {
-    id: gridviewloader
-
-        readonly property bool shown: (root.state === "softwaregridscreen")
-        focus: shown
-        active: opacity !== 0
-        opacity: shown ? 1 : 0
-        Behavior on opacity { PropertyAnimation { duration: transitionTime } }
-
-        anchors.fill: parent
-        sourceComponent: gridview
-        asynchronous: true
-    }
-
-    Loader  {
-    id: listviewloader
-
-        readonly property bool shown: (root.state === "softwarescreen")
-        focus: shown
-        active: opacity !== 0
-        opacity: shown ? 1 : 0
-        Behavior on opacity { PropertyAnimation { duration: transitionTime } }
-
-        anchors.fill: parent
-        sourceComponent: listview
-        asynchronous: true
-    }
-
-    Loader  {
     id: gameviewloader
 
         readonly property bool shown: (root.state === "gameviewscreen")
+
+        // Input only while this is the screen: a hidden screen still got the
+
+        // mouse, so hover lit its tiles and played nav sounds behind another one.
+
+        enabled: shown
         focus: shown
         // Stay alive once loaded: the first visit sets gameviewLoaded = true via onLoaded,
         // after which active is always true so the component is never destroyed.
@@ -1819,6 +2313,9 @@ id: root
         // the RA page for the whole splash delay instead of the launch screen.
         z: 100
         readonly property bool shown: (root.state === "launchgamescreen")
+        // Input only while this is the screen: a hidden screen still got the
+        // mouse, so hover lit its tiles and played nav sounds behind another one.
+        enabled: shown
         focus: shown
         active: opacity !== 0
         opacity: shown ? 1 : 0
@@ -1836,6 +2333,8 @@ id: root
     Connections {
         target: Qt.application
         function onStateChanged() {
+            // Android may kill a backgrounded Pegasus without warning
+            if (Qt.application.state !== Qt.ApplicationActive) settingsStore.flush();
             if (root.state !== "launchgamescreen") return;
             if (Qt.application.state !== Qt.ApplicationActive)
                 root.launchSuspended = true;
@@ -1843,6 +2342,18 @@ id: root
                 root.launchSuspended = false;
                 previousScreen();
             }
+        }
+    }
+
+    // A launch that fails (app not installed, bad launch command) never
+    // leaves Pegasus: drop the resume key and leave the splash. Pegasus
+    // shows its own error dialog on top.
+    Connections {
+        target: api
+        onEventLaunchError: {
+            if (root.state !== "launchgamescreen") return;
+            launchDelay.stop();
+            previousScreen();
         }
     }
 
@@ -1854,8 +2365,15 @@ id: root
         interval: launchSplashDelay
         repeat: false
         onTriggered: {
-            if (root.state === "launchgamescreen" && launchingGame)
+            if (root.state !== "launchgamescreen" || !launchingGame) return;
+            rememberLaunch(launchingGame);
+            if (launchingFile) {
+                var file = launchingFile;   // the disc picked before the splash
+                launchingFile = null;
+                file.launch();
+            } else {
                 launchingGame.launch();
+            }
         }
     }
 
@@ -1863,6 +2381,12 @@ id: root
     id: settingsloader
 
         readonly property bool shown: (root.state === "settingsscreen")
+
+        // Input only while this is the screen: a hidden screen still got the
+
+        // mouse, so hover lit its tiles and played nav sounds behind another one.
+
+        enabled: shown
         focus: shown
         active: opacity !== 0
         opacity: shown ? 1 : 0
@@ -1877,6 +2401,12 @@ id: root
     id: achievementsloader
 
         readonly property bool shown: (root.state === "achievementsscreen")
+
+        // Input only while this is the screen: a hidden screen still got the
+
+        // mouse, so hover lit its tiles and played nav sounds behind another one.
+
+        enabled: shown
         focus: shown
         active: opacity !== 0
         opacity: shown ? 1 : 0
@@ -1891,6 +2421,12 @@ id: root
     id: gameachievementsloader
 
         readonly property bool shown: (root.state === "gameachievementsscreen")
+
+        // Input only while this is the screen: a hidden screen still got the
+
+        // mouse, so hover lit its tiles and played nav sounds behind another one.
+
+        enabled: shown
         focus: shown
         active: opacity !== 0
         opacity: shown ? 1 : 0
@@ -1905,6 +2441,12 @@ id: root
     id: raentryloader
 
         readonly property bool shown: (root.state === "raentryscreen")
+
+        // Input only while this is the screen: a hidden screen still got the
+
+        // mouse, so hover lit its tiles and played nav sounds behind another one.
+
+        enabled: shown
         focus: shown
         active: opacity !== 0
         opacity: shown ? 1 : 0
@@ -1921,17 +2463,6 @@ id: root
         ShowcaseViewMenu { focus: true }
     }
 
-    Component {
-    id: gridview
-
-        GridViewMenu { focus: true }
-    }
-
-    Component {
-    id: listview
-
-        SoftwareListMenu { focus: true }
-    }
 
     Component {
     id: allgamesview
@@ -1944,7 +2475,19 @@ id: root
 
         GameView {
             focus: true
-            game: currentGame
+            // Follows currentGame ONLY while Game details is the screen.
+            // The page stays loaded after its first visit, and the Library
+            // and Home assign currentGame on every cursor step, so a plain
+            // binding re-ran the hidden page for every game passed: two
+            // 4,400-game walks, the media list and a full-screen fanart
+            // decode, a few hundred ms per step on an Odin, all unseen.
+            // While hidden it keeps the game it showed (the fade-out stays
+            // correct); it catches up the moment the screen is shown.
+            Binding on game {
+                value: currentGame
+                when: gameviewloader.shown
+                restoreMode: Binding.RestoreNone
+            }
         }
     }
 
@@ -1982,6 +2525,12 @@ id: root
     id: discoverviewloader
 
         readonly property bool shown: (root.state === "discoverscreen")
+
+        // Input only while this is the screen: a hidden screen still got the
+
+        // mouse, so hover lit its tiles and played nav sounds behind another one.
+
+        enabled: shown
         focus: shown
         active: opacity !== 0
         opacity: shown ? 1 : 0
@@ -2006,6 +2555,9 @@ id: root
     ButtonHelpBar {
     id: buttonbar
 
+        onPromptClicked: root.helpClick(button)
+        onLeftPromptClicked: root.toggleAppDrawer()
+
         height: vpx(50)
         anchors {
             left: parent.left; leftMargin: globalMargin
@@ -2026,7 +2578,7 @@ id: root
         // when a screen has cleared the helpbar entirely — Discover's X toggle
         // nulls the model to hide its UI, and this prompt has to go with it
         // rather than sitting there alone.
-        leftPromptText: (appDrawer.open || hideAppsPrompt) ? "" : "Apps"
+        leftPromptText: (drawerOpen || hideAppsPrompt) ? "" : "Apps"
         // Path is relative to ButtonHelpBar.qml, NOT this file: the string is
         // converted to a url by the `source:` binding inside that component, so
         // it resolves against that component's folder. Same "../" the delegate
@@ -2050,19 +2602,55 @@ id: root
     // Remove Qt.RightButton below to make it thumb-button only.
     readonly property int mouseBackButtons: Qt.BackButton | Qt.RightButton
 
+    // ── Clickable prompts ─────────────────────────────────────────────────
+    // A click on a help prompt travels the way its key would: from the
+    // focused item up through its parents. The first one with a
+    // helpAction(button) that returns true has handled it (a tile takes A,
+    // a panel its own buttons, the screen the rest). Unclaimed B falls
+    // back to mouseBack(), which already mirrors B on every screen.
+    function helpClick(button) {
+        if (frontendBusy()) return;
+        var it = root.Window.activeFocusItem;
+        for (var n = 0; it && n < 64; n++, it = it.parent) {
+            if (typeof it.helpAction === "function" && it.helpAction(button) === true) return;
+        }
+        if (button === "cancel") mouseBack();
+    }
+    function frontendBusy() { return state === "launchgamescreen"; }
+    // Select (and the Apps prompt): open or close the App Drawer.
+    function toggleAppDrawer() {
+        if (searchOpen) return;   // no drawer over an open search
+        if (drawerOpen) {
+            closeAppDrawer();
+        } else {
+            playAccept();
+            drawerOpenChime.restart();    // tabRight follows once accept has sounded
+            openAppDrawer();
+        }
+    }
+
     function mouseBack() {
         // Global search mirrors B: results -> back to the keyboard, keyboard -> close.
-        if (librarySearch.open) {
+        if (searchOpen) {
             playBack();
             if (librarySearch.showingResults) librarySearch.resetSearch();
             else                              librarySearch.closeSearch();
             return;
         }
-        if (appDrawer.open) { appDrawer.closeDrawer(); return; }
+        if (drawerOpen) { appDrawerLoader.item.backPress(); return; }   // menus first, then the drawer
         if (state === "launchgamescreen") { previousScreen(); return; }
         // Otherwise hand it to the screen showing, if it knows what B means.
         var scr = activeScreenItem ? activeScreenItem.item : null;
         if (scr && typeof scr.mouseBack === "function") scr.mouseBack();
+    }
+
+    // Frame rate counter (Settings > Appearance > Diagnostics). Top-left,
+    // above everything. Exists only while switched on.
+    Loader {
+        active: frameCounterLive
+        z: 2000
+        anchors { left: parent.left; top: parent.top; margins: vpx(8) }
+        sourceComponent: Component { FrameCounter { } }
     }
 
     MouseArea {
@@ -2071,7 +2659,13 @@ id: root
         acceptedButtons: root.mouseBackButtons
         propagateComposedEvents: true
         onPressed:  mouse.accepted = true
-        onReleased: { mouse.accepted = true; root.mouseBack(); }
+        onReleased: {
+            mouse.accepted = true;
+            // Right-click inside the open drawer: an app's quick menu.
+            if (mouse.button === Qt.RightButton && drawerOpen
+                && appDrawerLoader.item.contextAt(mouse.x, mouse.y)) return;
+            root.mouseBack();
+        }
     }
 
     // ── HQ: blurred screen behind the app drawer ─────────────────────────
@@ -2085,8 +2679,8 @@ id: root
         z: 499
         active: hqDrawerBlur
         sourceComponent: Item {
-            visible: appDrawer.slide > 0.001
-            opacity: appDrawer.slide
+            visible: drawerSlide > 0.001
+            opacity: drawerSlide
             ShaderEffectSource {
             id: drawerSnap
                 anchors.fill: parent
@@ -2098,12 +2692,18 @@ id: root
                 // the snapshot held an empty tile for as long as the drawer
                 // stayed open. The slide is longer than the art's 200ms
                 // restore, so by the time this freezes the tile is whole.
-                live: appDrawer.open && appDrawer.slide < 1
+                live: drawerOpen && drawerSlide < 1
                 hideSource: false
                 visible: false
+                textureSize: Qt.size(Math.round(width * drawerBlurRes / hiResScale), Math.round(height * drawerBlurRes / hiResScale))
             }
             FastBlur {
-                anchors.fill: parent
+                // Big desktop screens: blur at 1080p size and scale up — same
+                // look, a quarter of the GPU memory at 4K (1 on Android).
+                width: parent.width / hiResScale
+                height: parent.height / hiResScale
+                scale: hiResScale
+                transformOrigin: Item.TopLeft
                 source: drawerSnap
                 radius: 48
                 cached: true
@@ -2111,18 +2711,19 @@ id: root
             // Capture the instant the drawer starts opening, before it slides
             // over the screen. live:false means this is the only capture.
             Connections {
-                target: appDrawer
-                function onOpenChanged() { if (appDrawer.open) drawerSnap.scheduleUpdate(); }
+                target: root
+                onDrawerOpenChanged: if (drawerOpen) drawerSnap.scheduleUpdate()
             }
         }
     }
 
     // One instance at the top level so it overlays every screen. z sits above
     // launchgameloader (z: 100) and the help bar so nothing draws over it.
-    AppDrawer {
-    id: appDrawer
-
-        z: 500
+    // The drawer's DATA (app index, categories, favourites, hidden lists) is
+    // always here: the Home and library hide sets are built from it at
+    // startup. Global/AppLibrary.qml.
+    AppLibrary {
+    id: appLib
         // Same constant the system-row filter uses, so the collection the
         // drawer shows is exactly the one hidden from the row — they can't
         // drift apart.
@@ -2131,6 +2732,44 @@ id: root
         // androidgames collections. An explicit list wins over collectionMatch,
         // which stays only as the fallback when none of them exist.
         collections: drawerCollections
+        pcMode: onDesktop
+        // Names of the PC game collections in that list: their entries go to
+        // the Games tab whatever their genre says.
+        pcGameCollections: {
+            var out = [], cols = drawerCollections;
+            for (var i = 0; i < cols.length; i++)
+                if (isPcGamesCollection(cols[i])) out.push(cols[i].name);
+            return out;
+        }
+    }
+
+    // The drawer's SCREEN is created the first time it's opened (it used to be
+    // built at startup, 1,700 lines of QML nobody sees until they press the
+    // button) and kept from then on. Everything that used to read appDrawer
+    // reads these instead; they're safe before the first open.
+    readonly property bool drawerOpen:  appDrawerLoader.item ? appDrawerLoader.item.open  : false
+    readonly property real drawerSlide: appDrawerLoader.item ? appDrawerLoader.item.slide : 0
+    function openAppDrawer() {
+        if (!appDrawerLoader.active) appDrawerLoader.active = true;   // built synchronously
+        appDrawerLoader.item.openDrawer();
+    }
+    function closeAppDrawer() {
+        if (appDrawerLoader.item) appDrawerLoader.item.closeDrawer();
+    }
+
+    Loader {
+    id: appDrawerLoader
+        anchors.fill: parent
+        z: 500
+        active: false
+        sourceComponent: appDrawerComponent
+    }
+
+    Component {
+    id: appDrawerComponent
+
+    AppDrawer {
+        lib: appLib
         title: "My games & apps"
 
         // Reuses the Discover launch path, which deliberately does NOT push
@@ -2156,14 +2795,12 @@ id: root
         onNavHome: {
             if (root.state === "showcasescreen") return;
             playAccept();
-            lastState = ["showcasescreen"];
-            searchReturnDepth = -1;     // stack rewritten: no search to return to
+            navigator.home("showcasescreen");
+            searchReturnDepth = -1;     // history cleared: no search to return to
             raSearchReturn = false;
-            root.state = "showcasescreen";
         }
         // Library pushes normally, so Back returns where you came from.
         onNavLibrary: {
-            if (root.state === "allgamesscreen") return;
             allGamesScreen();
         }
         // Action tiles. Each pushes onto the back stack the same way the rest
@@ -2193,15 +2830,39 @@ id: root
             root.state = s;
         }
     }
+    }
+
+    // Disc picker for multi-disc games, shown before the launch splash (see
+    // askDisc). Above the drawer and search so a launch from either works.
+    DiscPicker {
+    id: discPicker
+
+        z: 700
+        onChosen: discChosen(index)
+        onClosed: {
+            if (discPrevFocus) {
+                discPrevFocus.forceActiveFocus();
+            } else {
+                var s = root.state;
+                root.state = "";
+                root.state = s;
+            }
+            discPrevFocus = null;
+        }
+    }
 
     // Global library search. Above the drawer (500) and its blur (499) so it
     // can be opened from a drawer tile; below the mouse-back catcher (1000).
     // Focus goes back to whatever had it, the same way the drawer does it,
     // with the same state re-apply as the fallback.
-    LibrarySearch {
-    id: librarySearch
-
+    Loader {
+    id: librarySearchLoader
+        anchors.fill: parent
         z: 600
+        active: searchWarmupGo || searchWanted
+        sourceComponent: Component {
+    LibrarySearch {
+
         title: librarySearchMode === "ra" ? "RA SEARCH" : "SEARCH LIBRARY"
         warmup: searchWarmupGo
         onClosed: {
@@ -2226,10 +2887,12 @@ id: root
             // From Game Details itself the page just swaps games (gameDetails
             // doesn't push), so there's no separate screen to come back to.
             if (root.state !== "gameviewscreen")
-                searchReturnDepth = lastState.length;
+                searchReturnDepth = navigator.depth;
             openGame(game);
         }
     }
+        }   // Component
+    }   // librarySearchLoader
 
     // Trigger. Screens accept the keys they use, so anything they ignore
     // bubbles up to here — which is why this works from any screen without
@@ -2243,7 +2906,7 @@ id: root
     // caught — but the collection dump is worth one more run to confirm which
     // collection the Android apps provider creates once it's enabled.
     property bool logKeys: false
-    property bool logCollections: true
+    property bool logCollections: false
 
     Keys.onPressed: {
         if (event.isAutoRepeat) return;
@@ -2251,16 +2914,20 @@ id: root
         if (logKeys)
             console.log("[theme] key code:", event.key, "text:", event.text);
 
+        // Ctrl+F (keyboard): frame rate counter on/off — the same switch as
+        // Settings › System › Frame rate counter, for quick desktop checks.
+        if (event.key === Qt.Key_F && (event.modifiers & Qt.ControlModifier)) {
+            event.accepted = true;
+            var fc = frameCounterLive ? "No" : "Yes";
+            settingsStore.set("Frame counter", fc);
+            settingsStore.set("Frame counterIndex", fc === "Yes" ? 1 : 0);   // Settings row is "No,Yes"
+            settingsEpoch++;
+            return;
+        }
+
         if (appDrawerKeys.indexOf(event.key) === -1) return;
         event.accepted = true;
-        if (librarySearch.open) return;   // no drawer over an open search
-        if (appDrawer.open) {
-            appDrawer.closeDrawer();
-        } else {
-            playAccept();
-            drawerOpenChime.restart();    // tabRight follows once accept has sounded
-            appDrawer.openDrawer();
-        }
+        toggleAppDrawer();
     }
 
     ///////////////////
@@ -2278,8 +2945,52 @@ id: root
     // Startup chime — plays shortly after the theme loads (delay lets the audio
     // engine come up so the first play isn't dropped). Respects the menu volume.
     Timer {
-        interval: 450; running: true; repeat: false
-        onTriggered: { if (settings.StartupChime !== "No" && sfxVolume > 0) { sfxStartup.stop(); sfxStartup.play(); } }
+        // Started the first time the theme gets focus: that is when Pegasus
+        // hides its own splash and the theme appears. Starting at load (as
+        // before) fired while Pegasus' splash was still on screen.
+        id: startupChimeTimer
+        interval: 150; running: false; repeat: false
+        // With the intro on, the chime waits for the fade into Home (onRevealing)
+        onTriggered: if (!introLoader.active) playStartupChime()
+    }
+    // Safety net: a platform that never reports focus still gets its chime.
+    Timer {
+        interval: 5000; running: true; repeat: false
+        onTriggered: { homeDataReady = true; if (!introLoader.active) playStartupChime(); }
+    }
+    property bool startupChimeDone: false
+    function playStartupChime() {
+        if (startupChimeDone) return;
+        startupChimeDone = true;
+        if (settings.StartupChime !== "No" && sfxVolume > 0) { sfxStartup.stop(); sfxStartup.play(); }
+    }
+
+    // ── Startup intro ─────────────────────────────────────────────────────
+    // Cold start only (never on the way back from a game). Settings > Audio >
+    // Startup intro. See Global/StartupIntro.qml.
+    // Settings > Tiles > Frame glow (key "Tile Halo"), live: the soft glow
+    // outside the focus frame (Global/FocusFrame.qml).
+    readonly property bool tileHaloLive: { var e = settingsEpoch; return settingsStore.get("Tile Halo") === "Yes"; }
+
+    property bool introDone: false
+    // The game lists behind the Home rows (Lists/*.qml) filter and sort the
+    // whole library, ~1.5 s on the test machine, and all of it ran before
+    // Pegasus would hide its splash. With the intro on, they start right
+    // after the theme appears, behind the intro, which waits for them.
+    // Without the intro they start at load, as before.
+    property bool homeDataReady: false
+    Timer { id: homeDataTimer; interval: 50; onTriggered: homeDataReady = true }
+    Loader {
+    id: introLoader
+        anchors.fill: parent
+        z: 10000
+        active: !introDone && !fromGame && settingsStore.get("Startup intro") === "Yes"
+        sourceComponent: StartupIntro {
+            volume: sfxVolume
+            homeReady: showcaseLoader.status === Loader.Ready && homeDataReady
+            onFinished: introDone = true
+            onRevealing: playStartupChime()     // chime as the intro fades into Home
+        }
     }
     SoundEffect {
         id: sfxStartup

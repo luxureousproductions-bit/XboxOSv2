@@ -43,8 +43,13 @@ id: root
             ExpressionFilter { enabled: root.hideAndroidDupes; expression: root.hideRowsHere[index] !== true },
             IndexFilter { maximumIndex: max - 1; enabled: max }
         ]
+        // By title: A to Z ignoring upper/lower case (RoleSorter compares
+        // case-sensitively, so "abc" landed after "Zelda")
         sorters: [
-            RoleSorter { roleName: sortByFilter[sortByIndex]; sortOrder: orderBy }
+            StringSorter { roleName: "title"; caseSensitivity: Qt.CaseInsensitive; sortOrder: orderBy
+                           enabled: sortByFilter[sortByIndex] === "title" },
+            RoleSorter { roleName: sortByFilter[sortByIndex]; sortOrder: orderBy
+                         enabled: sortByFilter[sortByIndex] !== "title" }
         ]
     }
 }

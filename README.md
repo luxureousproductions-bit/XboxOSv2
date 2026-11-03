@@ -19,14 +19,15 @@ XboxOSv2 is a fork of a fork of [gameOS](https://github.com/PlayingKarrde/gameOS
 - [Home page](#home-page)
 - [App drawer](#app-drawer)
 - [Library search](#library-search)
-- [Platform page](#platform-page)
-- [All Games menu](#all-games-menu)
+- [Library (All Games & systems)](#library-all-games--systems)
 - [Discover](#discover)
 - [Game details](#game-details)
+- [Game manuals](#game-manuals) *(in development, needs Pegasus X)*
 - [RetroAchievements](#retroachievements)
 - [Settings](#settings)
 - [Base mode vs High Quality mode](#base-mode-vs-high-quality-mode)
 - [Setting up Android apps & games](#setting-up-android-apps--games)
+- [Windows & Linux](#windows--linux)
 - [Customizing with your own images](#customizing-with-your-own-images)
 - [Metadata & media](#metadata--media)
 - [Tips & hidden features](#tips--hidden-features)
@@ -48,7 +49,7 @@ XboxOSv2 is a fork of a fork of [gameOS](https://github.com/PlayingKarrde/gameOS
 
 Button prompts on screen always match your controller and Pegasus's button mapping. The table below uses the Xbox layout.
 
-| Button | Home | Platform page | Game details | Anywhere |
+| Button | Home | Library | Game details | Anywhere |
 |---|---|---|---|---|
 | **A** | Select | Open game | Select | |
 | **B** | Open **Discover** | Back | Back | |
@@ -85,8 +86,6 @@ The Home page is the heart of the theme, laid out like the Xbox dashboard.
 - **Tile shape:** Wide, Tall, Square, Box Art or 3D Box — plus size (Small/Medium/Large) and an exact aspect ratio.
 - Pick how many games each row shows.
 
-**Featured box** — a large tile pinned to any of the rows, showing your **Favorites**, a **Fanart slideshow**, or **Discover videos**.
-
 **Backgrounds**
 - Highlighted games crossfade their fanart behind the page, with an optional screenshot fallback for games without fanart.
 - Optional **Dynamic Background** adds a slow, gentle zoom and drift.
@@ -97,7 +96,7 @@ The Home page is the heart of the theme, laid out like the Xbox dashboard.
 <img width="1920" height="1080" alt="1000813886" src="https://github.com/user-attachments/assets/40e3f0d4-0a9c-4820-ab00-5b38b7f3aeba" />
 
 
-**Tiles** — preview videos play on the highlighted tile, an optional **Tile Halo** glow, an optional animated highlight pulse, and an optional colored edge on favorited games.
+**Tiles** — the Xbox-style focus frame, with an optional glow (Settings › Appearance › Frame glow); preview videos play on the highlighted tile, and favorited games can have a colored edge.
 
 ---
 
@@ -114,6 +113,8 @@ Press **Select** from anywhere to slide out the app drawer — modeled on the Xb
 - **Tabs** (switch with **LB / RB**): All · Favorites · Games · Emulators · System · Other — plus a **Hidden** tab when you choose to show it.
 - The list always shows exactly **4 apps** at a time with large icons.
 - **Action tiles** along the bottom: show/hide the Hidden tab, Discover, RetroAchievements, **Search**, Settings.
+- With a mouse: hover picks, click launches, right-click opens the quick menu, the wheel scrolls.
+- On Windows and Linux the drawer works differently: see [Windows & Linux](#windows--linux).
 
 **What appears in it**
 - Apps from **Pegasus's Android app import**.
@@ -152,44 +153,23 @@ Search your whole library from the **Search** button on the Home page's nav bar 
 
 ---
 
-## Platform page
+## Library (All Games & systems)
 
-Open any system tile to browse that system's games in a grid.
+One screen for your whole library and for each system. Open **My games & apps** for All Games, or any system tile for that system's games.
 
-<!-- 📷 Platform page grid -->
+<!-- 📷 Library — grid, list and filters -->
 <img width="1920" height="1080" alt="1000813879" src="https://github.com/user-attachments/assets/226d27e5-9348-4999-adec-8b7f5c794f2e" />
 <img width="1920" height="1080" alt="1000813897" src="https://github.com/user-attachments/assets/28e6e875-3dad-4815-abfa-5bd570db5c80" />
-
-
-- **LT / RT** jump to the next / previous letter.
-- **LB / RB** cycle through systems — or, with *LB/RB Function* set to *Nav Bar*, step along the header icons instead.
-- **X** opens **Sort & filters**:
-  - Search by title
-  - Filter by genre (LT/RT jump by letter in the genre list)
-  - Sort by Title, Last Played, Most Played or Rating
-  - Favorites only
-  - Press **X** again inside the panel to clear every filter at once.
-- **Per-system tiles:** turn on *Per-system tile settings*, then press **Y** on a platform page to give *that system* its own tile shape, ratio, art, logo, tiles-per-row and titles. Systems you don't change keep following your main settings.
-- An optional **game counter** in the header shows the live count as you filter.
-
----
-
-## All Games menu
-
-Your entire library in one place — open it from **My games & apps**.
-
-<!-- 📷 All Games — list view + grid view + filters -->
 <img width="1920" height="1080" alt="1000813876" src="https://github.com/user-attachments/assets/234b2804-ae2b-4276-b507-18aef0688f65" />
 <img width="1920" height="1080" alt="1000813877" src="https://github.com/user-attachments/assets/7cddf513-620c-47a9-840a-38fe7cbd18a9" />
 <img width="1920" height="1080" alt="1000813878" src="https://github.com/user-attachments/assets/695c648c-0df9-405e-80cf-041329298775" />
 
-
-- **Two views:**
-  - **List** — a scrolling list with a preview panel (video, box art, genre, last played, rating).
-  - **Grid** — full-page tiles with their own shape, ratio, art and tiles-per-row, or set *Match Platform page* to mirror the Platform page.
-- **X — Filters:** search by title, filter by **system** or **genre** (LT/RT letter jumps in both pickers), sort by Title, Last Played, Rating or Release Date, Favorites only.
-- **Y — Quick settings:** change the view, video previews and display options without leaving the page; changes apply instantly.
-- **A** launches straight from the list.
+- **Two views:** **Grid** (full-page tiles) and **List** (a scrolling list with a preview panel: video, box art, genre, last played, rating).
+- **All Games and systems are set separately.** In Settings › Library, All Games has its own view and tiles, and **Systems** is the default for every system. Press **Y** on a system to give *that system* its own view (List or Grid), tile shape, ratio, art, logo, tiles per row and titles; systems you don't change keep following Systems.
+- **X — Filters:** search by title, filter by **system** or **genre** (LT/RT jump by letter in both pickers), sort by Title, Last Played, Most Played, Rating or Release Date, Favorites only. Press **X** again inside the panel to clear every filter.
+- **Y — Quick settings:** change the view, tiles and display options without leaving the page; changes apply instantly.
+- **LT / RT** jump to the next / previous letter. **LB / RB** on a system either switch systems or step along the header icons (Settings › Library › Navigation).
+- An optional **game counter** in the header shows the live count as you filter.
 
 ---
 
@@ -204,8 +184,7 @@ A full-screen, lean-back video mode for finding something to play.
 - Plays game preview videos one after another, picking at random and auto-advancing when a video ends.
 - **Left / Right** or **LB / RB** — jump to another game.
 - **A** — launch the game · **Y** — open its details · **X** — hide the on-screen info for a clean view · **B** — back.
-- **From a Platform page, Discover only plays that system's games.** From anywhere else it covers your whole library.
-- If the Featured box is set to *Discover videos*, opening Discover **continues the same video** — and backing out hands it back to the Home page.
+- **From a system's Library page, Discover only plays that system's games.** From anywhere else it covers your whole library.
 
 ---
 
@@ -217,7 +196,7 @@ A full-screen, lean-back video mode for finding something to play.
 <img width="1920" height="1080" alt="1000813892" src="https://github.com/user-attachments/assets/a907732f-2970-4e76-8e44-143bf44ea276" />
 
 
-- **Play** (shows **Open** for apps and emulators), **RetroAchievements**, **Full details**, and **Favorite** buttons.
+- **Play** (shows **Open** for apps and emulators), **Full details**, **Manual** *(when the game has one, see [Game manuals](#game-manuals))*, **RetroAchievements**, **Favorite** and **Back** buttons.
 - Publisher, developer, release date, genre and rating.
 - **Media carousel** — video, screenshots, title screen, fanart, 2D box, 3D box, back of box, cartridge, miximage and logo. Each type can be turned on/off; select one to view it full screen.
 - **"More" rows** below the carousel:
@@ -225,6 +204,78 @@ A full-screen, lean-back video mode for finding something to play.
   - **More by Genre** — match on the full genre, just the main genre, or just the subgenre (see [Metadata](#metadata--media)).
 - Background preview video, optional blur and scanlines, and a choice of screenshot or fanart backdrop.
 - Box art style: 2D, 3D or Miximage.
+
+---
+
+## Game manuals
+
+> [!IMPORTANT]
+> **Game manuals need Pegasus X, which is still in development.** Pegasus can't open PDF files on its own, so the pages are drawn by [Pegasus X](https://github.com/luxureousproductions-bit/pegasus-frontend), an unofficial Android fork of Pegasus that adds PDF support. It isn't released yet and may change. On the regular Pegasus app nothing breaks: the **Manual** button simply doesn't appear.
+
+Read a game's original manual without leaving the theme. When a game has a manual, a **Manual** button appears on its Game details page.
+
+<!-- 📷 Game manuals: the Manual button on Game details -->
+<img width="1920" height="1080" alt="1000819699" src="https://github.com/user-attachments/assets/ea81d263-cdda-4bcb-bcc0-1ceb38131255" />
+
+<!-- 📷 Game manuals: reading a page -->
+
+<!-- 📷 Game manuals: zoomed in -->
+<img width="1920" height="1080" alt="1000819697" src="https://github.com/user-attachments/assets/7006018b-3ff8-41f9-baf4-5753197c7fdf" />
+
+<!-- 📷 Game manuals: 2-page view -->
+
+<!-- 📷 Game manuals: page overview with bookmarks -->
+<img width="1920" height="1080" alt="1000819698" src="https://github.com/user-attachments/assets/56606247-22d4-4f4c-9ea4-cc287315c42c" />
+
+**Reading**
+- Opens on page 1, with the page fitted to the screen and a progress bar showing how far through you are.
+- **View (X)** switches between **1 page** and **2 pages** side by side. Two-page view pairs pages like the printed booklet: the cover on its own, then 2–3, 4–5 and so on, so maps and spreads line up.
+- **Zoom (LB / RB)** zooms out and in, in steps. Zoomed in, the D-pad moves around the page, and pressing left or right at the edge turns the page. A small map in the corner shows which part you're looking at.
+- **Manuals scanned as two-page spreads** are detected automatically and shown as large as possible.
+
+**Finding your place**
+- **Pages (Y)** shows every page as a thumbnail. Pick one to jump straight to it.
+- **Bookmark (A)** marks the page you're on with a ribbon. Bookmarks are saved for each manual and show as ticks on the progress bar. In the page overview, **X** shows only your bookmarked pages.
+
+**Controls**
+
+| Button | Action |
+|---|---|
+| **A** | Bookmark / remove bookmark |
+| **X** | View: 1 page / 2 pages |
+| **Y** | Page overview (inside it: **X** bookmarks only) |
+| **B** | Back |
+| **LB / RB** | Zoom out / in |
+| **LT / RT** | Skip 5 pages back / forward |
+| **Left / Right** | Previous / next page (zoomed in: move around the page) |
+
+On a touchscreen, tap the left or right side of the page to turn it, or the middle to zoom.
+
+**Adding manuals**
+
+Put each manual, as a PDF, in a `manuals` folder inside the system's `media` folder. Name it the same way as the game's artwork, so it matches how your game is stored:
+
+**Single-file games** — the game is one file directly in the system folder. The manual goes straight into `media/manuals`:
+
+```
+snes/Super Mario World.sfc                     ← the game
+snes/media/box2dfront/Super Mario World.png    ← its art
+snes/media/manuals/Super Mario World.pdf       ← its manual
+```
+
+**Multi-disc games** — the game has its own folder holding the discs. The manual goes in a matching folder inside `media/manuals`, just like the art:
+
+```
+psx/Final Fantasy VII/Final Fantasy VII.m3u                  ← the game (with its discs)
+psx/media/box2dfront/Final Fantasy VII/Final Fantasy VII.png ← its art
+psx/media/manuals/Final Fantasy VII/Final Fantasy VII.pdf    ← its manual
+```
+
+For a multi-disc game, `psx/media/manuals/Final Fantasy VII.pdf` (no folder) works too.
+
+- If Skraper downloaded manuals for you, they're usually in the right place already.
+- `media/manual` (singular) works too, and so does a plain `manuals` folder next to your ROMs.
+- To point a game at a specific file, add `x-manual: <path to the PDF>` to its entry in your metadata file.
 
 ---
 
@@ -254,18 +305,18 @@ Every setting has a **More info** page — press **X** on any row for a plain-la
 
 | Page | What's in it |
 |---|---|
-| **General** | UI scale, High Quality Mode, launch screen delay, button help, mouse hover, background & accent colors (30+ each), dimming and bottom fade |
-| **Home page** | Profile corner logo, hero art, system sort, games per row, background art, custom & dynamic backgrounds, opacity |
-| **Collections** | Content, tile shape, size and ratio for each of the six Home rows |
-| **Tiles** | Game & system titles, Tile Halo, favorite accent, highlight animation, game counter, video thumbnails, featured box |
-| **Platform page** | Tile shape, ratio, art, logo, columns, LB/RB function, per-system tiles |
-| **All Games Menu** | List/Grid view, video previews, blur, scanlines, grid tiles, Match Platform |
-| **Game details** | Box art style, More by Genre, background, logo, default to full details, video, blur, scanlines |
-| **Media Carousel** | Turn each media type on or off |
-| **Audio** | Menu sounds, startup chime, volume, and video audio for each screen |
+| **General** | UI scale, High Quality Mode, App drawer blur, launch screen delay, button help, mouse hover, startup intro |
+| **Appearance** | Background and accent colors (30+ each), background dimming, bottom fade, Frame glow, favorite accent, game count |
+| **Home** | Profile corner logo, hero and row tile art, system sort, games per row, titles, background art, custom & dynamic backgrounds, opacity |
+| **Home rows** | Content, tile shape, size and ratio for each of the six Home rows |
+| **Library** | All Games and Systems view and tiles, list view blur and scanlines, LB/RB on a system |
+| **Game details** | Box art style, More by genre, background, logo, full details first, blur, scanlines, media carousel items |
+| **Previews & sound** | Master switches for every video preview and its sound, then where previews play and their sound (Home rows, Library, Game details, Discover), menu sounds and startup chime |
 | **Retro Achievements** | Username and API key |
-| **Advanced** | Hide apps / emulators from Home, Android system tiles, Added App Launch, status bar indicators |
+| **System** | Hide apps / emulators from Home, Android (or PC Apps) system tiles, Added App Launch, status bar indicators, diagnostics. On Windows / Linux: App drawer source and PC games in the App Drawer |
 | **Tips & Tricks** | Lesser-known features that have no button prompt, each with a short explanation |
+
+Settings follows your **UI scale** and **background color** as you change them.
 
 ---
 
@@ -277,7 +328,7 @@ XboxOSv2 runs well on low-end devices out of the box. **High Quality Mode** (Set
 - Video previews start sooner
 - Crisper artwork and icons
 - Smoother transitions and fades
-- A blurred backdrop behind the app drawer
+- A sharper App drawer blur, if you turn the blur on (Settings → General › App drawer blur, off by default)
 
 Off by default. A theme reload is recommended after changing it.
 
@@ -323,6 +374,28 @@ shortname: androidgames
 
 ---
 
+## Windows & Linux
+
+The theme runs on Pegasus for Windows and Linux too, with a few extras for mouse, keyboard and big screens.
+
+**Videos on Windows** — Pegasus plays video through Windows' DirectShow, which can't open .mp4 on a stock install. Install the **K-Lite Codec Pack Basic** (as Pegasus's Windows guide recommends) and restart Pegasus. Without codecs the theme shows the game's art instead of black, and Discover says what to install. Video previews are **off by default** on a PC; turn them on in Settings › Previews & sound.
+
+**Mouse & keyboard**
+- Every button prompt at the bottom can be clicked; **Apps** opens the app drawer (so does **Tab**).
+- Mouse hover picks tiles and rows, the wheel scrolls, right-click / mouse Back = **B**.
+- **Esc** on Home opens Pegasus's own menu.
+- **Ctrl+F** shows a frame-rate counter.
+
+**App drawer: PC Apps** — on a PC the drawer reads a collection named **PC Apps** (shortname `pcapps`) instead of Android's apps.
+- Ready-made starter files for **Windows** and **Linux** are in [`extras/pc-apps`](extras/pc-apps/README.md): tools and power entries switched on, common launchers, emulators and apps ready to switch on. Copy the whole folder (it has an `icons` folder).
+- Each entry's **genre** picks its tab: Game, Emulator, Launcher, App, Tool. Entries tagged **Power** (Sleep, Restart, Shut down, Exit to desktop) sit behind the **Power** tile and stay out of your library.
+- **Settings › System › PC games in the App Drawer** adds your Steam, GOG, Lutris and Playnite games to the Games tab (off by default).
+- **Settings › System › App drawer source** picks another collection if yours isn't called PC Apps.
+
+**Big screens** — on 1440p and 4K screens, art and blurs are decoded sharper, and animations run snappier with a mouse.
+
+---
+
 ## Customizing with your own images
 
 | What | Where | Notes |
@@ -349,6 +422,7 @@ shortname: androidgames
 | support | Cartridge |
 | screenshottitle | Title Screen |
 | steamgrid | Miximage |
+| manuals | Game manual *(PDF, needs Pegasus X, see [Game manuals](#game-manuals))* |
 
 **Genre & subgenre** — write genres as `Genre / Subgenre` to power *More by Genre*. All of these separators work: `/` or `,`, with or without spaces (`Action/Platformer`, `Action / Platformer`, `Action, Platformer`, …).
 
@@ -359,19 +433,22 @@ shortname: androidgames
 These are things the theme doesn't show a button prompt for. You'll also find them in the theme itself, under **Settings → Tips & Tricks**.
 
 **Navigation**
-- **Discover follows the Platform page.** Open Discover from a system's Platform page and it only plays that system's games. From anywhere else it covers your whole library.
-- **Jump by letter.** On the Platform page and in search results, **LT / RT** jump to the previous or next letter.
+- **Discover follows the system you're on.** Open Discover from a system's Library page and it only plays that system's games. From anywhere else it covers your whole library.
+- **Jump by letter.** In the Library and in search results, **LT / RT** jump to the previous or next letter.
 - **Shortcut to the nav bar.** On the Home page and Game details, **LB / RB** jump straight up to the nav bar. On the Home page, coming back down returns you to the row you were on.
 - **Skipping in Discover.** **LB, RB, Left and Right** all skip to another game, and when a video ends Discover moves on by itself.
 - **Mouse support.** The mouse wheel moves the selection through lists and grids, and the mouse back button works like **B**.
 
 **Home page**
 - **The hero tile** at the start of the system row is always the game you played most recently.
-- **Featured box and Discover.** With *Featured box shows* set to *Discover Videos*, opening Discover carries on with the same video, and backing out hands it back to the Home page.
 - **Random rows stay put.** Rows like Recommended and Top by Genre keep their picks until you press **Refresh (X)**. Two rows set to *System* always pick different systems.
 
-**Platform page**
-- **Per-system tiles.** With *Per-system tile settings* on, **Y** on a Platform page opens that system's own tile settings instead of the main Settings.
+**Game manuals**
+- **Skip ahead in a manual.** **LT / RT** skip 5 pages back or forward.
+- **Leave zoom with a tap.** On a touchscreen, tapping a zoomed page returns it to the full page.
+
+**Library**
+- **Per-system settings.** **Y** on a system opens that system's own settings (view, tiles, titles); systems you don't change follow Settings › Library › Systems.
 
 **Search**
 - **Forgiving search.** Search ignores capitals, punctuation and region tags like "(USA)", and finds "Legend of Zelda, The" when you type "The Legend of Zelda".

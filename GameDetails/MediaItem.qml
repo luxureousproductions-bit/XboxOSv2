@@ -17,6 +17,7 @@
 import QtQuick 2.15
 import QtGraphicalEffects 1.15
 import QtMultimedia 5.15
+import "../utils.js" as Utils
 
 Item {
 id: root
@@ -25,8 +26,78 @@ id: root
     signal highlighted
 
     property string mediaItem: ""
+    // The game's system (collection shortname), so the physical media art
+    // (support / physicalmedia) can be named the way that system named it
+    property string systemShortName: ""
+
+    // Name of a system's game media; anything not listed is a "Cartridge"
+    function physicalMediaLabel() {
+        switch (systemShortName.toLowerCase()) {
+            // CD / DVD / Blu-ray / GD-ROM
+            case "psx": case "ps1": case "playstation": case "ps2": case "ps2_alt":
+            case "ps3": case "ps4":
+            case "segacd": case "megacd": case "megacdjp": case "saturn": case "saturnjp":
+            case "dreamcast": case "naomigd": case "triforce":
+            case "gc": case "gamecube": case "wii": case "wiiu":
+            case "xbox": case "xbox360": case "xboxone":
+            case "3do": case "pcfx": case "pcenginecd": case "tgcd": case "turbografxcd":
+            case "neogeocd": case "neogeocdjp":
+            case "cdimono1": case "cdi": case "cdtv": case "amigacd32":
+            case "atarijaguarcd": case "fmtowns":
+            case "windows": case "windows9x":
+                return "Disc";
+            case "laserdisc": case "daphne":
+                return "LaserDisc";
+            // Disk-based computers
+            case "windows3x": case "pc": case "dos": case "pc88": case "pc98":
+            case "amiga": case "amiga600": case "amiga1200": case "atarist":
+            case "apple2": case "apple2gs": case "archimedes": case "macintosh":
+            case "x1": case "fm7": case "to8": case "c64":
+                return "Floppy Disk";
+            // Tape-based computers
+            case "zxspectrum": case "zx81": case "trs-80": case "bbcmicro": case "electron":
+            case "amstradcpc": case "dragon32": case "plus4": case "moto": case "spectravideo":
+                return "Cassette";
+            case "psp":
+                return "UMD";
+            case "nds": case "3ds": case "n3ds": case "switch": case "psvita": case "vita":
+            case "atarilynx": case "ngage":
+                return "Game Card";
+            case "pcengine": case "supergrafx":
+                return "HuCard";
+            case "tg16":
+                return "TurboChip";
+            case "fds":
+                return "Disk Card";
+            case "n64dd":
+                return "Disk";
+            case "channelf":
+                return "Videocart";
+            case "coco":
+                return "Program Pak";
+            case "adam":
+                return "Data Pack";
+            // Arcade: the game is the board itself
+            case "arcade": case "mame": case "fba": case "fbneo":
+            case "cps": case "cps1": case "cps2": case "cps3":
+            case "model1": case "model2": case "model3": case "type-x":
+                return "Arcade Board";
+            // Digital-only and mixed collections: a neutral name
+            case "android": case "androidapps": case "androidgames": case "steam": case "epic":
+            case "desktop": case "emulators": case "ports": case "doom": case "scummvm":
+            case "pico8": case "tic80": case "easyrpg": case "mugen": case "ags":
+            case "cavestory": case "chailove": case "stratagus": case "flash": case "fpinball":
+            case "palm": case "arduboy": case "zxnext": case "mess": case "consolearcade":
+            case "pcarcade": case "gameandwatch": case "lcdgames":
+            case "completed": case "custom-collections": case "final-fantasy":
+                return "Physical Media";
+            default:
+                return "Cartridge";
+        }
+    }
     property bool selected
-    property bool isVideo: mediaItem.includes(".mp4") || mediaItem.includes(".webm")
+    // Any common video format, any capitals (.MP4, .mkv and .avi are usual on PC).
+    property bool isVideo: Utils.isVideoFile(mediaItem)
     // True once the highlighted video tile's player is playing. The film
     // placeholder stays up until then, so there's never a frame where the tile
     // is empty (the player is created asynchronously on highlight).
@@ -51,6 +122,12 @@ id: root
     id: videoPreviewWrapper
 
         Video {
+        id: mediaItemVideo
+            // Stop before the player is destroyed (screen change, row rebuild, or
+            // Pegasus unloading the theme to launch a game): destroying a playing
+            // video is what the Windows media backend crashes on.
+            Component.onDestruction: stop()
+            onErrorChanged: reportVideoError(mediaItemVideo)   // logged; see videoUnsupported in theme.qml
             anchors.fill: parent
             source: mediaItem
             fillMode: VideoOutput.PreserveAspectCrop
@@ -96,16 +173,33 @@ id: root
 
                 text: {
                     if (isVideo) return "Video";
-                    if (mediaItem.includes("background") || mediaItem.includes("fanart")) return "Fanart";
-                    if (mediaItem.includes("titlescreen") || mediaItem.includes("screenshottitle")) return "Title Screen";
-                    if (mediaItem.includes("box3d") || mediaItem.includes("box_3d") || mediaItem.includes("3dbox")) return "3D Box";
-                    if (mediaItem.includes("box2dFront") || mediaItem.includes("box2dfront") || mediaItem.includes("box2d_front")) return "Box Art";
-                    if (mediaItem.includes("boxFront") || mediaItem.includes("box_front")) return "Box Art";
-                    if (mediaItem.includes("box2dBack") || mediaItem.includes("box2dback") || mediaItem.includes("box2d_back")) return "Back Box";
-                    if (mediaItem.includes("boxBack")  || mediaItem.includes("box_back"))  return "Back Box";
-                    if (mediaItem.includes("cartridge") || mediaItem.includes("support")) return "Cartridge";
-                    if (mediaItem.includes("miximage") || mediaItem.includes("mix_image") || mediaItem.includes("steamgrid") || mediaItem.includes("/steam/") || mediaItem.includes("/grid/")) return "Miximage";
-                    if (mediaItem.includes("wheel")) return "Logo";
+                    // Matched without regard to capitals (Box2dFront, BOXFRONT, ...)
+                    var m = String(mediaItem).toLowerCase();
+                    if (m.includes("background") || m.includes("fanart")) return "Fanart";
+                    if (m.includes("titlescreen") || m.includes("screenshottitle")) return "Title Screen";
+                    if (m.includes("box3d") || m.includes("box_3d") || m.includes("3dbox")) return "3D Box";
+                    // Pegasus X: the game's 3D boxes by any folder spelling
+                    // ("3D Boxes", "3d_box", ...), from extra.box3d
+                    var b3 = (currentGame && currentGame.extra) ? currentGame.extra.box3d : null;
+                    if (b3) {
+                        if (typeof b3 === "string") b3 = [b3];
+                        for (var bi = 0; bi < b3.length; bi++)
+                            if (String(b3[bi]) === String(mediaItem)) return "3D Box";
+                    }
+                    if (m.includes("box2dfront") || m.includes("box2d_front")) return "Box Art";
+                    if (m.includes("boxfront") || m.includes("box_front")) return "Box Art";
+                    if (m.includes("box2dback") || m.includes("box2d_back")) return "Back Box";
+                    if (m.includes("boxback")  || m.includes("box_back"))  return "Back Box";
+                    // ES-DE media folders (Pegasus X reads these). Matched as
+                    // whole folders, so a game title containing "cover" or
+                    // "logos" can't trigger them; backcovers before covers.
+                    if (m.includes("/backcovers/")) return "Back Box";
+                    if (m.includes("/covers/")) return "Box Art";
+                    if (m.includes("/physicalmedia/")) return physicalMediaLabel();
+                    if (m.includes("/marquees/") || m.includes("/marquee/") || m.includes("/logos/")) return "Logo";
+                    if (m.includes("cartridge") || m.includes("support")) return physicalMediaLabel();
+                    if (m.includes("miximage") || m.includes("mix_image") || m.includes("steamgrid") || m.includes("/steam/") || m.includes("/grid/")) return "Miximage";
+                    if (m.includes("wheel")) return "Logo";
                     return "Screenshot";
                 }
                 // Always light: the pill is theme.secondary (fixed dark grey),
@@ -148,6 +242,10 @@ id: root
         anchors.fill: parent
         anchors.margins: vpx(4)
         source: isVideo ? "" : mediaItem
+        // Decoded at the tile's size (1.5x for the focus growth), not the
+        // file's: a strip of 1080p-4K fanart and screenshots was 8-33 MB of
+        // texture per tile for a ~300 px thumbnail.
+        sourceSize: Qt.size(Math.max(64, Math.round(width * 1.5)), Math.max(64, Math.round(height * 1.5)))
         // Fit, not Crop. Crop scaled every image up to fill the tile and cut
         // off whatever didn't match its aspect — a clear logo or a round disc
         // lost its edges and read as a bigger, cropped square. Fit keeps the
@@ -175,7 +273,8 @@ id: root
         id: iconFill
 
             anchors.fill: parent
-            source: "../assets/images/colorspng/" + mapLayoutImage(settings.ColorLayout) + ".png"
+            // Only video tiles draw the film glyph; others load nothing.
+            source: isVideo ? "../assets/images/colorspng/" + mapLayoutImage(settings.ColorLayout) + ".png" : ""
             fillMode: Image.PreserveAspectCrop
             visible: false
             asynchronous: true
@@ -184,7 +283,7 @@ id: root
         Image {
         id: mask
 
-            source: "../assets/images/icon_mediaplayer.svg"
+            source: isVideo ? "../assets/images/icon_mediaplayer.svg" : ""
             anchors.centerIn: parent
             width: vpx(150); height: width
             sourceSize: Qt.size(parent.width, parent.height)
@@ -230,12 +329,21 @@ id: root
             activated();        
         }
     }
+    // Clickable prompts (theme.qml helpClick): A on the focused item.
+    function helpAction(button) {
+        if (button !== "accept") return false;
+        activated();
+        return true;
+    }
 
     // Mouse/touch functionality
     MouseArea {
         anchors.fill: parent
         hoverEnabled: settings.MouseHover == "Yes"
-        onEntered: { sfxNav.play(); highlighted(); }
+        function hoverPick() { if (!pointerMoved() || root.selected) return;   // scrolled under a still pointer
+            sfxNav.play(); highlighted(); }
+        onEntered: hoverPick()
+        onPositionChanged: hoverPick()   // entered can arrive before the pointer tracker updates (theme.qml pointerMoved); the next nudge counts
         onExited: {}
         onClicked: activated();
     }

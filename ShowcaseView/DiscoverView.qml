@@ -32,6 +32,7 @@ id: root
         acceptedButtons: Qt.AllButtons
         hoverEnabled: true
         onPressed: mouse.accepted = true
+        onWheel: wheel.accepted = true   // the wheel stops here too, not on the screen behind
         onClicked: mouse.accepted = true
         onReleased: mouse.accepted = true
     }
@@ -83,36 +84,14 @@ id: root
         currentIndex = newIndex;
     }
 
-    // Position to apply once the resumed media has loaded (seeking earlier is
-    // dropped by the backend).
-    property int pendingSeek: -1
-
-    function indexOfGame(g) {
-        if (!g) return -1;
-        var i = gameList.indexOf(g);
-        if (i >= 0) return i;
-        // Fall back to title in case the two lists hold different wrappers.
-        for (var k = 0; k < gameList.length; k++)
-            if (gameList[k].title === g.title) return k;
-        return -1;
-    }
     function pickInitial() {
-        // Resume from the Showcase featured box if it was showing a Discover
-        // video, so the two feel like one stream. Otherwise start randomly.
-        var idx = indexOfGame(takeHandoff());
-        if (idx >= 0) {
-            pendingSeek = handoffPosition;
-            currentIndex = idx;
-        } else if (gameList.length > 0) {
+        if (gameList.length > 0) {
             currentIndex = Math.floor(Math.random() * gameList.length);
         }
     }
     Component.onCompleted: {
         buildList();
-        // Deferred one tick: the featured box publishes its handoff during the
-        // same state-change cascade that creates this screen, and QML doesn't
-        // guarantee which runs first. By the next tick it's certainly there.
-        Qt.callLater(pickInitial);
+        pickInitial();
     }
 
     // Black background
@@ -124,6 +103,11 @@ id: root
     // Fullscreen video player – preserve original aspect ratio (black bars on sides)
     Video {
     id: videoPlayer
+        // Stop before the player is destroyed (screen change, row rebuild, or
+        // Pegasus unloading the theme to launch a game): destroying a playing
+        // video is what the Windows media backend crashes on.
+        Component.onDestruction: stop()
+        onErrorChanged: reportVideoError(videoPlayer)   // logged; see videoUnsupported in theme.qml
 
         anchors.fill: parent
         source: currentGame ? currentGame.assets.video : ""
@@ -154,7 +138,6 @@ id: root
                 return;
             }
             if (status === MediaPlayer.Loaded || status === MediaPlayer.Buffered) {
-                if (pendingSeek >= 0) { seek(pendingSeek); pendingSeek = -1; }
                 // A play() issued before the media loaded is dropped; retry now.
                 if (shouldPlay && playbackState !== MediaPlayer.PlayingState) play();
             }
@@ -171,6 +154,40 @@ id: root
         sourceComponent: VideoSharpen {
             source: videoPlayer
             amount: 0.5
+        }
+    }
+
+    // When the video can't play (no codecs on Windows/Linux, or a broken
+    // file), show the game's art instead of a black screen. Only shown on a
+    // failure, so a video that plays normally looks exactly as before.
+    readonly property bool videoFailed: videoUnsupported || videoPlayer.error !== MediaPlayer.NoError
+    Image {
+    id: fallbackArt
+        anchors.fill: parent
+        visible: root.videoFailed
+        asynchronous: true
+        fillMode: Image.PreserveAspectCrop
+        source: !visible || !currentGame ? ""
+              : (currentGame.assets.background
+                 || (currentGame.assets.screenshots.length ? currentGame.assets.screenshots[0] : "")
+                 || currentGame.assets.boxFront || "")
+        sourceSize { width: root.width; height: root.height }
+    }
+    // One-line hint while videos can't play here.
+    Rectangle {
+        visible: videoUnsupported && showInfo
+        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: helpMargin + vpx(70) }
+        width: videoHint.implicitWidth + vpx(40); height: videoHint.implicitHeight + vpx(20)
+        radius: height / 2
+        color: "#CC000000"
+        z: 5
+        Text {
+        id: videoHint
+            anchors.centerIn: parent
+            text: "Videos can't play on this computer. Install a codec pack (K-Lite Codec Pack Basic) and restart Pegasus."
+            color: "white"
+            font.family: subtitleFont.name
+            font.pixelSize: fpx(16)
         }
     }
 
@@ -233,10 +250,8 @@ id: root
                                        ? currentGame.collections.get(0).shortName : ""
 
             anchors.fill: parent
-            source: shortName !== ""
-                    ? "../assets/images/logospng/" + Utils.processPlatformName(shortName) + ".png"
-                    : ""
-            sourceSize { width: 400; height: 80 }
+            source: shortName !== "" ? systemLogoSource(currentGame.collections.get(0)) : ""
+            sourceSize { width: hrpx(400); height: hrpx(80) }
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true
@@ -299,16 +314,19 @@ id: root
 
     // Mouse back button: the same exit B performs — hand the game and
     // position back so the featured box resumes here, and clear the prompt.
+    // Clickable prompts: each does what its button does (B: mouseBack).
+    function helpAction(button) {
+        if (button === "accept")       { if (currentGame) launchGameFromDiscover(currentGame); return true; }
+        if (button === "details")      { showInfo = !showInfo; return true; }
+        if (button === "filters")      { if (currentGame) gameDetailsFromDiscover(currentGame); return true; }
+        return false;
+    }
     function mouseBack() {
-        event.accepted = true;
+        // (No `event` here: the mouse Back button calls this directly. The
+        // old `event.accepted = true` threw, so mouse Back never left Discover.)
         // Clear on the way out, or leaving with the UI hidden would keep
         // the Apps prompt suppressed on every other screen.
         hideAppsPrompt = false;
-        // Hand our game and position back so the featured box resumes here.
-        if (currentGame) {
-            handoffGame = currentGame;
-            handoffPosition = videoPlayer.position;
-        }
         previousScreen();
             }
 
@@ -325,11 +343,6 @@ id: root
             // Clear on the way out, or leaving with the UI hidden would keep
             // the Apps prompt suppressed on every other screen.
             hideAppsPrompt = false;
-            // Hand our game and position back so the featured box resumes here.
-            if (currentGame) {
-                handoffGame = currentGame;
-                handoffPosition = videoPlayer.position;
-            }
             previousScreen();
         }
         // Details (X) – toggle info overlay

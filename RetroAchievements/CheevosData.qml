@@ -95,6 +95,7 @@ id: root
     readonly property var consoleMappings: ({
         // Nintendo handhelds
         "gb":             4,  "gameboy":        4,
+        "sgb":            4,
         "gbc":            6,  "gameboycolor":   6,
         "gba":            5,  "gameboyadvance": 5,
         "pokemini":      24,
@@ -105,16 +106,19 @@ id: root
         "nes":            7,  "famicom":        7,
         "fds":           81,  "famicomdisksystem": 81,
         "snes":           3,  "superfamicom":   3,
+        "sfc":            3,  "snesna":         3,
         "n64":            2,  "nintendo64":     2,
+        "n64dd":          2,
         "gc":            16,  "gamecube":      16,  "ngc":           16,
         "wii":           19,
         // Sega
         "genesis":        1,  "megadrive":      1,  "md":             1,
+        "megadrivejp":    1,
         "sms":           11,  "mastersystem":  11,
         "gamegear":      15,  "gg":            15,
         "32x":           10,  "sega32x":       10,
         "segacd":         9,  "megacd":         9,  "scd":            9,
-        "saturn":        39,
+        "saturn":        39,  "saturnjp":      39,
         "dreamcast":     40,  "dc":            40,
         "sg1000":        33,  "sg-1000":       33,
         "segapico":      68,  "pico":          68,
@@ -124,38 +128,44 @@ id: root
         "psp":           41,
         // NEC
         "pce":            8,  "tg16":           8,  "pcengine":       8,
+        "supergrafx":     8,
         "pcecd":         76,  "tgcd":          76,  "pcenginecd":    76,
         "pc88":          47,  "pc8800":        47,
-        "pcfx":          49,
+        "pcfx":          49,  "pc-fx":         49,
         // SNK
         "neogeo":        14,  "ngp":           14,  "ngpc":          14,
         "neogeopocket":  14,
         "neogeocd":      56,  "ngcd":          56,
         // Atari
         "atari2600":     25,  "2600":          25,
+        "atari5200":     50,
         "atari7800":     51,  "7800":          51,
         "lynx":          13,  "atarilynx":     13,
         "jaguar":        17,  "atarijaguar":   17,
-        "jaguarcd":      77,
+        "jaguarcd":      77,  "atarijaguarcd": 77,
         // Other
         "3do":           43,
         "coleco":        44,  "colecovision":  44,
         "intellivision": 45,  "intv":          45,
         "vectrex":       46,
         "wonderswan":    53,  "ws":            53,  "wsc":           53,
+        "wonderswancolor": 53,
         "megaduck":      69,
         "watara":        63,  "supervision":   63,
         "channelf":      57,  "fairchildchannelf": 57,
         "arcadia2001":   73,  "arcadia":       73,
-        "odyssey2":      23,  "o2":            23,
+        "odyssey2":      23,  "o2":            23,  "videopac":      23,
         "vc4000":        74,
+        "arduboy":       71,  "uzebox":        80,  "wasm4":         72,
         // Home computers
         "c64":           30,  "commodore64":   30,
-        "msx":           29,
+        "msx":           29,  "msx1":          29,  "msx2":          29,
         "amstradcpc":    37,  "cpc":           37,
         "apple2":        38,  "appleii":       38,
         // Arcade
-        "arcade":        27,  "mame":          27
+        "arcade":        27,  "mame":          27,
+        "cps1":          27,  "cps2":          27,  "cps3":          27,
+        "fbneo":         27
     })
 
     // ── Formatted strings for UI headers ─────────────────────────────────
@@ -551,6 +561,114 @@ id: root
         return 0;
     }
 
+    // ── Quick check for the Game details RA button ────────────────────────
+    // The button only shows when the game really has achievements, the same
+    // way the Manual button only shows when a manual exists. No network on
+    // this path: it answers from the console lists already saved by the RA
+    // lookup, parsed once per session (re-parsing a big console list on
+    // every details open would stall the open).
+    property var _lists: ({})       // consoleID -> parsed game list
+    property var _counts: ({})      // consoleID -> { gameID: achievement count }
+    property var _hits: ({})        // consoleID|title -> gameID (0 = none)
+    property var _fetching: ({})    // consoleID -> true while a list download runs
+    // Bumped when a list arrives, so bindings that asked before re-ask.
+    property int listsEpoch: 0
+
+    function hasCredentials() {
+        var u = api.memory.has("RA Username") ? ("" + api.memory.get("RA Username")) : "";
+        var k = api.memory.has("RA API Key")  ? ("" + api.memory.get("RA API Key"))  : "";
+        return u !== "" && k !== "";
+    }
+
+    // Keeps only what the lookup uses (ID, title, count) and only games
+    // that have achievements. A full RA console list is up to a few MB, and
+    // it lives in the theme's settings file, which Pegasus rewrites in full
+    // on EVERY setting change, so a big list slowed every save.
+    function _storeList(consoleID, list) {
+        var arr = Array.isArray(list) ? list
+                : Object.keys(list || {}).map(function(k){ return list[k]; });
+        var compact = [], counts = {};
+        for (var i = 0; i < arr.length; i++) {
+            var id = parseInt(arr[i].ID) || parseInt(arr[i].GameID) || 0;
+            if (id <= 0) continue;
+            var n = (arr[i].NumAchievements === undefined) ? 1 : (parseInt(arr[i].NumAchievements) || 0);
+            if (n <= 0) continue;
+            compact.push({ ID: id, Title: arr[i].Title || "", NumAchievements: n });
+            counts[id] = n;
+        }
+        _lists[consoleID]  = compact;
+        _counts[consoleID] = counts;
+        return compact;
+    }
+
+    function _listFor(consoleID) {
+        if (_lists[consoleID]) return _lists[consoleID];
+        var key = "raList_" + consoleID;
+        if (!api.memory.has(key)) return null;
+        var v = api.memory.get(key);
+        try {
+            if (typeof v === "string") {
+                // Saved by an older build: full list as JSON text. Shrink it
+                // once and save it back in the compact form.
+                api.memory.set(key, _storeList(consoleID, JSON.parse(v)));
+            } else {
+                _storeList(consoleID, v);
+            }
+        } catch (e) { return null; }
+        return _lists[consoleID];
+    }
+
+    // >0: the RA game ID (game has achievements), 0: none or RA not set up,
+    // -1: not known yet (this console's list hasn't been downloaded).
+    function quickGameId(title, shortName) {
+        if (!title || !hasCredentials()) return 0;
+
+        // Recently played on RA: known without any list
+        var normTitle = normalizeTitle(title);
+        for (var r = 0; r < raRecentGames.count; r++) {
+            var entry = raRecentGames.get(r);
+            if (normalizeTitle(entry.Title) === normTitle) return entry.GameID;
+        }
+
+        var consoleID = consoleMappings[(shortName || "").toLowerCase()] || 0;
+        if (!consoleID) return 0;
+        var list = _listFor(consoleID);
+        if (!list) return -1;
+
+        var hitKey = consoleID + "|" + normTitle;
+        if (_hits[hitKey] === undefined) {
+            var id = findGameInList(title, list);
+            _hits[hitKey] = (id > 0 && (_counts[consoleID][id] || 0) > 0) ? id : 0;
+        }
+        return _hits[hitKey];
+    }
+
+    // Downloads a console's list in the background when it's missing or
+    // older than a day, so the button can appear. One download per console
+    // at a time; failures are silent (the button just stays hidden).
+    function prefetchList(shortName) {
+        if (!hasCredentials()) return;
+        var consoleID = consoleMappings[(shortName || "").toLowerCase()] || 0;
+        if (!consoleID || _fetching[consoleID]) return;
+        var cacheKey  = "raList_" + consoleID;
+        var cacheTime = "raListTime_" + consoleID;
+        if (api.memory.has(cacheKey) && api.memory.has(cacheTime)
+                && (Date.now() - parseFloat(api.memory.get(cacheTime))) < 24 * 60 * 60 * 1000)
+            return;
+        if (!raUserName || !raApiKey) reload();
+        _fetching[consoleID] = true;
+        var started = Date.now();
+        raRequest("GetGameList", "i=" + consoleID,
+            function(resp) {
+                _fetching[consoleID] = false;
+                api.memory.set(cacheKey, _storeList(consoleID, resp));
+                api.memory.set(cacheTime, started.toString());
+                _hits = ({});
+                listsEpoch++;
+            },
+            function() { _fetching[consoleID] = false; });
+    }
+
     // ── Game lookup (Pegasus game → RA game ID) ───────────────────────────
     // Uses recently-played cache as fast path, then per-console game list
     // (cached in api.memory for 24 hours to minimise Android network traffic).
@@ -603,7 +721,8 @@ id: root
         if (api.memory.has(cacheKey) && api.memory.has(cacheTime)
                 && (now - parseFloat(api.memory.get(cacheTime))) < ttl) {
             try {
-                var cached = JSON.parse(api.memory.get(cacheKey));
+                var cached = _listFor(consoleID);    // parsed once per session
+                if (!cached) throw "bad list";
                 var hit    = findGameInList(title, cached);
                 pendingGameID   = hit;
                 lookupStatusMsg = hit > 0 ? "" : "No Retro Achievements found for this game";
@@ -623,9 +742,11 @@ id: root
             "i=" + consoleID,
             function(resp) {
                 lookupInProgress = false;
-                api.memory.set(cacheKey, JSON.stringify(resp));
+                api.memory.set(cacheKey, _storeList(consoleID, resp));
                 api.memory.set(cacheTime, capturedNow.toString());
-                var found       = findGameInList(capturedTitle, resp);
+                _hits = ({});
+                listsEpoch++;
+                var found       = findGameInList(capturedTitle, _lists[consoleID]);
                 pendingGameID   = found;
                 lookupStatusMsg = found > 0 ? "" : "No Retro Achievements found for this game";
             },

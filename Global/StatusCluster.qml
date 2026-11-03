@@ -235,27 +235,10 @@ Item {
             bottom: sysTime.baseline
         }
 
-        property bool online: false
-
-        Timer {
-            id: wifiTimer
-            interval: 30000
-            repeat: true
-            running: true
-            triggeredOnStart: true
-            onTriggered: {
-                var xhr = new XMLHttpRequest();
-                xhr.onreadystatechange = function() {
-                    if (xhr.readyState === XMLHttpRequest.DONE) {
-                        wifiIndicator.online = xhr.status >= 200 && xhr.status < 300;
-                    }
-                };
-                xhr.onerror = function() { wifiIndicator.online = false; };
-                xhr.open("HEAD", "https://1.1.1.1", true);
-                xhr.timeout = 5000;
-                xhr.send();
-            }
-        }
+        // One poll for the whole theme (theme.qml netOnline): each cluster
+        // used to run its own 30 s request, on hidden screens too, and with
+        // the indicator turned off.
+        readonly property bool online: netOnline
 
         onPaint: {
             var ctx = getContext("2d");

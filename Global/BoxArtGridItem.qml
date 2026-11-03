@@ -28,10 +28,24 @@ id: root
     function steamBoxArt(gameData) {
         return steamAppID(gameData) + '/library_600x900_2x.jpg';
     }
+    // Pegasus X lists the game's 3D boxes in extra.box3d; the file-name test
+    // is the fallback (same rule as utils.js is3dFor, inlined: see NOTE above).
     function is3dPath(path) {
         if (!path) return false;
-        var p = path.toLowerCase();
+        var l = (gameData && gameData.extra) ? gameData.extra.box3d : null;
+        if (l) {
+            if (typeof l === "string") l = [l];
+            var k = urlKey(path);
+            for (var i = 0; i < l.length; i++) if (urlKey(l[i]) === k) return true;
+        }
+        var p = String(path).toLowerCase();
         return p.includes("box3d") || p.includes("box_3d") || p.includes("3dbox");
+    }
+    function urlKey(u) {
+        var s = String(u || "");
+        if (s.indexOf("file://") === 0) s = s.substring(7);
+        try { s = decodeURIComponent(s); } catch (e) {}
+        return s;
     }
     function boxArt(data) {
         if (data != null) {
@@ -81,10 +95,13 @@ id: root
     }
 
     property bool selected
+    // Xbox-style focus: small corners and Global/FocusFrame.qml around a 2D
+    // box; a thin, tight trace around a 3D box.
+    readonly property real artRadius: vpx(6)
     // HQ: eased pop into the highlight instead of a linear ramp.
     Behavior on scale { enabled: !reduceMotion;
         NumberAnimation {
-            duration: hqMode ? 180 : 100
+            duration: animMs(hqMode ? 180 : 100)
             easing.type: hqMode ? Easing.OutBack : Easing.Linear
             easing.overshoot: 1.2
         }
@@ -104,9 +121,31 @@ id: root
     // A tile that already has its art is never affected — the latch only
     // starts false when the tile is born mid-race.
     property bool deferArt: false
-    property bool artArmed: true
-    Component.onCompleted: if (deferArt) artArmed = false
-    onDeferArtChanged: if (!deferArt) artArmed = true
+    // The game whose art is shown — ASSIGNED, never bound, so the art's
+    // source only changes when the tile decides (see DynamicGridItem.artGame).
+    property var artGame: null
+    readonly property bool artArmed: artGame !== null
+    // Art while racing, once the tile has kept its game this long (see
+    // DynamicGridItem.raceArtMs). 0 = no art until the race ends.
+    property int raceArtMs: 100
+    // Set by a host that knows; a tile in a look-ahead row waits until its
+    // row is actually on screen, so no decode is spent on rows never seen.
+    property bool onScreen: true
+    Timer {
+    id: raceArm
+        interval: Math.max(1, root.raceArtMs)
+        onTriggered: if (root.deferArt && root.gameData && root.onScreen) root.artGame = root.gameData
+    }
+    onOnScreenChanged: if (onScreen && deferArt && gameData && artGame === null && raceArtMs > 0) raceArm.restart()
+    function takeGame() {
+        raceArm.stop();
+        artGame = (deferArt || !gameData) ? null : gameData;
+        if (deferArt && gameData && raceArtMs > 0) raceArm.restart();
+    }
+    Component.onCompleted: takeGame()
+    onGameDataChanged: takeGame()
+    onDeferArtChanged: if (!deferArt && gameData && artGame !== gameData) { raceArm.stop(); artGame = gameData; }
+    function resetForReuse() { takeGame(); }
 
     scale: selected ? 1.1 : 1
     z: selected ? 10 : 1
@@ -127,6 +166,13 @@ id: root
     // source image's own proportions, so it works for any wide system.
     readonly property bool wide3d: is3d && screenshot.status === Image.Ready
                                    && screenshot.implicitWidth > screenshot.implicitHeight
+    // Fast corners: a 2D box rounds
+    // its own corners in one draw (RoundedArt) instead of going through an
+    // offscreen layer + OpacityMask. 3D renders have no corners to round and
+    // keep their selected-tile glow layer. Falls back to the mask if the
+    // shader ever fails to compile.
+    readonly property bool fastArt: !is3d
+                                    && !artFx.failed
 
     Image {
         id: tileHaloSrc
@@ -142,28 +188,8 @@ id: root
         mipmap: false
         visible: false
     }
-    // On demand: the effect (a shader plus its own offscreen texture) exists
-    // only while it could be seen. It used to be instantiated on EVERY tile —
-    // two effects per tile doing nothing on every screen full of tiles.
-    Loader {
-        active: selected
-        anchors.fill: tileHaloSrc
-        z: -1
-        sourceComponent: Component {
-        ColorOverlay {
-            id: tileGlow
-            anchors.fill: parent   // the Loader, which already fills tileHaloSrc
-            source: tileHaloSrc
-            color: theme.accent
-            z: -1
-            opacity: (selected && !is3d && settings.TileHalo === "Yes") ? 0.95 : 0
-            visible: opacity > 0
-            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-        }
-        }
-    }
-    // Subtle persistent glow for favorited tiles (not selected — the bright
-    // tileGlow above already covers that case).
+    // Subtle persistent glow for favorited tiles (not selected — the focus
+    // frame covers that case).
     // On demand: the effect (a shader plus its own offscreen texture) exists
     // only while it could be seen. It used to be instantiated on EVERY tile —
     // two effects per tile doing nothing on every screen full of tiles.
@@ -180,7 +206,7 @@ id: root
             z: -1
             opacity: (gameData && gameData.favorite && !selected && !is3d && settings.FavoritedTileAccent !== "No") ? 0.35 : 0
             visible: opacity > 0
-            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(180); easing.type: Easing.OutCubic } }
         }
         }
     }
@@ -208,7 +234,7 @@ id: root
 
         anchors.fill: parent
         anchors.margins: vpx(6)
-        Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 200 } }
+        Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(200) } }
                        
         Image {
         id: screenshot
@@ -218,14 +244,16 @@ id: root
             width:  (root.wide3d ? parent.height : parent.width)  - vpx(4)
             height: (root.wide3d ? parent.width  : parent.height) - vpx(4)
             rotation: root.wide3d ? 90 : 0
+            // Fast corners: this Image only decodes; artFx below draws it.
+            visible: !root.fastArt
 
             asynchronous: true
             // HQ: dissolve in on load instead of snapping.
             opacity: hqFadeIn ? (status === Image.Ready ? 1 : 0) : 1
-            Behavior on opacity { enabled: !reduceMotion && hqFadeIn; NumberAnimation { duration: 180 } }
-            source: artArmed ? boxArt(gameData) : ""
+            Behavior on opacity { enabled: !reduceMotion && hqFadeIn; NumberAnimation { duration: animMs(180) } }
+            source: artGame ? boxArt(artGame) : ""
             sourceSize { width: root.width; height: root.height }
-            smooth: false
+            smooth: true
             fillMode: Image.PreserveAspectFit
 
             // Rounded corners on the painted box, same radius as the dynamic
@@ -235,7 +263,7 @@ id: root
             // One layer slot: 2D boxes use it for rounded corners; a 3D box has
             // its own silhouette, so when selected it uses it for the accent
             // glow that traces that silhouette instead (as the carousel does).
-            layer.enabled: is3d ? selected : true
+            layer.enabled: is3d ? selected : !root.fastArt
             layer.smooth: true
             layer.effect: is3d ? accentTrace : roundedMask
             Component {
@@ -246,33 +274,83 @@ id: root
                         Rectangle {
                             anchors.centerIn: parent
                             width: screenshot.paintedWidth; height: screenshot.paintedHeight
-                            radius: vpx(12)
+                            radius: root.artRadius
                         }
                     }
                 }
             }
-            // 2D title fade, inside the mask so its corners round with the box.
-            Loader {
-                active: !root.is3d && root.titleShown
-                anchors.centerIn: parent
-                width: screenshot.paintedWidth; height: screenshot.paintedHeight
-                sourceComponent: boxTitleBar
-                opacity: active ? 1 : 0
-                Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 120 } }
-            }
             Component {
             id: accentTrace
-                Glow {
-                    radius: vpx(10)
-                    samples: 25
-                    spread: 0.6
-                    color: theme.accent
-                    transparentBorder: true
+                // 3D renders often carry near-invisible pixels (a faint drop
+                // shadow, leftover alpha) around the box. A glow straight off
+                // the image traced those too and drew a blocky accent patch
+                // beside the box. The glow now traces a thresholded copy (only
+                // what's clearly the box), and the untouched image is drawn
+                // back on top, soft shadow included.
+                Item {
+                    property variant source
+                    ThresholdMask {
+                    id: solidBox
+                        anchors.fill: parent
+                        source: parent.source
+                        maskSource: parent.source
+                        threshold: 0.75   // only solid box pixels; drop shadows sit below this
+                        spread: 0.1
+                        visible: false
+                    }
+                    Glow {
+                        anchors.fill: solidBox
+                        source: solidBox
+                        // A thin, tight trace, like the 2D boxes' frame
+                        radius: vpx(4)
+                        samples: 17
+                        spread: 0.85
+                        color: theme.accent
+                        transparentBorder: true
+                    }
+                    ShaderEffect {
+                        anchors.fill: parent
+                        property variant source: parent.source
+                    }
                 }
             }
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.verticalCenter: parent.verticalCenter
 
+        }
+
+        // Fast corners: the 2D box above, drawn with its corners rounded in the
+        // same pass. Sized to the PAINTED box (PreserveAspectFit centres it),
+        // which the texture fills exactly. Follows the image's opacity, so the
+        // HQ dissolve-in is unchanged.
+        RoundedArt {
+        id: artFx
+            anchors.centerIn: screenshot
+            width: screenshot.paintedWidth
+            height: screenshot.paintedHeight
+            source: screenshot
+            crop: false
+            radius: root.artRadius
+            opacity: screenshot.opacity
+            // Only once the image is decoded: with no texture yet, GL samples
+            // solid black, which would flash a black box while art loads.
+            visible: !root.is3d && !failed
+                     && screenshot.status === Image.Ready
+        }
+
+        // 2D title bar over the box. It used to live INSIDE the image so the
+        // box's mask rounded its corners; it now rounds its own (see
+        // boxTitleBar), so it sits beside the image and works whether the
+        // image is drawn masked or by artFx. 2D boxes are never rotated, so
+        // centring on the image places it exactly where it was.
+        Loader {
+            active: !root.is3d && root.titleShown
+            anchors.centerIn: screenshot
+            width: screenshot.paintedWidth; height: screenshot.paintedHeight
+            sourceComponent: boxTitleBar
+            // As a child of the image it inherited the HQ dissolve-in; keep that.
+            opacity: (active ? 1 : 0) * screenshot.opacity
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(120) } }
         }
 
         // Favorite heart — bottom-right corner of the tile. No title bar exists
@@ -297,8 +375,8 @@ id: root
             opacity: (gameData && gameData.favorite && is3d && titleShown) ? 1 : 0
             visible: opacity > 0
             scale: (gameData && gameData.favorite) ? 1 : 0.4
-            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-            Behavior on scale { enabled: !reduceMotion; NumberAnimation { duration: 220; easing.type: Easing.OutBack; easing.overshoot: 3 } }
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(180); easing.type: Easing.OutCubic } }
+            Behavior on scale { enabled: !reduceMotion; NumberAnimation { duration: animMs(220); easing.type: Easing.OutBack; easing.overshoot: 3 } }
             Image {
                 source: "../assets/images/favicon.svg"
                 asynchronous: true
@@ -333,15 +411,33 @@ id: root
     }
 
     // Title bar for 2D boxes: the SAME bar the dynamic tile shows — solid,
-    // along the bottom of the box, favourite pin inside it at the right. Drawn
-    // as a child of the image so the box's rounded mask clips its corners.
+    // along the bottom of the box, favourite pin inside it at the right. It
+    // rounds its own bottom corners to the box's 12px radius (a square upper
+    // part, and a rounded strip cut to its lower half by a clip; the two never
+    // overlap, so the 60% black stays even).
     Component {
     id: boxTitleBar
         Item {
             Rectangle {
                 anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
                 height: Math.max(vpx(44), parent.height * 0.16, parent.width * 0.16, barText.contentHeight + vpx(16))
-                color: "#99000000"
+                color: "transparent"
+                Rectangle {
+                    anchors { left: parent.left; right: parent.right; top: parent.top }
+                    height: parent.height - root.artRadius
+                    color: "#99000000"
+                }
+                Item {
+                    clip: true
+                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                    height: root.artRadius
+                    Rectangle {
+                        anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                        height: root.artRadius * 2
+                        radius: root.artRadius
+                        color: "#99000000"
+                    }
+                }
                 Text {
                 id: barText
                     anchors {
@@ -350,7 +446,7 @@ id: root
                         rightMargin: (gameData && gameData.favorite) ? (barPin.width + vpx(14)) : vpx(6)
                         verticalCenter: parent.verticalCenter
                     }
-                    text: modelData ? modelData.title : ""
+                    text: gameData ? gameData.title : ""
                     color: "white"; font.family: subtitleFont.name
                     font.pixelSize: Math.max(fpx(13), parent.parent.height * 0.05, parent.parent.width * 0.05); font.bold: true
                     wrapMode: Text.WordWrap; maximumLineCount: 2; elide: Text.ElideRight
@@ -380,7 +476,7 @@ id: root
         id: favBorder
         anchors.fill: artBounds
         color: "transparent"
-        radius: vpx(12)                   // follows the art's rounded corners
+        radius: root.artRadius                   // follows the art's rounded corners
         border.width: vpx(2)
         border.color: theme.accent
         visible: gameData && gameData.favorite && !is3d && settings.FavoritedTileAccent !== "No"
@@ -389,14 +485,26 @@ id: root
     Loader {
         active: selected && !is3d
         anchors.fill: artBounds
-        sourceComponent: border
+        sourceComponent: xboxBorder
         asynchronous: true
     }
 
     Component {
-    id: border
+    id: xboxBorder
 
-        ItemBorder { }
+        // Wrapped: the Loader sizes its item to itself, which would undo the
+        // frame's negative margins.
+        Item {
+            FocusFrame {
+                anchors.fill: parent
+                artRadius: root.artRadius
+                // This tile grows 1.1x on focus; the frame is sized against
+                // that so its ring matches the other tiles'.
+                gap: vpx(2) / 1.1
+                ring: vpx(3) / 1.1
+                glow: vpx(6) / 1.1
+            }
+        }
     }
 
     // Backing pill for the 3D-box title: hugs the text, so it reads over a
@@ -414,7 +522,7 @@ id: root
     Text {
     id: title
 
-        text: modelData ? modelData.title : ''
+        text: gameData ? gameData.title : ''
         // Always light: the pill behind it (#B3000000) is dark whatever the
         // page background colour is, so theme.text's White-mode flip is wrong here.
         color: "#ebebeb"
@@ -444,11 +552,11 @@ id: root
     Text {
     id: platformname
 
-        text: modelData.title
+        text: gameData ? gameData.title : ""
         anchors { fill: parent; margins: vpx(10) }
         color: "white"
         scale: selected ? 1.1 : 1
-        Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 100 } }
+        Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(100) } }
         font.pixelSize: fpx(18)
         font.family: subtitleFont.name
         font.bold: true
@@ -496,12 +604,24 @@ id: root
             activate();        
         }
     }
+    // Clickable prompts (theme.qml helpClick): A on the focused tile.
+    function helpAction(button) {
+        if (button !== "accept") return false;
+        activate();
+        return true;
+    }
 
     // Mouse/touch functionality
     MouseArea {
         anchors.fill: parent
         hoverEnabled: settings.MouseHover == "Yes"
-        onEntered: { playNav(); highlighted(); }
+        // Hover selects only when the pointer itself moved (theme.qml
+        // pointerMoved): a list scrolling under a still mouse must not
+        // steal the selection. Movement inside the tile counts too, so the
+        // first nudge onto a tile after a pause still selects it.
+        function hoverSelect() { if (!root.selected && pointerMoved()) { playNav(); highlighted(); } }
+        onEntered: hoverSelect()
+        onPositionChanged: hoverSelect()
         onClicked: {
             playNav();
             activate();

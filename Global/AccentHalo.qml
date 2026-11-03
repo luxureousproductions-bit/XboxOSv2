@@ -43,7 +43,7 @@ id: halo
     // still fading out would show its whole body as a light-blue flash on
     // the row being left. Driven imperatively (not a Behavior) so the
     // instant-off can't depend on binding update order.
-    readonly property bool shown: active && settings.TileHalo === "Yes"
+    readonly property bool shown: active && tileHaloLive
     opacity: 0
     visible: opacity > 0
     NumberAnimation { id: fadeIn; target: halo; property: "opacity"; to: 0.95

@@ -20,9 +20,27 @@ import QtQuick.Layouts 1.15
 Item {
 id: root
 
+    // Clicking (or tapping) a prompt does what pressing its button does.
+    // The bar only reports which one; theme.qml routes it down the focus
+    // chain, the same path the key itself takes.
+    signal promptClicked(string button)
+    signal leftPromptClicked()
+
     Component {
         id: buttonhelpDelegate
+        Item {
+        width: promptRow.width
+        height: promptRow.height
+        opacity: promptMouse.pressed ? 0.6 : 1
+        MouseArea {
+        id: promptMouse
+            anchors.fill: parent
+            anchors.margins: -vpx(6)          // a little easier to hit
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.promptClicked(button)
+        }
         Row {
+        id: promptRow
             spacing: 10
             Image {
                 // An entry may supply its own icon instead of a controller
@@ -44,14 +62,18 @@ id: root
                 font.family: subtitleFont.name
                 font.pixelSize: fpx(16)
                 color: promptColor
-                height: parent.height
+                height: vpx(30)   // the icon's height: parent.height was circular (the Row takes its height from this)
                 verticalAlignment: Text.AlignVCenter
             }
+        }
         }
     }
 
     ListView {
         anchors.fill: parent
+        // Never scrolls. An interactive ListView grabs every press over its
+        // whole area, which ate clicks meant for prompts drawn in this strip.
+        interactive: false
         model: currentHelpbarModel
         delegate: buttonhelpDelegate
         orientation: ListView.Horizontal
@@ -72,6 +94,8 @@ id: root
     // rows out from the TOP of the bar, so centring this one instead is what
     // made "Apps" sit lower than everything else.
     Row {
+    id: leftPrompt
+        opacity: leftMouse.pressed ? 0.6 : 1
         anchors {
             left: parent.left
             top: parent.top
@@ -99,9 +123,19 @@ id: root
             font.family: subtitleFont.name
             font.pixelSize: fpx(16)
             color: promptColor
-            height: parent.height
+            height: vpx(30)   // the icon's height (see above)
             verticalAlignment: Text.AlignVCenter
         }
+    }
+    // Click area for Apps: a sibling over the Row, so the Row doesn't lay
+    // it out as one more item.
+    MouseArea {
+    id: leftMouse
+        anchors.fill: leftPrompt
+        anchors.margins: -vpx(6)
+        enabled: leftPrompt.visible
+        cursorShape: Qt.PointingHandCursor
+        onClicked: root.leftPromptClicked()
     }
 
     visible: currentHelpbarModel ? true : false
@@ -135,17 +169,29 @@ id: root
             case "pageDown":
                 buttonModel = api.keys.pageDown;
                 break;
+            case "menu":   // Start (controller/11.png)
+                buttonModel = api.keys.menu;
+                break;
             default:
             buttonModel = api.keys.accept;
         }
 
-        var i;
-        for (i = 0; buttonModel.length; i++) {
+        // `i < length`: the loop used to test `buttonModel.length` alone, so a
+        // key with no controller binding ran past the end and threw.
+        for (var i = 0; i < buttonModel.length; i++) {
             if (buttonModel[i].name().includes("Gamepad")) {
             var buttonValue = buttonModel[i].key.toString(16)
-            return buttonValue.substring(buttonValue.length-1, buttonValue.length);
+            // Last hex digit of the gamepad key = button index (A 0 ... Select a,
+            // Start b); the glyph files are named in decimal (10.png, 11.png)
+            return String(parseInt(buttonValue.substring(buttonValue.length-1, buttonValue.length), 16));
             }
         }
+        // A key with no controller binding (keyboard-only on PC) gets the
+        // default controller glyph instead of no icon.
+        return defaultButtonArt[button] || "0";
     }
+    // Default glyph per action (Pegasus's default controller layout).
+    readonly property var defaultButtonArt: ({ accept: "0", cancel: "1", details: "2", filters: "3",
+                                               prevPage: "4", nextPage: "5", pageUp: "6", pageDown: "7", menu: "11" })
     
 }

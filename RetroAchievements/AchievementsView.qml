@@ -66,6 +66,7 @@ id: root
         acceptedButtons: Qt.AllButtons
         hoverEnabled: true
         onPressed: mouse.accepted = true
+        onWheel: wheel.accepted = true   // the wheel stops here too, not on the screen behind
         onClicked: mouse.accepted = true
         onReleased: mouse.accepted = true
     }
@@ -94,7 +95,7 @@ id: root
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true
-            sourceSize { width: 96; height: 96 }
+            sourceSize { width: hrpx(96); height: hrpx(96) }
         }
 
         // Avatar + username + points + rank + member since
@@ -116,7 +117,7 @@ id: root
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
                     asynchronous: true
-                    sourceSize { width: 64; height: 64 }
+                    sourceSize { width: hrpx(64); height: hrpx(64) }
                     layer.enabled: true
                     layer.smooth: true
                     layer.effect: OpacityMask {
@@ -307,7 +308,7 @@ id: root
                         fillMode: Image.PreserveAspectFit
                         smooth: true
                         asynchronous: true
-                        sourceSize { width: 96; height: 96 }
+                        sourceSize { width: hrpx(96); height: hrpx(96) }
                     }
                 }
 
@@ -449,7 +450,10 @@ id: root
             MouseArea {
                 anchors.fill: parent
                 hoverEnabled: settings.MouseHover === "Yes"
-                onEntered: { gameList.currentIndex = index; }
+                function hoverPick() { if (!pointerMoved() || gameList.currentIndex === index) return;   // scrolled under a still pointer
+                    gameList.currentIndex = index; }
+                onEntered: hoverPick()
+                onPositionChanged: hoverPick()   // entered can arrive before the pointer tracker updates (theme.qml pointerMoved); the next nudge counts
                 onClicked: {
                     if (isSelected) openSelectedGame();
                     else { gameList.currentIndex = index; }
@@ -465,8 +469,8 @@ id: root
         anchors.fill: gameList
         view: gameList
         columns: 1
-        active: !librarySearch.open
-        onStepped: function() { playNav(); }
+        active: !searchOpen
+        onStepped: function(quiet) { if (!quiet) playNav(); }
     }
 
     // ── Page counter ─────────────────────────────────────────────────────
@@ -501,13 +505,15 @@ id: root
         Repeater {
             model: localHelpModel
             delegate: Row {
+                TapHandler { gesturePolicy: TapHandler.WithinBounds; onTapped: helpClick(button) }
+                HoverHandler { cursorShape: Qt.PointingHandCursor }
                 spacing: vpx(8)
                 Image {
                     source: "../assets/images/controller/"
                             + buttonbar.processButtonArt(button) + ".png"
                     width: vpx(32); height: vpx(32)
                     asynchronous: true
-                    sourceSize { width: 48; height: 48 }
+                    sourceSize { width: hrpx(48); height: hrpx(48) }
                 }
                 Text {
                     text: name
@@ -542,12 +548,12 @@ id: root
     // these only ever run for the recently-played list underneath.
     Keys.onUpPressed: {
         event.accepted = true;
-        if (librarySearch.open) return;
+        if (searchOpen) return;
         if (gameList.currentIndex > 0) gameList.currentIndex--;
     }
     Keys.onDownPressed: {
         event.accepted = true;
-        if (librarySearch.open) return;
+        if (searchOpen) return;
         if (gameList.currentIndex < cheevosData.raRecentGames.count - 1)
             gameList.currentIndex++;
     }
@@ -555,6 +561,16 @@ id: root
     // theme.qml's mouseBack() handles it first.
     function mouseBack() {
         previousScreen();
+    }
+
+    // Clickable prompts: each does what its button does.
+    function helpAction(button) {
+        if (button === "details") openLibrarySearch("ra");
+        else if (button === "accept") { playAccept(); openSelectedGame(); }
+        else if (button === "cancel") previousScreen();
+        else if (button === "filters") { playAccept(); initialized = false; cheevosData.refreshAll(); }
+        else return false;
+        return true;
     }
 
     Keys.onPressed: {

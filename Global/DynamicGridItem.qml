@@ -48,6 +48,9 @@ id: root
     signal unhighlighted
 
     property bool selected
+    // One corner radius for every rounded piece of the tile; the focus
+    // frame (Global/FocusFrame.qml) is drawn concentric with it.
+    readonly property real artRadius: vpx(6)
     property var gameData: modelData
 
     // Apps imported by Pegasus, matched on file path — "android:<package>".
@@ -79,7 +82,7 @@ id: root
     scale: selected ? 1 : hqRestScale
     Behavior on scale { enabled: !reduceMotion;
         NumberAnimation {
-            duration: hqMode ? 180 : 100
+            duration: animMs(hqMode ? 180 : 100)
             easing.type: hqMode ? Easing.OutBack : Easing.Linear
             easing.overshoot: 1.2
         }
@@ -106,13 +109,69 @@ id: root
     // A tile that already has its art is never affected — the latch only
     // starts false when the tile is born mid-race.
     property bool deferArt: false
-    property bool artArmed: true
-    Component.onCompleted: if (deferArt) artArmed = false
-    onDeferArtChanged: if (!deferArt) artArmed = true
+    // Show the name bar while the art is held back or decoding (the Library
+    // grid sets it; Home rows keep their plain fade-in).
+    property bool titleWhilePending: false
+    // The game whose art this tile is showing. ASSIGNED, never bound: the
+    // image sources below follow artGame, so they only ever change when
+    // this tile decides — when it gets a game (born, or recycled with a new
+    // index) while the grid is at rest, or when a race ends. A source bound
+    // to gameData directly re-evaluated the moment a recycled tile's index
+    // changed, before any reset could run, and requested a decode the reset
+    // then cancelled: every step of a race churned through that.
+    property var artGame: null
+    // The logo has its own: it waits for the race to end, the art doesn't.
+    property var logoGame: null
+    readonly property bool artArmed: artGame !== null
+    // Art while racing. A tile given a game mid-race takes its art once it
+    // has kept that game for raceArtMs. The grid's rows only change game at
+    // the screen edges, so a row scrolling up the screen keeps its game and
+    // gets its art partway; a tile flashing past at the edge never asks.
+    // That bounds the decodes to the rows actually seen, with no
+    // request-then-cancel. 0 = no art until the race ends.
+    property int raceArtMs: 100
+    // Set by a host that knows; a tile in a look-ahead row waits until its
+    // row is actually on screen, so no decode is spent on rows never seen.
+    property bool onScreen: true
+    Timer {
+    id: raceArm
+        interval: Math.max(1, root.raceArtMs)
+        onTriggered: if (root.deferArt && root.gameData && root.onScreen) root.artGame = root.gameData
+    }
+    onOnScreenChanged: if (onScreen && deferArt && gameData && artGame === null && raceArtMs > 0) raceArm.restart()
+    function takeGame() {
+        raceArm.stop();
+        if (!gameData)  { artGame = null; logoGame = null; return; }
+        if (!deferArt)  { artGame = gameData; logoGame = gameData; return; }
+        artGame = null; logoGame = null;
+        if (raceArtMs > 0) raceArm.restart();
+    }
+    Component.onCompleted: takeGame()
+    onGameDataChanged: takeGame()
+    // Race over: whatever this tile is still missing (art, logo) catches up.
+    // A tile that kept its art through the race is left alone.
+    onDeferArtChanged: {
+        if (deferArt || !gameData) return;
+        raceArm.stop();
+        if (artGame !== gameData)  artGame  = gameData;
+        if (logoGame !== gameData) logoGame = gameData;
+    }
+    // Recycled (reuseItems): back to how a new tile starts. The art is made
+    // fully visible again in case it was fading under a preview.
+    function resetForReuse() {
+        takeGame();
+        restoreArt();
+    }
+    // Fast corners: the art rounds
+    // its own corners in one draw (RoundedArt) instead of the whole tile going
+    // through an offscreen layer + OpacityMask. Imported apps keep the layer —
+    // their blurred backdrop needs it — and so does every tile if the shader
+    // ever fails to compile. The video preview is not part of this tile.
+    readonly property bool fastArt: !isImportedApp
+                                    && !artFx.failed
     readonly property bool previewCovering: selected && playVideo
                                           && (ownScreen === "" || playbackOwner === ownScreen)
     function restoreArt() {
-        fadescreenshot.stop();
         screenshot.opacity = 1;
         container.opacity = 1;
     }
@@ -125,9 +184,11 @@ id: root
         if (videoShowing) fadeArt();
         else restoreArt();
     }
+    // Under a playing preview the art always fades; the logo too when the
+    // host says so (Settings > Previews & sound, per screen).
+    property bool hideLogoOnVideo: settings.HideLogo == "Yes"
     function fadeArt() {
-        fadescreenshot.stop();
-        if (settings.HideLogo == "Yes") container.opacity = 0;
+        if (hideLogoOnVideo) container.opacity = 0;
         else screenshot.opacity = 0;
     }
     onPreviewCoveringChanged: {
@@ -139,29 +200,14 @@ id: root
         if (!selected) restoreArt();
     }
 
-    // NOTE: Fade out the bg so there is a smooth transition into the video
-    Timer {
-    id: fadescreenshot
+    // (The old 3s fadescreenshot Timer is gone: nothing started it any more —
+    // the reveal is driven by videoShowing — but every tile still built it.)
 
-        interval: 3000
-        onTriggered: {
-            if (settings.HideLogo == "Yes")
-                container.opacity = 0;
-            else
-                screenshot.opacity = 0;
-        }
-    }
-
-    // Focus glow — same asset, tint, and technique as the system tiles so it
-    // matches their look. The white PNG (transparent centre) gives the glow
-    // shape; ColorOverlay recolors it to the Color Layout accent. The
-    // transparent centre means it never tints a video playing behind the tile.
+    // Halo image for the favourite glow below. The white PNG (transparent
+    // centre) gives the glow shape; ColorOverlay tints it to the accent.
+    // Sized per dimension so the transparent centre matches any tile shape.
     Image {
         id: tileHaloSrc
-        // Size per-dimension (not a uniform width-based margin) so the glow's
-        // transparent centre matches the tile on ANY aspect — square, tall, or
-        // wide — with no gap. 1.1228 = 1 + 2*0.0614 keeps the same bleed as the
-        // system tiles.
         anchors.centerIn: container
         width:  container.width  * 1.1228
         height: container.height * 1.1228
@@ -170,29 +216,9 @@ id: root
         mipmap: false
         visible: false
     }
-    // On demand: the effect (a shader plus its own offscreen texture) exists
-    // only while it could be seen. It used to be instantiated on EVERY tile —
-    // two effects per tile doing nothing on every screen full of tiles.
-    Loader {
-        active: selected
-        anchors.fill: tileHaloSrc
-        z: -1
-        sourceComponent: Component {
-        ColorOverlay {
-            id: tileGlow
-            anchors.fill: parent   // the Loader, which already fills tileHaloSrc
-            source: tileHaloSrc
-            color: theme.accent
-            z: -1
-            opacity: (selected && settings.TileHalo === "Yes") ? 0.95 : 0
-            visible: opacity > 0
-            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
-        }
-        }
-    }
-    // Subtle persistent glow for favorited tiles (not selected — the bright
-    // tileGlow above already covers that case). Same halo asset/accent tint,
-    // much dimmer, so favorites read as "special" while browsing past them.
+    // Subtle persistent glow for favorited tiles (not selected — the focus
+    // frame covers that case), so favourites read as "special" while
+    // browsing past them.
     // On demand: the effect (a shader plus its own offscreen texture) exists
     // only while it could be seen. It used to be instantiated on EVERY tile —
     // two effects per tile doing nothing on every screen full of tiles.
@@ -209,7 +235,7 @@ id: root
             z: -1
             opacity: (gameData && gameData.favorite && !selected && settings.FavoritedTileAccent !== "No") ? 0.35 : 0
             visible: opacity > 0
-            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(180); easing.type: Easing.OutCubic } }
         }
         }
     }
@@ -219,17 +245,18 @@ id: root
     id: container
 
         anchors.fill: parent
-        Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 200 } }
+        Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(200) } }
 
         // Round the tile art to match the rounded selection frame (vpx(6)),
         // so the crop-filled screenshot doesn't poke past the frame's corners.
-        layer.enabled: true
+        // Fast corners skip the layer; each piece below rounds itself instead.
+        layer.enabled: !root.fastArt
         layer.smooth: true
         layer.effect: OpacityMask {
             maskSource: Rectangle {
                 width: container.width
                 height: container.height
-                radius: vpx(12)
+                radius: root.artRadius
             }
         }
 
@@ -240,11 +267,39 @@ id: root
             z: 20
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
             height: Math.max(vpx(44), container.height * 0.16, container.width * 0.16, nameBarText.contentHeight + vpx(16))   // scales with tile size; wide tiles use width factor
-            color: "#99000000"            // ~60% black; text stays full-opacity
+            color: root.fastArt ? "transparent" : "#99000000"   // ~60% black; text stays full-opacity
             // Game tile titles: Never hides it even on focus; Always keeps it up.
-            opacity: titleMode === "Never" ? 0 : ((selected || titleMode === "Always") ? 1 : 0)
+            // Also up while the tile has no art to show yet — held back by a
+            // race, or still decoding after one — so a tile scrolling past is
+            // a dark card with its name rather than a blank. The text is
+            // already laid out, so this costs nothing extra.
+            readonly property bool artPending: root.titleWhilePending && (!artArmed
+                || (screenshot.source != "" && screenshot.status !== Image.Ready && screenshot.status !== Image.Error))
+            opacity: titleMode === "Never" ? 0 : ((selected || titleMode === "Always" || artPending) ? 1 : 0)
             visible: opacity > 0
-            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 120 } }
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(120) } }
+            // Fast corners: without the tile's mask the bar rounds its own
+            // bottom corners — a square upper part, and a rounded strip cut to
+            // its lower half by a clip. The two never overlap, so the 60% black
+            // stays even (overlapping halves would double up darker).
+            Rectangle {
+                visible: root.fastArt
+                anchors { left: parent.left; right: parent.right; top: parent.top }
+                height: parent.height - root.artRadius
+                color: "#99000000"
+            }
+            Item {
+                visible: root.fastArt
+                clip: true
+                anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                height: root.artRadius
+                Rectangle {
+                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
+                    height: root.artRadius * 2
+                    radius: root.artRadius
+                    color: "#99000000"
+                }
+            }
             Text {
                 anchors {
                     left: parent.left; leftMargin: vpx(8)
@@ -253,7 +308,7 @@ id: root
                     verticalCenter: parent.verticalCenter
                 }
                 id: nameBarText
-                text: modelData ? modelData.title : ""
+                text: gameData ? gameData.title : ""
                 color: "white"; font.family: subtitleFont.name
                 font.pixelSize: Math.max(fpx(13), container.height * 0.05, container.width * 0.05); font.bold: true
                 wrapMode: Text.WordWrap
@@ -292,13 +347,19 @@ id: root
         //
         // Detected by file path ("android:<package>"), so a ROM or a
         // hand-written .app entry can't match.
-        Item {
+        // Only built for an imported app: a blur, two layers and three
+        // images that every ROM tile used to carry around invisibly.
+        Loader {
         id: appTile
-
             anchors.fill: parent
             anchors.margins: vpx(2)
-            visible: root.isImportedApp && appTileArt.status === Image.Ready
+            active: root.isImportedApp
+            readonly property bool ready: item ? item.ready : false
+            visible: ready
             z: 5
+            sourceComponent: Component {
+        Item {
+            readonly property bool ready: appTileArt.status === Image.Ready
 
             // Blurred backdrop. Oversized INSIDE this clipping item rather than
             // scaled: the effect maps its source's bounds onto its own, so
@@ -313,7 +374,7 @@ id: root
                     anchors.centerIn: parent
                     width:  parent.width  * 1.4
                     height: parent.height * 1.4
-                    source: root.appIconArt
+                    source: root.isImportedApp ? root.appIconArt : ""
                     // Decoded small: it's about to be blurred past any detail,
                     // and the upscale softens it further.
                     sourceSize { width: hqAppBlurSrcPx; height: hqAppBlurSrcPx }
@@ -343,7 +404,7 @@ id: root
                 radius: appRound.cornerRadius
                 color: "#000000"; opacity: hqMode ? 0.55 : 0.35
                 layer.enabled: hqMode
-                layer.effect: FastBlur { radius: 24; transparentBorder: true }
+                layer.effect: FastBlur { radius: 24; transparentBorder: true; cached: true }
             }
 
             // Rounded-square icon, sized off the SHORTER side so it stays
@@ -371,7 +432,7 @@ id: root
                     // blown past the frame to fill the rounded square.
                     width:  parent.width  * 1.45
                     height: parent.height * 1.45
-                    source: root.appIconArt
+                    source: root.isImportedApp ? root.appIconArt : ""
                     sourceSize { width: hqMode ? 384 : 256; height: hqMode ? 384 : 256 }
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
@@ -379,13 +440,16 @@ id: root
                 }
             }
         }
+            }   // Component
+        }   // appTile Loader
 
         Image {
         id: screenshot
 
             anchors.fill: parent
             anchors.margins: vpx(2)
-            visible: !appTile.visible
+            // Fast corners: this Image only decodes; artFx below draws it.
+            visible: !appTile.visible && !root.fastArt
             // HQ: dissolve in on load. Starts hidden and lifts on Ready with a
             // plain assignment, matching how restoreArt/fadeArt already drive
             // this property — no binding for them to break. OFF starts at 1.
@@ -393,38 +457,65 @@ id: root
             // is a dissolve in HQ and (starting at 1) a no-op otherwise.
             opacity: hqFadeIn ? 0 : 1
             onStatusChanged: if (status === Image.Ready && hqFadeIn && !root.videoShowing) opacity = 1
-            source: (modelData && artArmed) ? (
-                      artMode === "Screenshot" ? (modelData.assets.screenshots[0] || modelData.assets.background || "")
-                    : artMode === "Boxfront"   ? (modelData.assets.boxFront || modelData.assets.background || modelData.assets.screenshots[0] || "")
-                    :                            (modelData.assets.background || modelData.assets.screenshots[0] || "")
+            // Follows artGame (assigned), never gameData: see artGame above.
+            source: artGame ? (
+                      artMode === "Screenshot" ? (artGame.assets.screenshots[0] || artGame.assets.background || "")
+                    : artMode === "Boxfront"   ? (artGame.assets.boxFront || artGame.assets.background || artGame.assets.screenshots[0] || "")
+                    :                            (artGame.assets.background || artGame.assets.screenshots[0] || "")
                   ) : ""
             fillMode: Image.PreserveAspectCrop
             // Decode at the tile's own size (plus room for the focus pop), never
             // above the cap. A 240px grid tile no longer decodes 512/1024px.
             readonly property int decodePx: Math.max(96, Math.min(hqTileArtPx, Math.round(Math.max(root.width, root.height) * hqTileDecodeScale)))
             sourceSize { width: decodePx; height: decodePx }
-            smooth: false
+            smooth: true
             asynchronous: true
-            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 200 } }
+            Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(200) } }
+        }
+
+        // Fast corners: the screenshot above, drawn with its corners rounded in
+        // the same pass. Follows its opacity, so the HQ fade-in and the fade
+        // under the video preview behave exactly as before.
+        RoundedArt {
+        id: artFx
+            anchors.fill: screenshot
+            source: screenshot
+            crop: true
+            radius: root.artRadius
+            inset: 0
+            opacity: screenshot.opacity
+            // Only once the image is decoded: with no texture yet, GL samples
+            // solid black, which would flash a black box while art loads.
+            visible: !root.isImportedApp && !failed
+                     && screenshot.status === Image.Ready
         }
 
         Image {
         id: favelogo
 
-            visible: showLogo && !appTile.visible
+            // Nothing to draw until the logo is decoded (an Image with no
+            // texture still costs a node per tile).
+            visible: showLogo && !appTile.visible && status === Image.Ready
             anchors.fill: parent
             anchors.centerIn: parent
             anchors.margins: root.width/10
-            property var logoImage: (gameData && gameData.collections.get(0).shortName === "retropie") ? gameData.assets.boxFront : (gameData.collections.get(0).shortName === "steam") ? logo(gameData) : gameData.assets.logo
+            function logoFor(g) {
+                if (!g) return "";
+                var sn = g.collections.count > 0 ? g.collections.get(0).shortName : "";
+                if (sn === "retropie") return g.assets.boxFront;
+                if (sn === "steam") return logo(g);
+                return g.assets.logo;
+            }
             // No decode at all when the logo isn't shown — an invisible Image
             // still loads its source, which was a wasted decode per tile.
-            source: (showLogo && modelData && artArmed) ? (logoImage || "") : ""
+            // Held back until the race ends (logoGame; the art may come sooner).
+            source: (showLogo && logoGame) ? (logoFor(logoGame) || "") : ""
             sourceSize { width: 200; height: 150 }
             fillMode: Image.PreserveAspectFit
             asynchronous: true
             smooth: true
             scale: selected ? 1.1 : 1
-            Behavior on scale { enabled: !reduceMotion; NumberAnimation { duration: 100 } }
+            Behavior on scale { enabled: !reduceMotion; NumberAnimation { duration: animMs(100) } }
             z: 10
         }
 
@@ -434,12 +525,14 @@ id: root
             anchors.fill: parent
             color: screenshot.source == "" ? theme.secondary : "black"
             opacity: screenshot.source == "" ? 1 : selected ? 0.1 : 0.2
+            radius: root.fastArt ? root.artRadius : 0
         }
-        
+
         Rectangle {
         id: regborder
 
             anchors.fill: parent
+            radius: root.fastArt ? root.artRadius : 0
             color: "transparent"
             border.width: vpx(1)
             border.color: "white"
@@ -453,7 +546,7 @@ id: root
     Rectangle {
         id: favBorder
         anchors.fill: container
-        radius: vpx(12)
+        radius: root.artRadius
         color: "transparent"
         border.width: vpx(2)
         border.color: theme.accent
@@ -465,54 +558,48 @@ id: root
 
         active: selected
         anchors.fill: parent
-        sourceComponent: border
+        sourceComponent: xboxBorder
         asynchronous: true
     }
 
     Component {
-    id: border
+    id: xboxBorder
 
-        ItemBorder { }
+        // Wrapped: the Loader sizes its item to itself, which would undo the
+        // frame's negative margins (it reaches past the tile on every side).
+        Item {
+            FocusFrame {
+                anchors.fill: parent
+                artRadius: root.artRadius
+            }
+        }
     }
 
-    Text {
-    id: title
+    // (The old faint under-tile title, permanently hidden, is gone: replaced
+    // long ago by the on-tile name bar, but every tile still built it.)
 
-        text: modelData ? modelData.title : ''
-        color: theme.text
-        font {
-            family: subtitleFont.name
-            pixelSize: vpx(12)
-            bold: true
-        }
-
-        elide: Text.ElideRight
-        horizontalAlignment: Text.AlignHCenter
-        verticalAlignment: Text.AlignVCenter
-
-        anchors {
-            top: container.bottom; topMargin: vpx(8)
-        }
-
-        width: parent.width
-
-        opacity: 0.2
-        visible: false   // old faint under-tile title; replaced by the on-tile black bar
-    }
-
+    // Title in the tile's centre when there's no logo to show. This text is
+    // the single most expensive thing a tile can draw (outlined, wrapped,
+    // elided), and a Text lays itself out whenever its text changes even
+    // while invisible — so it only GETS text when it's about to be shown:
+    // never while the grid races, and only once the logo is known to be
+    // missing. Racing with logos on used to lay this out on every recycled
+    // tile, which halved the frame rate.
     Text {
     id: platformname
 
-        text: modelData.title
+        readonly property bool wanted: showLogo && !appTile.visible && !reduceMotion && artArmed
+                                       && (favelogo.source == "" || favelogo.status === Image.Error)
+        text: wanted && gameData ? gameData.title : ""
         anchors { fill: parent; margins: vpx(10) }
         color: "white"
         scale: selected ? 1.1 : 1
-        Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: 100 } }
+        Behavior on opacity { enabled: !reduceMotion; NumberAnimation { duration: animMs(100) } }
         font.pixelSize: fpx(18)
         font.family: subtitleFont.name
         font.bold: true
         style: Text.Outline; styleColor: theme.main
-        visible: showLogo && (favelogo.status === Image.Null || favelogo.status === Image.Error)
+        visible: wanted && text !== ""
         anchors.centerIn: parent
         elide: Text.ElideRight
         wrapMode: Text.WordWrap
@@ -555,12 +642,24 @@ id: root
             activated();        
         }
     }
+    // Clickable prompts (theme.qml helpClick): A on the focused tile.
+    function helpAction(button) {
+        if (button !== "accept") return false;
+        activated();
+        return true;
+    }
 
     // Mouse/touch functionality
     MouseArea {
         anchors.fill: parent
         hoverEnabled: settings.MouseHover == "Yes"
-        onEntered: { playNav(); highlighted(); }
+        // Hover selects only when the pointer itself moved (theme.qml
+        // pointerMoved): a list scrolling under a still mouse must not
+        // steal the selection. Movement inside the tile counts too, so the
+        // first nudge onto a tile after a pause still selects it.
+        function hoverSelect() { if (!root.selected && pointerMoved()) { playNav(); highlighted(); } }
+        onEntered: hoverSelect()
+        onPositionChanged: hoverSelect()
         onExited: { unhighlighted(); }
         onClicked: {
             playNav();

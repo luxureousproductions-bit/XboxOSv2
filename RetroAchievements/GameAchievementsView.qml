@@ -87,6 +87,7 @@ id: root
         acceptedButtons: Qt.AllButtons
         hoverEnabled: true
         onPressed: mouse.accepted = true
+        onWheel: wheel.accepted = true   // the wheel stops here too, not on the screen behind
         onClicked: mouse.accepted = true
         onReleased: mouse.accepted = true
     }
@@ -114,7 +115,7 @@ id: root
             fillMode: Image.PreserveAspectFit
             smooth: true
             asynchronous: true
-            sourceSize { width: 96; height: 96 }
+            sourceSize { width: hrpx(96); height: hrpx(96) }
         }
 
         Row {
@@ -135,7 +136,7 @@ id: root
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
                     asynchronous: true
-                    sourceSize { width: 64; height: 64 }
+                    sourceSize { width: hrpx(64); height: hrpx(64) }
                     layer.enabled: true
                     layer.smooth: true
                     layer.effect: OpacityMask {
@@ -244,7 +245,7 @@ id: root
                 fillMode: Image.PreserveAspectFit
                 smooth: true
                 asynchronous: true
-                sourceSize { width: 120; height: 120 }
+                sourceSize { width: hrpx(120); height: hrpx(120) }
             }
         }
 
@@ -390,6 +391,12 @@ id: root
                         font.pixelSize: fpx(14)
                         font.bold: active
                     }
+                    // Click picks this filter, same as LB/RB reaching it.
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: if (!active) { playToggle(); cheevosData.filterMode = modelData.mode; root.currentIndex = 0; }
+                    }
                 }
             }
         }
@@ -435,6 +442,12 @@ id: root
                         font.family: subtitleFont.name
                         font.pixelSize: fpx(13)
                         font.bold: active
+                    }
+                    // Click picks this sort, same as Y reaching it.
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: if (!active) { playToggle(); cheevosData.sortMode = modelData.mode; root.currentIndex = 0; }
                     }
                 }
             }
@@ -518,7 +531,7 @@ id: root
                         fillMode:    Image.PreserveAspectFit
                         smooth:      true
                         asynchronous: true
-                        sourceSize { width: 64; height: 64 }
+                        sourceSize { width: hrpx(64); height: hrpx(64) }
                         opacity: isEarned ? 1.0 : 0.28
                     }
                 }
@@ -646,7 +659,10 @@ id: root
             MouseArea {
                 anchors.fill: parent
                 hoverEnabled: settings.MouseHover === "Yes"
-                onEntered: { playNav(); root.currentIndex = index; }
+                function hoverPick() { if (!pointerMoved() || root.currentIndex === index) return;   // scrolled under a still pointer
+                    playNav(); root.currentIndex = index; }
+                onEntered: hoverPick()
+                onPositionChanged: hoverPick()   // entered can arrive before the pointer tracker updates (theme.qml pointerMoved); the next nudge counts
                 onClicked:  { playNav(); root.currentIndex = index; }
             }
         }
@@ -660,7 +676,7 @@ id: root
         view: achievementList
         columns: 1
         active: true
-        onStepped: function() { playNav(); }
+        onStepped: function(quiet) { if (!quiet) playNav(); }
     }
 
     // ── Page counter ─────────────────────────────────────────────────────
@@ -698,13 +714,15 @@ id: root
         Repeater {
             model: localHelpModel
             delegate: Row {
+                TapHandler { gesturePolicy: TapHandler.WithinBounds; onTapped: helpClick(button) }
+                HoverHandler { cursorShape: Qt.PointingHandCursor }
                 spacing: vpx(6)
                 Image {
                     source: "../assets/images/controller/"
                             + buttonbar.processButtonArt(button) + ".png"
                     width: vpx(32); height: vpx(32)
                     asynchronous: true
-                    sourceSize { width: 48; height: 48 }
+                    sourceSize { width: hrpx(48); height: hrpx(48) }
                 }
                 Text {
                     text: name
@@ -777,14 +795,19 @@ id: root
         currentIndex = 0;
     }
 
-    // Mouse back button: same as B.
-    function mouseBack() { achievementsScreenFromGame(); }
+    // B / mouse back. Opened from Game details (the RA button): straight back
+    // to the details page. Opened from the RA overview: back to the overview,
+    // and a second B leaves RA.
+    function goBack() {
+        if (raFromDetails) previousScreen();
+        else achievementsScreenFromGame();
+    }
+    function mouseBack() { goBack(); }
 
     Keys.onPressed: {
-        // B — back to the RA overview. A second B there exits RA entirely.
         if (api.keys.isCancel(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            achievementsScreenFromGame();
+            goBack();
         }
         // LB — cycle filter backward
         if (api.keys.isPrevPage(event) && !event.isAutoRepeat) {
@@ -820,18 +843,34 @@ id: root
         // otherwise the library is searched by normalized title.
         if (api.keys.isAccept(event) && !event.isAutoRepeat) {
             event.accepted = true;
-            var raTitle = cheevosData.currentGameDetails.Title || "";
-            var target  = null;
-            if (currentGame && raTitle !== ""
-                && cheevosData.normalizeTitle(currentGame.title) === cheevosData.normalizeTitle(raTitle))
-                target = currentGame;
-            if (!target)
-                target = cheevosData.findLocalGame(raTitle, cheevosData.currentGameDetails.ConsoleName || "");
-            if (target) {
-                playAccept();
-                launchGameFromRA(target);
-            }
+            launchOwnGame();
         }
+    }
+    function launchOwnGame() {
+        var raTitle = cheevosData.currentGameDetails.Title || "";
+        var target  = null;
+        if (currentGame && raTitle !== ""
+            && cheevosData.normalizeTitle(currentGame.title) === cheevosData.normalizeTitle(raTitle))
+            target = currentGame;
+        if (!target)
+            target = cheevosData.findLocalGame(raTitle, cheevosData.currentGameDetails.ConsoleName || "");
+        if (target) {
+            playAccept();
+            launchGameFromRA(target);
+        }
+    }
+    // Clickable prompts: each does what its button does.
+    function helpAction(button) {
+        if (button === "cancel") goBack();
+        else if (button === "filters") { playToggle(); cycleSort(); currentIndex = 0; }
+        else if (button === "details") {
+            playAccept();
+            if (cheevosData.currentGameDetails.Title !== "")
+                cheevosData.loadGameAchievements(cheevosData.currentGameID);
+        }
+        else if (button === "accept") launchOwnGame();
+        else return false;
+        return true;
     }
 
     // The last row dissolves under the help bar (same fade as the grids).

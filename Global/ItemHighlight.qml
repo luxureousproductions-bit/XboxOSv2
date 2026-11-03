@@ -24,10 +24,27 @@ id: root
     property var game
     property bool selected
     property bool boxArt
+    // The preview fills the art rectangle and gets the art's small rounded
+    // corners, under the Xbox focus frame.
+    readonly property real artRadius: vpx(6)
     property bool playVideo: (settings.AllowThumbVideo === "Yes") && !boxArt
 
+    // The host is scrolling fast (a held key). No preview is warmed or
+    // created while this holds, however long a step takes. Without it, one
+    // slow step (> the 300 ms warm-up rest in HQ) created the Video for a
+    // tile the cursor was already leaving; the next step tore it down, and
+    // on Android a MediaPlayer built and released on the UI thread is a
+    // 100–300 ms stall — long enough to trip the warm-up again on the next
+    // tile. The grid sat at 4–6 fps until the key was released. Previews
+    // resume, with their normal rest, the moment the race ends.
+    property bool racing: false
+    onRacingChanged: {
+        if (racing) unloadPreview();
+        else if (playVideo && selected && playbackActive) beginPreview();
+    }
+
     onGameChanged: {
-        if (playVideo && selected && playbackActive) beginPreview();
+        if (playVideo && selected && playbackActive && !racing) beginPreview();
         else unloadPreview();
     }
 
@@ -50,19 +67,6 @@ id: root
     // thumbnail-audio row; a host with its own row (All Games) overrides it.
     property bool allowAudio: settings.AllowThumbVideoAudio !== "No"
 
-    // Reports to the coordinator whenever this preview is actually loaded.
-    // Derived from the Loader's own state rather than the six places that set
-    // it, so it cannot drift from what's really on screen. Showcase only: the
-    // featured box is the only thing that yields, and it lives there.
-    readonly property bool previewLoaded: videoPreviewLoader.sourceComponent !== undefined
-    onPreviewLoadedChanged: {
-        if (ownScreen !== "showcasescreen") return;
-        showcaseRowPreviews += previewLoaded ? 1 : -1;
-    }
-    // If destroyed while loaded, release the count so the box isn't left paused.
-    Component.onDestruction: {
-        if (ownScreen === "showcasescreen" && previewLoaded) showcaseRowPreviews -= 1;
-    }
     property bool playbackActive: ownScreen === "" || playbackOwner === ownScreen
 
     // True once the reveal delay has elapsed. The Video is created earlier
@@ -70,10 +74,7 @@ id: root
     property bool armed: false
 
     // How long a tile must stay highlighted before its preview plays, and how
-    // far ahead of that the decoder starts warming. Warming is deliberately
-    // NOT from t=0: the featured box yields while a preview is loaded, so an
-    // early warm-up would freeze it for the whole wait. One second is ample
-    // for the decoder to reach ready, and keeps the box's pause short.
+    // far ahead of that the decoder starts warming.
     property int previewDelay:  hqPreviewDelay
     property int previewWarmup: hqPreviewWarmup
     function unloadPreview() {
@@ -85,6 +86,7 @@ id: root
     }
     // Start warming immediately; the delay now only gates the reveal.
     function beginPreview() {
+        if (racing) return;
         armed = false;
         warmupDelay.restart();
         videoDelay.restart();
@@ -139,15 +141,19 @@ id: root
 
         Video {
         id: videocomponent
+            // Stop before the player is destroyed (screen change, row rebuild, or
+            // Pegasus unloading the theme to launch a game): destroying a playing
+            // video is what the Windows media backend crashes on.
+            Component.onDestruction: stop()
+            onErrorChanged: reportVideoError(videocomponent)   // logged; see videoUnsupported in theme.qml
 
             anchors.fill: parent
-            anchors.margins: vpx(2)   // Meets the selection frame's INNER edge exactly:
-                                      // the frame overhangs -3 and is 5 wide, so its inner
-                                      // edge sits +2 in. The video's square corners are then
-                                      // hidden beneath the ring — no gap, and no masking of
-                                      // the VideoOutput (which renders black on weak GPUs).
-            source: game.assets.videoList.length ? game.assets.videoList[0] : ""
+            source: (game && game.assets.videoList.length) ? game.assets.videoList[0] : ""   // game can go null while the row changes
             fillMode: VideoOutput.PreserveAspectCrop
+            // Rounded corners in one shader pass over the video's own layer
+            // (one offscreen buffer, only while this preview exists).
+            layer.enabled: true
+            layer.effect: RoundedArt { radius: root.artRadius }
             muted: !root.allowAudio || !root.playbackActive
             loops: MediaPlayer.Infinite
 
@@ -163,12 +169,13 @@ id: root
             onGoChanged: if (go && playbackState !== MediaPlayer.PlayingState) play()
             onReadyChanged: if (go && playbackState !== MediaPlayer.PlayingState) play()
 
-            // Invisible until playing; a loaded-but-idle VideoOutput paints
-            // black. Snaps to opaque rather than fading: this sits UNDER the
-            // tile art, so it's hidden anyway until the art fades. Fading it
-            // in at the same time as the art faded out left a midpoint where
-            // neither was opaque and the Showcase background showed through.
-            opacity: playbackState === MediaPlayer.PlayingState ? 1 : 0
+            // Invisible until playing (a loaded-but-idle VideoOutput paints
+            // black). Shown from the first real frame and faded in over the
+            // same 200 ms the tile's art fades out, so the two cross exactly;
+            // at full strength at once, the video showed along the art's
+            // anti-aliased edge a few frames before the fade began.
+            opacity: framesFlowing ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: 200 } }
 
             // Report "on screen" only once frames are actually flowing, not on
             // PlayingState — that fires before the first frame is painted, and
@@ -181,17 +188,44 @@ id: root
 
     }
 
+    // Shadow around the playing preview.
+    //
+    // It used to take its shape from videocontainer itself: the playing video
+    // was copied into an offscreen texture and blurred on EVERY video frame,
+    // only to keep its outline. The outline is always the same rectangle, so
+    // the shadow is now drawn from a plain plate of exactly the video's size
+    // (the same vpx(3) inset), blurred once and reused (cached). It shows
+    // while the video is on screen, as before. The video is not touched, and
+    // nothing routes it through a texture any more.
+    readonly property bool videoShown: videoPreviewLoader.item
+                                       ? videoPreviewLoader.item.opacity > 0 : false
+    Item {
+    id: shadowShape
+
+        anchors.fill: parent
+        visible: false   // only the shadow below draws it
+        Rectangle {
+            anchors.fill: parent
+            // Rounded like the art; square corners blurred into faint dark
+            // corners just past the frame on light backgrounds.
+            radius: root.artRadius
+            color: "#000000"
+        }
+    }
+
     DropShadow {
     id: outershadow
 
-        anchors.fill: videocontainer
+        anchors.fill: shadowShape
         horizontalOffset: 0
         verticalOffset: 0
         radius: 20.0
         samples: 11
         color: "#000000"
-        source: videocontainer
-        opacity: selected ? 0.5 : 0
+        source: shadowShape
+        cached: true
+        opacity: (selected && root.videoShown) ? 0.5 : 0
+        visible: opacity > 0
         Behavior on opacity { NumberAnimation { duration: 100 } }
         z: -5
     }

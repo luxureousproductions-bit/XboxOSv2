@@ -19,6 +19,7 @@ import QtQuick.Layouts 1.15
 import QtGraphicalEffects 1.15
 import QtQml.Models 2.15
 import QtMultimedia 5.15
+import "../utils.js" as Utils
 import "../Global"
 
 FocusScope {
@@ -27,7 +28,8 @@ id: root
     signal close
     property var mediaModel: []
     property int mediaIndex: 0
-    property bool isVideo: mediaModel.length ? mediaModel[mediaIndex].includes(".mp4") || mediaModel[mediaIndex].includes(".webm") : false
+    // Any common video format, any capitals (.MP4, .mkv and .avi are usual on PC).
+    property bool isVideo: mediaModel.length ? Utils.isVideoFile(mediaModel[mediaIndex]) : false
 
     function next() {
         if (mediaIndex == mediaModel.length-1)
@@ -58,6 +60,11 @@ id: root
 
         Video {
         id: carouselVideo
+            // Stop before the player is destroyed (screen change, row rebuild, or
+            // Pegasus unloading the theme to launch a game): destroying a playing
+            // video is what the Windows media backend crashes on.
+            Component.onDestruction: stop()
+            onErrorChanged: reportVideoError(carouselVideo)   // logged; see videoUnsupported in theme.qml
             source: isVideo ? mediaModel[mediaIndex] : ""
             anchors.fill: parent
             fillMode: VideoOutput.PreserveAspectFit
@@ -66,7 +73,7 @@ id: root
             // it stays true when the drawer or another app takes active
             // focus, and the audio carried on underneath.
             readonly property bool shouldPlay: playbackOwner === "gameviewscreen"
-            muted: !shouldPlay
+            muted: !shouldPlay || settings.MediaViewerAudio === "No"
             autoPlay: false
             onShouldPlayChanged: { if (shouldPlay) { if (source != "") play(); } else pause(); }
             onSourceChanged: if (shouldPlay) play(); else pause()
@@ -121,7 +128,10 @@ id: root
 
             width: root.width
             height: root.height
-            source: modelData.includes(".mp4") || modelData.includes(".webm") ? "" : modelData
+            // Nothing decodes until the viewer is open: the list exists
+            // (and builds delegates) with the details page, and these are
+            // full-screen images.
+            source: (!root.visible || Utils.isVideoFile(modelData)) ? "" : modelData
             sourceSize { width: root.width; height: root.height }
             smooth: true
             fillMode: Image.PreserveAspectFit
@@ -140,7 +150,7 @@ id: root
         view: medialist
         columns: 1
         active: true
-        onStepped: function() { playNav(); }
+        onStepped: function(quiet) { if (!quiet) playNav(); }
     }
 
     Row {
@@ -210,6 +220,11 @@ id: root
     // Input handling
     // Mouse back button: same as B — close the fullscreen media.
     function mouseBack() { close(); }
+    // Clickable prompts: modal, so it claims every button (as its keys do).
+    function helpAction(button) {
+        if (button === "cancel" || button === "accept") close();
+        return true;
+    }
 
     Keys.onPressed: {
         // Swallow the drawer key while fullscreen media is up. A global panel

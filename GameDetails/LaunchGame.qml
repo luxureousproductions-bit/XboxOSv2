@@ -31,22 +31,13 @@ id: root
 
         anchors.fill: parent
         asynchronous: true
-        property int randoScreenshotNumber: {
-            if (game && settings.GameRandomBackground === "Yes")
-                return Math.floor(Math.random() * game.assets.screenshotList.length);
-            else
-                return 0;
-        }
-        property int randoFanartNumber: {
-            if (game && settings.GameRandomBackground === "Yes")
-                return Math.floor(Math.random() * game.assets.backgroundList.length);
-            else
-                return 0;
-        }
-
-        property var randoScreenshot: game ? game.assets.screenshotList[randoScreenshotNumber] : ""
-        property var randoFanart: game ? game.assets.backgroundList[randoFanartNumber] : ""
-        property var actualBackground: (settings.GameBackground === "Screenshot") ? randoScreenshot : Utils.fanArt(game) || randoFanart;
+        // First screenshot / fanart. (A "random background" option was read
+        // here but never existed as a setting, so it was always the first.)
+        property var randoScreenshot: game ? game.assets.screenshotList[0] : ""
+        property var randoFanart: game ? game.assets.backgroundList[0] : ""
+        property var actualBackground: (settings.GameBackground === "Screenshot") ? randoScreenshot
+                                     : (settings.GameBackground === "Banner" && game && game.assets.banner) ? game.assets.banner
+                                     : Utils.fanArt(game) || randoFanart;
         source: root.useAppFallback ? "" : (actualBackground || "")
         sourceSize: Qt.size(root.width, root.height)
         fillMode: Image.PreserveAspectCrop
@@ -112,7 +103,11 @@ id: root
             }
         }
         FastBlur {
-            anchors.fill: parent
+            // Big desktop screens: blur at 1080p size and scale up (1 on Android).
+            width: parent.width / hiResScale
+            height: parent.height / hiResScale
+            scale: hiResScale
+            transformOrigin: Item.TopLeft
             source: fallbackSource
             // Hard maximum is 64 — vpx(110) scaled past it, which is why the
             // backdrop rendered as nothing and the splash came out black.
@@ -149,7 +144,7 @@ id: root
                 color: "#000000"; opacity: hqMode ? 0.55 : 0.35
                 scale: fallbackIcon.scale
                 layer.enabled: hqMode
-                layer.effect: FastBlur { radius: 40; transparentBorder: true }
+                layer.effect: FastBlur { radius: 40; transparentBorder: true; cached: true }
             }
 
             // Rounded-square icon, cropped the same way the drawer tiles and the
@@ -261,6 +256,7 @@ id: root
     }
 
     DropShadow {
+        cached: true   // static: blur once, not every frame
     id: logoshadow
 
         anchors.fill: logo
@@ -304,6 +300,7 @@ id: root
         hoverEnabled: true
         acceptedButtons: Qt.AllButtons
         onPressed: mouse.accepted = true
+        onWheel: wheel.accepted = true   // the wheel stops here too, not on the screen behind
         onClicked: mouse.accepted = true
         onReleased: mouse.accepted = true
     }
