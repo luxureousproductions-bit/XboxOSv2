@@ -25,6 +25,9 @@ A ground-up rebuild of the theme in 65 staged builds, now merged into main. It s
 - Removed `Lists/ListTopGames.qml` (unused since the original fork) and `TESTING-windows.txt` (its install, video-codec and mouse notes are in the README's new Windows & Linux section).
 - README updated for the merged Library screen, the new Settings pages and Windows & Linux.
 
+### Build 66 — leftover images removed
+- 23 image files nothing used, all from the original upload: four "- Copy" button glyphs, old controller SVGs (0–3, D-pad arrows), nine `input_*.png` and `assets/images/background.jpg` (custom backgrounds use `backgrounds/background.png`).
+
 ## build 64
 
 - **Nav icons go from outline to filled, as on the Xbox:** in every nav bar (Home, Library, Game details) the library, RetroAchievements, settings and home icons are outlines at rest and fill in white when focused. The App Drawer's RetroAchievements and settings tiles do the same. Discover and Search stay outlines, as on the Xbox.
